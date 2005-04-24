@@ -195,7 +195,7 @@ main(argc, argv, environ)
     }
 
     if (fcntl(ConnectionNumber(dpy), F_SETFD, 1) == -1) {
-	fprintf (stderr, 
+	fprintf (stderr,
 		 "%s:  unable to mark display connection as close-on-exec\n",
 		 ProgramName);
 	exit (1);
@@ -248,7 +248,7 @@ main(argc, argv, environ)
 	RedirectError = FALSE;
 	XSetErrorHandler(CatchRedirectError);
 	XSelectInput(dpy, RootWindow (dpy, scrnum),
-	    ColormapChangeMask | EnterWindowMask | PropertyChangeMask | 
+	    ColormapChangeMask | EnterWindowMask | PropertyChangeMask |
 	    SubstructureRedirectMask | KeyPressMask |
 	    ButtonPressMask | ButtonReleaseMask);
 	XSync(dpy, 0);
@@ -268,7 +268,7 @@ main(argc, argv, environ)
 	numManaged ++;
 
 	/* Note:  ScreenInfo struct is calloc'ed to initialize to zero. */
-	Scr = ScreenList[scrnum] = 
+	Scr = ScreenList[scrnum] =
 	    (ScreenInfo *) calloc(1, sizeof(ScreenInfo));
   	if (Scr == NULL)
   	{
@@ -329,7 +329,7 @@ main(argc, argv, environ)
 	Scr->cmapInfo.root_pushes = 0;
 	InstallWindowColormaps(0, &Scr->TwmRoot);
 
-	Scr->StdCmapInfo.head = Scr->StdCmapInfo.tail = 
+	Scr->StdCmapInfo.head = Scr->StdCmapInfo.tail =
 	  Scr->StdCmapInfo.mru = NULL;
 	Scr->StdCmapInfo.mruindex = 0;
 	LocateStandardColormaps();
@@ -393,6 +393,8 @@ main(argc, argv, environ)
 	Scr->siconifyPm = None;
 	Scr->pullPm = None;
 	Scr->hilitePm = None;
+	Scr->virtualPm = None;/*RFB PIXMAP*/
+	Scr->RealScreenPm = None;/*RFB PIXMAP*/
 	Scr->tbpm.xlogo = None;
 	Scr->tbpm.resize = None;
 	Scr->tbpm.question = None;
@@ -430,7 +432,7 @@ main(argc, argv, environ)
 
  	if (Scr->VirtualDesktopWidth > 0)
  		CreateDesktopDisplay();
-	
+
 	/* create all of the door windows */
 	door_open_all();
 
@@ -478,16 +480,16 @@ main(argc, argv, environ)
 	    }
 	}
 
-	
+
 	attributes.border_pixel = Scr->DefaultC.fore;
 	attributes.background_pixel = Scr->DefaultC.back;
 	attributes.event_mask = (ExposureMask | ButtonPressMask |
 				 KeyPressMask | ButtonReleaseMask);
 	attributes.backing_store = NotUseful;
 	attributes.cursor = XCreateFontCursor (dpy, XC_hand2);
-	valuemask = (CWBorderPixel | CWBackPixel | CWEventMask | 
+	valuemask = (CWBorderPixel | CWBackPixel | CWEventMask |
 		     CWBackingStore | CWCursor);
-	Scr->InfoWindow = XCreateWindow (dpy, Scr->Root, 0, 0, 
+	Scr->InfoWindow = XCreateWindow (dpy, Scr->Root, 0, 0,
 					 (unsigned int) 5, (unsigned int) 5,
 					 (unsigned int) BW, 0,
 					 (unsigned int) CopyFromParent,
@@ -498,7 +500,7 @@ main(argc, argv, environ)
 					   " 8888 x 8888 ", 13);
 	valuemask = (CWBorderPixel | CWBackPixel | CWBitGravity);
 	attributes.bit_gravity = NorthWestGravity;
-	Scr->SizeWindow = XCreateWindow (dpy, Scr->Root, 0, 0, 
+	Scr->SizeWindow = XCreateWindow (dpy, Scr->Root, 0, 0,
 					 (unsigned int) Scr->SizeStringWidth,
 					 (unsigned int) (Scr->SizeFont.height +
 							 SIZE_VINDENT*2),
@@ -583,6 +585,9 @@ InitVariables()
     NewFontCursor(&Scr->WaitCursor, "watch");
     NewFontCursor(&Scr->SelectCursor, "dot");
     NewFontCursor(&Scr->DestroyCursor, "pirate");
+    NewFontCursor(&Scr->DoorCursor, "exchange");/*RFBCURSOR*/
+    NewFontCursor(&Scr->VirtualCursor, "rtl_logo");/*RFBCURSOR*/
+    NewFontCursor(&Scr->DesktopCursor, "dotbox");/*RFBCURSOR*/
     Scr->NoCursor = NoCursor();
 
     Scr->Ring = NULL;
@@ -606,12 +611,17 @@ InitVariables()
     Scr->IconManagerC.fore = black;
     Scr->IconManagerC.back = white;
     Scr->IconManagerHighlight = black;
+    Scr->VirtualC.fore = black;/*RFB VCOLOR*/
+    Scr->VirtualC.back = white;/*RFB VCOLOR*/
+	Scr->RealScreenC.back = black;/*RFB 4/92 */
+	Scr->RealScreenC.fore = white;/*RFB 4/92 */
     Scr->VirtualDesktopDisplayC.fore = black;
     Scr->VirtualDesktopDisplayC.back = white;
     Scr->VirtualDesktopDisplayBorder = black;
     Scr->DoorC.fore = black;
     Scr->DoorC.back = white;
 
+	Scr->AutoRaiseDefault = FALSE;/*RAISEDELAY*/
     Scr->FramePadding = 2;		/* values that look "nice" on */
     Scr->TitlePadding = 8;		/* 75 and 100dpi displays */
     Scr->ButtonIndent = 1;
@@ -670,7 +680,7 @@ InitVariables()
 #define DEFAULT_NICE_FONT "variable"
 #define DEFAULT_FAST_FONT "fixed"
 #define DEFAULT_SMALL_FONT "5x8"
-    
+
     Scr->TitleBarFont.font = NULL;
     Scr->TitleBarFont.name = DEFAULT_NICE_FONT;
     Scr->MenuFont.font = NULL;
@@ -693,27 +703,27 @@ InitVariables()
 
     /* by default we emulate the old twm - ie. no virtual desktop */
     Scr->Virtual = FALSE;
-    
+
     /* this makes some of the algorithms for checking if windows
      * are on the screen simpler */
     Scr->VirtualDesktopWidth = Scr->MyDisplayWidth;
     Scr->VirtualDesktopHeight = Scr->MyDisplayHeight;
-    
+
     /* start at the top left of the virtual desktop */
     Scr->VirtualDesktopX = 0;
     Scr->VirtualDesktopY = 0;
-    
+
     /* pan defaults to half screen size */
     Scr->VirtualDesktopPanDistanceX = 50;
     Scr->VirtualDesktopPanDistanceY = 50;
- 
+
     /* default scale is 1:25 */
     Scr->VirtualDesktopDScale = 25;
- 
+
     /* and the display should appear at 0, 0 */
     Scr->VirtualDesktopDX = 0;
     Scr->VirtualDesktopDY = 0;
-    
+
     /* by default no autopan */
     Scr->AutoPan = 0;
 }
@@ -740,7 +750,7 @@ RestoreWithdrawnLocation (tmp)
     unsigned int bw, mask;
     XWindowChanges xwc;
 
-    if (XGetGeometry (dpy, tmp->w, &JunkRoot, &xwc.x, &xwc.y, 
+    if (XGetGeometry (dpy, tmp->w, &JunkRoot, &xwc.x, &xwc.y,
 		      &JunkWidth, &JunkHeight, &bw, &JunkDepth)) {
 
 	GetGravityOffsets (tmp, &gravx, &gravy);
@@ -884,10 +894,10 @@ Atom _XA_WM_DELETE_WINDOW;
 
 InternUsefulAtoms ()
 {
-    /* 
+    /*
      * Create priority colors if necessary.
      */
-    _XA_MIT_PRIORITY_COLORS = XInternAtom(dpy, "_MIT_PRIORITY_COLORS", False);   
+    _XA_MIT_PRIORITY_COLORS = XInternAtom(dpy, "_MIT_PRIORITY_COLORS", False);
     _XA_WM_CHANGE_STATE = XInternAtom (dpy, "WM_CHANGE_STATE", False);
     _XA_WM_STATE = XInternAtom (dpy, "WM_STATE", False);
     _XA_WM_COLORMAP_WINDOWS = XInternAtom (dpy, "WM_COLORMAP_WINDOWS", False);

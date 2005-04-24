@@ -1,0 +1,42 @@
+#set -x
+: entry_make ${1:?} ${2:?}
+fg="`grep \^$1\  color.fg | cut -d\  -f2-`"
+bg="`grep \^$1\  color.bg | cut -d\  -f2-`"
+name=$1
+x1="( \""
+x2="\":\""
+x3="\" )"
+if [ "$fg" = "" ]
+then
+	bg=
+	x1=
+	x2=
+	x3="\t\t"
+else
+	if [ "$bg" = "" ]
+	then
+		fg=
+		x1=
+		x2=
+		x3="\t\t"
+	fi
+fi
+
+kind=Lxterm
+if [ "" != "`grep $1 Rxterm.list`" ]
+then
+	kind=Rxterm
+fi
+
+if [ $name = Xman ]
+then
+	kind=MyMan
+fi
+if [ $name = Xalarm ]
+then
+	kind=MyAlarm
+fi
+
+echo "\t\"$name\"\t$x1$fg$x2$bg$x3\tf.exec \"$kind $name &\""
+exit 0
+

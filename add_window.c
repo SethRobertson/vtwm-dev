@@ -73,7 +73,7 @@ char NoName[] = "Untitled"; /* name if no name is specified */
  *  Procedure:
  *	GetGravityOffsets - map gravity to (x,y) offset signs for adding
  *		to x and y when window is mapped to get proper placement.
- * 
+ *
  ************************************************************************
  */
 
@@ -96,7 +96,7 @@ GetGravityOffsets (tmp, xp, yp)
 	{  1,  1 },			/* SouthEastGravity */
 	{  0,  0 },			/* StaticGravity */
     };
-    register int g = ((tmp->hints.flags & PWinGravity) 
+    register int g = ((tmp->hints.flags & PWinGravity)
 		      ? tmp->hints.win_gravity : NorthWestGravity);
 
     if (g < ForgetGravity || g > StaticGravity) {
@@ -181,7 +181,7 @@ IconMgr *iconp;
       tmp_win->attr.height = Scr->MaxWindowHeight;
 
     tmp_win->wmhints = XGetWMHints(dpy, tmp_win->w);
-    if (tmp_win->wmhints && (tmp_win->wmhints->flags & WindowGroupHint)) 
+    if (tmp_win->wmhints && (tmp_win->wmhints->flags & WindowGroupHint))
       tmp_win->group = tmp_win->wmhints->window_group;
     else
 	tmp_win->group = tmp_win->w/* NULL */;
@@ -203,21 +203,23 @@ IconMgr *iconp;
     tmp_win->full_name = tmp_win->name;
     namelen = strlen (tmp_win->name);
 
-    tmp_win->highlight = Scr->Highlight && 
-	(!(short)(int) LookInList(Scr->NoHighlight, tmp_win->full_name, 
+    tmp_win->highlight = Scr->Highlight &&
+	(!(short)(int) LookInList(Scr->NoHighlight, tmp_win->full_name,
 	    &tmp_win->class));
 
     tmp_win->stackmode = Scr->StackMode &&
-	(!(short)(int) LookInList(Scr->NoStackModeL, tmp_win->full_name, 
+	(!(short)(int) LookInList(Scr->NoStackModeL, tmp_win->full_name,
 	    &tmp_win->class));
 
-    tmp_win->titlehighlight = Scr->TitleHighlight && 
-	(!(short)(int) LookInList(Scr->NoTitleHighlight, tmp_win->full_name, 
+    tmp_win->titlehighlight = Scr->TitleHighlight &&
+	(!(short)(int) LookInList(Scr->NoTitleHighlight, tmp_win->full_name,
 	    &tmp_win->class));
 
-    tmp_win->auto_raise = (short)(int) LookInList(Scr->AutoRaise, 
-						  tmp_win->full_name,
-					    &tmp_win->class);
+    tmp_win->auto_raise =
+    	Scr->AutoRaiseDefault ||    /* RAISEDELAY */
+       		(short)(int) LookInList(Scr->AutoRaise,
+				tmp_win->full_name,
+					&tmp_win->class);
     if (tmp_win->auto_raise) Scr->NumAutoRaises++;
     tmp_win->iconify_by_unmapping = Scr->IconifyByUnmapping;
     if (Scr->IconifyByUnmapping)
@@ -226,7 +228,7 @@ IconMgr *iconp;
 	    !(short)(int) LookInList(Scr->DontIconify, tmp_win->full_name,
 		&tmp_win->class);
     }
-    tmp_win->iconify_by_unmapping |= 
+    tmp_win->iconify_by_unmapping |=
 	(short)(int) LookInList(Scr->IconifyByUn, tmp_win->full_name,
 	    &tmp_win->class);
 
@@ -260,7 +262,7 @@ IconMgr *iconp;
      * since it is coming from the screen list
      */
     if (HasShape) {
-	if (!LookInList (Scr->DontSqueezeTitleL, tmp_win->full_name, 
+	if (!LookInList (Scr->DontSqueezeTitleL, tmp_win->full_name,
 			 &tmp_win->class)) {
 	    tmp_win->squeeze_info = (SqueezeInfo *)
 	      LookInList (Scr->SqueezeTitleL, tmp_win->full_name,
@@ -310,19 +312,19 @@ IconMgr *iconp;
 
     /*
      * Don't bother user if:
-     * 
+     *
      *     o  the window is a transient, or
-     * 
+     *
      *     o  a USPosition was requested, or
-     * 
+     *
      *     o  a PPosition was requested and UsePPosition is ON or
      *        NON_ZERO if the window is at other than (0,0)
      */
     ask_user = TRUE;
-    if (tmp_win->transient || 
+    if (tmp_win->transient ||
 	(tmp_win->hints.flags & USPosition) ||
         ((tmp_win->hints.flags & PPosition) && Scr->UsePPosition &&
-	 (Scr->UsePPosition == PPOS_ON || 
+	 (Scr->UsePPosition == PPOS_ON ||
 	  tmp_win->attr.x != 0 || tmp_win->attr.y != 0)))
       ask_user = FALSE;
 
@@ -331,7 +333,7 @@ IconMgr *iconp;
     else
 	    tmp_win->nailed = FALSE;
 
-    /* 25/09/90 - nailed windows should always be on the real screen, 
+    /* 25/09/90 - nailed windows should always be on the real screen,
      * regardless of PPosition or UPosition */
     /* if we are dealing with PPosition, then offset by the current real
      * screen offset on the vd */
@@ -361,7 +363,7 @@ IconMgr *iconp;
 	{
 	    Bool firsttime = True;
 
-	    /* better wait until all the mouse buttons have been 
+	    /* better wait until all the mouse buttons have been
 	     * released.
 	     */
 	    while (TRUE)
@@ -371,7 +373,7 @@ IconMgr *iconp;
 		XGrabServer(dpy);
 
 		JunkMask = 0;
-		if (!XQueryPointer (dpy, Scr->Root, &JunkRoot, 
+		if (!XQueryPointer (dpy, Scr->Root, &JunkRoot,
 				    &JunkChild, &JunkX, &JunkY,
 				    &AddingX, &AddingY, &JunkMask))
 		  JunkMask = 0;
@@ -400,7 +402,7 @@ IconMgr *iconp;
 		 */
 		if (JunkMask != 0) continue;
 
-		/* 
+		/*
 		 * this will cause a warp to the indicated root
 		 */
 		stat = XGrabPointer(dpy, Scr->Root, False,
@@ -416,7 +418,7 @@ IconMgr *iconp;
 	    width = (SIZE_HINDENT + XTextWidth (Scr->SizeFont.font,
 						tmp_win->name, namelen));
 	    height = Scr->SizeFont.height + SIZE_VINDENT * 2;
-	    
+
 	    XResizeWindow (dpy, Scr->SizeWindow, width + SIZE_HINDENT, height);
 	    XMapRaised(dpy, Scr->SizeWindow);
 	    InstallRootColormap();
@@ -445,29 +447,29 @@ IconMgr *iconp;
 			if (Event.type == ButtonPress)
 			    break;
 		}
-		
+
 		if (event.type == ButtonPress) {
 		  AddingX = event.xbutton.x_root;
 		  AddingY = event.xbutton.y_root;
-		  
+
 		  /* DontMoveOff prohibits user form off-screen placement */
-		  if (Scr->DontMoveOff)	
+		  if (Scr->DontMoveOff)
   		    {
 		      int AddingR, AddingB;
-		      
+
 		      AddingR = AddingX + AddingW;
 		      AddingB = AddingY + AddingH;
-		      
+
 		      if (AddingX < 0)
 			AddingX = 0;
 		      if (AddingR > Scr->MyDisplayWidth)
 			AddingX = Scr->MyDisplayWidth - AddingW;
-		      
+
 		      if (AddingY < 0)
 			AddingY = 0;
 		      if (AddingB > Scr->MyDisplayHeight)
 			AddingY = Scr->MyDisplayHeight - AddingH;
-		      
+
  		    }
 		  break;
 		}
@@ -485,7 +487,7 @@ IconMgr *iconp;
 
 		    AddingR = AddingX + AddingW;
 		    AddingB = AddingY + AddingH;
-		    
+
 		    if (AddingX < 0)
 		        AddingX = 0;
 		    if (AddingR > Scr->MyDisplayWidth)
@@ -512,10 +514,15 @@ IconMgr *iconp;
 		XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
 				  SIZE_VINDENT + Scr->SizeFont.font->ascent,
 				  ": ", 2);
+#if 0
 		if (0/*Scr->AutoRelativeResize*/) {
+My R5 vtvwm came with this commented out, always 0.
+Why?
+#endif
+		if (Scr->AutoRelativeResize) {
 		    int dx = (tmp_win->attr.width / 4);
 		    int dy = (tmp_win->attr.height / 4);
-		    
+
 #define HALF_AVE_CURSOR_SIZE 8		/* so that it is visible */
 		    if (dx < HALF_AVE_CURSOR_SIZE) dx = HALF_AVE_CURSOR_SIZE;
 		    if (dy < HALF_AVE_CURSOR_SIZE) dy = HALF_AVE_CURSOR_SIZE;
@@ -561,7 +568,7 @@ IconMgr *iconp;
 
 		    /*
 		     * XXX - if we are going to do a loop, we ought to consider
-		     * using multiple GXxor lines so that we don't need to 
+		     * using multiple GXxor lines so that we don't need to
 		     * grab the server.
 		     */
 		    XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
@@ -576,7 +583,7 @@ IconMgr *iconp;
 		    }
 
 		}
-	    } 
+	    }
 	    else if (event.xbutton.button == Button3)
 	    {
 		int maxw = Scr->MyDisplayWidth - AddingX - bw2;
@@ -625,7 +632,7 @@ IconMgr *iconp;
 
 
 #ifdef DEBUG
-	fprintf(stderr, "  position window  %d, %d  %dx%d\n", 
+	fprintf(stderr, "  position window  %d, %d  %dx%d\n",
 	    tmp_win->attr.x,
 	    tmp_win->attr.y,
 	    tmp_win->attr.width,
@@ -661,9 +668,9 @@ IconMgr *iconp;
 
     /*
      * Make sure the client window still exists.  We don't want to leave an
-     * orphan frame window if it doesn't.  Since we now have the server 
-     * grabbed, the window can't disappear later without having been 
-     * reparented, so we'll get a DestroyNotify for it.  We won't have 
+     * orphan frame window if it doesn't.  Since we now have the server
+     * grabbed, the window can't disappear later without having been
+     * reparented, so we'll get a DestroyNotify for it.  We won't have
      * gotten one for anything up to here, however.
      */
     if (XGetGeometry(dpy, tmp_win->w, &JunkRoot, &JunkX, &JunkY,
@@ -734,7 +741,7 @@ IconMgr *iconp;
     attributes.background_pixmap = None;
     attributes.border_pixel = tmp_win->border;
     attributes.cursor = Scr->FrameCursor;
-    attributes.event_mask = (SubstructureRedirectMask | 
+    attributes.event_mask = (SubstructureRedirectMask |
 			     ButtonPressMask | ButtonReleaseMask |
 			     EnterWindowMask | LeaveWindowMask);
     if (tmp_win->attr.save_under) {
@@ -743,14 +750,14 @@ IconMgr *iconp;
     }
 
     tmp_win->frame = XCreateWindow (dpy, Scr->Root, tmp_win->frame_x,
-				    tmp_win->frame_y, 
+				    tmp_win->frame_y,
 				    (unsigned int) tmp_win->frame_width,
 				    (unsigned int) tmp_win->frame_height,
 				    (unsigned int) tmp_win->frame_bw,
 				    Scr->d_depth,
 				    (unsigned int) CopyFromParent,
 				    Scr->d_visual, valuemask, &attributes);
-    
+
     if (tmp_win->title_height)
     {
 	valuemask = (CWEventMask | CWBorderPixel | CWBackPixel);
@@ -758,10 +765,10 @@ IconMgr *iconp;
 				 ButtonReleaseMask | ExposureMask);
 	attributes.border_pixel = tmp_win->border;
 	attributes.background_pixel = tmp_win->title.back;
-	tmp_win->title_w = XCreateWindow (dpy, tmp_win->frame, 
+	tmp_win->title_w = XCreateWindow (dpy, tmp_win->frame,
 					  -tmp_win->frame_bw,
 					  -tmp_win->frame_bw,
-					  (unsigned int) tmp_win->attr.width, 
+					  (unsigned int) tmp_win->attr.width,
 					  (unsigned int) Scr->TitleHeight,
 					  (unsigned int) tmp_win->frame_bw,
 					  Scr->d_depth,
@@ -776,8 +783,8 @@ IconMgr *iconp;
 
     if (tmp_win->highlight)
     {
-	tmp_win->gray = XCreatePixmapFromBitmapData(dpy, Scr->Root, 
-	    gray_bits, gray_width, gray_height, 
+	tmp_win->gray = XCreatePixmapFromBitmapData(dpy, Scr->Root,
+	    gray_bits, gray_width, gray_height,
 	    tmp_win->border_tile.fore, tmp_win->border_tile.back,
 	    Scr->d_depth);
 
@@ -786,7 +793,7 @@ IconMgr *iconp;
     else
 	tmp_win->gray = None;
 
-	
+
     if (tmp_win->title_w) {
 	CreateWindowTitlebarButtons (tmp_win);
 	ComputeTitleLocation (tmp_win);
@@ -804,7 +811,7 @@ IconMgr *iconp;
 
     if (HasShape)
 	XShapeSelectInput (dpy, tmp_win->w, ShapeNotifyMask);
-	
+
     if (tmp_win->title_w) {
 	XMapWindow (dpy, tmp_win->title_w);
     }
@@ -823,7 +830,7 @@ IconMgr *iconp;
 
     if (!tmp_win->iconmgr)
 	XAddToSaveSet(dpy, tmp_win->w);
-	
+
     XReparentWindow(dpy, tmp_win->w, tmp_win->frame, 0, tmp_win->title_height);
     /*
      * Reparenting generates an UnmapNotify event, followed by a MapNotify.
@@ -837,7 +844,7 @@ IconMgr *iconp;
 		tmp_win->frame_width, tmp_win->frame_height, -1, True);
 
     /* wait until the window is iconified and the icon window is mapped
-     * before creating the icon window 
+     * before creating the icon window
      */
     tmp_win->icon_w = NULL;
 
@@ -877,7 +884,7 @@ IconMgr *iconp;
     XUngrabServer(dpy);
 
     /* if we were in the middle of a menu activated function, regrab
-     * the pointer 
+     * the pointer
      */
     if (RootFunction)
 	ReGrab();
@@ -914,7 +921,7 @@ MappedNotOverride(w)
 
 
 /***********************************************************************
- * 
+ *
  *  Procedure:
  *      AddDefaultBindings - attach default bindings so that naive users
  *      don't get messed up if they provide a minimal twmrc.
@@ -945,7 +952,7 @@ AddDefaultBindings ()
     do_add_binding (Button1, C_ICONMGR, NoModifierMask, F_ICONIFY);
     do_add_binding (Button1, C_VIRTUAL, NoModifierMask, F_MOVESCREEN);
     do_add_binding (Button1, C_VIRTUAL_WIN, NoModifierMask, F_MOVESCREEN);
-    
+
     do_add_binding (Button2, C_TITLE, NoModifierMask, F_RAISELOWER);
     do_add_binding (Button2, C_ICON, NoModifierMask, F_ICONIFY);
     do_add_binding (Button2, C_ICONMGR, NoModifierMask, F_ICONIFY);
@@ -984,9 +991,9 @@ TwmWindow *tmp_win;
 	        /* twm used to do this grab on the application main window,
                  * tmp_win->w . This was not ICCCM complient and was changed.
 		 */
-		XGrabButton(dpy, i, j, tmp_win->frame, 
+		XGrabButton(dpy, i, j, tmp_win->frame,
 			    True, ButtonPressMask | ButtonReleaseMask,
-			    GrabModeAsync, GrabModeAsync, None, 
+			    GrabModeAsync, GrabModeAsync, None,
 			    Scr->FrameCursor);
 	    }
 	}
@@ -1082,12 +1089,12 @@ static Window CreateHighlightWindow (tmp_win)
      *                 Pixmaps { TitleHighlight "hline2" }
      *
      * (or whatever the horizontal line bitmap is named) in the startup
-     * file.  If all else fails, use the foreground color to look like a 
+     * file.  If all else fails, use the foreground color to look like a
      * solid line.
      */
     if (!Scr->hilitePm) {
-	Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w, 
-					       gray_bits, gray_width, 
+	Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w,
+					       gray_bits, gray_width,
 					       gray_height);
 	Scr->hilite_pm_width = gray_width;
 	Scr->hilite_pm_height = gray_height;
@@ -1103,7 +1110,7 @@ static Window CreateHighlightWindow (tmp_win)
 			(GCForeground|GCBackground|GCGraphicsExposures),
 			&gcv);
 	if (gc) {
-	    XCopyPlane (dpy, Scr->hilitePm, pm, gc, 0, 0, 
+	    XCopyPlane (dpy, Scr->hilitePm, pm, gc, 0, 0,
 			Scr->hilite_pm_width, Scr->hilite_pm_height,
 			0, 0, 1);
 	    XFreeGC (dpy, gc);
@@ -1152,11 +1159,11 @@ void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
     Bool squeeze;
 {
     tmp_win->highlightx = (Scr->TBInfo.titlex + tmp_win->name_width);
-    if (tmp_win->hilite_w || Scr->TBInfo.nright > 0) 
+    if (tmp_win->hilite_w || Scr->TBInfo.nright > 0)
       tmp_win->highlightx += Scr->TitlePadding;
     tmp_win->rightx = width - Scr->TBInfo.rightoff;
     if (squeeze && tmp_win->squeeze_info) {
-	int rx = (tmp_win->highlightx + 
+	int rx = (tmp_win->highlightx +
 		  (tmp_win->hilite_w
 		    ? Scr->TBInfo.width * 2 : 0) +
 		  (Scr->TBInfo.nright > 0 ? Scr->TitlePadding : 0) +
@@ -1262,7 +1269,7 @@ static void CreateWindowTitlebarButtons (tmp_win)
     if (nb > 0) {
 	tmp_win->titlebuttons = (TBWindow *) malloc (nb * sizeof(TBWindow));
 	if (!tmp_win->titlebuttons) {
-	    fprintf (stderr, "%s:  unable to allocate %d titlebuttons\n", 
+	    fprintf (stderr, "%s:  unable to allocate %d titlebuttons\n",
 		     ProgramName, nb);
 	} else {
 	    TBWindow *tbw;
@@ -1291,7 +1298,7 @@ static void CreateWindowTitlebarButtons (tmp_win)
 	}
     }
 
-    tmp_win->hilite_w = (tmp_win->titlehighlight 
+    tmp_win->hilite_w = (tmp_win->titlehighlight
 			 ? CreateHighlightWindow (tmp_win) : None);
 
     XMapSubwindows(dpy, tmp_win->title_w);
@@ -1413,7 +1420,7 @@ CreateColormapWindow(w, creating_parent, property_window)
 
     return (cwin);
 }
-		
+
 FetchWmColormapWindows (tmp)
     TwmWindow *tmp;
 {
@@ -1427,14 +1434,14 @@ FetchWmColormapWindows (tmp)
 
     number_cmap_windows = 0;
 
-    if (/* SUPPRESS 560 */previously_installed = 
+    if (/* SUPPRESS 560 */previously_installed =
        (Scr->cmapInfo.cmaps == &tmp->cmaps && tmp->cmaps.number_cwins)) {
 	cwins = tmp->cmaps.cwins;
 	for (i = 0; i < tmp->cmaps.number_cwins; i++)
 	    cwins[i]->colormap->state = 0;
     }
 
-    if (XGetWMColormapWindows (dpy, tmp->w, &cmap_windows, 
+    if (XGetWMColormapWindows (dpy, tmp->w, &cmap_windows,
 			       &number_cmap_windows) &&
 	number_cmap_windows > 0) {
 
@@ -1450,7 +1457,7 @@ FetchWmColormapWindows (tmp)
 	      (Window *) malloc (sizeof(Window) * (number_cmap_windows + 1));
 
 	    if (!new_cmap_windows) {
-		fprintf (stderr, 
+		fprintf (stderr,
 			 "%s:  unable to allocate %d element colormap window array\n",
 			ProgramName, number_cmap_windows+1);
 		goto done;
@@ -1526,9 +1533,9 @@ FetchWmColormapWindows (tmp)
     tmp->cmaps.cwins = cwins;
     tmp->cmaps.number_cwins = number_cmap_windows;
     if (number_cmap_windows > 1)
-	tmp->cmaps.scoreboard = 
+	tmp->cmaps.scoreboard =
 	  (char *) calloc(1, ColormapsScoreboardLength(&tmp->cmaps));
-		
+
     if (previously_installed)
 	InstallWindowColormaps(PropertyNotify, (TwmWindow *) NULL);
 
@@ -1562,7 +1569,7 @@ void GetWindowSizeHints (tmp)
 			       NorthEastGravity, NorthWestGravity };
 	int right =  tmp->attr.x + tmp->attr.width + 2 * tmp->old_bw;
 	int bottom = tmp->attr.y + tmp->attr.height + 2 * tmp->old_bw;
-	tmp->hints.win_gravity = 
+	tmp->hints.win_gravity =
 	  gravs[((Scr->MyDisplayHeight - bottom < tmp->title_height) ? 0 : 2) |
 		((Scr->MyDisplayWidth - right   < tmp->title_height) ? 0 : 1)];
 	tmp->hints.flags |= PWinGravity;

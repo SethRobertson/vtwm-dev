@@ -25,12 +25,5 @@
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
 
-/****************************************************************************
- *
- * Dana Chee (dana@thumper.bellcore.com)
- * @(#)version.c	1.2, 92/03/25
- *
- ****************************************************************************/
-
-char *Version = "Virtual Desktop TWM (VTWM) - R5 Release (5)";
+char *Version = "Virtual Desktop TWM (VTWM) - R5 Release (5.1)";
 

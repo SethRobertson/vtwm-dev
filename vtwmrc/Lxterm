@@ -1,0 +1,75 @@
+: ${1?}
+#set -x
+
+############################################################
+##                                                        ##
+##  This script starts an xterm on the local machine.     ##
+##                                                        ##
+##  In my scheme, a window of a given name has            ##
+##  predefined colors and other attributes, and each      ##
+##  window has its own ksh or zsh history file.           ##
+##                                                        ##
+##  A database of flat files is used to associate         ##
+##  attributes with names.                                ##
+##                                                        ##
+############################################################
+
+DATA=$HOME/bin/data
+fn="`grep \^$1\  $DATA/font.norm | cut -d\  -f2-`"
+fb="`grep \^$1\  $DATA/font.bold | cut -d\  -f2-`"
+# yes, "-fn" is already in the font.norm file!
+
+fg="-fg `grep \^$1\  $DATA/color.fg | cut -d\  -f2-`"
+bg="-bg `grep \^$1\  $DATA/color.bg | cut -d\  -f2-`"
+# and "-fg" isn't in color.fg, so Lxterm works only on windownames
+# defined there.
+
+geom="`grep \^$1\  $DATA/geom | cut -d\  -f2-`"
+# here is a sample geometry line:
+# Laguna -geometry 80x53+4618+-7
+
+
+opts="`grep \^$1\  $DATA/xterm-opt | cut -d\  -f2-`"
+# xterm-opt is not used at all for any of my currently-defined local
+# xterms. Here is a sample line from xterm-opt:
+# Saturn -j +vb -cc 45-47:48,62:48
+
+
+cr="`grep \^$1\  $DATA/xterm-cursor | cut -d\  -f2-`"
+# Laguna -cr red3
+
+nt="-name $1 -title $1"
+
+case $1 in
+	Rambo|rambO|rambo|ramBo|rAmbo|raMbo)
+		XENVIRONMENT=$HOME/Xdefaults/Rambo
+		export XENVIRONMENT
+#	A different Xterm*vt100.translations for this machine,
+#	in order to support a program which runs on that machine.
+		;;
+esac
+
+which=Xterm
+which=/var/src/xterm/R5/xterm
+# I have many different xterm executables...
+
+exec nice --39 \
+	$which \
+	-display unix:0 \
+	$nt \
+	$fn $fb $fg $bg $geom $opts $cr \
+	-e /home/odin/bin/xLocalTerm $1 \
+	&
+
+# xLocalTerm is provided in this distribution.
+
+exit
+
+	-cc '45-47:48,62:48' \
+# the "-cc" makes -> and . included in double-click words, so
+# pSession->pScreenBuffer can get picked up in one shot.
+# "/" is also included so that it works on pathnames!
+# This is now in my .Xdefaults file.
+
+	-n $1 -T $1 \
+# not as good as "-name $1".

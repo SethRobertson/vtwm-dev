@@ -87,7 +87,7 @@ void MoveOutline(root, x, y, width, height, bw, th)
     if (x == lastx && y == lasty && width == lastWidth && height == lastHeight
 	&& lastBW == bw && th == lastTH)
 	return;
-    
+
     r = outline;
 
 #define DRAWIT() \
@@ -207,10 +207,38 @@ Zoom(wf, wt)
 
     if (!Scr->DoZoom || Scr->ZoomCount < 1) return;
 
+#if (0)
     if (wf == None || wt == None) return;
 
     XGetGeometry (dpy, wf, &JunkRoot, &fx, &fy, &fw, &fh, &JunkBW, &JunkDepth);
     XGetGeometry (dpy, wt, &JunkRoot, &tx, &ty, &tw, &th, &JunkBW, &JunkDepth);
+#else
+    if (wf == None && wt == None) return;
+	if ( wt == None)
+	{	/* Zoom from nowhere, RFB */
+		tx = ( rand() & 1 ) * Scr->MyDisplayWidth;
+		tw = ( rand() & 1 ) * Scr->MyDisplayWidth;
+		ty = ( rand() & 1 ) * Scr->MyDisplayHeight;
+		th = ( rand() & 1 ) * Scr->MyDisplayHeight;
+	}
+	else
+	{	/* Normal. */
+		XGetGeometry (dpy, wt, &JunkRoot,
+			&tx, &ty, &tw, &th, &JunkBW, &JunkDepth);
+	}
+	if ( wf == None )
+	{	/* Zoom from nowhere, RFB */
+		fx = ( rand() & 1 ) * Scr->MyDisplayWidth;
+		fw = ( rand() & 1 ) * Scr->MyDisplayWidth;
+		fy = ( rand() & 1 ) * Scr->MyDisplayHeight;
+		fh = ( rand() & 1 ) * Scr->MyDisplayHeight;
+	}
+	else
+	{	/* Normal. */
+		XGetGeometry (dpy, wf, &JunkRoot,
+			&fx, &fy, &fw, &fh, &JunkBW, &JunkDepth);
+	}
+#endif
 
     dx = ((long) (tx - fx));	/* going from -> to */
     dy = ((long) (ty - fy));	/* going from -> to */
@@ -227,7 +255,7 @@ Zoom(wf, wt)
 	    int y = fy + (int) ((dy * i) / z);
 	    unsigned width = (unsigned) (((long) fw) + (dw * i) / z);
 	    unsigned height = (unsigned) (((long) fh) + (dh * i) / z);
-	
+
 	    XDrawRectangle (dpy, Scr->Root, Scr->DrawGC,
 			    x, y, width, height);
 	}
@@ -261,7 +289,7 @@ char *name;
 
     newname = (char *) malloc (HomeLen + strlen(name) + 2);
     if (!newname) {
-	fprintf (stderr, 
+	fprintf (stderr,
 		 "%s:  unable to allocate %d bytes to expand filename %s/%s\n",
 		 ProgramName, HomeLen + strlen(name) + 2, Home, &name[1]);
     } else {
@@ -337,7 +365,7 @@ Pixmap FindBitmap (name, widthp, heightp)
 	    { TBPM_MENU,	CreateMenuPixmap },
 	    { TBPM_QUESTION,	CreateQuestionPixmap },
 	};
-	
+
 	for (i = 0; i < (sizeof pmtab)/(sizeof pmtab[0]); i++) {
 	    if (XmuCompareISOLatin1 (pmtab[i].name, name) == 0)
 	      return (*pmtab[i].proc) (widthp, heightp);
@@ -381,7 +409,7 @@ Pixmap FindBitmap (name, widthp, heightp)
     }
     if (bigname != name) free (bigname);
     if (pm == None) {
-	fprintf (stderr, "%s:  unable to find bitmap \"%s\"\n", 
+	fprintf (stderr, "%s:  unable to find bitmap \"%s\"\n",
 		 ProgramName, name);
     }
 
@@ -443,7 +471,7 @@ RemoveRGBColormap (a)
     StdCmap *sc, *prev;
 
     prev = NULL;
-    for (sc = Scr->StdCmapInfo.head; sc; sc = sc->next) {  
+    for (sc = Scr->StdCmapInfo.head; sc; sc = sc->next) {
 	if (sc->atom == a) break;
 	prev = sc;
     }
@@ -506,7 +534,7 @@ char *name;
 	    stat = XParseColor (dpy, cmap, name, &color);
 	if (!stat)
 	{
-	    fprintf (stderr, "%s:  invalid color name \"%s\"\n", 
+	    fprintf (stderr, "%s:  invalid color name \"%s\"\n",
 		     ProgramName, name);
 	    return;
 	}
@@ -548,7 +576,7 @@ char *name;
 				    stdcmap->blue_max + 0.5) *
 			    stdcmap->blue_mult));
         } else {
-	    fprintf (stderr, "%s:  unable to allocate color \"%s\"\n", 
+	    fprintf (stderr, "%s:  unable to allocate color \"%s\"\n",
 		     ProgramName, name);
 	    return;
 	}
@@ -643,7 +671,7 @@ putenv(s)
 	    }
 	}
     }
-    
+
     /* add to environment (unless no value; then just return) */
     if(v[1] == 0)
 	return 0;
@@ -666,7 +694,7 @@ putenv(s)
     environ = newenv;
     environ[idx] = s;
     environ[idx+1] = 0;
-    
+
     return 0;
 }
 #endif /* NOPUTENV */
@@ -734,7 +762,7 @@ static Pixmap CreateResizePixmap (widthp, heightp)
 	XSetLineAttributes (dpy, gc, lw, LineSolid, CapButt, JoinMiter);
 
 	/*
-	 * draw the resize button, 
+	 * draw the resize button,
 	 */
 	w = (h * 2) / 3;
 	points[0].x = w;
@@ -898,7 +926,7 @@ Cursor NoCursor()
 	static Cursor blank = (Cursor) NULL;
 	Pixmap nopixmap;
 	XColor nocolor;
-	
+
 	if (!blank) {
 		nopixmap = XCreatePixmap(dpy, Scr->Root, 1, 1, 1);
 		nocolor.red = nocolor.blue = nocolor.green = 0;

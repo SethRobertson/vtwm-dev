@@ -45,7 +45,7 @@
 #include "util.h"
 #include "gram.h"
 #include "parse.h"
-#include <X11/Xatom.h> 
+#include <X11/Xatom.h>
 
 #ifndef SYSTEM_INIT_FILE
 #define SYSTEM_INIT_FILE "/usr/lib/X11/twm/system.twmrc"
@@ -60,7 +60,7 @@ static char overflowbuff[20];		/* really only need one */
 static int overflowlen;
 static char **stringListSource, *currentString;
 static int ParseUsePPosition();
-
+int RaiseDelay = 0;           /* msec, for AutoRaise *//*RAISEDELAY*/
 extern int yylineno;
 extern int mods;
 
@@ -121,7 +121,7 @@ int ParseTwmrc (filename)
     /*
      * If filename given, try it, else try ~/.vtwmrc.#, else try ~/.vtwmrc,
      * else try ~/.twmrc.#, else ~/.twmrc, else system.twmrc; finally using
-     * built-in defaults. 
+     * built-in defaults.
      */
     for (twmrc = NULL, i = 0; !twmrc && i < 6; i++) {
 	switch (i) {
@@ -296,7 +296,7 @@ TwmOutput(c)
 /**********************************************************************
  *
  *  Parsing table and routines
- * 
+ *
  ***********************************************************************/
 
 typedef struct _TwmKeyword {
@@ -359,6 +359,7 @@ typedef struct _TwmKeyword {
 #define kwn_PanDistanceX                10
 #define kwn_PanDistanceY                11
 #define kwn_AutoPan			12
+#define kwn_RaiseDelay 13/*RAISEDELAY*/
 
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
@@ -384,6 +385,10 @@ typedef struct _TwmKeyword {
 #define kwc_MenuTitleForeground		5
 #define kwc_MenuTitleBackground		6
 #define kwc_MenuShadowColor		7
+#define kwc_VirtualForeground	8 /*RFB VCOLOR*/
+#define kwc_VirtualBackground	9 /*RFB VCOLOR*/
+#define kwc_RealScreenBackground		10	/* RFB 4/92 */
+#define kwc_RealScreenForeground		11	/* RFB 4/92 */
 
 
 /*
@@ -391,10 +396,11 @@ typedef struct _TwmKeyword {
  * in lowercase and only contain the letters a-z).  It is fed to a binary
  * search to parse keywords.
  */
-static TwmKeyword keytable[] = { 
+static TwmKeyword keytable[] = {
     { "all",			ALL, 0 },
     { "autopan",		NKEYWORD, kwn_AutoPan },
     { "autoraise",		AUTO_RAISE, 0 },
+	{ "autoraisedelay",       NKEYWORD, kwn_RaiseDelay },/*RAISEDELAY*/
     { "autorelativeresize",	KEYWORD, kw0_AutoRelativeResize },
     { "bordercolor",		CLKEYWORD, kwcl_BorderColor },
     { "bordertilebackground",	CLKEYWORD, kwcl_BorderTileBackground },
@@ -434,6 +440,7 @@ static TwmKeyword keytable[] = {
     { "doors",			DOORS, 0 },
     { "east",			DKEYWORD, D_EAST },
     { "f",			FRAME, 0 },
+    { "f.autopan",		FKEYWORD, F_AUTOPAN },/*RFB F_AUTOPAN*/
     { "f.autoraise",		FKEYWORD, F_AUTORAISE },
     { "f.backiconmgr",		FKEYWORD, F_BACKICONMGR },
     { "f.beep",			FKEYWORD, F_BEEP },
@@ -470,7 +477,6 @@ static TwmKeyword keytable[] = {
     { "f.menu",			FSKEYWORD, F_MENU },
     { "f.move",			FKEYWORD, F_MOVE },
     { "f.movescreen",		FKEYWORD, F_MOVESCREEN },
-    { "f.newdoor",		FKEYWORD, F_NEWDOOR },
     { "f.nail",			FKEYWORD, F_NAIL },
     { "f.newdoor",		FKEYWORD, F_NEWDOOR },
     { "f.nexticonmgr",		FKEYWORD, F_NEXTICONMGR },
@@ -489,13 +495,19 @@ static TwmKeyword keytable[] = {
     { "f.restart",		FKEYWORD, F_RESTART },
     { "f.righticonmgr",		FKEYWORD, F_RIGHTICONMGR },
     { "f.rightzoom",		FKEYWORD, F_RIGHTZOOM },
+    { "f.ring",		FKEYWORD, F_RING },
     { "f.saveyourself",		FKEYWORD, F_SAVEYOURSELF },
     { "f.setrealscreen",	FSKEYWORD, F_SETREALSCREEN },
     { "f.showdesktopdisplay",	FKEYWORD, F_SHOWDESKTOP },
     { "f.showiconmgr",		FKEYWORD, F_SHOWLIST },
     { "f.snap",			FKEYWORD, F_SNAP },
+    { "f.snugdesktop",        FKEYWORD, F_SNUGDESKTOP },
+    { "f.snugwindow",     FKEYWORD, F_SNUGWINDOW },
     { "f.sorticonmgr",		FKEYWORD, F_SORTICONMGR },
     { "f.source",		FSKEYWORD, F_BEEP },  /* XXX - don't work */
+    { "f.squeezecenter",		FKEYWORD, F_SQUEEZECENTER },/*RFB SQUEEZE*/
+    { "f.squeezeleft",		FKEYWORD, F_SQUEEZELEFT },/*RFB SQUEEZE*/
+    { "f.squeezeright",		FKEYWORD, F_SQUEEZERIGHT },/*RFB SQUEEZE*/
     { "f.title",		FKEYWORD, F_TITLE },
     { "f.topzoom",		FKEYWORD, F_TOPZOOM },
     { "f.twmrc",		FKEYWORD, F_RESTART },
@@ -579,7 +591,11 @@ static TwmKeyword keytable[] = {
     { "pandistancey",		NKEYWORD, kwn_PanDistanceY },
     { "pixmaps",		PIXMAPS, 0 },
     { "r",			ROOT, 0 },
+	{ "raisedelay",       NKEYWORD, kwn_RaiseDelay },/*RAISEDELAY*/
     { "randomplacement",	KEYWORD, kw0_RandomPlacement },
+    { "realscreenbackground", CKEYWORD, kwc_RealScreenBackground },/*RFB 4/92*/
+    { "realscreenforeground", CKEYWORD, kwc_RealScreenForeground },/*RFB 4/92*/
+    { "realscreenpixmap",		REALSCREENMAP, 0 },/*RFB PIXMAP*/
     { "resize",			RESIZE, 0 },
     { "resizefont",		SKEYWORD, kws_ResizeFont },
     { "restartpreviousstate",	KEYWORD, kw0_RestartPreviousState },
@@ -596,6 +612,7 @@ static TwmKeyword keytable[] = {
     { "south",			DKEYWORD, D_SOUTH },
     { "squeezetitle",		SQUEEZE_TITLE, 0 },
     { "starticonified",		START_ICONIFIED, 0 },
+    { "sticky",             NAILEDDOWN, 0 },/*RFB*/
     { "t",			TITLE, 0 },
     { "title",			TITLE, 0 },
     { "titlebackground",	CLKEYWORD, kwcl_TitleBackground },
@@ -608,8 +625,11 @@ static TwmKeyword keytable[] = {
     { "usepposition",		SKEYWORD, kws_UsePPosition },
     { "v",			VIRTUAL, 0 },
     { "virtual",		VIRTUAL, 0 },
+    { "virtualbackground",	CKEYWORD, kwc_VirtualBackground },/*RFB VCOLOR*/
+    { "virtualbackgroundpixmap",		VIRTUALMAP, 0 },/*RFB PIXMAP*/
     { "virtualdesktop",		VIRTUALDESKTOP, 0 },
     { "virtualdesktopfont",	SKEYWORD, kws_VirtualFont },
+    { "virtualforeground",	CKEYWORD, kwc_VirtualForeground },/*RFB VCOLOR*/
     { "w",			WINDOW, 0 },
     { "wait",			WAIT, 0 },
     { "warpcursor",		WARP_CURSOR, 0 },
@@ -758,11 +778,11 @@ int do_single_keyword (keyword)
       case kw0_WarpUnmapped:
 	Scr->WarpUnmapped = TRUE;
 	return 1;
-	
+
       case kw0_DeIconifyToScreen:
 	Scr->DeIconifyToScreen = TRUE;
  	return 1;
-	
+
       case kw0_WarpWindows:
  	Scr->WarpWindows = TRUE;
  	return 1;
@@ -786,7 +806,7 @@ int do_string_keyword (keyword, s)
 {
     switch (keyword) {
       case kws_UsePPosition:
-	{ 
+	{
 	    int ppos = ParseUsePPosition (s);
 	    if (ppos < 0) {
 		twmrc_error_prefix();
@@ -828,7 +848,7 @@ int do_string_keyword (keyword, s)
 
       case kws_MaxWindowSize:
 	JunkMask = XParseGeometry (s, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
-	if ((JunkMask & (WidthValue | HeightValue)) != 
+	if ((JunkMask & (WidthValue | HeightValue)) !=
 	    (WidthValue | HeightValue)) {
 	    twmrc_error_prefix();
 	    fprintf (stderr, "bad MaxWindowSize \"%s\"\n", s);
@@ -902,12 +922,14 @@ int do_number_keyword (keyword, num)
  	if (Scr->FirstTime)
  		Scr->VirtualDesktopPanDistanceX = (num * Scr->MyDisplayWidth) / 100;
  	return 1;
-	
+
       case kwn_PanDistanceY:
  	if (Scr->FirstTime)
  		Scr->VirtualDesktopPanDistanceY = (num * Scr->MyDisplayHeight) / 100;
  	return 1;
-	
+
+	case kwn_RaiseDelay: RaiseDelay = num; return 1;/*RAISEDELAY*/
+
       case kwn_AutoPan:
 	if (Scr->FirstTime) {
 		Scr->AutoPan = (num * Scr->MyDisplayWidth) / 100;
@@ -970,11 +992,11 @@ name_list **do_colorlist_keyword (keyword, colormode, s)
       case kwcl_IconManagerBackground:
 	GetColor (colormode, &Scr->IconManagerC.back, s);
 	return &Scr->IconManagerBL;
- 
+
       case kwcl_VirtualDesktopForeground:
 	GetColor (colormode, &Scr->VirtualDesktopDisplayC.fore, s);
 	return &Scr->VirtualDesktopColorFL;
-	
+
       case kwcl_VirtualDesktopBackground:
 	GetColor (colormode, &Scr->VirtualDesktopDisplayC.back, s);
 	return &Scr->VirtualDesktopColorBL;
@@ -990,7 +1012,7 @@ name_list **do_colorlist_keyword (keyword, colormode, s)
       case kwcl_DoorBackground:
 	GetColor (colormode, &Scr->DoorC.back, s);
 	return &Scr->DoorBackgroundL;
-	
+
     }
     return NULL;
 }
@@ -1029,6 +1051,22 @@ int do_color_keyword (keyword, colormode, s)
 	GetColor (colormode, &Scr->MenuShadowColor, s);
 	return 1;
 
+      case kwc_VirtualBackground:/*RFB VCOLOR*/
+	GetColor (colormode, &Scr->VirtualC.back, s);/*RFB VCOLOR*/
+	return 1;/*RFB VCOLOR*/
+
+      case kwc_VirtualForeground:/*RFB VCOLOR*/
+	GetColor (colormode, &Scr->VirtualC.fore, s);/*RFB VCOLOR*/
+	return 1;/*RFB VCOLOR*/
+
+      case kwc_RealScreenForeground:
+	GetColor( colormode, &Scr->RealScreenC.fore, s);/*RFB 4/92 */
+	return 1;
+
+      case kwc_RealScreenBackground:
+	GetColor( colormode, &Scr->RealScreenC.back, s);/*RFB 4/92 */
+	return 1;
+
     }
 
     return 0;
@@ -1037,28 +1075,28 @@ int do_color_keyword (keyword, colormode, s)
 /*
  * put_pixel_on_root() Save a pixel value in twm root window color property.
  */
-put_pixel_on_root(pixel)                                 
-    Pixel pixel;                                         
-{                                                        
+put_pixel_on_root(pixel)
+    Pixel pixel;
+{
   int           i, addPixel = 1;
-  Atom          pixelAtom, retAtom;	                 
+  Atom          pixelAtom, retAtom;
   int           retFormat;
-  unsigned long nPixels, retAfter;                     
+  unsigned long nPixels, retAfter;
   Pixel        *retProp;
-  pixelAtom = XInternAtom(dpy, "_MIT_PRIORITY_COLORS", True);        
-  XGetWindowProperty(dpy, Scr->Root, pixelAtom, 0, 8192, 
-		     False, XA_CARDINAL, &retAtom,       
-		     &retFormat, &nPixels, &retAfter,    
+  pixelAtom = XInternAtom(dpy, "_MIT_PRIORITY_COLORS", True);
+  XGetWindowProperty(dpy, Scr->Root, pixelAtom, 0, 8192,
+		     False, XA_CARDINAL, &retAtom,
+		     &retFormat, &nPixels, &retAfter,
 		     (unsigned char **)&retProp);
 
-  for (i=0; i< nPixels; i++)                             
-      if (pixel == retProp[i]) addPixel = 0;             
-                                                         
-  if (addPixel)                                          
+  for (i=0; i< nPixels; i++)
+      if (pixel == retProp[i]) addPixel = 0;
+
+  if (addPixel)
       XChangeProperty (dpy, Scr->Root, _XA_MIT_PRIORITY_COLORS,
-		       XA_CARDINAL, 32, PropModeAppend,  
-		       (unsigned char *)&pixel, 1);                       
-}                                                        
+		       XA_CARDINAL, 32, PropModeAppend,
+		       (unsigned char *)&pixel, 1);
+}
 
 /*
  * do_string_savecolor() save a color from a string in the twmrc file.

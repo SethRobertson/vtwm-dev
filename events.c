@@ -36,13 +36,6 @@
  *
  ***********************************************************************/
 
-/***********************************************************************
- *
- * Dana Chee (dana@thumper.bellcore.com)
- * @(#)events.c	1.2, 92/03/25
- * 
- ***********************************************************************/
-
 #include <stdio.h>
 #include "twm.h"
 #include <X11/Xatom.h>
@@ -57,6 +50,7 @@
 #include "iconmgr.h"
 #include "version.h"
 #include "desktop.h"
+#include <sys/time.h>/*RAISEDELAY*/
 
 extern int iconifybox_width, iconifybox_height;
 extern unsigned int mods_used;
@@ -71,8 +65,8 @@ XEvent ButtonEvent;		/* button press event */
 XEvent Event;			/* the current event */
 TwmWindow *Tmp_win;		/* the current twm window */
 
-/* Used in HandleEnterNotify to remove border highlight from a window 
- * that has not recieved a LeaveNotify event because of a pointer grab 
+/* Used in HandleEnterNotify to remove border highlight from a window
+ * that has not recieved a LeaveNotify event because of a pointer grab
  */
 TwmWindow *UnHighLight_win = NULL;
 
@@ -267,7 +261,7 @@ Window WindowOfEvent (e)
 /***********************************************************************
  *
  *  Procedure:
- *	DispatchEvent2 - 
+ *	DispatchEvent2 -
  *      handle a single X event stored in global var Event
  *      this rouitine for is for a call during an f.move
  *
@@ -536,7 +530,7 @@ HandleVisibilityNotify()
 
     if (XFindContext(dpy, vevent->window, ColormapContext, (caddr_t *)&cwin) == XCNOENT)
 	return;
-    
+
     /*
      * when Saber complains about retreiving an <int> from an <unsigned int>
      * just type "touch vevent->state" and "cont"
@@ -613,7 +607,7 @@ HandleKeyPress()
 	    (key->cont == Context || key->cont == C_NAME))
 	{
 	    /* weed out the functions that don't make sense to execute
-	     * from a key press 
+	     * from a key press
 	     */
 	    if (key->func == F_MOVE || key->func == F_RESIZE)
 		return;
@@ -771,7 +765,7 @@ HandlePropertyNotify()
 
 	switch (Event.xproperty.state) {
 	  case PropertyNewValue:
-	    if (XGetRGBColormaps (dpy, Scr->Root, &maps, &nmaps, 
+	    if (XGetRGBColormaps (dpy, Scr->Root, &maps, &nmaps,
 				  Event.xproperty.atom)) {
 		/* if got one, then replace any existing entry */
 		InsertRGBColormap (Event.xproperty.atom, maps, nmaps, True);
@@ -791,7 +785,7 @@ HandlePropertyNotify()
 
     switch (Event.xproperty.atom) {
       case XA_WM_NAME:
-	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0L, 
+	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0L,
 				MAX_NAME_LEN, False, XA_STRING, &actual,
 				&actual_format, &nitems, &bytesafter,
 				(unsigned char **) &prop) != Success ||
@@ -814,7 +808,7 @@ HandlePropertyNotify()
 
 	/*
 	 * if the icon name is NoName, set the name of the icon to be
-	 * the same as the window 
+	 * the same as the window
 	 */
 	if (Tmp_win->icon_name == NoName) {
 	    Tmp_win->icon_name = Tmp_win->name;
@@ -823,7 +817,7 @@ HandlePropertyNotify()
 	break;
 
       case XA_WM_ICON_NAME:
-	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0, 
+	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0,
 				MAX_ICON_NAME_LEN, False, XA_STRING, &actual,
 				&actual_format, &nitems, &bytesafter,
 				(unsigned char **) &prop) != Success ||
@@ -902,7 +896,7 @@ HandlePropertyNotify()
 	if (Tmp_win->icon_w && !Tmp_win->forced && Tmp_win->wmhints &&
 	    (Tmp_win->wmhints->flags & IconPixmapHint)) {
 	    if (!XGetGeometry (dpy, Tmp_win->wmhints->icon_pixmap, &JunkRoot,
-			       &JunkX, &JunkY, (unsigned int *)&Tmp_win->icon_width, 
+			       &JunkX, &JunkY, (unsigned int *)&Tmp_win->icon_width,
 			       (unsigned int *)&Tmp_win->icon_height, &JunkBW, &JunkDepth)) {
 		return;
 	    }
@@ -978,7 +972,7 @@ RedoIconName()
  	Tmp_win->VirtualDesktopDisplayWindow)
  	    XClearArea(dpy, Tmp_win->VirtualDesktopDisplayWindow,
  		       0, 0, 0, 0, True);
-    
+
     if (Tmp_win->icon_w == NULL)
 	return;
 
@@ -1074,7 +1068,7 @@ HandleExpose()
 {
     MenuRoot *tmp;
     TwmDoor *door;
-    
+
     if (XFindContext(dpy, Event.xany.window, MenuContext, (caddr_t *)&tmp) == 0)
     {
 	PaintMenu(tmp, &Event);
@@ -1102,6 +1096,11 @@ HandleExpose()
 		    tw = XTextWidth(Scr->DoorFont.font, door->name,
 				    strlen(door->name));
 		    /* draw the text in the right place */
+/* And it IS the right place.
+** If your font has its characters starting 20 pixels
+** over to the right, it just looks wrong!
+** For example grog-9 from ISC's X11R3 distribution.
+*/
 		    XDrawString(dpy, door->w, Scr->NormalGC,
 				(tmp_win->frame_width - tw)/2,
 				tmp_win->frame_height - SIZE_VINDENT -
@@ -1133,7 +1132,7 @@ HandleExpose()
 		5, (i*height) + Scr->DefaultFont.y, Info[i], strlen(Info[i]));
 	}
 	flush_expose (Event.xany.window);
-    } 
+    }
     else if (Tmp_win != NULL)
     {
 	if (Event.xany.window == Tmp_win->title_w)
@@ -1142,7 +1141,7 @@ HandleExpose()
 		Scr->TitleBarFont.font->fid);
 
 	    XDrawString (dpy, Tmp_win->title_w, Scr->NormalGC,
-			 Scr->TBInfo.titlex, Scr->TitleBarFont.y, 
+			 Scr->TBInfo.titlex, Scr->TitleBarFont.y,
 			 Tmp_win->name, strlen(Tmp_win->name));
 	    flush_expose (Event.xany.window);
 	}
@@ -1181,7 +1180,7 @@ HandleExpose()
 	    {
 		FBF(Tmp_win->list->fore, Tmp_win->list->back,
 		    Scr->IconManagerFont.font->fid);
-		XDrawString (dpy, Event.xany.window, Scr->NormalGC, 
+		XDrawString (dpy, Event.xany.window, Scr->NormalGC,
 		    iconmgr_textx, Scr->IconManagerFont.y+4,
 		    Tmp_win->icon_name, strlen(Tmp_win->icon_name));
 		DrawIconManagerBorder(Tmp_win->list);
@@ -1197,7 +1196,7 @@ HandleExpose()
 		flush_expose (Event.xany.window);
 		return;
 	    }
-	} 
+	}
     }
 
     /* update the virtual desktop display names */
@@ -1242,7 +1241,7 @@ static void remove_window_from_ring (tmp)
      */
     if (prev) prev->ring.next = next;
     if (next) next->ring.prev = prev;
-    if (Scr->Ring == tmp) 
+    if (Scr->Ring == tmp)
       Scr->Ring = (next != tmp ? next : (TwmWindow *) NULL);
 
     if (!Scr->Ring || Scr->RingLeader == tmp) Scr->RingLeader = Scr->Ring;
@@ -1311,7 +1310,7 @@ HandleDestroyNotify()
 
     /*
      * TwmWindows contain the following pointers
-     * 
+     *
      *     1.  full_name
      *     2.  name
      *     3.  icon_name
@@ -1418,7 +1417,7 @@ HandleMapRequest()
 	      (state == NormalState || state == IconicState)))
 	  state = Tmp_win->wmhints->initial_state;
 
-	switch (state) 
+	switch (state)
 	{
 	    case DontCareState:
 	    case NormalState:
@@ -1533,8 +1532,8 @@ HandleUnmapNotify()
      * The program may have unmapped the client window, from either
      * NormalState or IconicState.  Handle the transition to WithdrawnState.
      *
-     * We need to reparent the window back to the root (so that twm exiting 
-     * won't cause it to get mapped) and then throw away all state (pretend 
+     * We need to reparent the window back to the root (so that twm exiting
+     * won't cause it to get mapped) and then throw away all state (pretend
      * that we've received a DestroyNotify).
      */
 
@@ -1542,12 +1541,12 @@ HandleUnmapNotify()
     if (XTranslateCoordinates (dpy, Event.xunmap.window, Tmp_win->attr.root,
 			       0, 0, &dstx, &dsty, &dumwin)) {
 	XEvent ev;
-	Bool reparented = XCheckTypedWindowEvent (dpy, Event.xunmap.window, 
+	Bool reparented = XCheckTypedWindowEvent (dpy, Event.xunmap.window,
 						  ReparentNotify, &ev);
 	SetMapStateProp (Tmp_win, WithdrawnState);
 	if (reparented) {
 	    if (Tmp_win->old_bw) XSetWindowBorderWidth (dpy,
-							Event.xunmap.window, 
+							Event.xunmap.window,
 							Tmp_win->old_bw);
 	    if (Tmp_win->wmhints && (Tmp_win->wmhints->flags & IconWindowHint))
 	      XUnmapWindow (dpy, Tmp_win->wmhints->icon_window);
@@ -1580,7 +1579,7 @@ HandleMotionNotify()
     if (moving_window) {
 	    DoMoveWindowOnDesktop(Event.xmotion.x, Event.xmotion.y);
     }
-    
+
     if (ResizeWindow != NULL)
     {
 	XQueryPointer( dpy, Event.xany.window,
@@ -1660,7 +1659,7 @@ HandleButtonRelease()
 		xl = ConstMoveX;
 	    }
 	}
-	
+
 	if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
 	{
 	    xr = xl + w;
@@ -1689,7 +1688,7 @@ HandleButtonRelease()
 	    XRaiseWindow(dpy, DragWindow);
 
 	RaiseAutoPan();
-	
+
 	if (!Scr->OpaqueMove)
 	    UninstallRootColormap();
 	else
@@ -1726,6 +1725,7 @@ HandleButtonRelease()
 	      case F_CIRCLEDOWN:
 	      case F_REFRESH:
 	      case F_WARPTOSCREEN:
+		case F_AUTOPAN: /*RFB */
 		PopDownMenu();
 		break;
 	      default:
@@ -1909,11 +1909,29 @@ HandleButtonPress()
 
     if (Event.xany.window == Scr->Root)
 	Context = C_ROOT;
-    
+
+    if ((Context == C_NO_CONTEXT) &&
+	((Tmp_win == Scr->VirtualDesktopDisplayTwin) ||
+	 (Event.xany.window == Scr->VirtualDesktopDisplayOuter) ||
+	 (Event.xany.window == Scr->VirtualDesktopDisplay))) {
+	    TwmWindow *tmp_win;
+
+	    if (Event.xbutton.subwindow &&
+		(XFindContext(dpy, Event.xbutton.subwindow, VirtualContext,
+			      (caddr_t *) &tmp_win)
+		 != XCNOENT)) {
+		    Tmp_win = tmp_win;
+		    Context = C_VIRTUAL_WIN;
+	    } else {
+		    Tmp_win = Scr->VirtualDesktopDisplayTwin;
+		    Context = C_VIRTUAL;
+	    }
+    }
+
     if (XFindContext(dpy, Event.xany.window,
 		     DoorContext, (caddr_t *)&door) != XCNOENT)
 	    Context = C_DOOR;
-    
+
     if (Tmp_win && (Context == C_NO_CONTEXT))
     {
 	if (Tmp_win->list && RootFunction != NULL &&
@@ -1922,7 +1940,7 @@ HandleButtonPress()
 	{
 	    Tmp_win = Tmp_win->list->iconmgr->twm_win;
 	    XTranslateCoordinates(dpy, Event.xany.window, Tmp_win->w,
-		Event.xbutton.x, Event.xbutton.y, 
+		Event.xbutton.x, Event.xbutton.y,
 		&JunkX, &JunkY, &JunkChild);
 
 	    Event.xbutton.x = JunkX;
@@ -1934,7 +1952,7 @@ HandleButtonPress()
 	{
 	    Context = C_TITLE;
 	}
-	else if (Event.xany.window == Tmp_win->w) 
+	else if (Event.xany.window == Tmp_win->w)
 	{
 	    printf("ERROR! ERROR! ERROR! YOU SHOULD NOT BE HERE!!!\n");
 	    Context = C_WINDOW;
@@ -1943,7 +1961,7 @@ HandleButtonPress()
 	{
 	    Context = C_ICON;
 	}
-	else if (Event.xany.window == Tmp_win->frame) 
+	else if (Event.xany.window == Tmp_win->frame)
 	{
 	    /* since we now place a button grab on the frame instead
              * of the window, (see GrabButtons() in add_window.c), we
@@ -1973,24 +1991,6 @@ HandleButtonPress()
 	}
     }
 
-    if ((Context == C_NO_CONTEXT) &&
-	((Tmp_win == Scr->VirtualDesktopDisplayTwin) ||
-	 (Event.xany.window == Scr->VirtualDesktopDisplayOuter) ||
-	 (Event.xany.window == Scr->VirtualDesktopDisplay))) {
-	    TwmWindow *tmp_win;
-	    
-	    if (Event.xbutton.subwindow &&
-		(XFindContext(dpy, Event.xbutton.subwindow, VirtualContext,
-			      (caddr_t *) &tmp_win)
-		 != XCNOENT)) {
-		    Tmp_win = tmp_win;
-		    Context = C_VIRTUAL_WIN;
-	    } else {
-		    Tmp_win = Scr->VirtualDesktopDisplayTwin;
-		    Context = C_VIRTUAL;
-	    }
-    }
-    
     /* this section of code checks to see if we were in the middle of
      * a command executed from a menu
      */
@@ -2003,8 +2003,8 @@ HandleButtonPress()
 	     * inside of a client that was getting button press events.
 	     */
 	    XTranslateCoordinates(dpy, Scr->Root, Scr->Root,
-		Event.xbutton.x, 
-		Event.xbutton.y, 
+		Event.xbutton.x,
+		Event.xbutton.y,
 		&JunkX, &JunkY, &Event.xany.window);
 
 	    if (Event.xany.window == 0 ||
@@ -2017,8 +2017,8 @@ HandleButtonPress()
 	    }
 
 	    XTranslateCoordinates(dpy, Scr->Root, Event.xany.window,
-		Event.xbutton.x, 
-		Event.xbutton.y, 
+		Event.xbutton.x,
+		Event.xbutton.y,
 		&JunkX, &JunkY, &JunkChild);
 
 	    Event.xbutton.x = JunkX;
@@ -2038,7 +2038,7 @@ HandleButtonPress()
     ButtonEvent = Event;
     ButtonWindow = Tmp_win;
 
-    /* if we get to here, we have to execute a function or pop up a 
+    /* if we get to here, we have to execute a function or pop up a
      * menu
      */
     modifier = (Event.xbutton.state & mods_used);
@@ -2140,7 +2140,8 @@ HandleEnterNotify()
     HENScanArgs scanArgs;
     XEvent dummy;
     short l;
-    
+	extern int RaiseDelay;/*RAISEDELAY*/
+
     /*
      * Save the id of the window entered.  This will be used to remove
      * border highlight on entering the next application window.
@@ -2177,6 +2178,7 @@ HandleEnterNotify()
   	/*
 	 * if it is one of the autopan windows, do the pan
 	 */
+	if ( Scr->AutoPan )/*RFB F_AUTOPAN*/
 	for (l = 0; l <= 3; l++)
 		if (ewp->window == Scr->VirtualDesktopAutoPan[l]) {
 			int xdiff, ydiff, xwarp, ywarp;
@@ -2223,9 +2225,9 @@ HandleEnterNotify()
 
 			return;
 		} /* end if ewp->window = autopan */
-			
+
 	/*
-	 * if entering root window, restore twm default colormap so that 
+	 * if entering root window, restore twm default colormap so that
 	 * titlebars are legible
 	 */
 	if (ewp->window == Scr->Root) {
@@ -2233,6 +2235,75 @@ HandleEnterNotify()
 		InstallWindowColormaps(EnterNotify, &Scr->TwmRoot);
 	    return;
 	}
+
+/*RAISEDELAY*/ 	/* Handle RaiseDelay, if any..... */
+/*RAISEDELAY*/ 	if (RaiseDelay > 0) {
+/*RAISEDELAY*/ 	    if (Tmp_win && Tmp_win->auto_raise
+/*RAISEDELAY*/ 		&& (!Tmp_win->list || Tmp_win->list->w != ewp->window)) {
+/*RAISEDELAY*/ 		ColormapWindow *cwin;
+/*RAISEDELAY*/ 		static struct timeval timeout = {0,12500};
+/*RAISEDELAY*/
+/*RAISEDELAY*/ 		if (XFindContext(dpy, Tmp_win->w, ColormapContext,
+/*RAISEDELAY*/ 				 (caddr_t *)&cwin) == XCNOENT) {
+/*RAISEDELAY*/ 		    cwin = (ColormapWindow *)NULL;
+/*RAISEDELAY*/ 		}
+/*RAISEDELAY*/
+/*RAISEDELAY*/ 		if ((ewp->detail != NotifyInferior
+/*RAISEDELAY*/ 		     || Tmp_win->frame == ewp->window)
+/*RAISEDELAY*/ 		     && (!cwin || cwin->visibility != VisibilityUnobscured)) {
+/*RAISEDELAY*/ 		    int x, y, px, py, d, i;
+/*RAISEDELAY*/ 		    Window w;
+/*RAISEDELAY*/
+/*RAISEDELAY*/ 		    XQueryPointer(dpy, Scr->Root, &w, &w, &px, &py,
+/*RAISEDELAY*/ 				  &d, &d, (unsigned int *)&d);
+/*RAISEDELAY*/
+/*RAISEDELAY*/ 		    /* The granularity of RaiseDelay is about 25 ms.
+						* The timeout variable is set to 12.5 ms since we
+						* pass this way twice each time a twm window is
+						* entered.
+						*/
+/*RAISEDELAY*/ 		    for (i = 25; i < RaiseDelay; i += 25) {
+/*RAISEDELAY*/ 			select(0, 0, 0, 0, &timeout);
+/*RAISEDELAY*/ 			/* Did we leave this window already? */
+/*RAISEDELAY*/ 			scanArgs.w = ewp->window;
+/*RAISEDELAY*/ 			scanArgs.leaves = scanArgs.enters = False;
+/*RAISEDELAY*/ 			(void) XCheckIfEvent(dpy, &dummy, HENQueueScanner,
+/*RAISEDELAY*/ 					     (char *) &scanArgs);
+/*RAISEDELAY*/ 			if (scanArgs.leaves && !scanArgs.inferior) return;
+/*RAISEDELAY*/
+/*RAISEDELAY*/ 			XQueryPointer(dpy, Scr->Root, &w, &w, &x, &y,
+/*RAISEDELAY*/ 				      &d, &d, (unsigned int *)&d);
+/*RAISEDELAY*/
+/*RAISEDELAY*/ 			/* Has the pointer moved?  If so reset the loop cnt.
+						* We want the pointer to be still for RaiseDelay
+						* milliseconds before terminating the loop
+						*/
+/*RAISEDELAY*/ 			if (x != px || y != py) {
+/*RAISEDELAY*/ 			    i = 0; px = x; py = y;
+/*RAISEDELAY*/ 			}
+/*RAISEDELAY*/ 		    }
+/*RAISEDELAY*/ 		}
+/*RAISEDELAY*/ 	    }
+/*RAISEDELAY*/
+/*RAISEDELAY*/ 	    /*
+					* Scan for Leave and Enter Notify events to see if we can avoid some
+					* unnecessary processing.
+					*/
+/*RAISEDELAY*/ 	    scanArgs.w = ewp->window;
+/*RAISEDELAY*/ 	    scanArgs.leaves = scanArgs.enters = False;
+/*RAISEDELAY*/ 	    (void) XCheckIfEvent(dpy, &dummy, HENQueueScanner, (char *) &scanArgs);
+/*RAISEDELAY*/
+/*RAISEDELAY*/ 	    /*
+					* if entering root window, restore twm default colormap so that
+					* titlebars are legible
+					*/
+/*RAISEDELAY*/ 	    if (ewp->window == Scr->Root) {
+/*RAISEDELAY*/ 		if (!scanArgs.leaves && !scanArgs.enters)
+/*RAISEDELAY*/ 		    InstallWindowColormaps(EnterNotify, &Scr->TwmRoot);
+/*RAISEDELAY*/ 		return;
+/*RAISEDELAY*/ 	    }
+/*RAISEDELAY*/ 	}
+/*RAISEDELAY*/ 	/* End of RaiseDelay modification. */
 
 	/*
 	 * if we have an event for a specific one of our windows
@@ -2253,7 +2324,7 @@ HandleEnterNotify()
 		      XUnmapWindow(dpy, Scr->Focus->hilite_w);
 
 		    /*
-		     * If entering the frame or the icon manager, then do 
+		     * If entering the frame or the icon manager, then do
 		     * "window activation things":
 		     *
 		     *     1.  turn on highlight window (if any)
@@ -2502,7 +2573,7 @@ HandleConfigureRequest()
      * to configuration requests for windows which have never been mapped.
      */
     if (!Tmp_win || Tmp_win->icon_w == cre->window) {
-	xwcm = cre->value_mask & 
+	xwcm = cre->value_mask &
 	    (CWX | CWY | CWWidth | CWHeight | CWBorderWidth);
 	xwc.x = cre->x;
 	xwc.y = cre->y;
@@ -2521,7 +2592,7 @@ HandleConfigureRequest()
 				       (caddr_t *) &otherwin) == XCSUCCESS))
 		       ? otherwin->frame : cre->above);
 	xwc.stack_mode = cre->detail;
-	XConfigureWindow (dpy, Tmp_win->frame, 
+	XConfigureWindow (dpy, Tmp_win->frame,
 			  cre->value_mask & (CWSibling | CWStackMode), &xwc);
     }
 
@@ -2539,8 +2610,8 @@ HandleConfigureRequest()
      * This means that we need to adjust for the additional title height as
      * well as for any border width changes that we decide to allow.  The
      * current window gravity is to be used in computing the adjustments, just
-     * as when initially locating the window.  Note that if we do decide to 
-     * allow border width changes, we will need to send the synthetic 
+     * as when initially locating the window.  Note that if we do decide to
+     * allow border width changes, we will need to send the synthetic
      * ConfigureNotify event.
      */
     GetGravityOffsets (Tmp_win, &gravx, &gravy);
@@ -2578,7 +2649,7 @@ HandleConfigureRequest()
     /*
      * SetupWindow (x,y) are the location of the upper-left outer corner and
      * are passed directly to XMoveResizeWindow (frame).  The (width,height)
-     * are the inner size of the frame.  The inner width is the same as the 
+     * are the inner size of the frame.  The inner width is the same as the
      * requested client window width; the inner height is the same as the
      * requested client window height plus any title bar slop.
      */
@@ -2748,7 +2819,7 @@ InstallWindowColormaps (type, tmp)
 		(*cwins)->colormap->state &= ~CM_INSTALLABLE;
 	Scr->cmapInfo.cmaps = &tmp->cmaps;
 	break;
-    
+
     case PropertyNotify:
     case VisibilityNotify:
     case ColormapNotify:
@@ -2871,7 +2942,7 @@ UninstallRootColormap()
 
     if (Scr->cmapInfo.root_pushes)
 	Scr->cmapInfo.root_pushes--;
-    
+
     if (!Scr->cmapInfo.root_pushes) {
 	/*
 	 * If we have subsequent Enter or Leave Notify events,

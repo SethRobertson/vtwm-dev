@@ -1,23 +1,19 @@
-Wed Mar 25 14:45:19 1992  Dana A. Chee  (dana@dino)
+Thu Jun 24 15:24:36 EDT 1993 Ralph Betza (gnohmon@ssiny.com)
 
-	* F_LOWER now lowers the window in the virtual desktop as well
-	  (menus.c)
-	* fixed Identify to show patchlevel and say vtwm instead of
-	  Twm (menus.c)
-	* Virtual desktop window iconifies and un-iconifies properly, you
-	  can also move it (events.c)
-	* added patchlevel (patchlevel.h)
-	* updated version -- removed 0 (version.c)
-	* adding SCCS info to files
-	* released patch to net
-	* left to do:
-	  * stacking order of nailed windows strange (not really,
-	    nailed windows are the children of the little square,
-	    while other windows are the children of the larger window,
-	    so nailed windows will not appear over other windows in
-	    the virtual desktop unless the others were lowered below
-	    the square)
-	  * shaped icons? (need a standard, was a local hack to tvtwm)
+	* Includes RaiseDelay patch from
+		Warren Jessop, University of Washington, whj@cs.washington.edu
+
+	* Includes snug patch from thoth@reef.cis.ufl.edu (Gilligan)
+
+	* includes patch vtwm.5.1.ptch from tar@math.ksu.edu (Tim Ramsey)
+
+	* Includes panner background pixmap, panner foreground color,
+		dynamic warpring, dynamic squeezetitle, TWM-Window menu
+		colors, RealScreen foreground, background, and colors,
+		corrections to placement of the little windows in the
+		panner, additional cursors, and maybe a few other things I
+		forgot to mention, from me,
+		Ralph Betza (gnohmon@ssiny.com)
 
 Tue Mar 24 13:15:11 1992  Dana A. Chee  (dana@dino)
 

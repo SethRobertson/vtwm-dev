@@ -15,7 +15,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL M.I.T.
  * BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN 
+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
@@ -75,12 +75,12 @@ typedef struct ScreenInfo
     int VirtualDesktopY;	/* top left y of my screen on the desktop */
     int VirtualDesktopPanDistanceX; /* distance to pan screen */
     int VirtualDesktopPanDistanceY; /* distance to pan screen */
- 
+
     /* these are for the little vd display */
     int VirtualDesktopDScale;	/* scale of the virtual desktop display */
     int VirtualDesktopDX;	/* position of the vd display */
     int VirtualDesktopDY;	/* position of the vd display */
-    
+
     /* the autopan stuff */
     int AutoPan;		/* how wide should the autopan windows be */
     Window VirtualDesktopAutoPan[4]; /* the autopan windows */
@@ -104,6 +104,10 @@ typedef struct ScreenInfo
     int	pullW, pullH;		/* size of pull right menu icon */
     Pixmap hilitePm;		/* focus highlight window background */
     int hilite_pm_width, hilite_pm_height;  /* cache the size */
+    Pixmap virtualPm;		/* panner background pixmap RFB PIXMAP*/
+    int virtual_pm_width, virtual_pm_height;/*RFB PIXMAP*/
+    Pixmap RealScreenPm;		/* panner background pixmap RFB PIXMAP*/
+    int RealScreen_pm_width, RealScreen_pm_height;/*RFB PIXMAP*/
 
     MenuRoot *MenuList;		/* head of the menu list */
     MenuRoot *LastMenu;		/* the last menu (mostly unused?) */
@@ -152,6 +156,8 @@ typedef struct ScreenInfo
     ColorPair DefaultC;		/* default colors */
     ColorPair VirtualDesktopDisplayC; /* desktop display color */
     ColorPair DoorC;		/* default door colors */
+    ColorPair VirtualC;     /* default virtual colors *//*RFB VCOLOR*/
+	ColorPair RealScreenC;	/* "real screen" in panner RFB 4/92 */
     Pixel VirtualDesktopDisplayBorder; /* desktop display default border */
     Pixel BorderColor;		/* color of window borders */
     Pixel MenuShadowColor;	/* menu shadow color */
@@ -169,6 +175,9 @@ typedef struct ScreenInfo
     Cursor MenuCursor;		/* menu cursor */
     Cursor SelectCursor;	/* dot cursor for f.move, etc. from menus */
     Cursor DestroyCursor;	/* skull and cross bones, f.destroy */
+	Cursor DoorCursor;/*RFBCURSOR*/
+	Cursor VirtualCursor;/*RFBCURSOR*/
+	Cursor DesktopCursor;/*RFBCURSOR*/
     Cursor NoCursor;		/* a black cursor - used on desktop display */
 
     name_list *BorderColorL;
@@ -283,6 +292,7 @@ typedef struct ScreenInfo
     short GeometriesAreVirtual; /* should geometries be interpreted as virtual or real ? */
     short Virtual;		/* are we virtual ? (like, hey man....) */
     short NamesInVirtualDesktop;/* show names in virtual desktop display ? */
+    short AutoRaiseDefault;   /* AutoRaise all windows if true *//*RAISEDELAY*/
 
     FuncKey FuncKeyRoot;
 

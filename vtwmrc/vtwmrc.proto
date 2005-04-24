@@ -1,0 +1,570 @@
+# DIRED_MODES: !c
+VirtualDesktop "320x240+699+524" 16
+# 5/16 * 5 == 5x5 virtual...
+
+DoorFont "grog-9"
+# I use a bunch of X11R3 fonts because they're nifty.
+# You have to edit them to get the space character to work.
+
+#Doors
+#{
+#	"Home"    "88x16+933+68"  "+0+0"
+#	"Heaven"  "88x16+933+88"  "+4096+0"
+#	"Cathay"  "88x16+933+108" "+2048+1536"
+#	"Styx"    "88x16+933+128" "+0+3072"
+#	"Siberia" "88x16+933+148" "+4096+3072"
+#}
+
+#nostackmode
+#notitlefocus
+
+#VirtualDesktop "384x288+636+455" 8
+############################################################
+##                                                        ##
+##  Each dimension is 3/8 of the physical size; the       ##
+##  final "8" gives us                                    ##
+##                                                        ##
+##  3/8 * 8 = 3                                           ##
+##                                                        ##
+##  for a 3x3 virtual root.                               ##
+##                                                        ##
+############################################################
+#VirtualDesktop "256x192+764+551" 12
+# (0.25*12)   3x3, small panner.
+
+#DeIconifyToScreen
+
+AutoPan 3
+############################################################
+##                                                        ##
+##  AutoPan makes the desktop scroll if the mouse cursor  ##
+##  hits the edge.                                        ##
+##                                                        ##
+############################################################
+
+PanDistanceX 50
+PanDistanceY 50
+# affects f.snap
+
+SnapRealScreen
+#SnapRealScreen makes the virtual desktop move on grid lines...
+
+AutoRaise
+#{
+#	"Xman"
+#	"XTerm"
+#	"Xterm"
+#	"Pixedit"
+#	"Virtual Desktop"
+#	"TWM Icon Manager"
+#	"Express Manager"
+#}
+RaiseDelay 400
+NoDefaults
+
+BorderWidth 3
+#NoGrabServer
+Pixmaps
+{
+#	VirtualBackgroundPixmap "/odin/bitmaps/ssi.ex4"
+	VirtualBackgroundPixmap "/odin/bitmaps/extrain.xbm"
+	RealScreenPixmap "/odin/bitmaps/realscr.bm"
+	TitleHighlight "/odin/bitmaps/tile_1"
+}
+#StartIconified
+#{
+#	"remind"
+#}
+Zoom 32
+WarpUnmapped
+IconifyByUnmapping
+DontIconifyByUnmapping
+{
+#	"remind"
+	"sunclock"
+}
+RestartPreviousState
+#Icons
+#{
+#	"remind" "/odin/bitmaps/remind.bm"
+#}
+ForceIcons
+DontShowInDisplay
+{	"Virtual Desktop"
+#	"oclock"
+#	"xmter"
+	"xbiff"
+	"TWM Icon Manager"
+	"Twm Door"
+	"xalarm"
+	"sunclock"
+	"xclock"
+#	"xpalette"
+#	"xeyes"
+#	"topBox"
+	"xpostit"
+	"MallMenu"
+	"Notifier"
+	"Making"
+	"XLoad"
+}
+IconManagerDontShow
+{
+	"PostItNote"
+	"Twm Door"
+#	"Uulog"
+	"Virtual Desktop"
+#	"Xman"
+#	"oclock"
+	"xclock"
+	"sunclock"
+	"xbiff"
+#	"xeyes"
+#	"xmter"
+#	"xpalette"
+	"xpostit"
+	"xalarm"
+	"MallMenu"
+	"Notifier"
+	"XLoad"
+	"Making"
+}
+NoTitle
+{
+	"MallMenu"
+	"PostItNote"
+	"Twm Door"
+	"TWM Icon Manager"
+#	"Uulog"
+	"Virtual Desktop"
+#	"oclock"
+	"xclock"
+	"sunclock"
+	"xalarm"
+	"topBox"
+	"xbiff"
+#	"xeyes"
+	"xmter"
+#	"xpalette"
+	"xpostit"
+	"Notifier"
+	"XLoad"
+	"Making"
+}
+InterpolateMenuColors
+NoRaiseOnMove
+NoRaiseOnResize
+
+IconManagerGeometry "70x18+960+0"
+#ShowIconManager
+SortIconManager
+RandomPlacement
+WarpCursor
+SqueezeTitle
+{
+	"rambO" center 3 10
+	"Rambo" center 3 10
+	"ramBo" center 7 10
+	"Ssiny" center 7 10
+	"rAmbo" right 0 0
+	"Rialto" center 2 3
+	"Seveso" right 0 0
+# "right 2 3" means put the right edge of the title at a place which
+# is 2/3 of the distance from the left to the right.
+# The "... 2 3" refers to the same point whether you say
+# "right", "left", or "center".
+}
+
+#NoGrabServer
+#"NoGrabServer" makes everything slower.
+#DecorateTransients
+#TitleFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+TitleFont "bubbles-14"
+# venice-12 or ravenna-12 are nice fonts
+#ResizeFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+ResizeFont "aberdeen-12"
+#MenuFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+MenuFont "venice-12"
+#IconFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+IconFont "cartoon-12"
+#IconManagerFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*"
+IconManagerFont "bauhaus-10"
+VirtualDesktopFont "5x8"
+TitleButtonBorderWidth 0
+ButtonIndent 0
+TitlePadding 4
+
+WindowRing
+{
+	"Murano"
+	"SanMarco"
+}
+
+NailedDown
+{
+	"MallMenu"
+	"xalarm"
+	"xclock"
+	"oclock"
+	"sunclock"
+	"Notifier"
+	"xeyes"
+	"xbiff"
+	"Virtual Desktop"
+	"xmter"
+	"xpalette"
+	"xpostit"
+#	"Cathay"
+#	"Home"
+#	"Heaven"
+#	"Siberia"
+#	"Styx"
+	"Twm Door"
+	"TWM Icon Manager"
+	"XLoad"
+	"Making"
+}
+############################################################
+##                                                        ##
+##  Interesting, isn't it, how DontShowInDisplay,         ##
+##  IconManagerDontShow, NoTitle, and NailedDown all      ##
+##  have the same contents.                               ##
+##                                                        ##
+############################################################
+
+
+NoMenuShadows
+XorValue 15
+NoTitleHighlight
+{
+	"XTerm"
+	"CXTerm"
+}
+
+#NoHighlight
+#{
+#	"Virtual Desktop"
+#	"TWM Icon Manager"
+#	"xpostit"
+#	"xeyes"
+#	"xclock"
+#	"oclock"
+#	"XEyes"
+#}
+
+Color
+{
+	RealScreenForeground "violet"
+	RealScreenBackground "green"
+	VirtualBackground "gold3"
+	VirtualForeground "MidnightBlue"
+    BorderColor "black"
+	{
+#include "fg.h"
+	}
+	BorderTileBackground "Black"
+	{
+#include "bg.h"
+	}
+    BorderTileForeground "white"
+	{
+#include "fg.h"
+	}
+    DefaultBackground "maroon"
+    DefaultForeground "gray85"
+	DesktopDisplayBackground "gold4"
+	{
+#include "bg.h"
+	}
+	DesktopDisplayBorder "red"
+	{
+#include "fg.h"
+	}
+	DesktopDisplayForeground "yellow"
+	{
+#include "fg.h"
+	}
+	DoorForeground "MidnightBlue"
+#	{
+#		"Cathay" "red"
+#		"Home" "MidnightBlue"
+#		"Heaven" "gold"
+#		"Siberia" "MidnightBlue"
+#		"Styx"   "green"
+#	}
+	DoorBackground "red3"
+#	{
+#		"Cathay"   "gold"
+#		"Home"     "turquoise"
+#		"Heaven"   "#767ffc"
+#		"Siberia"  "snow3"
+#		"Styx"     "red2"
+#	}
+    IconBackground "black"
+    IconForeground "brown"
+    {
+    	"Manual Page" "green"
+    }
+    IconBorderColor "gray85"
+    IconManagerBackground "maroon"
+	{
+#include "bg.h"
+	}
+    IconManagerForeground "gray85"
+	{
+#include "fg.h"
+	}
+	IconManagerHighlight "green"
+	{
+#include "fg.h"
+	}
+    MenuBackground "maroon"
+    MenuForeground "gray85"
+    MenuShadowColor "black"
+    MenuTitleBackground "orange"
+    MenuTitleForeground "blue"
+    TitleBackground "maroon"
+	{
+#include "fg.h"
+	}
+    TitleForeground "gray85"
+	{
+#include "bg.h"
+	}
+}
+# BorderColor, >IconManagerHighlight, BorderTileBackground,
+# BorderTileForeground, TitleBackground,  TitleForeground,
+# IconBackground, IconForeground,  IconBorderColor,
+# >IconManagerBackground, and >IconManagerForeground
+# can take window lists.
+
+Cursors
+{
+	IconMgr   "hand1"
+	Frame     "gumby"
+	Title     "box_spiral"
+	Icon      "center_ptr"
+	Move      "fleur"
+	Resize    "sizing"
+	Menu      "sb_left_arrow"
+	Button    "hand2"
+	Wait      "watch"
+	Select    "dot"
+	Destroy   "pirate"
+	Door      "trek"
+	Virtual   "star"
+	Desktop   "draped_box"
+}
+
+
+DefaultFunction f.menu "MoreMenus"
+
+#
+# Define some useful functions for motion-based actions.
+#
+MoveDelta 6
+#Function "move-or-lower" { f.move f.deltastop f.lower }
+Function "move-or-raise" { f.move f.deltastop f.raise }
+Function "move-or-iconify" { f.move f.deltastop f.iconify }
+Function "doPanner"	{ f.showdesktopdisplay f.warpto "Virtual Desktop" }
+Function "RaiseIt" { f.iconify f.deiconify f.raise f.enterdoor }
+WindowFunction f.function "RaiseIt"
+
+#LeftTitleButton "/odin/bitmaps/tile_16" = f.iconify
+#LeftTitleButton "/odin/bitmaps/tile_15" = f.raiselower
+#RightTitleButton "/odin/bitmaps/tile_0" = f.fullzoom
+#RightTitleButton "/odin/bitmaps/tile_7" = f.resize
+#LeftTitleButton "target" = f.iconify
+#LeftTitleButton "/odin/bitmaps/lower.bm" = f.raiselower
+#RightTitleButton "/odin/bitmaps/zoom.bm" = f.fullzoom
+#RightTitleButton "star" = f.resize
+
+Button1 =   : v|d  : f.movescreen
+
+Button1 =   : f : f.move
+Button2 =   : f : f.resize
+button3 =   : f : f.menu "titlemenu"
+
+Button1 = c : root : f.menu "WinOpsMenu"
+Button1 =   : root : f.menu "OftenUsed"
+#Button2 = c : root : f.menu "Places"
+Button2 =   : root : f.menu "TwmWindows"
+Button3 =   : root : f.menu "MakeWinMenu"
+
+Button1 = m | s : w|v|d|r|i|t|door : f.squeezeleft
+Button2 = m | s : w|v|d|r|i|t|door : f.squeezecenter
+Button3 = m | s : w|v|d|r|i|t|door : f.squeezeright
+
+Button1 = m : w|v|d|r|i|t|door : f.warpring "prev"
+Button2 = m : w|v|d|r|i|t|door : f.ring
+Button3 = m : w|v|d|r|i|t|door : f.warpring "next"
+
+Button1 = : title : f.function "move-or-raise"
+Button2 = : title : f.raiselower
+Button3 = : title : f.menu "titlemenu"
+
+Button1 = : icon : f.function "move-or-iconify"
+Button2 = : icon : f.iconify
+
+Button1 = : iconmgr : f.iconify
+Button2 = : iconmgr : f.iconify
+
+Button1 =       : door  : f.enterdoor
+
+"KP_Divide"   = m | s : v|d|r|w|i|t|door : f.function "doPanner"
+"question"    = m | s : v|d|r|w|i|t|door : f.function "doPanner"
+"/"           = m | s : v|d|r|w|i|t|door : f.function "doPanner"
+"KP_Multiply" = m | s : v|d|r|w|i|t|door : f.hidedesktopdisplay
+"*"           = m | s : v|d|r|w|i|t|door : f.hidedesktopdisplay
+"KP_Add"      = m | s : v|d|r|w|i|t|door : f.showiconmgr
+"+"           = m | s : v|d|r|w|i|t|door : f.showiconmgr
+"KP_Subtract" = m | s : v|d|r|w|i|t|door : f.hideiconmgr
+"-"           = m | s : v|d|r|w|i|t|door : f.hideiconmgr
+
+"Begin" = m | s : v|d|r|w|i|t|door : f.setrealscreen "+2048+1536"
+"Down" =  m | s : v|d|r|w|i|t|door : f.pandown "200"
+"End" =   m | s : v|d|r|w|i|t|door : f.setrealscreen "+0+3072"
+"Home" =  m | s : v|d|r|w|i|t|door : f.resetdesktop
+"Left" =  m | s : v|d|r|w|i|t|door : f.panleft "200"
+"Next" =  m | s : v|d|r|w|i|t|door : f.setrealscreen "+4096+3072"
+"Prior" = m | s : v|d|r|w|i|t|door : f.setrealscreen "+4096+0"
+"Right" = m | s : v|d|r|w|i|t|door : f.panright "200"
+"Up" =    m | s : v|d|r|w|i|t|door : f.panup "200"
+
+"KP_1" =  m | s : v|d|r|w|i|t|door : f.setrealscreen "+0+3072"
+"KP_2" =  m | s : v|d|r|w|i|t|door : f.pandown "200"
+"KP_3" =  m | s : v|d|r|w|i|t|door : f.setrealscreen "+4096+3072"
+"KP_4" =  m | s : v|d|r|w|i|t|door : f.panleft "200"
+"KP_5" =  m | s : v|d|r|w|i|t|door : f.setrealscreen "+2048+1536"
+"KP_6" =  m | s : v|d|r|w|i|t|door : f.panright "200"
+"KP_7" =  m | s : v|d|r|w|i|t|door : f.resetdesktop
+"KP_8" =  m | s : v|d|r|w|i|t|door : f.panup "200"
+"KP_9" =  m | s : v|d|r|w|i|t|door : f.setrealscreen "+4096+0"
+
+"1" =     m | s : v|d|r|w|i|t|door : f.setrealscreen "+0+3072"
+"2" =     m | s : v|d|r|w|i|t|door : f.pandown "200"
+"3" =     m | s : v|d|r|w|i|t|door : f.setrealscreen "+4096+3072"
+"4" =     m | s : v|d|r|w|i|t|door : f.panleft "200"
+"5" =     m | s : v|d|r|w|i|t|door : f.setrealscreen "+2048+1536"
+"6" =     m | s : v|d|r|w|i|t|door : f.panright "200"
+"7" =     m | s : v|d|r|w|i|t|door : f.resetdesktop
+"8" =     m | s : v|d|r|w|i|t|door : f.panup "200"
+"9" =     m | s : v|d|r|w|i|t|door : f.setrealscreen "+4096+0"
+
+Function "RightUp"	{ f.panright "100" f.panup "100" }
+Function "RightDown"	{ f.panright "100" f.pandown "100" }
+Function "LeftUp"	{ f.panleft "100" f.panup "100" }
+Function "LeftDown"	{ f.panleft "100" f.pandown "100" }
+
+"Ins" =  m : v|d|r|w|i|t|door : f.warpto "MallMenu"
+"Insert" =  m : v|d|r|w|i|t|door : f.warpto "MallMenu"
+"Down" =  m : v|d|r|w|i|t|door : f.pandown "100"
+"End"   =  m : v|d|r|w|i|t|door : f.function "LeftDown"
+"Home"  =  m : v|d|r|w|i|t|door : f.function "LeftUp"
+"Left" =  m : v|d|r|w|i|t|door : f.panleft "100"
+"Next"  =  m : v|d|r|w|i|t|door : f.function "RightDown"
+"Prior" =  m : v|d|r|w|i|t|door : f.function "RightUp"
+"Right" = m : v|d|r|w|i|t|door : f.panright "100"
+"Up" =    m : v|d|r|w|i|t|door : f.panup "100"
+
+"KP_0" =  m : v|d|r|w|i|t|door : f.warpto "MallMenu"
+"KP_1" =  m : v|d|r|w|i|t|door : f.function "LeftDown"
+"KP_2" =  m : v|d|r|w|i|t|door : f.pandown "100"
+"KP_3" =  m : v|d|r|w|i|t|door : f.function "RightDown"
+"KP_4" =  m : v|d|r|w|i|t|door : f.panleft "100"
+"KP_5" =  m : v|d|r|w|i|t|door : f.setrealscreen "+2048+1536"
+"KP_6" =  m : v|d|r|w|i|t|door : f.panright "100"
+"KP_7" =  m : v|d|r|w|i|t|door : f.function "LeftUp"
+"KP_8" =  m : v|d|r|w|i|t|door : f.panup "100"
+"KP_9" =  m : v|d|r|w|i|t|door : f.function "RightUp"
+
+"0" =  m : v|d|r|w|i|t|door : f.warpto "MallMenu"
+"1" =  m : v|d|r|w|i|t|door : f.function "LeftDown"
+"2" =  m : v|d|r|w|i|t|door : f.pandown "100"
+"3" =  m : v|d|r|w|i|t|door : f.function "RightDown"
+"4" =  m : v|d|r|w|i|t|door : f.panleft "100"
+"5" =  m : v|d|r|w|i|t|door : f.setrealscreen "+2048+1536"
+"6" =  m : v|d|r|w|i|t|door : f.panright "100"
+"7" =  m : v|d|r|w|i|t|door : f.function "LeftUp"
+"8" =  m : v|d|r|w|i|t|door : f.panup "100"
+"9" =  m : v|d|r|w|i|t|door : f.function "RightUp"
+
+menu "OftenUsed" ( "blue":"gray85" )
+{
+	"Panner"	( "blue":"red" ) f.function "doPanner"
+	"Hide Panner"   f.hidedesktopdisplay
+	""				f.nop
+	"AutoRaise"		f.autoraise
+	"Autopan"		f.autopan
+	"Identify"		f.identify
+	"New Door"      f.newdoor
+	"Ring"			f.ring
+	"Snap"			f.snap
+	"Snuggle"		f.snugdesktop
+	"SnugWindow"	f.snugwindow
+	"Sticky" 		f.nail
+	""			( "black":"green" ) f.nop
+	"Other"		( "red":"gold" ) f.menu "MoreMenus"
+}
+
+menu "titlemenu"
+{
+	"Move"		( "green":"black" ) f.move
+	"Iconify"	f.iconify
+	"Resize"	f.resize
+	"AutoRaise"		f.autoraise
+	""			f.nop
+	"MoreMenus"		( "violet":"blue" ) f.menu "MoreMenus"
+}
+
+menu "MoreMenus"
+{
+	"Menus:"	f.title
+	"OftenUsed"	( "blue":"gray85" ) f.menu	"OftenUsed"
+	"MakeWin"	( "yellow":"blue" ) f.menu "MakeWinMenu"
+	"WinOps"	( "blue" : "yellow" ) f.menu "WinOpsMenu"
+	"title"		f.menu "titlemenu"
+	"TwmWindows" f.menu "TwmWindows"
+	""			f.nop
+	"Restart"		f.restart
+}
+
+menu "MakeWinMenu" ( "yellow":"blue" )
+{
+"Make Win:" f.title
+#include "makewin.h"
+}
+
+menu "WinOpsMenu" ( "blue" : "yellow" )
+{
+"Window Ops:"	f.title
+"Identify"		( "yellow" : "black" ) f.identify
+"Lock"   		f.exec "xlock -mode qix &"
+""				f.nop
+"Show Iconmgr"	f.showiconmgr
+"Hide Iconmgr"	f.hideiconmgr
+""				f.nop
+#"Kill"			f.destroy
+#"Delete"		f.delete
+# f.destroy kills the X server!
+"Move"		f.move
+"Iconify"	f.iconify
+"Resize"	f.resize
+""			f.nop
+"Raise"		f.raise
+"Lower"		f.lower
+"Focus"		f.focus
+"Unfocus"	f.unfocus
+"Restart"		f.restart
+"Exit"			( "red" : "black" ) f.quit
+}
+
+#menu "Places" ( "blue":"gray85" )
+#{
+#"Places:"		f.title
+#"Home"   	( "MidnightBlue":"turquoise" )  f.resetdesktop
+#"Heaven"	( "gold":"#767ffc" )		    f.setrealscreen "+4096+0"
+#"Cathay"	( "red":"gold" )				f.setrealscreen "+2048+1536"
+#"Styx"		( "green":"red2" )		        f.setrealscreen "+0+3072"
+#"Siberia"   ( "MidnightBlue":"snow3" )		f.setrealscreen "+4096+3072"
+#}

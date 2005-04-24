@@ -1,4 +1,5 @@
-/*****************************************************************************//**       Copyright 1988 by Evans & Sutherland Computer Corporation,        **/
+/*****************************************************************************/
+/**       Copyright 1988 by Evans & Sutherland Computer Corporation,        **/
 /**                          Salt Lake City, Utah                           **/
 /**  Portions Copyright 1989 by the Massachusetts Institute of Technology   **/
 /**                        Cambridge, Massachusetts                         **/
@@ -42,7 +43,7 @@
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/extensions/shape.h>
-#include <X11/Xfuncs.h>
+/* #include <X11/Xfuncs.h> */
 
 #ifndef WithdrawnState
 #define WithdrawnState 0
@@ -309,7 +310,7 @@ typedef struct TwmWindow
 #define TBPM_MENU ":menu"	/* name of titlebar pixmap for menus */
 #define TBPM_QUESTION ":question"	/* name of unknown titlebar pixmap */
 
-#include <X11/Xosdefs.h>
+/*#include <X11/Xosdefs.h> */
 #ifndef X_NOT_STDC_ENV
 #include <stdlib.h>
 #else

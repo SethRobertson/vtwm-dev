@@ -25,9 +25,9 @@
 #include "add_window.h"
 
 #if (defined ibm || defined ultrix)
-char *strdup(s1) 
+char *strdup(s1)
 char * s1;
-{  
+{
 	char *s2;
 
 	s2 = malloc((unsigned) strlen(s1)+1);
@@ -45,7 +45,7 @@ char *name, *position, *destination;
 	/* parse the geometries given */
 	JunkMask = XParseGeometry (position, &JunkX, &JunkY,
 				   &JunkWidth, &JunkHeight);
-	if ((JunkMask & (XValue | YValue)) != 
+	if ((JunkMask & (XValue | YValue)) !=
 	    (XValue | YValue)) {
 		twmrc_error_prefix();
 		fprintf (stderr, "bad Door position \"%s\"\n", position);
@@ -72,7 +72,7 @@ char *name, *position, *destination;
 
 	JunkMask = XParseGeometry (destination, &JunkX, &JunkY,
 				   &JunkWidth, &JunkHeight);
-	if ((JunkMask & (XValue | YValue)) != 
+	if ((JunkMask & (XValue | YValue)) !=
 	    (XValue | YValue)) {
 		twmrc_error_prefix();
 		fprintf (stderr, "bad Door destination \"%s\"\n", destination);
@@ -135,7 +135,7 @@ TwmDoor *tmp_door;
 			      tmp_door->name,
 			      tmp_door->class, &tmp_door->colors.back))
 		tmp_door->colors.back = Scr->DoorC.back;
-	
+
 	if (tmp_door->width < 0)
 		tmp_door->width = XTextWidth(Scr->DoorFont.font,
 					     tmp_door->name,
@@ -143,7 +143,7 @@ TwmDoor *tmp_door;
 			+ SIZE_HINDENT;
 	if (tmp_door->height < 0)
 		tmp_door->height = Scr->DoorFont.height + SIZE_VINDENT;
-	
+
 	/* create the window */
 	w = XCreateSimpleWindow(dpy, Scr->Root,
 				tmp_door->x, tmp_door->y,
@@ -157,11 +157,11 @@ TwmDoor *tmp_door;
 					  0,
 					  tmp_door->colors.fore,
 					  tmp_door->colors.back);
-	
+
 	if ((tmp_door->x < 0) || (tmp_door->y < 0)) {
 		XSizeHints *hints = NULL;
 		long ret;
-		
+
 		/* set the wmhints so that addwindow will allow
 		 * the user to place the window */
 		if (XGetWMNormalHints(dpy, w, hints, &ret) > 0) {
@@ -178,22 +178,25 @@ TwmDoor *tmp_door;
 				       tmp_door->class->res_name,
 				       None, NULL, 0, NULL);
 	}
-	
+
 	XSetClassHint(dpy, w, tmp_door->class);
-	
+
 	/* set the name on both */
 	XStoreName(dpy, tmp_door->w, tmp_door->name);
 	XStoreName(dpy, w, tmp_door->name);
-	
+
+	XDefineCursor( dpy, w, Scr->FrameCursor );/*RFB*/
+	XDefineCursor( dpy, tmp_door->w, Scr->DoorCursor );/*RFBCURSOR*/
+
 	/* give to twm */
 	tmp_door->twin = AddWindow(w, FALSE, NULL);
-	
+
 	SetMapStateProp(tmp_door->twin, NormalState);
-	
+
 	/* interested in... */
 	XSelectInput(dpy, tmp_door->w, ExposureMask |
 		     ButtonPressMask | ButtonReleaseMask);
-	
+
 	/* store the address of the door on the window */
 	XSaveContext(dpy,
 		     tmp_door->w, DoorContext, (caddr_t) tmp_door);
@@ -202,7 +205,7 @@ TwmDoor *tmp_door;
 		     TwmContext, (caddr_t) tmp_door->twin);
 	XSaveContext(dpy,
 		     w, DoorContext, (caddr_t) tmp_door);
-	
+
 	/* map it */
 	XMapWindow(dpy, tmp_door->w);
 	XMapWindow(dpy, w);
@@ -230,7 +233,7 @@ TwmDoor *d;
 		    == XCNOENT)
 			/* not a door ! */
 			return;
-	
+
 	/* go to it */
 	SetRealScreen(d->goto_x, d->goto_y);
 }
@@ -249,6 +252,6 @@ void door_new()
 
 	d = door_add_internal(name, -1, -1, -1, -1,
 			      Scr->VirtualDesktopX, Scr->VirtualDesktopY);
-			     
+
 	door_open(d);
 }
