@@ -1,4 +1,5 @@
-LOCAL_LIBRARIES = -lXpm $(XMULIB) $(XTOOLLIB) $(XLIB)
+USRLIBDIR = /usr/lib/X11
+LOCAL_LIBRARIES = -L/users/emacsstu/dsembr01/lib/xpm -lXpm $(XMULIB) $(XTOOLLIB) $(XLIB)
         DEPLIBS = $(DEPXMULIB) $(DEPXTOOLLIB) $(DEPXLIB)
 
 SimpleProgramTarget(nexpm)

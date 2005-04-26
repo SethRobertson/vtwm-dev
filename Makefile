@@ -428,26 +428,48 @@
 ###########################################################################
 # start of Imakefile
 
-USRLIBDIR = /usr/lib/X11
-LOCAL_LIBRARIES = -L/users/emacsstu/dsembr01/lib/xpm -lXpm $(XMULIB) $(XTOOLLIB) $(XLIB)
-        DEPLIBS = $(DEPXMULIB) $(DEPXTOOLLIB) $(DEPXLIB)
+USRLIBDIR=/usr/lib/X11
 
- OBJS = nexpm.o
- SRCS = nexpm.c
+         YFLAGS = -d
+        DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
+LOCAL_LIBRARIES = $(XMULIB) $(EXTENSIONLIB) $(XLIB)
+       LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
+        DEFINES = $(SIGNAL_DEFINES)
+        VTWMDIR = $(LIBDIR)/vtwm
 
- PROGRAM = nexpm
+           SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c twm.c \
+		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
+		cursor.c icons.c desktop.c doors.c
 
-all:: nexpm
+           OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o twm.o \
+		parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
+		cursor.o icons.o desktop.o doors.o
 
-nexpm: $(OBJS) $(DEPLIBS)
+all:: vtwm
+
+parse.o: parse.c
+	$(RM) $@
+	$(CC) -c $(CFLAGS) '-DSYSTEM_INIT_FILE="'$(VTWMDIR)'/system.vtwmrc"' $*.c
+
+util.o:
+	$(RM) $@
+	$(CC) -c $(CFLAGS) -DNOPUTENV $*.c
+
+depend:: lex.c gram.c deftwmrc.c
+
+ PROGRAM = vtwm
+
+all:: vtwm
+
+vtwm: $(OBJS) $(DEPLIBS)
 	$(RM) $@; if [ -f $@ ]; then $(MV) $@ $@~; fi
 	$(CC) -o $@ $(OBJS) $(LDOPTIONS) $(LOCAL_LIBRARIES) $(LDLIBS) $(EXTRA_LOAD_FLAGS)
 
-install:: nexpm
-	$(INSTALL) -c $(INSTPGMFLAGS)   nexpm $(BINDIR)
+install:: vtwm
+	$(INSTALL) -c $(INSTPGMFLAGS)   vtwm $(BINDIR)
 
-install.man:: nexpm.man
-	$(INSTALL) -c $(INSTMANFLAGS) nexpm.man $(MANDIR)/nexpm.1
+install.man:: vtwm.man
+	$(INSTALL) -c $(INSTMANFLAGS) vtwm.man $(MANDIR)/vtwm.1
 
 depend::
 	$(DEPEND) -s "# DO NOT DELETE" -- $(ALLDEFINES) -- $(SRCS)
@@ -459,6 +481,26 @@ lint1:
 
 clean::
 	$(RM) $(PROGRAM)
+
+gram.h gram.c: gram.y
+	yacc $(YFLAGS) gram.y
+	$(MV) y.tab.c gram.c
+	$(MV) y.tab.h gram.h
+
+clean::
+	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c
+
+deftwmrc.c:  system.vtwmrc
+	$(RM) $@
+	echo '/* ' >>$@
+	echo ' * This file is generated automatically from the default' >>$@
+	echo ' * vtwm bindings file system.vtwmrc by the vtwm Imakefile.' >>$@
+	echo ' */' >>$@
+	echo '' >>$@
+	echo 'char *defTwmrc[] = {' >>$@
+	sed -e '/^#/d' -e 's/"/\\"/g' -e 's/^/    "/' -e 's/$$/",/' \
+		system.vtwmrc >>$@
+	echo '    (char *) 0 };' >>$@
 
 ###########################################################################
 # common rules for all Makefiles - do not edit

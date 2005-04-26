@@ -293,7 +293,10 @@ void MoveIconManager(dir)
     /* raise the frame so the icon manager is visible */
     if (ip->twm_win->mapped) {
 	XRaiseWindow(dpy, ip->twm_win->frame);
+
+	RaiseStickyAbove();
 	RaiseAutoPan();
+
 	XWarpPointer(dpy, None, tmp->icon, 0,0,0,0, 5, 5);
     } else {
 	if (tmp->twm->title_height) {
@@ -374,7 +377,10 @@ void JumpIconManager(dir)
 
     /* raise the frame so it is visible */
     XRaiseWindow(dpy, tmp_ip->twm_win->frame);
+    
+    RaiseStickyAbove(); /* DSE */
     RaiseAutoPan();
+
     if (tmp_ip->active)
 	XWarpPointer(dpy, None, tmp_ip->active->icon, 0,0,0,0, 5, 5);
     else

@@ -635,6 +635,8 @@ EndResize()
 
     if (!Scr->NoRaiseResize) {
         XRaiseWindow(dpy, tmp_win->frame);
+        
+	RaiseStickyAbove (); /* DSE */
 	RaiseAutoPan();
     }
 
@@ -1116,6 +1118,8 @@ int flag;
 
     if (!Scr->NoRaiseResize) {
         XRaiseWindow(dpy, tmp_win->frame);
+    
+    RaiseStickyAbove(); /* DSE */
 	RaiseAutoPan();
     }
 

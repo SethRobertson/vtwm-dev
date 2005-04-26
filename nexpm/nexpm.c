@@ -15,6 +15,7 @@
 /* Since most of the code is from sxpm.c, the above copyright should
 ** still apply.
 */
+
 /*****************************************************************************\
 * sxpm.c:                                                                     *
 *                                                                             *
@@ -22,6 +23,8 @@
 *                                                                             *
 *  Developed by Arnaud Le Hors                                                *
 \*****************************************************************************/
+
+#include <stdio.h>
 
 #ifdef VMS
 #include "decw$include:Xlib.h"

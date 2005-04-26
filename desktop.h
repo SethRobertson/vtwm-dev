@@ -34,6 +34,8 @@ extern void VirtualMoveWindow();
 extern void SnapRealScreen();
 extern void SetRealScreen();
 extern void PanRealScreen();
+extern void RaiseStickyAbove(); /* DSE */
+extern void LowerSticky(); /* DSE */
 extern void RaiseAutoPan();
 
 /* convert real space to virtual space */
@@ -52,3 +54,4 @@ extern void RaiseAutoPan();
 
 /* how wide/high the autopan windows are */
 #define AP_SIZE (Scr->AutoPanBorderWidth) /* DSE */
+

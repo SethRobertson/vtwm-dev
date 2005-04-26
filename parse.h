@@ -113,6 +113,8 @@ extern void TwmOutput();
 #define F_VIRTUALGEOMETRIES	66/*marcel@duteca.et.tudelft.nl*/
 #define F_DELETEDOOR		67/*marcel@duteca.et.tudelft.nl*/
 #define F_ZOOMZOOM		68 /* RFB silly */
+#define F_WARP          69 /* PF */
+#define F_STICKYABOVE   70 /* DSE */
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */
@@ -125,6 +127,9 @@ extern void TwmOutput();
 #define F_WARPTOSCREEN		109	/* string */
 #define F_COLORMAP		110	/* string */
 #define F_SETREALSCREEN		111     /* string */
+#define F_WARPCLASSNEXT		112	/* string -- PF */
+#define F_WARPCLASSPREV		113 /* string -- PF */
+#define F_WARPTONEWEST		114	/* string -- PF */
 
 #define D_NORTH			1
 #define D_SOUTH			2

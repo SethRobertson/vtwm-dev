@@ -104,7 +104,10 @@ void AutoRaiseWindow (tmp)
 {
 	XRaiseWindow (dpy, tmp->frame);
 	XRaiseWindow (dpy, tmp->VirtualDesktopDisplayWindow);
+
+	RaiseStickyAbove(); /* DSE */
 	RaiseAutoPan();
+	
 	XSync (dpy, 0);
 	enter_win = NULL;
 	enter_flag = TRUE;
@@ -1290,6 +1293,10 @@ HandleDestroyNotify()
 	{
 	FocusOnRoot();
 	}
+
+	if (Tmp_win == Scr->Newest) /* PF */
+		Scr->Newest = NULL; /* PF */
+
 	XDeleteContext(dpy, Tmp_win->w, TwmContext);
 	XDeleteContext(dpy, Tmp_win->w, ScreenContext);
 	XDeleteContext(dpy, Tmp_win->frame, TwmContext);
@@ -1394,6 +1401,7 @@ HandleCreateNotify()
 void
 HandleMapRequest()
 {
+
 	int stat;
 	int zoom_save;
 
@@ -1458,6 +1466,10 @@ HandleMapRequest()
 	DeIconify(Tmp_win);
 	SetRaiseWindow (Tmp_win);
 	}
+
+	RaiseStickyAbove(); /* DSE */
+	RaiseAutoPan(); /* DSE */
+
 }
 
 
@@ -1720,6 +1732,7 @@ HandleButtonRelease()
 		if (!Scr->NoRaiseMove && !Scr->OpaqueMove)    /* opaque already did */
 			XRaiseWindow(dpy, DragWindow);
 
+		RaiseStickyAbove(); /* DSE */
 		RaiseAutoPan();
 
 		if (!Scr->OpaqueMove)
@@ -2317,8 +2330,7 @@ HandleEnterNotify()
 
 			/* warp the pointer out of the window so that they can keep
 			 * moving the mouse */
-			XWarpPointer(dpy, None, None, 0, 0, 0, 0,
-				     xwarp, ywarp);
+			XWarpPointer(dpy, None, None, 0, 0, 0, 0, xwarp, ywarp);
 
 			return;
 		} /* end if ewp->window = autopan */

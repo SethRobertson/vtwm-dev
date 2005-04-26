@@ -1,138 +1,238 @@
+A COMPLETE LISTING OF CHANGES MADE TO VTWM SINCE VERSION 5.0
+IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
+============================================================
+
+============ vtwm-5.3.tar.gz =============
+dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
+
+	Tuesday, 1994 January 4, 16:43:32 EST 
+		[menus.c] `autopan windows' are now raised when Autopan is
+                turned back on via f.autopan.
+
+	Monday, 1994 January 3, 20:49:22 EST
+		f.stickyabove (or f.nailedabove)
+
+        Monday, 1994 January 3, 19:29:07 EST / dsembr01
+                [twm.c] The "VTWM Profile" function is now executed after
+                starting/restarting the window manager.
+
+        Friday, 1993 November 26, 15:37:01 EST / dsembr01
+                [vtwm.man] Some previously undocumented functions have now
+                been documented.  Please use them at your own risk:
+
+                        f.cut
+                        f.cutfile
+                        f.file
+                        f.movescreen
+                        f.twmrc [same as f.restart anyway]
+                        f.version
+
+        Saturday, 1993 November 6, 19:03:28 EST / dsembr01
+                [desktop.c] small bug fix regarding representations of
+                nailed windows on the virtual desktop; it was obvious and
+                obviously unintentional.
+
+        Tue Nov  2 20:05:44 EST 1993 dsembr01
+                WarpSnug
+
+        Wed Oct 27 12:29:38 EDT 1993 dsembr01
+                MenuTitleFont (this code also came from tvtwm)
+
+        Tue Oct 26 19:41:04 EDT 1993 pf@z-code.z-code.com (Paul Falstad)
+                NoIconifyIconManagers
+                StayUpOptionalMenus
+                WarpToTransients
+                f.warp
+                f.warpclassnext
+                f.warpclassprev
+                f.warptonewest
+
+        Mon Oct 25 21:08:40 EDT 1993 dsembr01
+                If StickyAbove is set, f.nail will raise all sticky windows
+                to make sure nailed windows stay above.
+
+        Mon Oct 25 19:48:33 EDT 1993 dsembr01
+                FixTransientVirtualGeometries, a BUG WORKAROUND!!
+                  (Any better ideas, folks? -- DSE)
+
+        Mon Oct 25 17:13:00 EDT 1993 dsembr01 
+                DontInterpolateTitles, from tvtwm -- thanks to
+                  cross@eng.umd.edu (Chris P. Ross) for letting me use his
+                  code.
+
+        Sun Oct 24 16:16:52 EDT 1993 dsembr01
+                f.lower now won't lower the window if it is nailed down and
+                StickyAbove is set.
+
+        Tue Oct 19 18:03:35 EDT 1993 dsembr01
+                StickyAbove (I didn't take any of the code for this from
+                  tvtwm; just the idea.)
+
+        Mon Oct 18 21:14:04 EDT 1993 dsembr01
+                Fixed autopanning bug that would *sometimes* not allow
+                AutoPan to work if the focus was on a window, since 
+                the autopan windows (on the edges of the real screen)
+                weren't raised.
+
+        Sat Oct 16 18:23:43 EDT 1993 dsembr01
+                Nailed windows now *always* go on the real screen, wherever
+                the real screen is.
+
+        Wed Oct 13 12:21:54 EDT 1993 dsembr01
+                aliased "f.stick" to "f.nail", for greater compatibility
+                (or less incompatibility) between .vtwmrc and .tvtwmrc,
+                just for the hell of it.
+
+        Mon Oct 11 21:06:09 EDT 1993 dsembr01
+                Fixed a bug that would make the window manager mess up if
+                ``AutoPan 100'' and ``AutoPanWarpWithRespectToRealScreen
+                100'' (a.k.a.  ``NaturalAutoPanBehavior'') were set.  I
+                wanted to set my window manager to behave like fvwm (in the
+                autopanning sense of the word) when I discovered this.
+
+        Mon Oct 11 09:14:58 PDT 1993 leisner@eso.mc.xerox.com (Marty Leisner)
+                Included small patches to Imakefile from Marty Leisner.
+
+        Mon Oct 11 17:04:35 EDT 1993 dsembr01
+                NoDefaultTitleButtons
+                NoDefaultMouseAndKeyboardBidings
+                  so someone could use either the default title or 
+                  keyboard bindings, but not necessarily both.
+
 ============ vtwm-5.2.2.tar.gz =============
 
-	dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
-		used another bug workaround to support negative door
+        dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
+                used another bug workaround to support negative door
                 geometries; the old one I did messed up with positive door
                 geometries, especially `+0+0'.
 
 ============ vtwm-5.2.1.tar.gz =============
 
-	dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
-		AutoPanBorderWidth
-		AutoPanExtraWarp
-		AutoPanWarpWithRespectToRealScreen
-		EnhancedExecResources
-		LessRandomZoomZoom
-		NaturalAutopanBehavior
-		PrettyZoom
-		RealScreenBorderWidth
-		RightHandSidePulldownMenus
+        dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
+                AutoPanBorderWidth
+                AutoPanExtraWarp
+                AutoPanWarpWithRespectToRealScreen
+                EnhancedExecResources
+                LessRandomZoomZoom
+                NaturalAutopanBehavior
+                PrettyZoom
+                RealScreenBorderWidth
+                RightHandSidePulldownMenus
 
-		support for negative and `0,0' door geometries.
+                support for negative and `0,0' door geometries.
 
 ============ vtwm-5.2.tar.Z =============
 
 Various contributions:
 
-	gnohmon@ssiny.com (Ralph Betza)
-		f.zoomzoom
-		StayUpMenus from tvtwm code
-		OldFashionedTwmWindowsMenu
-		UseRealScreenBorder
-		f.snaprealscreen
+        gnohmon@ssiny.com (Ralph Betza)
+                f.zoomzoom
+                StayUpMenus from tvtwm code
+                OldFashionedTwmWindowsMenu
+                UseRealScreenBorder
+                f.snaprealscreen
 
-		improved window movement in the panner
-		restored the ability to rescale the desktop
+                improved window movement in the panner
+                restored the ability to rescale the desktop
 
-	futzi@uni-paderborn.de (Michael Kutzner)
-		Class-name was compared twice in menus.c
-		(applies also to vtwm-5.0)
+        futzi@uni-paderborn.de (Michael Kutzner)
+                Class-name was compared twice in menus.c
+                (applies also to vtwm-5.0)
 
-	Stig Ostholm <ostholm%ce.chalmers.se@uunet>
-		problem when windows are resized without vtwm interaction
-		cleaning up of the desktop code to minimize vtwm - server
-		interaction.
-		Imakefile patch allows vtwm to be installed in another
-		location
-		(applies also to vtwm-5.0)
+        Stig Ostholm <ostholm%ce.chalmers.se@uunet>
+                problem when windows are resized without vtwm interaction
+                cleaning up of the desktop code to minimize vtwm - server
+                interaction.
+                Imakefile patch allows vtwm to be installed in another
+                location
+                (applies also to vtwm-5.0)
 
-	eyckmans@imec.be (M. Eyckmans)
-		Allow #rrggbb colors in X11R4
+        eyckmans@imec.be (M. Eyckmans)
+                Allow #rrggbb colors in X11R4
 
-	Tony Brannigan <tbrann@ox.ac.uk>
-		AutoPanX, AutoPanY
+        Tony Brannigan <tbrann@ox.ac.uk>
+                AutoPanX, AutoPanY
 
-	dana@thumper.bellcore.com (Dana A. Chee)
-		added fix which allows key presses to move a window (menus.c,
-		events.c)
+        dana@thumper.bellcore.com (Dana A. Chee)
+                added fix which allows key presses to move a window (menus.c,
+                events.c)
 
-	Alec Wolman <wolman@crl.dec.com>
-		WindowRing can now specify "all windows" by leaving off the
-		Window List
+        Alec Wolman <wolman@crl.dec.com>
+                WindowRing can now specify "all windows" by leaving off the
+                Window List
 
-		Can specify x or y = 0 in door location now
+                Can specify x or y = 0 in door location now
 
 Tue Jul 20 15:22:49 EDT 1993
-	Thu Oct  1 17:47:37 1992  Dana A. Chee  (dana@dino)
-	* added fix which allows key presses to move a window (menus.c,
-		events.c)
-	Fri May 29 14:20:53 1992  Dana A. Chee  (dana@dino)
-	* fixed bug in do_single_keyword (break should be return), sent in
-		by George Ross <gdmr@dcs.edinburgh.ac.uk> (parse.c)
+        Thu Oct  1 17:47:37 1992  Dana A. Chee  (dana@dino)
+        * added fix which allows key presses to move a window (menus.c,
+                events.c)
+        Fri May 29 14:20:53 1992  Dana A. Chee  (dana@dino)
+        * fixed bug in do_single_keyword (break should be return), sent in
+                by George Ross <gdmr@dcs.edinburgh.ac.uk> (parse.c)
 [Editor's note: a very popular bug to send in the fix for!]
-	* Autoraise can now specify "all windows" by leaving off the
+        * Autoraise can now specify "all windows" by leaving off the
 [Editor's note: this was previously done by the RaiseDelay patch]
-		 Window List, sent in by Alec Wolman <wolman@crl.dec.com>
-	* WindowRing can now specify "all windows" by leaving off the
-		Window List, sent in by Alec Wolman <wolman@crl.dec.com>
-		(add_window.c, gram.y, screen.h, twm.c, vtwm.man)
-	* Initial Placement of Virtual Desktop fixed, sent in by Alec Wolman
+                 Window List, sent in by Alec Wolman <wolman@crl.dec.com>
+        * WindowRing can now specify "all windows" by leaving off the
+                Window List, sent in by Alec Wolman <wolman@crl.dec.com>
+                (add_window.c, gram.y, screen.h, twm.c, vtwm.man)
+        * Initial Placement of Virtual Desktop fixed, sent in by Alec Wolman
 [Editor's note: this was previously done]
-	* Can specify x or y = 0 in door location now, sent in by Alec
-		Wolman <wolman@crl.dec.com> (doors.c)
-	* update man page to mention NoVirtualGeometries variable
-		(vtwm.man)
-	* updated patchlevel (patchlevel.h)
+        * Can specify x or y = 0 in door location now, sent in by Alec
+                Wolman <wolman@crl.dec.com> (doors.c)
+        * update man page to mention NoVirtualGeometries variable
+                (vtwm.man)
+        * updated patchlevel (patchlevel.h)
 [Editor's note: we don't have one! ]
-	Thu Mar 26 12:31:09 1992  Dana A. Chee  (dana@dino)
-	* F_LOWER now lowers the window in the virtual desktop as well
+        Thu Mar 26 12:31:09 1992  Dana A. Chee  (dana@dino)
+        * F_LOWER now lowers the window in the virtual desktop as well
 
 Thu Jul 15 14:03:01 DST 1993 Marcel Mol (marcel@duteca.et.tudelft.nl)
-	* Includes F_WARPTO patch from futzi@uni-paderborn.de (Michael Kutzner)
-	  Patched this patch to check for name, class and classname in a
-	  single for loop.
-	* Changed syntax ov 'VirtualDesktop' variable. Now can set desktop
-	  as number of screens, as size of virtual desktop window or as
-	  size of whoel desktop.
-	* Fixed unharmfull bug when NotVirtualGeometries was set.
-	  (vtwm comlains about `unknown singleton keyword')
-	* Added f.virtualgeometries function to toggle virtual geometries
-	  settings.
-	* Added f.deletedoor function to delete a door. Don't know if I
-	  correctly released all memory allocated to the door. Any X-Wizard???
-	* Updated man page
+        * Includes F_WARPTO patch from futzi@uni-paderborn.de (Michael Kutzner)
+          Patched this patch to check for name, class and classname in a
+          single for loop.
+        * Changed syntax ov 'VirtualDesktop' variable. Now can set desktop
+          as number of screens, as size of virtual desktop window or as
+          size of whoel desktop.
+        * Fixed unharmfull bug when NotVirtualGeometries was set.
+          (vtwm comlains about `unknown singleton keyword')
+        * Added f.virtualgeometries function to toggle virtual geometries
+          settings.
+        * Added f.deletedoor function to delete a door. Don't know if I
+          correctly released all memory allocated to the door. Any X-Wizard???
+        * Updated man page
 
 ========= vtwm-5.1.tar.Z ==============
 
 Thu Jun 24 15:24:36 EDT 1993 Ralph Betza (gnohmon@ssiny.com)
 
-	* Includes RaiseDelay patch from
-		Warren Jessop, University of Washington, whj@cs.washington.edu
+        * Includes RaiseDelay patch from
+                Warren Jessop, University of Washington, whj@cs.washington.edu
 
-	* Includes snug patch from thoth@reef.cis.ufl.edu (Gilligan)
+        * Includes snug patch from thoth@reef.cis.ufl.edu (Gilligan)
 
-	* includes patch vtwm.5.1.ptch from tar@math.ksu.edu (Tim Ramsey)
+        * includes patch vtwm.5.1.ptch from tar@math.ksu.edu (Tim Ramsey)
 
-	* Includes panner background pixmap, panner foreground color,
-		dynamic warpring, dynamic squeezetitle, TWM-Window menu
-		colors, RealScreen foreground, background, and colors,
-		corrections to placement of the little windows in the
-		panner, additional cursors, and maybe a few other things I
-		forgot to mention, from me,
-		Ralph Betza (gnohmon@ssiny.com)
+        * Includes panner background pixmap, panner foreground color,
+                dynamic warpring, dynamic squeezetitle, TWM-Window menu
+                colors, RealScreen foreground, background, and colors,
+                corrections to placement of the little windows in the
+                panner, additional cursors, and maybe a few other things I
+                forgot to mention, from me,
+                Ralph Betza (gnohmon@ssiny.com)
 
 Tue Mar 24 13:15:11 1992  Dana A. Chee  (dana@dino)
 
-	* fixed problem with key presses in virtual desktop not working
-	  (had an if test wrong in events.c)
-	* released to export.
+        * fixed problem with key presses in virtual desktop not working
+          (had an if test wrong in events.c)
+        * released to export.
 
 Wed Feb 19 13:37:57 1992  Dana A. Chee  (dana at dino)
 
-	* Converted vtwm to use the source of twm from R5 (my base was
-	  vtwm 4.0 gamma).  Released it to export.lcs.mit.edu
-	* cut and paste missed resize grabs, added them back in
-	* botched ask_user stuff in add_window, fixed that up.
-	* removed broken copy from export.
-
+        * Converted vtwm to use the source of twm from R5 (my base was
+          vtwm 4.0 gamma).  Released it to export.lcs.mit.edu
+        * cut and paste missed resize grabs, added them back in
+        * botched ask_user stuff in add_window, fixed that up.
+        * removed broken copy from export.
 

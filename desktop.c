@@ -37,7 +37,8 @@ int *x, *y, *w, *h;
 	{	if (x)
 			*x = tmp_win->frame_x / Scr->VirtualDesktopDScale;
 		if (y)
-			*y = tmp_win->virtual_frame_y / Scr->VirtualDesktopDScale;
+/*			*y = tmp_win->virtual_frame_y / Scr->VirtualDesktopDScale; */
+			*y = tmp_win->frame_y / Scr->VirtualDesktopDScale; /* DSE */
 		/* RFB 4/92 no SCALE_D */
 		/* *x = SCALE_D(tmp_win->virtual_frame_x); */
 		/* *y = SCALE_D(tmp_win->virtual_frame_y); */
@@ -83,8 +84,8 @@ void CreateDesktopDisplay()
 	if (!Scr->Virtual)
 		return;
 
-	width = Scr->VirtualDesktopWidth/Scr->VirtualDesktopDScale;
-	height = Scr->VirtualDesktopHeight/Scr->VirtualDesktopDScale;
+	width = Scr->VirtualDesktopWidth / Scr->VirtualDesktopDScale;
+	height = Scr->VirtualDesktopHeight / Scr->VirtualDesktopDScale;
 
 	/* we have some checking for negative (x,y) to do */
 	if (Scr->VirtualDesktopDX < 0) {
@@ -111,12 +112,12 @@ void CreateDesktopDisplay()
 
 	Scr->VirtualDesktopDisplay =
 		XCreateSimpleWindow(dpy, Scr->VirtualDesktopDisplayOuter,
-				    0, 0,
-					Scr->VirtualDesktopMaxWidth,
-					Scr->VirtualDesktopMaxHeight,
-				    0,
-				    Scr->VirtualDesktopDisplayBorder,
-					Scr->VirtualC.back);/*RFB VCOLOR*/
+			0, 0,
+			Scr->VirtualDesktopMaxWidth,
+			Scr->VirtualDesktopMaxHeight,
+			0,
+			Scr->VirtualDesktopDisplayBorder,
+			Scr->VirtualC.back);/*RFB VCOLOR*/
 
 	XDefineCursor( dpy, Scr->VirtualDesktopDisplay,
 		Scr->VirtualCursor );	/*RFBCURSOR*/
@@ -289,8 +290,6 @@ void CreateDesktopDisplay()
 				     EnterWindowMask /* | lowernotify (or something) */ );
 			XMapWindow(dpy, Scr->VirtualDesktopAutoPan[l]);
 		} /* end for l */
-	
-	RaiseAutoPan (); /* it may work, why not? -- DSE */
 	
 	} /* end if Scr->AutoPan */
 }
@@ -742,6 +741,7 @@ void EndMoveWindowOnDesktop()
 			XRaiseWindow(dpy, moving_twindow->frame);
 			XRaiseWindow(dpy, moving_twindow->VirtualDesktopDisplayWindow);
 
+			RaiseStickyAbove(); /* DSE */
 			RaiseAutoPan();
 		}
 
@@ -896,6 +896,7 @@ int x, y;
 		XRaiseWindow(dpy, t->frame);
 		/* XRaiseWindow(dpy, t->VirtualDesktopDisplayWindow); Stig */
 
+		RaiseStickyAbove(); /* DSE */
 		RaiseAutoPan();
 	}
 }
@@ -971,21 +972,35 @@ short dosnap;
 	/* how big a move is this ? */
 	xdiff = Scr->VirtualDesktopX - x;
 	ydiff = Scr->VirtualDesktopY - y;
-	
-	/* DSE */
-	{
-	int x_warp = ((xdiff<0) ? -1 : 1) * 
-	    ( (50 + abs(xdiff) * Scr->AutoPanWarpWithRespectToRealScreen) / 100 );
-	int y_warp = ((ydiff<0) ? -1 : 1) *
-	    ( (50 + abs(ydiff) * Scr->AutoPanWarpWithRespectToRealScreen) / 100 );
-	
-	if (dx)
-		if ( abs(x_warp) > abs(*dx) ) /* gonna warp the pointer enough */
-			*dx = x_warp;
-	if (dy)
-		if ( abs(y_warp) > abs(*dy) ) /* gonna warp the pointer enough */
-			*dy = y_warp;
-	}
+
+		{
+		/* calculate how much we might warp the pointer */
+		int x_warp = ((xdiff<0) ? -1 : 1) * 
+		  ((50 + abs(xdiff) * Scr->AutoPanWarpWithRespectToRealScreen) / 100);
+		int y_warp = ((ydiff<0) ? -1 : 1) *
+		  ((50 + abs(ydiff) * Scr->AutoPanWarpWithRespectToRealScreen) / 100);
+		
+		/* make sure the pointer warps enought with respect to the real screen
+		   so that it can get out of the autopan windows. */
+		if (dx)
+			if ( abs (*dx) < abs(x_warp) ) *dx = x_warp;
+		if (dy)
+			if ( abs (*dx) < abs(y_warp) ) *dy = y_warp;
+		}
+		
+	/* make sure it isn't warped too much in case ``AutoPan 100'' and
+	   ``AutoPanWarpWithRespectToRealScreen 100'' (also known as
+	   ``NaturalAutopanBehavior'') are set. -- DSE */
+		{
+		int max_x_warp = ((xdiff<0) ? -1 : 1) *
+			(Scr->MyDisplayWidth - 2 * Scr->AutoPanBorderWidth);
+		int max_y_warp = ((ydiff<0) ? -1 : 1) *
+			(Scr->MyDisplayHeight - 2 * Scr->AutoPanBorderWidth);
+		if (dx)
+			if ( abs(*dx) > abs(max_x_warp) ) *dx = max_x_warp;
+		if (dy)
+			if ( abs(*dy) > abs(max_y_warp) ) *dy = max_y_warp;
+		}
 
 	/* move all of the windows by walking the twm list */
 	for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL; Tmp_win = Tmp_win->next)
@@ -1035,11 +1050,44 @@ int *dx, *dy; /* DSE */
 /*
  * raise the auto-pan windows if needed
  */
+
 void RaiseAutoPan()
 {
 	int i;
-
 	if (Scr->AutoPanX > 0)
 		for (i = 0; i <= 3; i++)
 			XRaiseWindow(dpy, Scr->VirtualDesktopAutoPan[i]);
 }
+
+/*
+ *	Raise sticky windows if StickyAbove is set. -- DSE
+ */
+
+void RaiseStickyAbove () {
+	if (Scr->StickyAbove) {
+		TwmWindow *Tmp_win;
+		for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
+		Tmp_win = Tmp_win->next)
+			if (Tmp_win->nailed) {
+				XRaiseWindow(dpy,Tmp_win->w);
+				XRaiseWindow(dpy,Tmp_win->VirtualDesktopDisplayWindow);
+				XRaiseWindow(dpy,Tmp_win->frame);
+			}
+	}
+}
+
+/*
+ *	Lower sticky windows. -- DSE
+ */
+
+void LowerSticky () {
+	TwmWindow *Tmp_win;
+	for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
+	Tmp_win = Tmp_win->next)
+		if (Tmp_win->nailed) {
+			XLowerWindow(dpy,Tmp_win->w);
+			XLowerWindow(dpy,Tmp_win->VirtualDesktopDisplayWindow);
+			XLowerWindow(dpy,Tmp_win->frame);
+		}
+}
+

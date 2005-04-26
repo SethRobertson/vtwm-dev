@@ -234,6 +234,7 @@ typedef struct ScreenInfo
     MyFont IconManagerFont;	/* window list font structure */
     MyFont VirtualFont;		/* virtual display windows */
     MyFont DoorFont;		/* for drawing in doors */
+    MyFont MenuTitleFont;   /* DSE -- for menu titles */
     MyFont DefaultFont;
     IconMgr iconmgr;		/* default icon manager */
     struct IconRegion *FirstRegion;	/* pointer to icon regions */
@@ -247,12 +248,18 @@ typedef struct ScreenInfo
     int UnknownHeight;		/* height of the unknown icon */
     int TitleHeight;		/* height of the title bar window */
     TwmWindow *Focus;		/* the twm window that has focus */
+    TwmWindow *Newest;		/* the most newly added twm window -- PF */
     int EntryHeight;		/* menu entry height */
     int FramePadding;		/* distance between decorations and border */
     int TitlePadding;		/* distance between items in titlebar */
     int ButtonIndent;		/* amount to shrink buttons on each side */
     int NumAutoRaises;		/* number of autoraise windows on screen */
-    short NoDefaults;		/* do not add in default UI stuff */
+/*  short NoDefaults; */
+	short NoDefaultMouseOrKeyboardBindings; /* DSE */
+		/* do not add default UI mouse and keyboard stuff */
+	short NoDefaultTitleButtons; /* DSE */
+		/* do not add default resize and iconify title buttons */
+		
     short OldFashionedTwmWindowsMenu;
 	short UseRealScreenBorder;
     short UsePPosition;		/* what do with PPosition, see values below */
@@ -273,6 +280,7 @@ typedef struct ScreenInfo
     short IconifyByUnmapping;	/* simply unmap windows when iconifying */
     short ShowIconManager;	/* display the window list */
     short IconManagerDontShow;	/* show nothing in the icon manager */
+    short NoIconifyIconManagers; /* don't iconify the icon manager -- PF */
     short BackingStore;		/* use backing store for menus */
     short SaveUnder;		/* use save under's for menus */
     short RandomPlacement;	/* randomly place windows that no give hints */
@@ -301,6 +309,8 @@ typedef struct ScreenInfo
     short AutoRaiseDefault;   /* AutoRaise all windows if true *//*RAISEDELAY*/
 	short UseWindowRing;   /* put all windows in the ring? */
 	short StayUpMenus;
+    short StayUpOptionalMenus; /* PF */
+    short WarpToTransients;    /* PF */
 
     FuncKey FuncKeyRoot;
     TwmDoor *Doors;		/* a list of doors on this screen */
@@ -313,7 +323,14 @@ typedef struct ScreenInfo
 /*DSE*/ short LessRandomZoomZoom;         /* makes zoomzoom a better 
                                              visual bell */
 /*DSE*/ short PrettyZoom;                 /* nicer-looking animation */
-/*DSE*/ int AutoPanWarpWithRespectToRealScreen /* percent */
+/*DSE*/ int AutoPanWarpWithRespectToRealScreen; /* percent */
+/*DSE*/ short StickyAbove;                /* sticky windows (nailed down) above
+                                             other windows. */
+/*DSE*/ short DontInterpolateTitles;      /* menu titles are excluded from
+                                             color interpolation */
+/*DSE*/ short FixTransientVirtualGeometries; /* bug workaround */
+/*DSE*/ short WarpSnug;                   /* make sure entire window is on
+                                             screen when warping */
     
 } ScreenInfo;
 

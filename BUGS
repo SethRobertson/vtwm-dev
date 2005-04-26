@@ -1,0 +1,12 @@
+A LISTING OF BUGS
+=================
+
+  * Windows don't resize correctly when resize is called from a menu; you
+    have to use a keybinding to resize it, i.e., 
+    `Button2 = m : window|frame : resize' --- DSE
+
+  * Behavior of transients on the virtual desktop, when the real screen is
+    not at (0,0), is almost unpredictable.  Hence the
+    FixTransientVirtualGeometries variable, new to 5.3, which is not
+    guaranteed to work in every case. --- DSE
+

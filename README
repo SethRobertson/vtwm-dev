@@ -1,95 +1,102 @@
-As far as changes from version 5.2 to version 5.2.1 go, they are mostly a few
-aesthetic and look-and-feel hacks and a couple of bug fixes.
+ANNOUNCEMENT
+============
 
-I would really like input as to how you like the changes I made.
+vtwm 5.3 is available now via anonymous ftp at:
 
--- Darren S. Embry, dsembr01@starbase.spd.louisville.edu
+    ftp.x.org:/contrib/vtwm-5.3.tar.gz
 
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+A SUMMARY OF CHANGES FROM VTWM-5.2.2 TO VTWM-5.3
+================================================
+    
+    The file `ChangeLog' in the vtwm-5.3 archive contains more detailed info
+    concerning changes made since version 5.0.
 
-    MINOR NEW FEATURE (I can't say it's a big deal)
-    -----------------------------------------------
-        Natural Autopan Behavior
+    New Variables:
+    --------------
+        DontInterpolateTitles               (from tvtwm)
+        FixTransientVirtualGeometries       (BUG WORKAROUND!!)
+        MenuTitleFont                       (from tvtwm)
+        NailedAbove                         (aliased to StickyAbove)
+        NoDefaultMouseAndKeyboardBindings
+        NoDefaultTitleButtons
+        NoIconifyIconManagers               (from Paul Falstad)
+        StayUpOptionalMenus                 (from Paul Falstad)
+        StickyAbove                         (like the same feature in tvtwm)
+        WarpSnug
+        WarpToTransients                    (from Paul Falstad)
+
+    New Functions:
+    --------------
+        f.nail                              (aliased to f.stick)
+        f.stickyabove                       (or f.nailedabove)
+        f.warp                              (from Paul Falstad)
+        f.warpclassnext                     (from Paul Falstad)
+        f.warpclassprev                     (from Paul Falstad)
+        f.warptonewest                      (from Paul Falstad)
+
+    Other New Features:
+    -------------------
+        The window manager will now execute a special function called 
+        "VTWM Profile" upon the initial startup or restarting of the window
+        manager.  This may prove useful in certain situations.  For example,
+        say you want AutoPan to have a value but you want autopanning 
+	turned off initially:
         
-            By default, when autopanning, the pointer is warped by only
-            (AutoPanBorderWidth + AutoPanExtraWarp) pixels on the real
-            screen.  With this option turned on, the pointer is warped by as
-            many pixels as the screen is scrolled, or by the above number of
-            pixels, whichever is greater.  Thus, the pointer will not
-            actually move very much (only by AutoPanExtraWarp) in relation to
-            the virtual desktop.  This works very well on faster X terminals,
-            although I can't say the same thing for slower ones (but setting
-            AutoPanWarpWithRespectToRealScreen may do a good job).
+            AutoPan 25
+            .
+            .
             
-    NEW VARIABLES to play around with
-    ---------------------------------
-        AutoPanBorderWidth <pixels>
-        AutoPanExtraWarp <pixels>
-        AutoPanWarpWithRespectToRealScreen <N%>
-        EnhancedExecResources
-        LessRandomZoomZoom
-        NaturalAutopanBehavior
-            # synonymous with ``AutoPanWarpWithRespectToRealScreen 100''
-        PrettyZoom
-        RealScreenBorderWidth <pixels>
-        RightHandSidePulldownMenus
+            function "VTWM Profile" {
+                .
+                .
+                
+                f.autopan # turns it off (you can turn it back on later)
+                .
+                .
+            }
 
-    OTHER HACKS AND BUG FIXES
-    -------------------------
-        Supports negative and `0,0' door geometries. [ bug fix ]
+        The feature was created for this very specific purpose in mind, but 
+        the possibilities are endless.
 
-CHANGES BY SOURCE FILE
-======================
+    Other fixes:
+    ------------
+        autopanning (wouldn't work when mouse was over a window on the edge
+            of the screen sometimes)
+        nailed windows will *always* go on the real screen, wherever the real
+            screen is on the virtual desktop.
+        small fix of an obvious bug in the source regarding nailed windows'
+            representations on the virtual desktop
+        patches to Imakefile
 
-Any lines, code or data structures in the code denoted by "/* DSE */" are
-changes I made.
+    Undocumented functions now documented (please use these at your own risk):
+    --------------------------------------------------------------------------
+        f.cut
+        f.cutfile
+        f.file
+        f.movescreen
+        f.twmrc [same thing as f.restart anyway]
+        f.version
 
-    desktop.c:
-    ----------
-        Supports the RealScreenBorderWidth variable now.
+WHAT IS VTWM?
+=============
 
-        Added dx,dy parameters to SetRealScreenInternal and PanRealScreen so
-        that they pass information on how much to warp the mouse pointer,
-        to support my AutoPanWarpWithRespectToRealScreen hack.
+    vtwm (which stands for `Virtual Tab Window Manager') is based upon the
+    twm window manager, but adds extra functionality in the form of a
+    VIRTUAL DESKTOP.  The virtual desktop is an area larger than the
+    physical screen, where windows can be placed.  On the real screen, a
+    portion of the virtual desktop the size of the real screen can be seen. 
+    The `virtual desktop window', of course, facilitates navigation around
+    the desktop and manipulation of windows in the desktop.
 
-    desktop.h:
-    ----------
-        Define AP_SIZE to Scr->AutoPanBorderWidth instead of just 5.
+ACKNOWLEDGEMENTS
+================
 
-    doors.c
-    -------
-        Supports negative door geometries now (like "120x120-0-0").
-        [ bug fix ]
+  * Paul Falstad <pf@z-code.z-code.com> for f.warp, one of the things I
+    really wanted to see, among other related things.
+  * kudos to Chris P. Ross <cross@eng.umd.edu> for letting me use some of
+    his code from tvtwm (MenuTitleFont and DontInterpolateTitles).
+  * Marty Leisner <leisner@eso.mc.xerox.com>, small patches to Imakefile.
+  * Kaur <kaur@stacken.kth.se> for pointing out f.movescreen to me, and
+    inspiring me to look for other undocumented stuff and take a stab at
+    documenting it.
 
-        Also fixes bug that wouldn't allow "+0+0" to be a valid door
-        position. [ bug fix ]
-
-    events.c
-    --------
-        In HandleEnterNotify(), initial setting of xwarp and ywarp uses
-        AutopanExtraWarp instead of just 2.
-
-    menus.c
-    -------
-        The RightHandSidePulldownMenus, EnhancedExecResources, and PrettyZoom
-        hacks are done here.
-
-    parse.c, screen.h
-    -----------------
-        Of course, the new variables were inserted here.
-
-    util.c
-    ------
-        The LessRandomZoomZoom hack was done here.
-
-DISCLAIMER: I am not the official maintainer or central programmer of vtwm,
-but there isn't one anyway; I just made a few fixes, played with the code to
-make it a little bit more `configurable' in certain areas, and decided to see
-what *you* think of the changes I made.  I also don't know much about X
-programming, but the changes I made to vtwm haven't caused any major damage
-so far.
-
---
-    letitflowletyourselfgos[   darren s. embry   ]lowandlowthatisthetempo
-                           [  dsembr01@starbase  ]
-beingashamedbecauseyouredif[ .spd.louisville.edu ]ferentisthesickestkindoflie

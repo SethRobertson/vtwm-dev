@@ -343,6 +343,19 @@ typedef struct _TwmKeyword {
 #define kw0_LessRandomZoomZoom         36 /* DSE */
 #define kw0_PrettyZoom                 37 /* DSE */
 
+#define kw0_NoDefaultTitleButtons            38 /* DSE */
+#define kw0_NoDefaultMouseOrKeyboardBindings 39 /* DSE */
+
+#define kw0_StickyAbove                      40 /* DSE */
+#define kw0_DontInterpolateTitles            41 /* DSE */
+#define kw0_FixTransientVirtualGeometries    42 /* DSE */
+
+#define kw0_WarpToTransients                 43 /* PF */
+#define kw0_NoIconifyIconManagers            44 /* PF */
+#define kw0_StayUpOptionalMenus              45 /* PF */
+
+#define kw0_WarpSnug                         46 /* DSE */
+
 #define kws_UsePPosition		1
 #define kws_IconFont			2
 #define kws_ResizeFont			3
@@ -354,6 +367,7 @@ typedef struct _TwmKeyword {
 #define kws_MaxWindowSize		9
 #define kws_VirtualFont			10
 #define kws_DoorFont			11
+#define kws_MenuTitleFont       12 /* DSE */
 
 #define kwn_ConstrainedMoveTime     1
 #define kwn_MoveDelta               2
@@ -446,6 +460,7 @@ static TwmKeyword keytable[] = {
 	  CLKEYWORD, kwcl_VirtualDesktopForeground },
     { "destroy",		KILL, 0 },
     { "donticonifybyunmapping",	DONT_ICONIFY_BY_UNMAPPING, 0 },
+    { "dontinterpolatetitles", KEYWORD, kw0_DontInterpolateTitles },
     { "dontmoveoff",		KEYWORD, kw0_DontMoveOff },
     { "dontshowindisplay",	NO_SHOW_IN_DISPLAY, 0  },
     { "dontsqueezetitle",	DONT_SQUEEZE_TITLE, 0 },
@@ -496,6 +511,7 @@ static TwmKeyword keytable[] = {
     { "f.move",			FKEYWORD, F_MOVE },
     { "f.movescreen",		FKEYWORD, F_MOVESCREEN },
     { "f.nail",			FKEYWORD, F_NAIL },
+    { "f.nailedabove", FKEYWORD, F_STICKYABOVE }, /* DSE */
     { "f.newdoor",		FKEYWORD, F_NEWDOOR },
     { "f.nexticonmgr",		FKEYWORD, F_NEXTICONMGR },
     { "f.nop",			FKEYWORD, F_NOP },
@@ -527,6 +543,8 @@ static TwmKeyword keytable[] = {
     { "f.squeezecenter",		FKEYWORD, F_SQUEEZECENTER },/*RFB SQUEEZE*/
     { "f.squeezeleft",		FKEYWORD, F_SQUEEZELEFT },/*RFB SQUEEZE*/
     { "f.squeezeright",		FKEYWORD, F_SQUEEZERIGHT },/*RFB SQUEEZE*/
+    { "f.stick",			FKEYWORD, F_NAIL },
+    { "f.stickyabove", FKEYWORD, F_STICKYABOVE }, /* DSE */
     { "f.title",		FKEYWORD, F_TITLE },
     { "f.topzoom",		FKEYWORD, F_TOPZOOM },
     { "f.twmrc",		FKEYWORD, F_RESTART },
@@ -536,13 +554,19 @@ static TwmKeyword keytable[] = {
     { "f.virtualgeometries",	FKEYWORD, F_VIRTUALGEOMETRIES },
     { "f.vlzoom",		FKEYWORD, F_LEFTZOOM },
     { "f.vrzoom",		FKEYWORD, F_RIGHTZOOM },
+    { "f.warp",			FKEYWORD, F_WARP },               /* PF */
+    { "f.warpclassnext",	FSKEYWORD, F_WARPCLASSNEXT }, /* PF */
+    { "f.warpclassprev",	FSKEYWORD, F_WARPCLASSPREV }, /* PF */
     { "f.warpring",		FSKEYWORD, F_WARPRING },
     { "f.warpto",		FSKEYWORD, F_WARPTO },
     { "f.warptoiconmgr",	FSKEYWORD, F_WARPTOICONMGR },
+    { "f.warptonewest", FKEYWORD, F_WARPTONEWEST }, /* PF */
     { "f.warptoscreen",		FSKEYWORD, F_WARPTOSCREEN },
     { "f.winrefresh",		FKEYWORD, F_WINREFRESH },
     { "f.zoom",			FKEYWORD, F_ZOOM },
     { "f.zoomzoom",			FKEYWORD, F_ZOOMZOOM },
+    { "fixtransientvirtualgeometries", KEYWORD, 
+        kw0_FixTransientVirtualGeometries },                          /* DSE */
     { "forceicons",		KEYWORD, kw0_ForceIcons },
     { "frame",			FRAME, 0 },
     { "framepadding",		NKEYWORD, kwn_FramePadding },
@@ -582,19 +606,26 @@ static TwmKeyword keytable[] = {
     { "menuforeground",		CKEYWORD, kwc_MenuForeground },
     { "menushadowcolor",	CKEYWORD, kwc_MenuShadowColor },
     { "menutitlebackground",	CKEYWORD, kwc_MenuTitleBackground },
+    { "menutitlefont", SKEYWORD, kws_MenuTitleFont },                /* DSE */
     { "menutitleforeground",	CKEYWORD, kwc_MenuTitleForeground },
     { "meta",			META, 0 },
     { "mod",			META, 0 },  /* fake it */
     { "monochrome",		MONOCHROME, 0 },
     { "move",			MOVE, 0 },
     { "movedelta",		NKEYWORD, kwn_MoveDelta },
+    { "nailedabove",    KEYWORD, kw0_StickyAbove },                  /* DSE */
     { "naileddown",		NAILEDDOWN, 0},
-    { "naturalautopanbehavior", KEYWORD, kw0_NaturalAutopanBehavior }, /* DSE */
+    { "naturalautopanbehavior", KEYWORD, 
+    	kw0_NaturalAutopanBehavior },                                /* DSE */
     { "nobackingstore",		KEYWORD, kw0_NoBackingStore },
     { "nocasesensitive",	KEYWORD, kw0_NoCaseSensitive },
+    { "nodefaultmouseorkeyboardbindings", KEYWORD,
+    	kw0_NoDefaultMouseOrKeyboardBindings },                      /* DSE */
     { "nodefaults",		KEYWORD, kw0_NoDefaults },
+    { "nodefaulttitlebuttons", KEYWORD, kw0_NoDefaultTitleButtons }, /* DSE */
     { "nograbserver",		KEYWORD, kw0_NoGrabServer },
     { "nohighlight",		NO_HILITE, 0 },
+    { "noiconifyiconmanagers",	KEYWORD, kw0_NoIconifyIconManagers }, /* PF */
     { "noiconmanagers",		KEYWORD, kw0_NoIconManagers },
     { "nomenushadows",		KEYWORD, kw0_NoMenuShadows },
     { "noraiseondeiconify",	KEYWORD, kw0_NoRaiseOnDeiconify },
@@ -642,7 +673,9 @@ static TwmKeyword keytable[] = {
     { "squeezetitle",		SQUEEZE_TITLE, 0 },
     { "starticonified",		START_ICONIFIED, 0 },
     { "stayupmenus",		KEYWORD, kw0_StayUpMenus },
+    { "stayupoptionalmenus",	KEYWORD, kw0_StayUpOptionalMenus }, /* PF */
     { "sticky",             NAILEDDOWN, 0 },/*RFB*/
+    { "stickyabove",        KEYWORD, kw0_StickyAbove },                /* DSE */
     { "t",			TITLE, 0 },
     { "title",			TITLE, 0 },
     { "titlebackground",	CLKEYWORD, kwcl_TitleBackground },
@@ -664,6 +697,8 @@ static TwmKeyword keytable[] = {
     { "w",			WINDOW, 0 },
     { "wait",			WAIT, 0 },
     { "warpcursor",		WARP_CURSOR, 0 },
+    { "warpsnug",		KEYWORD, kw0_WarpSnug }, /* DSE */
+    { "warptotransients",	KEYWORD, kw0_WarpToTransients }, /* PF */
     { "warpunmapped",		KEYWORD, kw0_WarpUnmapped },
     { "warpwindows",		KEYWORD, kw0_WarpWindows },
     { "west",			DKEYWORD, D_WEST },
@@ -711,11 +746,24 @@ int do_single_keyword (keyword)
 {
     switch (keyword) {
       case kw0_NoDefaults:
-	Scr->NoDefaults = TRUE;
+	Scr->NoDefaultMouseOrKeyboardBindings = TRUE;
+	Scr->NoDefaultTitleButtons = TRUE;
+	return 1;
+
+      case kw0_NoDefaultMouseOrKeyboardBindings: /* DSE */
+	Scr->NoDefaultMouseOrKeyboardBindings = TRUE;
+	return 1;
+
+      case kw0_NoDefaultTitleButtons: /* DSE */
+	Scr->NoDefaultTitleButtons = TRUE;
 	return 1;
 
 	case kw0_StayUpMenus:
 		if (Scr->FirstTime) Scr->StayUpMenus = TRUE;
+		return 1;
+
+	case kw0_StayUpOptionalMenus: /* PF */
+		if (Scr->FirstTime) Scr->StayUpOptionalMenus = Scr->StayUpMenus = TRUE;
 		return 1;
 
 	case kw0_UseRealScreenBorder:/*RFB*/
@@ -736,6 +784,10 @@ int do_single_keyword (keyword)
 
       case kw0_NoIconManagers:
 	Scr->NoIconManagers = TRUE;
+	return 1;
+
+      case kw0_NoIconifyIconManagers: /* PF */
+	Scr->NoIconifyIconManagers = TRUE;
 	return 1;
 
       case kw0_OpaqueMove:
@@ -806,6 +858,10 @@ int do_single_keyword (keyword)
 	Scr->DecorateTransients = TRUE;
 	return 1;
 
+      case kw0_WarpToTransients: /* PF */
+	Scr->WarpToTransients = TRUE;
+	return 1;
+
       case kw0_ShowIconManager:
 	Scr->ShowIconManager = TRUE;
 	return 1;
@@ -853,6 +909,18 @@ int do_single_keyword (keyword)
 	case kw0_PrettyZoom: /* DSE */
 		Scr->PrettyZoom = TRUE;
 		return 1;
+	case kw0_StickyAbove: /* DSE */
+		Scr->StickyAbove = TRUE;
+		return 1;
+	case kw0_DontInterpolateTitles: /* DSE */
+		Scr->DontInterpolateTitles = TRUE;
+		return 1;
+	case kw0_FixTransientVirtualGeometries: /* DSE */
+		Scr->FixTransientVirtualGeometries = TRUE;
+		return 1;
+	case kw0_WarpSnug: /* DSE */
+		Scr->WarpSnug = TRUE;
+		return 1;
 
     }
 
@@ -896,6 +964,10 @@ int do_string_keyword (keyword, s)
 
       case kws_IconManagerFont:
 	if (!Scr->HaveFonts) Scr->IconManagerFont.name = s;
+	return 1;
+
+      case kws_MenuTitleFont: /* DSE */
+	if (!Scr->HaveFonts) Scr->MenuTitleFont.name = s;
 	return 1;
 
       case kws_UnknownIcon:

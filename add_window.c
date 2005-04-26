@@ -516,11 +516,12 @@ IconMgr *iconp;
 				  SIZE_VINDENT + Scr->SizeFont.font->ascent,
 				  ": ", 2);
 #if 0
-		if (0/*Scr->AutoRelativeResize*/) {
+		if (0/*Scr->AutoRelativeResize*/)
 My R5 vtvwm came with this commented out, always 0.
 Why?
 #endif
-		if (Scr->AutoRelativeResize) {
+		if (Scr->AutoRelativeResize)
+		{
 		    int dx = (tmp_win->attr.width / 4);
 		    int dy = (tmp_win->attr.height / 4);
 
@@ -622,10 +623,21 @@ Why?
       }
     } else {				/* put it where asked, mod title bar */
 	    /* interpret the position specified as a virtual one if asked */
-	    if (Scr->GeometriesAreVirtual) {
+#if 0
+	    if (Scr->GeometriesAreVirtual)
+#endif
+		if (Scr->GeometriesAreVirtual || ( !Scr->GeometriesAreVirtual &&
+		      (tmp_win->nailed||(Scr->FixTransientVirtualGeometries
+		                         &&tmp_win->transient))))
+
+		/* if NotVirtualGeometries is set, should also do this if it's
+		   a sticky or (it's a transient window and
+		   FixTransientVirtualGeometries is set -- this case is a
+		   bug workaround; any better ideas???????????) -- DSE */
+	    	{
 		    tmp_win->attr.x = V_TO_R_X(tmp_win->attr.x);
 		    tmp_win->attr.y = V_TO_R_Y(tmp_win->attr.y);
-	    }
+		    }
 
 	/* if the gravity is towards the top, move it by the title height */
 	if (gravy < 0) tmp_win->attr.y -= gravy * tmp_win->title_height;
@@ -889,6 +901,10 @@ Why?
      */
     if (RootFunction)
 	ReGrab();
+
+	Scr->Newest = tmp_win; /* PF */
+	if (tmp_win->transient && Scr->WarpToTransients) /* PF */
+		WarpToWindow(tmp_win); /* PF,DSE */
 
     return (tmp_win);
 }

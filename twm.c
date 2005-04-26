@@ -134,6 +134,8 @@ main(argc, argv, environ)
     XSetWindowAttributes attributes;	/* attributes for create windows */
     int numManaged, firstscrn, lastscrn, scrnum;
     extern ColormapWindow *CreateColormapWindow();
+    
+    MenuRoot *mroot; /* DSE */
 
     ProgramName = argv[0];
     Argc = argc;
@@ -526,12 +528,27 @@ main(argc, argv, environ)
 	  fprintf (stderr, "%s:  unable to find any unmanaged screens\n",
 		   ProgramName);
 	exit (1);
+	
     }
 
     RestartPreviousState = False;
     HandlingEvents = TRUE;
+
+	RaiseStickyAbove(); /* DSE */    
+    RaiseAutoPan(); /* autopan windows should have been raised
+                       after [re]starting vtwm -- DSE */
+
     InitEvents();
+
+	/* profile function stuff by DSE */
+#define VTWM_PROFILE "VTWM Profile"
+	if (FindMenuRoot (VTWM_PROFILE)) {
+		ExecuteFunction (F_FUNCTION, VTWM_PROFILE, Event.xany.window,
+			Scr->TwmRoot, &Event, C_NO_CONTEXT, FALSE);
+	}
+
     HandleEvents();
+
 }
 
 /***********************************************************************
@@ -637,9 +654,12 @@ InitVariables()
     Scr->UnknownWidth = 0;
     Scr->UnknownHeight = 0;
     Scr->NumAutoRaises = 0;
-    Scr->NoDefaults = FALSE;
+/*  Scr->NoDefaults = FALSE;  */
+	Scr->NoDefaultMouseOrKeyboardBindings = FALSE; /* DSE */
+	Scr->NoDefaultTitleButtons = FALSE; /* DSE */
     Scr->UsePPosition = PPOS_OFF;
     Scr->FocusRoot = TRUE;
+    Scr->Newest = NULL; /* PF */
     Scr->Focus = NULL;
     Scr->WarpCursor = FALSE;
     Scr->ForceIcon = FALSE;
@@ -669,6 +689,7 @@ InitVariables()
     Scr->Shadow = TRUE;
     Scr->InterpolateMenuColors = FALSE;
     Scr->NoIconManagers = FALSE;
+    Scr->NoIconifyIconManagers = FALSE; /* PF */
     Scr->ClientBorderWidth = FALSE;
     Scr->SqueezeTitle = -1;
     Scr->FirstRegion = NULL;
@@ -679,6 +700,7 @@ InitVariables()
     Scr->WarpUnmapped = FALSE;
     Scr->DeIconifyToScreen = FALSE;
     Scr->WarpWindows = FALSE;
+    Scr->WarpToTransients = FALSE; /* PF */
     Scr->SnapRealScreen = FALSE;
 	Scr->OldFashionedTwmWindowsMenu = FALSE;
     Scr->GeometriesAreVirtual = TRUE;
@@ -693,6 +715,8 @@ InitVariables()
     Scr->TitleBarFont.name = DEFAULT_NICE_FONT;
     Scr->MenuFont.font = NULL;
     Scr->MenuFont.name = DEFAULT_NICE_FONT;
+    Scr->MenuTitleFont.font = NULL; /* DSE */
+    Scr->MenuTitleFont.name = NULL; /* uses MenuFont unless set -- DSE */
     Scr->IconFont.font = NULL;
     Scr->IconFont.name = DEFAULT_NICE_FONT;
     Scr->SizeFont.font = NULL;
@@ -735,6 +759,7 @@ InitVariables()
     /* by default no autopan */
     Scr->AutoPanX = 0;
     Scr->StayUpMenus = FALSE;
+    Scr->StayUpOptionalMenus = FALSE; /* PF */
 
 	Scr->AutoPanWarpWithRespectToRealScreen = 0;   /* DSE */
 	Scr->AutoPanBorderWidth = 5;                   /* DSE */
@@ -744,7 +769,10 @@ InitVariables()
 	Scr->RealScreenBorderWidth = 2;                /* DSE */
 	Scr->LessRandomZoomZoom = FALSE;               /* DSE */
 	Scr->PrettyZoom = FALSE;                       /* DSE */
-
+	Scr->StickyAbove = FALSE;                      /* DSE */
+	Scr->DontInterpolateTitles = FALSE;            /* DSE */
+	Scr->FixTransientVirtualGeometries = FALSE;    /* DSE */
+	Scr->WarpSnug = FALSE;                         /* DSE */
 }
 
 
@@ -758,6 +786,7 @@ CreateFonts ()
     GetFont(&Scr->VirtualFont);
     GetFont(&Scr->DoorFont);
     GetFont(&Scr->DefaultFont);
+    GetFont(&Scr->MenuTitleFont); /* DSE */
     Scr->HaveFonts = TRUE;
 }
 
