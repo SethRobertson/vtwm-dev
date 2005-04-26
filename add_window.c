@@ -232,7 +232,8 @@ IconMgr *iconp;
 	(short)(int) LookInList(Scr->IconifyByUn, tmp_win->full_name,
 	    &tmp_win->class);
 
-    if (LookInList(Scr->WindowRingL, tmp_win->full_name, &tmp_win->class)) {
+    if ( Scr->UseWindowRing
+    || LookInList(Scr->WindowRingL, tmp_win->full_name, &tmp_win->class)) {
 	if (Scr->Ring) {
 	    tmp_win->ring.next = Scr->Ring->ring.next;
 	    if (Scr->Ring->ring.next->ring.prev)

@@ -334,6 +334,14 @@ typedef struct _TwmKeyword {
 #define kw0_WarpWindows                 27
 #define kw0_SnapRealScreen		28
 #define kw0_NotVirtualGeometries	29
+#define kw0_OldFashionedTwmWindowsMenu 30 /* RFB */
+#define kw0_UseRealScreenBorder        31 /* RFB */
+#define kw0_StayUpMenus                32
+#define kw0_NaturalAutopanBehavior     33 /* DSE */
+#define kw0_EnhancedExecResources      34 /* DSE */
+#define kw0_RightHandSidePulldownMenus 35 /* DSE */
+#define kw0_LessRandomZoomZoom         36 /* DSE */
+#define kw0_PrettyZoom                 37 /* DSE */
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -347,19 +355,23 @@ typedef struct _TwmKeyword {
 #define kws_VirtualFont			10
 #define kws_DoorFont			11
 
-#define kwn_ConstrainedMoveTime		1
-#define kwn_MoveDelta			2
-#define kwn_XorValue			3
-#define kwn_FramePadding		4
-#define kwn_TitlePadding		5
-#define kwn_ButtonIndent		6
-#define kwn_BorderWidth			7
-#define kwn_IconBorderWidth		8
-#define kwn_TitleButtonBorderWidth	9
-#define kwn_PanDistanceX                10
-#define kwn_PanDistanceY                11
-#define kwn_AutoPan			12
-#define kwn_RaiseDelay 13/*RAISEDELAY*/
+#define kwn_ConstrainedMoveTime     1
+#define kwn_MoveDelta               2
+#define kwn_XorValue                3
+#define kwn_FramePadding            4
+#define kwn_TitlePadding            5
+#define kwn_ButtonIndent            6
+#define kwn_BorderWidth             7 
+#define kwn_IconBorderWidth         8
+#define kwn_TitleButtonBorderWidth  9
+#define kwn_PanDistanceX           10
+#define kwn_PanDistanceY           11
+#define kwn_AutoPan                12
+#define kwn_RaiseDelay             13 /* RAISEDELAY */
+#define kwn_AutoPanBorderWidth     14 /* DSE */
+#define kwn_AutoPanExtraWarp       15 /* DSE */
+#define kwn_RealScreenBorderWidth  16 /* DSE */
+#define kwn_AutoPanWarpWithRespectToRealScreen 17 /* DSE */
 
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
@@ -399,6 +411,10 @@ typedef struct _TwmKeyword {
 static TwmKeyword keytable[] = {
     { "all",			ALL, 0 },
     { "autopan",		NKEYWORD, kwn_AutoPan },
+    { "autopanborderwidth", NKEYWORD, kwn_AutoPanBorderWidth },       /* DSE */
+    { "autopanextrawarp", NKEYWORD, kwn_AutoPanExtraWarp },           /* DSE */
+    { "autopanwarpwithrespecttorealscreen", NKEYWORD,
+          kwn_AutoPanWarpWithRespectToRealScreen },                   /* DSE */
     { "autoraise",		AUTO_RAISE, 0 },
 	{ "autoraisedelay",       NKEYWORD, kwn_RaiseDelay },/*RAISEDELAY*/
     { "autorelativeresize",	KEYWORD, kw0_AutoRelativeResize },
@@ -439,6 +455,7 @@ static TwmKeyword keytable[] = {
     { "doorforeground",		CLKEYWORD, kwcl_DoorForeground },
     { "doors",			DOORS, 0 },
     { "east",			DKEYWORD, D_EAST },
+    { "enhancedexecresources", KEYWORD, kw0_EnhancedExecResources }, /* DSE */
     { "f",			FRAME, 0 },
     { "f.autopan",		FKEYWORD, F_AUTOPAN },/*RFB F_AUTOPAN*/
     { "f.autoraise",		FKEYWORD, F_AUTORAISE },
@@ -452,6 +469,7 @@ static TwmKeyword keytable[] = {
     { "f.cutfile",		FKEYWORD, F_CUTFILE },
     { "f.deiconify",		FKEYWORD, F_DEICONIFY },
     { "f.delete",		FKEYWORD, F_DELETE },
+    { "f.deletedoor",		FKEYWORD, F_DELETEDOOR },
     { "f.deltastop",		FKEYWORD, F_DELTASTOP },
     { "f.destroy",		FKEYWORD, F_DESTROY },
     { "f.downiconmgr",		FKEYWORD, F_DOWNICONMGR },
@@ -501,6 +519,7 @@ static TwmKeyword keytable[] = {
     { "f.showdesktopdisplay",	FKEYWORD, F_SHOWDESKTOP },
     { "f.showiconmgr",		FKEYWORD, F_SHOWLIST },
     { "f.snap",			FKEYWORD, F_SNAP },
+    { "f.snaprealscreen",			FKEYWORD, F_SNAPREALSCREEN },
     { "f.snugdesktop",        FKEYWORD, F_SNUGDESKTOP },
     { "f.snugwindow",     FKEYWORD, F_SNUGWINDOW },
     { "f.sorticonmgr",		FKEYWORD, F_SORTICONMGR },
@@ -514,6 +533,7 @@ static TwmKeyword keytable[] = {
     { "f.unfocus",		FKEYWORD, F_UNFOCUS },
     { "f.upiconmgr",		FKEYWORD, F_UPICONMGR },
     { "f.version",		FKEYWORD, F_VERSION },
+    { "f.virtualgeometries",	FKEYWORD, F_VIRTUALGEOMETRIES },
     { "f.vlzoom",		FKEYWORD, F_LEFTZOOM },
     { "f.vrzoom",		FKEYWORD, F_RIGHTZOOM },
     { "f.warpring",		FSKEYWORD, F_WARPRING },
@@ -522,6 +542,7 @@ static TwmKeyword keytable[] = {
     { "f.warptoscreen",		FSKEYWORD, F_WARPTOSCREEN },
     { "f.winrefresh",		FKEYWORD, F_WINREFRESH },
     { "f.zoom",			FKEYWORD, F_ZOOM },
+    { "f.zoomzoom",			FKEYWORD, F_ZOOMZOOM },
     { "forceicons",		KEYWORD, kw0_ForceIcons },
     { "frame",			FRAME, 0 },
     { "framepadding",		NKEYWORD, kwn_FramePadding },
@@ -550,6 +571,7 @@ static TwmKeyword keytable[] = {
     { "l",			LOCK, 0 },
     { "left",			JKEYWORD, J_LEFT },
     { "lefttitlebutton",	LEFT_TITLEBUTTON, 0 },
+    { "lessrandomzoomzoom", KEYWORD, kw0_LessRandomZoomZoom }, /* DSE */
     { "lock",			LOCK, 0 },
     { "m",			META, 0 },
     { "maketitle",		MAKE_TITLE, 0 },
@@ -567,6 +589,7 @@ static TwmKeyword keytable[] = {
     { "move",			MOVE, 0 },
     { "movedelta",		NKEYWORD, kwn_MoveDelta },
     { "naileddown",		NAILEDDOWN, 0},
+    { "naturalautopanbehavior", KEYWORD, kw0_NaturalAutopanBehavior }, /* DSE */
     { "nobackingstore",		KEYWORD, kw0_NoBackingStore },
     { "nocasesensitive",	KEYWORD, kw0_NoCaseSensitive },
     { "nodefaults",		KEYWORD, kw0_NoDefaults },
@@ -586,20 +609,26 @@ static TwmKeyword keytable[] = {
     { "notitlehighlight",	NO_TITLE_HILITE, 0 },
     { "notvirtualgeometries",	KEYWORD, kw0_NotVirtualGeometries },
     { "noversion",		KEYWORD, kw0_NoVersion },
+	{ "oldfashionedtwmwindowsmenu", KEYWORD,
+			kw0_OldFashionedTwmWindowsMenu },/*RFB*/
     { "opaquemove",		KEYWORD, kw0_OpaqueMove },
     { "pandistancex",		NKEYWORD, kwn_PanDistanceX },
     { "pandistancey",		NKEYWORD, kwn_PanDistanceY },
-    { "pixmaps",		PIXMAPS, 0 },
+	{ "pixmaps",		PIXMAPS, 0 },
+	{ "prettyzoom", KEYWORD, kw0_PrettyZoom }, /* DSE */
     { "r",			ROOT, 0 },
 	{ "raisedelay",       NKEYWORD, kwn_RaiseDelay },/*RAISEDELAY*/
     { "randomplacement",	KEYWORD, kw0_RandomPlacement },
     { "realscreenbackground", CKEYWORD, kwc_RealScreenBackground },/*RFB 4/92*/
+    { "realscreenborderwidth", NKEYWORD, kwn_RealScreenBorderWidth }, /* DSE */
     { "realscreenforeground", CKEYWORD, kwc_RealScreenForeground },/*RFB 4/92*/
     { "realscreenpixmap",		REALSCREENMAP, 0 },/*RFB PIXMAP*/
     { "resize",			RESIZE, 0 },
     { "resizefont",		SKEYWORD, kws_ResizeFont },
     { "restartpreviousstate",	KEYWORD, kw0_RestartPreviousState },
+    { "rhspulldownmenus", KEYWORD, kw0_RightHandSidePulldownMenus }, /* DSE */
     { "right",			JKEYWORD, J_RIGHT },
+    { "righthandsidepulldownmenus", KEYWORD, kw0_RightHandSidePulldownMenus }, /* DSE */
     { "righttitlebutton",	RIGHT_TITLEBUTTON, 0 },
     { "root",			ROOT, 0 },
     { "s",			SHIFT, 0 },
@@ -612,6 +641,7 @@ static TwmKeyword keytable[] = {
     { "south",			DKEYWORD, D_SOUTH },
     { "squeezetitle",		SQUEEZE_TITLE, 0 },
     { "starticonified",		START_ICONIFIED, 0 },
+    { "stayupmenus",		KEYWORD, kw0_StayUpMenus },
     { "sticky",             NAILEDDOWN, 0 },/*RFB*/
     { "t",			TITLE, 0 },
     { "title",			TITLE, 0 },
@@ -623,6 +653,7 @@ static TwmKeyword keytable[] = {
     { "titlepadding",		NKEYWORD, kwn_TitlePadding },
     { "unknownicon",		SKEYWORD, kws_UnknownIcon },
     { "usepposition",		SKEYWORD, kws_UsePPosition },
+	{ "userealscreenborder", KEYWORD, kw0_UseRealScreenBorder },/*RFB*/
     { "v",			VIRTUAL, 0 },
     { "virtual",		VIRTUAL, 0 },
     { "virtualbackground",	CKEYWORD, kwc_VirtualBackground },/*RFB VCOLOR*/
@@ -682,6 +713,18 @@ int do_single_keyword (keyword)
       case kw0_NoDefaults:
 	Scr->NoDefaults = TRUE;
 	return 1;
+
+	case kw0_StayUpMenus:
+		if (Scr->FirstTime) Scr->StayUpMenus = TRUE;
+		return 1;
+
+	case kw0_UseRealScreenBorder:/*RFB*/
+		Scr->UseRealScreenBorder = TRUE;
+		return 1;
+
+	case kw0_OldFashionedTwmWindowsMenu:/*RFB*/
+		Scr->OldFashionedTwmWindowsMenu = TRUE;
+		return 1;
 
       case kw0_AutoRelativeResize:
 	Scr->AutoRelativeResize = TRUE;
@@ -793,7 +836,24 @@ int do_single_keyword (keyword)
 
       case kw0_NotVirtualGeometries:
 	Scr->GeometriesAreVirtual = FALSE;
-	break;
+	return 1;
+	
+	case kw0_NaturalAutopanBehavior: /* DSE */
+		Scr->AutoPanWarpWithRespectToRealScreen = 100;
+		return 1;
+	case kw0_EnhancedExecResources: /* DSE */
+		Scr->EnhancedExecResources = TRUE;
+		return 1;
+	case kw0_RightHandSidePulldownMenus: /* DSE */
+		Scr->RightHandSidePulldownMenus = TRUE;
+		return 1;
+	case kw0_LessRandomZoomZoom: /* DSE */
+		Scr->LessRandomZoomZoom = TRUE;
+		return 1;
+	case kw0_PrettyZoom: /* DSE */
+		Scr->PrettyZoom = TRUE;
+		return 1;
+
     }
 
     return 0;
@@ -885,6 +945,18 @@ int do_number_keyword (keyword, num)
       case kwn_ConstrainedMoveTime:
 	ConstrainedMoveTime = num;
 	return 1;
+	
+	  case kwn_AutoPanBorderWidth: /* DSE */
+  		Scr->AutoPanBorderWidth = (num<1)?1:num;
+	  	return 1;
+	  	
+	  case kwn_AutoPanExtraWarp: /* DSE */
+  		Scr->AutoPanExtraWarp = (num<0)?0:num;
+	    return 1;
+	    
+	  case kwn_RealScreenBorderWidth: /* DSE */
+		Scr->RealScreenBorderWidth = (num<0)?0:num;
+	    return 1;
 
       case kwn_MoveDelta:
 	Scr->MoveDelta = num;
@@ -931,12 +1003,18 @@ int do_number_keyword (keyword, num)
 	case kwn_RaiseDelay: RaiseDelay = num; return 1;/*RAISEDELAY*/
 
       case kwn_AutoPan:
-	if (Scr->FirstTime) {
-		Scr->AutoPan = (num * Scr->MyDisplayWidth) / 100;
-		if (Scr->AutoPan <= 0)
-			Scr->AutoPan = 1;
+	if (Scr->FirstTime)
+	{
+		Scr->AutoPanX = (num * Scr->MyDisplayWidth) / 100;
+		Scr->AutoPanY = (num * Scr->MyDisplayHeight) / 100;
+		if (Scr->AutoPanX <= 0) Scr->AutoPanX = 1;
+		if (Scr->AutoPanY <= 0) Scr->AutoPanY = 1;
 	}
 	return 1;
+
+	case kwn_AutoPanWarpWithRespectToRealScreen: /* DSE */
+		Scr->AutoPanWarpWithRespectToRealScreen = (num<0)?0:(num>100)?100:num;
+		return 1;
 
     }
 

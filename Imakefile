@@ -1,18 +1,17 @@
-#XCOMM $XConsortium: Imakefile,v 1.33 91/07/17 00:48:06 gildea Exp $
-#XCOMM
-#XCOMM Here is an Imakefile for vtwm.  It depends on having TWMDIR defined
-#XCOMM in Imake.tmpl.  I like to use Imakefiles for everything, and I am sure
-#XCOMM other people do also, so perhaps you could do us all a favor and
-#XCOMM distribute this one.
-#XCOMM
+XCOMM $XConsortium: Imakefile,v 1.33 91/07/17 00:48:06 gildea Exp $
+XCOMM
+XCOMM Here is an Imakefile for vtwm.  It depends on having TWMDIR defined
+XCOMM in Imake.tmpl.  I like to use Imakefiles for everything, and I am sure
+XCOMM other people do also, so perhaps you could do us all a favor and
+XCOMM distribute this one.
+XCOMM
 
          YFLAGS = -d
         DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
-#LOCAL_LIBRARIES = $(XMULIB) $(EXTENSIONLIB) $(XLIB)
- LOCAL_LIBRARIES = -lX11 -lXext -lXmu -lXt -lm 	
-
+LOCAL_LIBRARIES = $(XMULIB) $(EXTENSIONLIB) $(XLIB)
        LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
         DEFINES = $(SIGNAL_DEFINES)
+        VTWMDIR = $(LIBDIR)/vtwm
 
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c twm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
@@ -24,16 +23,15 @@
 
 AllTarget(vtwm)
 
-SpecialObjectRule(parse.o,parse.c,'-DSYSTEM_INIT_FILE="'$(TWMDIR)'/system.vtwmrc"')
+SpecialObjectRule(parse.o,parse.c,'-DSYSTEM_INIT_FILE="'$(VTWMDIR)'/system.vtwmrc"')
 #if !HasPutenv
 SpecialObjectRule(util.o,NullParameter,-DNOPUTENV)
 #endif
 
-depend:: lex.c gram.c deftwmrc.c 
+depend:: lex.c gram.c deftwmrc.c
 
 ComplexProgramTarget(vtwm)
-
-#InstallNonExecFile(system.vtwmrc,$(TWMDIR))
+InstallNonExecFile(system.vtwmrc,$(VTWMDIR))
 
 gram.h gram.c: gram.y
 	yacc $(YFLAGS) gram.y
@@ -41,7 +39,7 @@ gram.h gram.c: gram.y
 	$(MV) y.tab.h gram.h
 
 clean::
-	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c 
+	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c
 
 deftwmrc.c:  system.vtwmrc
 	$(RM) $@

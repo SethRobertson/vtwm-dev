@@ -1,0 +1,120 @@
+Version 5.2 of vtwm is a community effort. My name is on it,
+but I did less than half the work. There were contributors
+from all around the world, every one of whom managed to
+figure out how some piece of this program works and do a creditable
+job of hacking it. A large number of people have touched this code,
+and except for the part of the code that moves windows around, it's
+still easily understandable and in terrific shape; this says a lot
+about the X style of programming, and the kind of job done by Tom
+LaStrange and Dave Edmondson.
+
+I'm not aware of any program, nor any release of a program, that so
+fully embodies the ideal of community software. Perhaps that says a
+lot about my ignorance, but ignorance is bliss, so don't enlighten
+me.
+
+The only reason I published 5.1 was because I had a number of
+changes that I wanted to see in the "official" vtwm, and had no
+better way of getting them in there.
+
+After I did so, I heard from a number of people who seemed
+to be in the same boat; because I needed to fix rescaling the
+desktop and to add the UseRealScreenBorder and
+OldFashionedTwmWindowsMenu variables ( some folks didn't like the
+changes I made and wanted the old-style behavior to be at least
+available to them :-( ),
+
+I agreed to collect patches and come out with a vtwm-5.2!
+
+Because I was playing with the code in any case, I added f.zoomzoom
+and StayUpMenus, and made a big improvement in moving the windows
+around in the panner.
+
+	When you click on a window in the panner, it used to jump so
+	that its top-left corner would be at the pointer position.
+	Now, when you click inside the little windows, they don't jump;
+	they also don't jump when you release!, and moving them around
+	has become much more natural.
+
+	I really like stayup menus, *but* it's kinda confusing to use,
+	because xterm, xpostit, and the like don't have this feature!
+
+Perhaps there will be a vtwm-5.3, but I do not plan to be involved,
+at least not as the central figure.
+
+Here is a short list of the changes:
+
+	New variables
+		StayUpMenus
+		OldFashionedTwmWindowsMenu
+		UseRealScreenBorder
+
+	Modified Variables
+		WindowRing (window list optional)
+		VirtualDesktop (expanded syntax)
+
+	New functions
+		f.zoomzoom
+		f.snaprealscreen
+		f.virtualgeometries
+		f.deletedoor
+
+	Modified functions
+		f.move (can be bound to a keypress)
+
+	Miscellaneous
+		smoother movement in panner
+		Allow #rrggbb colors in X11R4
+		restored the ability to rescale the desktop
+		bug fixes
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!                                                        !!
+!!  And here is the known bug:                            !!
+!!                                                        !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+If you invoke resize from a stayup menu or from a titlebar menu, it
+moves the window and gets the wrong size. :-(
+
+This bug was also present in vtwm-5.0.tar.Z, but there was no such
+bug in the X11R4 vtvwm.shar.Z
+
+As I found from putting in StayUpMenus, the movement and resize code
+is quite messy; since I didn't create this bug, I will take the
+coward's path, and decline to deal with it. (Actually, I wasted a
+few hours looking through the code to try to find a clue, and *then*
+I gave up.)
+
+Resizing by dragging the side of the window works quite well,
+as does resizing from a non-stayup non-titlebar menu.
+
+===============================================
+
+Supplementary files:
+
+marcel.vtwmrc is a remarkably-well organized vtwmrc, and it shows
+exactly the differences between tvtwm and vtwm. I think it would be
+nice if .tvtwmrc and .vtwmrc could be more similar, so perhaps some
+of the variables and functions from tvtwm should be added (as
+synonyms) to vtwm.
+
+nexpm is still there; the next release of xpm will presumably
+include nexpm, however, and after that there will be no need to
+package nexpm along with vtwm.
+
+==============================================
+
+Final note:
+
+Enjoy!
+
+--
+Ralph Betza (FM),
+uunet!ssiny!gnohmon         gnohmon@ssiny.com
+
+"The question of whether a computer can swim is more interesting
+ than the question of whether a submarine can think" - Lenny Dykstra
+
+    <Support your local Oracle!>
+

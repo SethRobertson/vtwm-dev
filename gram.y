@@ -248,6 +248,8 @@ stmt		: error
 					    Scr->WarpCursor = TRUE; }
 		| WINDOW_RING		{ list = &Scr->WindowRingL; }
 		  win_list
+		| WINDOW_RING       {	if (Scr->FirstTime)
+						Scr->UseWindowRing = TRUE; }
 		| NAILEDDOWN		{ list = &Scr->NailedDown; }
 		  win_list
 		| VIRTUALDESKTOP string number

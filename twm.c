@@ -401,6 +401,12 @@ main(argc, argv, environ)
 	Scr->tbpm.menu = None;
 	Scr->tbpm.delete = None;
 
+	if ( Scr->FirstTime )
+	{	/* retain max size on restart. */
+		Scr->VirtualDesktopMaxWidth = 0;
+		Scr->VirtualDesktopMaxHeight = 0;
+	}
+
 	InitVariables();
 	InitMenus();
 
@@ -674,7 +680,9 @@ InitVariables()
     Scr->DeIconifyToScreen = FALSE;
     Scr->WarpWindows = FALSE;
     Scr->SnapRealScreen = FALSE;
+	Scr->OldFashionedTwmWindowsMenu = FALSE;
     Scr->GeometriesAreVirtual = TRUE;
+	Scr->UseWindowRing = FALSE;
 
     /* setup default fonts; overridden by defaults from system.twmrc */
 #define DEFAULT_NICE_FONT "variable"
@@ -725,7 +733,18 @@ InitVariables()
     Scr->VirtualDesktopDY = 0;
 
     /* by default no autopan */
-    Scr->AutoPan = 0;
+    Scr->AutoPanX = 0;
+    Scr->StayUpMenus = FALSE;
+
+	Scr->AutoPanWarpWithRespectToRealScreen = 0;   /* DSE */
+	Scr->AutoPanBorderWidth = 5;                   /* DSE */
+	Scr->AutoPanExtraWarp = 2;                     /* DSE */
+	Scr->EnhancedExecResources = FALSE;            /* DSE */
+	Scr->RightHandSidePulldownMenus = FALSE;       /* DSE */
+	Scr->RealScreenBorderWidth = 2;                /* DSE */
+	Scr->LessRandomZoomZoom = FALSE;               /* DSE */
+	Scr->PrettyZoom = FALSE;                       /* DSE */
+
 }
 
 

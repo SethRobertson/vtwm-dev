@@ -217,6 +217,23 @@ This variable allows the screen to automatically pan by \fIN%\fP when the
 mouse approaches the edge of the screen.   The pan will be in
 the direction of the edge approached.  On reasonably fast
 machines a value of 5 is nice.
+.IP "\fBAutoPanBorderWidth\fP \fIpixels\fP" 8
+If AutoPan is turned on, when the mouse goes within the specified
+number of \fIpixels\fP of the real screen's border, the screen is panned.  The default
+value is 5.
+.IP "\fBAutoPanExtraWarp\fP \fIpixels\fP" 8
+If AutoPan is turned on and NaturalAutopanBehavior turned off,
+this variable specifies how far, in pixels, you want the mouse to move away
+from the inner edge of the autopan border 
+when autopanning.  The default value is 2 pixels.
+.IP "\fBAutoPanWarpWithRespectToRealScreen\fP \fIN\fP" 8
+With this option turned on, the pointer is warped by \fIN%\fP as many pixels
+on the real screen as the screen is scrolled, or by
+.EX 0
+	(AutoPanBorderWidth + AutoPanExtraWarp)
+.EE
+pixels, whichever is greater.  See NaturalAutopanBehavior for a more thorough
+discussion of this and some recommended settings.
 .IP "\fBAutoRaise\fP [{ \fIwin-list\fP }]" 8
 This variable specifies a list of windows
 (all windows if the list is defaulted)
@@ -400,7 +417,7 @@ screen.
 This variable sets the backgrounds of the little windows inside the
 Virtual Desktop window,
 AND it sets the backgrounds of menu entries in the "TWM Windows"
-menu.
+menu -- unless you specify OldFashionedTwmWindowsMenu.
 The default \fIcolor\fP is used for the default background of
 windows not named in the list.  The optional
 \fIwin-list\fP is a list of window names and colors, for example:
@@ -465,6 +482,35 @@ in the door-list has the following format:
 Windows with the name \fIwinname\fP appear with geometry and position
 as defined in \fIlocation\fP, and warp the user to \fIjumpTo\fP when
 f.enterdoor is executed inside them.  Doors have a class of `Twm Door'.
+.IP "\fBEnhancedExecResources\fP" 8
+By default, f.exec resources behaved as they always did in \fIvtwm\fP.  You
+would have to append " &" to all of your resources in order to execute them
+without blocking the window manager.  With this option turned on, you don't
+have to; \fIvtwm\fP will automatically append " &" to the f.exec resource UNLESS
+the last non-space character is either `&' or (in case you still want a
+command to block the window manager) `;'.
+
+For example, in a resource such as:
+.EX 0
+	f.exec "foo; bar; baz"
+.EE
+the window manager will be blocked so that "foo" and "bar" can be executed;
+"baz" is the only command which will NOT block the window manager.  If you
+want all these commands to be backgrounded, try the following:
+.EX 0
+	f.exec "{ foo; bar; baz }" # note that "{" and "}"
+	                           # are shell keywords; they
+	                           # MUST be separated by 
+	                           # spaces.
+.EE
+If you still want a command to block the window manager, you would use:
+.EX 0
+	f.exec "xset fp rehash;" # vtwm will not append " &"
+	                         # because ';' is the last 
+	                         # non-space character.
+.EE
+This behavior was inspired by that of \fIvuewm\fP, Hewlett-Packard's
+workspace implementation of \fImwm\fP.
 .IP "\fBForceIcons\fP" 8
 This variable indicates that icon pixmaps specified in the \fBIcons\fP
 variable should override any client-supplied pixmaps.
@@ -625,6 +671,10 @@ the foreground colors for ``entry1'' and ``entry2'' will be interpolated
 between black and white, and the background colors between red and green.
 Similarly, the foreground for ``entry4'' will be half-way between white and
 red, and the background will be half-way between green and white.
+.IP "\fBLessRandomZoomZoom\fP" 8
+With this option turned on, this makes the \fBf.zoomzoom\fP function a bit
+less `random' and a bit more visible.  This might make a better visual bell,
+depending on your personal taste.
 .IP "\fBMakeTitle\fP { \fIwin-list\fP }" 8
 This variable specifies a list of windows on which a titlebar should be placed
 and is used to request titles on specific windows when \fBNoTitle\fP has been
@@ -674,6 +724,26 @@ It is usual to provide as a minimum the list:
 		"TWM Door"
 		"TWM Icon Manager"
 	}
+.EE
+.IP "\fBNaturalAutopanBehavior\fP" 8
+By default, when autopanning, the pointer is warped by only
+.EX 0
+	(AutoPanBorderWidth + AutoPanExtraWarp)
+.EE
+pixels on the real screen.  With this option turned on, the pointer is warped
+on the real screen by as many pixels as the screen is scrolled, or the above
+value, whichever is greater.  Thus, the pointer does not normally move very
+much (only by AutoPanExtraWarp) in relation to the virtual desktop.
+
+This works really well on faster X terminals and workstations, although for
+slower ones, you may want to use the following:
+.EX 0
+	AutoPanWarpWithRespectToRealScreen 50
+.EE
+to achieve a similar effect.  
+Setting NaturalAutopanBehavior has the exact same effect as using the resorce
+.EX 0
+	AutoPanWarpWithRespectToRealScreen 100
 .EE
 .IP "\fBNoBackingStore\fP" 8
 This variable indicates that \fIvtwm\fP's menus should not request backing
@@ -749,18 +819,23 @@ be displayed.  If the optional \fIwin-list\fP is given, only those windows
 will not have highlight areas.  This and the \fBSqueezeTitle\fP options
 can be set to substantially reduce the amount of screen space required by
 titlebars.
-.IP "\fNotVirtualGeometries\fP" 8
-It's in the program. Not sure what it means.
+.IP "\fBNotVirtualGeometries\fP" 8
+This variable indicates that \fIvtwm\fP should assume that user
+geometries should be relative to the current virtual window, as
+opposed to absolute.
+If you set this, then ``xterm -geometry +20+20'' specifies a
+position in the current view; otherwise, and by default, it would
+specify a position in the top-left view.
+.IP "\fBOldFashionedTwmWindowsMenu\fP" 8
+By default, the TWM Windows menu will use the same colors
+that you see in the panner. This variable disables that behavior.
 .IP "\fBOpaqueMove\fP" 8
 This variable indicates that the \fBf.move\fP function should actually move
 the window instead of just an outline so that the user can immediately see
 what the window will look like in the new position.  This option is typically
 used on fast displays (particularly if \fBNoGrabServer\fP is set).
-.TP 8
-.nf
-\fBPanDistanceX\fP \fIvalue\fP
-\fBPanDistanceY\fP \fIvalue\fP
-.fi
+.IP "\fBPanDistanceX\fP \fIvalue\fP" 8
+.IP "\fBPanDistanceY\fP \fIvalue\fP" 8
 These variables define a grid of screens for the virtual desktop.
 When the \fBf.snap\fP function is called, the real screen will be moved to the
 closest grid location.  The (mis)naming of these variables is for historical reasons.
@@ -778,6 +853,10 @@ may be specified:
 }
 .EE
 The default for \fITitleHighlight\fP is to use an even stipple pattern.
+.IP "\fBPrettyZoom\fP" 8
+If Zoom is turned on, this makes the associated animation look just a little
+nicer, depending on your personal taste.  This makes the zoom slower,
+however, so you may have to decrease the value of the Zoom variable.
 .IP "\fBRaiseDelay\fP \fImilliseconds\fP" 8
 For windows that are to be automatically raised when the pointer enters
 (see the \fBAutoRaise\fP variable and the \fIf.autoraise\fP function)
@@ -790,15 +869,20 @@ be placed in a pseudo-random location instead of having the user drag out
 an outline.
 .IP "\fBRealScreenBackground\fP \fIstring\fP" 8
 See RealScreenForeground.
+.IP "\fBRealScreenBorderWidth\fP \fIpixels\fP" 8
+If UseRealScreenBorder is turned on, this value specifies the border
+width of the RealScreen window (see RealScreenForeground).  The default
+value is 2 pixels.
 .IP "\fBRealScreenForeground\fP \fIstring\fP" 8
 Inside what vtwm calls the virtual desktop window,
 but which we might call the "panner",
 is a little window that shows where the physical screen
 is located in virtual space.
 The vtwm source code calls this little window the RealScreen.
-It currently has no border, and can be distinguished from the normal
+By default, it has no border, and can be distinguished from the normal
 backdrop of the panner only by its color or bitmap.
 Its foreground color has no meaning unless you give it a bitmap.
+(It can be given a border by specifying UseRealScreenBorder.)
 .IP "\fBRealScreenPixmap\fP \fIstring\fP" 8
 Names a bitmap used to decorate the RealScreen window.
 A sample is provided, realscr.bm, but your mileage may vary as the
@@ -815,6 +899,11 @@ This variable indicates that
 to tell which windows should be iconified and which should be left visible.
 This is typically used to try to regenerate the state that the screen
 was in before the previous window manager was shutdown.
+.IP "\fBRightHandSidePulldownMenus\fP" 8
+By default, pull-down menus start from the left-to-right center of their
+parent pull-down menus (if they have them).  With this option turned on, they
+will start closer to the right-hand side of the parent menu.  This behavior
+was inspired by that exhibited by pull-down menus in other GUIs.
 .IP "\fBSaveColor\fP { \fIcolors-list\fP }" 8
 This variable indicates a list of color assignments to be stored as pixel
 values in the root window property _MIT_PRIORITY_COLORS.  Clients may elect
@@ -844,6 +933,7 @@ This variable indicates that the icon manager window should be displayed when
 .IP "\fBSnapRealScreen\fP" 8
 This variable causes the real screen to snap to a grid defined in
 PanDistanceX and PanDistanceY increments whenever the representation moves.
+The f.snaprealscreen function can be used to toggle this setting.
 .IP "\fBSortIconManager\fP" 8
 This variable indicates that entries in the icon manager should be
 sorted alphabetically rather than by simply appending new windows to
@@ -884,6 +974,10 @@ icons until explicitly deiconified by the user.  If the optional \fIwin-list\fP
 is given, only those windows will be started iconic.  This is useful for
 programs that do not support an \fI-iconic\fP command line option or
 resource.
+.IP "\fBStayUpMenus\fP" 8
+This variable alters menu interaction.  By default, a menu item is selected
+when a mouse button is released over it.  This variable causes menu itmes to
+be selected on the next button press event.
 .IP "\fBSticky\fP { \fIlist\fP }" 8
 A synonym for NailedDown.
 .IP "\fBTitleBackground\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
@@ -929,6 +1023,9 @@ should be used, and
 \fB"non-zero"\fP indicating that the position should used if
 it is other than (0,0).  The latter option is for working around a bug in
 older toolkits.
+.IP "\fBUseRealScreenBorder\fP" 8
+This variable lets the RealScreen have a border.
+It may be useful for monochrome systems.
 .IP "\fBVirtualBackground\fP \fIstring\fP
 This is the background color for the panner, a.k.a. the Virtual
 Desktop window.
@@ -939,25 +1036,37 @@ See also the nexpm program.
 Foreground for the panner; has no use unless you specify a panner
 bitmap.
 .IP "\fBVirtualDesktop\fP \fIgeometry\fP \fIscale\fP" 8
-This variable must be set to enable the virtual desktop features of \fBvtwm\fP.
-If this variable is not set, \fBvtwm\fP will behave in the same manner as \fBtwm\fP.
-This variable specifies where to place the virtual desktop window and its size.
-The \fIgeometry\fP is a standard X geometry specification and defines the size
-and location of the window containing the desktop representation.
-The \fIscale\fP parameter specifies the scaling of the window compared to the desktop.
-The size of the currently accessible virtual desktop is \fIscale\fP times the size of the desktop
-window.
-In the following example,  a \fIscale\fP of 20 means that the desktop area
-is 20 times the size of the desktop window: the desktop area will be 4000x4000.
+
+This variable must be set to enable the virtual desktop features of
+\fBvtwm\fP. If this variable is not set, \fBvtwm\fP will behave in
+the same manner as \fBtwm\fP. This variable specifies where to place
+the virtual desktop window and its size. The \fIgeometry\fP is a
+standard X geometry specification and defines the size and location
+of the window containing the desktop representation.
+
+The \fIscale\fP parameter specifies the scaling of the virtual
+desktop window compared to the desktop. The size specification can
+be given in three ways. If size is larger than the screen size, it
+represents the size of the whole desktop. The virtual window desktop
+size will then be size divided by \fIscale\fP. When size times
+\fIscale\fP is smaller than the screen size, size represents the
+number of screens that should fit in the desktop. Otherwise size
+represents the size of the virtual desktop window. The currently
+accessible virtual desktop is then \fIscale\fP times the size of the
+desktop window. In the following example, a \fIscale\fP of 20 (with
+a screen size of say 1152x900) means that the desktop area
+is 20
+times the size of the desktop window: the desktop area will be
+4000x4000.
+
+
 .EX 0
 	\fBVirtualDesktop\fP "200x200+10+10" 20
 .EE
-Formerly, the size of the desktop could be changed dynamically,
+
+The size of the desktop can be changed dynamically,
 by simply resizing the Virtual Desktop window.
-This required the creation of a huge window, to accomodate the
-largest possible panner. This is no longer true. The startup size is
-already the maximum size.
-The scaling value is also fixed at startup and cannot be changed.
+
 .IP "\fBVirtualFont\fP \fIfont\fP" 8
 This variable causes \fIfont\fP to be used when displaying the names
 of windows in the virtual desktop display.  If this variable is not
@@ -979,7 +1088,9 @@ itself will be warped to the real screen, moving the window in the virtual
 desktop.
 .IP "\fBWindowRing\fP { \fIwin-list\fP }" 8
 This variable specifies a list of windows along which the \fBf.warpring\fP
-function cycles.
+function cycles. If no list is specified, then all windows are
+included in the window ring.
+
 .IP "\fBXorValue\fP \fInumber\fP" 8
 This variable specifies the value to use when drawing window outlines for
 moving and resizing.  This should be set to a value that will result in a
@@ -1167,6 +1278,8 @@ WM_DELETE_WINDOW messages, the keyboard bell will be rung indicating that
 the user should choose an alternative method.  Note this is very different
 from f.destroy.  The intent here is to delete a single window,  not
 necessarily the entire application.
+.IP "\fBf.deletedoor\fP" 8
+This function deletes a door. ... maybe some X-guru can check all memory allocated to a door is released when deleting a door ...
 .IP "\fBf.deltastop\fP" 8
 This function allows a user-defined function to be aborted if the pointer has
 been moved more than \fIMoveDelta\fP pixels.  See the example definition
@@ -1322,6 +1435,8 @@ This function maps the current icon manager.
 .IP "\fBf.snap\fP" 8
 This function snaps the real screen to a grid defined on virtual space with
 PanDistanceX and PanDistanceY increments.
+.IP "\fBf.snaprealscreen\fP" 8
+This function toggles the setting of SnapRealScreen.
 .IP "\fBf.snugwindow\fP" 8
 moves the display to try to fit the selected window completely
 on the screen
@@ -1369,6 +1484,8 @@ manager, wrapping to the last row in the same column if necessary.
 .\"This function causes the \fIvtwm\fP version window to be displayed.  This
 .\"window will be displayed until a pointer button is pressed or the
 .\"pointer is moved from one window to another.
+.IP "\fBf.virtualgeometries\fP" 8
+Toggles the setting of NotVirtualGeometries.
 .IP "\fBf.vlzoom\fP" 8
 This function is a synonym for \fBf.leftzoom\fP.
 .IP "\fBf.vrzoom\fP" 8
@@ -1400,6 +1517,11 @@ selected window is refreshed.
 .IP "\fBf.zoom\fP" 8
 This function is similar to the \fBf.fullzoom\fP function, except that
 the only the height of the selected window is changed.
+.IP "\fBf.zoomzoom\fP" 8
+This silly function makes a zoom outline from a random place to
+another random place. (See the \fB"Zoom"\fP variable.) It's silly
+but it looks spiffy, and can be used as a visual bell in place of
+f.beep.
 .SH MENUS
 .PP
 Functions may be grouped and interactively selected using pop-up
@@ -1509,4 +1631,12 @@ Dana Chee, Bellcore, (R5 conversion) <dana@thumper.bellcore.com>;
 Warren Jessop, University of Washington, whj@cs.washington.edu;
 thoth@reef.cis.ufl.edu (Gilligan);
 tar@math.ksu.edu (Tim Ramsey),
-Ralph Betza, gnohmon@ssiny.com.
+Ralph Betza, gnohmon@ssiny.com,
+futzi@uni-paderborn.de (Michael Kutzner),
+Stig Ostholm <ostholm@ce.chalmers.se>,
+eyckmans@imec.be (M. Eyckmans),
+Tony Brannigan <tbrann@ox.ac.uk>,
+Alec Wolman <wolman@crl.dec.com>,
+<gdmr@dcs.edinburgh.ac.uk>,
+Marcel Mol (marcel@duteca.et.tudelft.nl)
+

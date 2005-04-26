@@ -1,0 +1,74 @@
+From comp.windows.x Sat Oct  9 17:02:14 1993
+Xref: netnews.louisville.edu comp.windows.x.announce:212 comp.windows.x:53876
+Newsgroups: comp.windows.x.announce,comp.windows.x
+Path: netnews.louisville.edu!starbase.spd.louisville.edu!dsembr01
+From: Darren S. Embry <dsembr01@starbase.spd.louisville.edu>
+Subject: ANNOUNCING the release of vtwm 5.2.1
+Originator: dsembr01@terra.spd.louisville.edu
+Sender: news@netnews.louisville.edu (Netnews)
+Message-ID: <dsembr01.749940394@starbase.spd.louisville.edu>
+Date: Wed, 6 Oct 1993 20:46:34 GMT
+Reply-To: dsembr01@starbase.spd.louisville.edu
+Nntp-Posting-Host: terra.spd.louisville.edu
+Organization: University of Louisville Speed Scientific School
+
+I am announcing the (unofficial) release of vtwm version 5.2.1.  It's
+available at:
+
+    ftp.x.org:/contrib/vtwm-5.2.1.tar.gz
+
+As far as changes from version 5.2 to version 5.2.1 go, they are mostly a few
+aesthetic and look-and-feel hacks and a couple of bug fixes.
+
+I would really like input as to how you like the changes I made.
+
+-- Darren S. Embry, dsembr01@starbase.spd.louisville.edu
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    MINOR NEW FEATURE (I can't say it's a big deal)
+    -----------------------------------------------
+        Natural Autopan Behavior
+        
+            By default, when autopanning, the pointer is warped by only
+            (AutoPanBorderWidth + AutoPanExtraWarp) pixels on the real
+            screen.  With this option turned on, the pointer is warped by as
+            many pixels as the screen is scrolled, or by the above number of
+            pixels, whichever is greater.  Thus, the pointer will not
+            actually move very much (only by AutoPanExtraWarp) in relation to
+            the virtual desktop.  This works very well on faster X terminals,
+            although I can't say the same thing for slower ones (but setting
+            AutoPanWarpWithRespectToRealScreen may do a good job).
+            
+    NEW VARIABLES to play around with
+    ---------------------------------
+        AutoPanBorderWidth <pixels>
+        AutoPanExtraWarp <pixels>
+        AutoPanWarpWithRespectToRealScreen <N>
+        EnhancedExecResources
+        LessRandomZoomZoom
+        NaturalAutopanBehavior
+            # synonymous with ``AutoPanWarpWithRespectToRealScreen 100''
+        PrettyZoom
+        RealScreenBorderWidth <pixels>
+        RightHandSidePulldownMenus
+
+    OTHER HACKS AND BUG FIXES
+    -------------------------
+        Supports negative and `0,0' door geometries. [ bug fix ]
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+DISCLAIMER: I am not the official maintainer or central programmer of vtwm,
+but there isn't one anyway; I just made a few bug fixes, played with the code
+to make it a little bit more `configurable' in certain areas, and decided to
+see what *you* think of the changes I made.  I also don't know much about X
+programming, but the changes I made to vtwm haven't caused any major damage
+so far.
+
+--
+    letitflowletyourselfgos[   darren s. embry   ]lowandlowthatisthetempo
+                           [  dsembr01@starbase  ]
+beingashamedbecauseyouredif[ .spd.louisville.edu ]ferentisthesickestkindoflie
+
+

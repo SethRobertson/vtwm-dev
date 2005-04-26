@@ -1,3 +1,109 @@
+============ vtwm-5.2.2.tar.gz =============
+
+	dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
+		used another bug workaround to support negative door
+                geometries; the old one I did messed up with positive door
+                geometries, especially `+0+0'.
+
+============ vtwm-5.2.1.tar.gz =============
+
+	dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
+		AutoPanBorderWidth
+		AutoPanExtraWarp
+		AutoPanWarpWithRespectToRealScreen
+		EnhancedExecResources
+		LessRandomZoomZoom
+		NaturalAutopanBehavior
+		PrettyZoom
+		RealScreenBorderWidth
+		RightHandSidePulldownMenus
+
+		support for negative and `0,0' door geometries.
+
+============ vtwm-5.2.tar.Z =============
+
+Various contributions:
+
+	gnohmon@ssiny.com (Ralph Betza)
+		f.zoomzoom
+		StayUpMenus from tvtwm code
+		OldFashionedTwmWindowsMenu
+		UseRealScreenBorder
+		f.snaprealscreen
+
+		improved window movement in the panner
+		restored the ability to rescale the desktop
+
+	futzi@uni-paderborn.de (Michael Kutzner)
+		Class-name was compared twice in menus.c
+		(applies also to vtwm-5.0)
+
+	Stig Ostholm <ostholm%ce.chalmers.se@uunet>
+		problem when windows are resized without vtwm interaction
+		cleaning up of the desktop code to minimize vtwm - server
+		interaction.
+		Imakefile patch allows vtwm to be installed in another
+		location
+		(applies also to vtwm-5.0)
+
+	eyckmans@imec.be (M. Eyckmans)
+		Allow #rrggbb colors in X11R4
+
+	Tony Brannigan <tbrann@ox.ac.uk>
+		AutoPanX, AutoPanY
+
+	dana@thumper.bellcore.com (Dana A. Chee)
+		added fix which allows key presses to move a window (menus.c,
+		events.c)
+
+	Alec Wolman <wolman@crl.dec.com>
+		WindowRing can now specify "all windows" by leaving off the
+		Window List
+
+		Can specify x or y = 0 in door location now
+
+Tue Jul 20 15:22:49 EDT 1993
+	Thu Oct  1 17:47:37 1992  Dana A. Chee  (dana@dino)
+	* added fix which allows key presses to move a window (menus.c,
+		events.c)
+	Fri May 29 14:20:53 1992  Dana A. Chee  (dana@dino)
+	* fixed bug in do_single_keyword (break should be return), sent in
+		by George Ross <gdmr@dcs.edinburgh.ac.uk> (parse.c)
+[Editor's note: a very popular bug to send in the fix for!]
+	* Autoraise can now specify "all windows" by leaving off the
+[Editor's note: this was previously done by the RaiseDelay patch]
+		 Window List, sent in by Alec Wolman <wolman@crl.dec.com>
+	* WindowRing can now specify "all windows" by leaving off the
+		Window List, sent in by Alec Wolman <wolman@crl.dec.com>
+		(add_window.c, gram.y, screen.h, twm.c, vtwm.man)
+	* Initial Placement of Virtual Desktop fixed, sent in by Alec Wolman
+[Editor's note: this was previously done]
+	* Can specify x or y = 0 in door location now, sent in by Alec
+		Wolman <wolman@crl.dec.com> (doors.c)
+	* update man page to mention NoVirtualGeometries variable
+		(vtwm.man)
+	* updated patchlevel (patchlevel.h)
+[Editor's note: we don't have one! ]
+	Thu Mar 26 12:31:09 1992  Dana A. Chee  (dana@dino)
+	* F_LOWER now lowers the window in the virtual desktop as well
+
+Thu Jul 15 14:03:01 DST 1993 Marcel Mol (marcel@duteca.et.tudelft.nl)
+	* Includes F_WARPTO patch from futzi@uni-paderborn.de (Michael Kutzner)
+	  Patched this patch to check for name, class and classname in a
+	  single for loop.
+	* Changed syntax ov 'VirtualDesktop' variable. Now can set desktop
+	  as number of screens, as size of virtual desktop window or as
+	  size of whoel desktop.
+	* Fixed unharmfull bug when NotVirtualGeometries was set.
+	  (vtwm comlains about `unknown singleton keyword')
+	* Added f.virtualgeometries function to toggle virtual geometries
+	  settings.
+	* Added f.deletedoor function to delete a door. Don't know if I
+	  correctly released all memory allocated to the door. Any X-Wizard???
+	* Updated man page
+
+========= vtwm-5.1.tar.Z ==============
+
 Thu Jun 24 15:24:36 EDT 1993 Ralph Betza (gnohmon@ssiny.com)
 
 	* Includes RaiseDelay patch from

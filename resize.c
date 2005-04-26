@@ -94,9 +94,9 @@ static void do_auto_clamp (tmp_win, evp)
     }
 
     h = ((x - dragx) / (dragWidth < 3 ? 1 : (dragWidth / 3)));
-    v = ((y - dragy - tmp_win->title_height) / 
+    v = ((y - dragy - tmp_win->title_height) /
 	 (dragHeight < 3 ? 1 : (dragHeight / 3)));
-	
+
     if (h <= 0) {
 	clampLeft = 1;
 	clampDX = (x - dragx);
@@ -157,7 +157,7 @@ int context;
 			 ButtonMotionMask | PointerMotionHintMask,
 			 GrabModeAsync, GrabModeAsync,
 			 Scr->Root, Scr->ResizeCursor, CurrentTime);
-    
+
     XGetGeometry(dpy, (Drawable) ResizeWindow, &junkRoot,
         &dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight, &junkbw,
                  &junkDepth);
@@ -177,7 +177,7 @@ int context;
 
     Scr->SizeStringOffset = SIZE_HINDENT;
     XResizeWindow (dpy, Scr->SizeWindow,
-		   Scr->SizeStringWidth + SIZE_HINDENT * 2, 
+		   Scr->SizeStringWidth + SIZE_HINDENT * 2,
 		   Scr->SizeFont.height + SIZE_VINDENT * 2);
     XMapRaised(dpy, Scr->SizeWindow);
     InstallRootColormap();
@@ -221,12 +221,12 @@ int x, y, w, h;
     last_height = 0;
     Scr->SizeStringOffset = SIZE_HINDENT;
     XResizeWindow (dpy, Scr->SizeWindow,
-		   Scr->SizeStringWidth + SIZE_HINDENT * 2, 
+		   Scr->SizeStringWidth + SIZE_HINDENT * 2,
 		   Scr->SizeFont.height + SIZE_VINDENT * 2);
     XMapRaised(dpy, Scr->SizeWindow);
     DisplaySize(tmp_win, origWidth, origHeight);
     MoveOutline (Scr->Root, dragx - tmp_win->frame_bw,
-		 dragy - tmp_win->frame_bw, 
+		 dragy - tmp_win->frame_bw,
 		 dragWidth + 2 * tmp_win->frame_bw,
 		 dragHeight + 2 * tmp_win->frame_bw,
 		 tmp_win->frame_bw, tmp_win->title_height);
@@ -632,7 +632,7 @@ EndResize()
     if (tmp_win->w == Scr->VirtualDesktopDisplayOuter) {
  	    ResizeDesktopDisplay(dragWidth, dragHeight);
     }
-    
+
     if (!Scr->NoRaiseResize) {
         XRaiseWindow(dpy, tmp_win->frame);
 	RaiseAutoPan();
@@ -644,9 +644,10 @@ EndResize()
      * desktop - need to fix the virtual coords */
     tmp_win->virtual_frame_x = R_TO_V_X(dragx);
     tmp_win->virtual_frame_y = R_TO_V_Y(dragy);
-    
-    UpdateDesktop(tmp_win);
-    
+
+    /* UpdateDesktop(tmp_win); Stig */
+    MoveResizeDesktop(tmp_win, Scr->NoRaiseResize); /* Stig */
+
     ResizeWindow = None;
 }
 
@@ -698,7 +699,7 @@ TwmWindow *tmp_win;
  *
  *      The general algorithm, especially the aspect ratio stuff, is
  *      borrowed from uwm's CheckConsistency routine.
- * 
+ *
  ***********************************************************************/
 
 ConstrainSize (tmp_win, widthp, heightp)
@@ -803,9 +804,9 @@ ConstrainSize (tmp_win, widthp, heightp)
      *
      * minAspectX * dheight > minAspectY * dwidth
      * maxAspectX * dheight < maxAspectY * dwidth
-     * 
+     *
      */
-    
+
     if (tmp_win->hints.flags & PAspect)
     {
         if (minAspectX * dheight > minAspectY * dwidth)
@@ -901,7 +902,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
  	    y = 16; /* one "average" cursor width */
     if (y >= Scr->VirtualDesktopHeight)
  	    y = Scr->VirtualDesktopHeight - 16;
-    
+
     if (bw < 0)
       bw = tmp_win->frame_bw;		/* -1 means current frame width */
 
@@ -956,7 +957,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 	    tmp_win->title_y = xwc.y = -bw;
 	    xwcm |= (CWX | CWY | CWBorderWidth);
 	}
-	
+
 	XConfigureWindow(dpy, tmp_win->title_w, xwcm, &xwc);
     }
 
@@ -966,7 +967,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     XMoveResizeWindow (dpy, tmp_win->w, 0, tmp_win->title_height,
 		       w, h - tmp_win->title_height);
 
-    /* 
+    /*
      * fix up frame and assign size/location values in tmp_win
      */
     frame_mask = 0;
@@ -1206,7 +1207,7 @@ SetFrameShape (tmp)
 
 /*
  * Squeezed Title:
- * 
+ *
  *                         tmp->title_x
  *                   0     |
  *  tmp->title_y   ........+--------------+.........  -+,- tmp->frame_bw
@@ -1222,10 +1223,10 @@ SetFrameShape (tmp)
  *                 | |                           | |
  *                 | +---------------------------+ |
  *                 +-------------------------------+
- * 
- * 
+ *
+ *
  * Unsqueezed Title:
- * 
+ *
  *                 tmp->title_x
  *                 | 0
  *  tmp->title_y   +-------------------------------+  -+,tmp->frame_bw
@@ -1241,11 +1242,11 @@ SetFrameShape (tmp)
  *                 | |                           | |
  *                 | +---------------------------+ |
  *                 +-------------------------------+
- * 
- * 
- * 
+ *
+ *
+ *
  * Dimensions and Positions:
- * 
+ *
  *     frame orgin                 (0, 0)
  *     frame upper left border     (-tmp->frame_bw, -tmp->frame_bw)
  *     frame size w/o border       tmp->frame_width , tmp->frame_height
@@ -1255,7 +1256,7 @@ SetFrameShape (tmp)
  *     title origin w/o border     (tmp->title_x, tmp->title_y)
  *     client origin               (0, Scr->TitleHeight + tmp->frame_bw)
  *     client size                 tmp->attr.width , tmp->attr.height
- * 
+ *
  * When shaping, need to remember that the width and height of rectangles
  * are really deltax and deltay to lower right handle corner, so they need
  * to have -1 subtracted from would normally be the actual extents.

@@ -192,6 +192,9 @@ void MoveOutline(root, x, y, width, height, bw, th)
  *	wf	- window to zoom from
  *	wt	- window to zoom to
  *
+ *	Patched to make sure a "None" window generates coordinates *INSIDE*
+ *	the screen. -- DSE 
+ *
  ***********************************************************************
  */
 
@@ -204,7 +207,9 @@ Zoom(wf, wt)
     long dx, dy, dw, dh;
     long z;
     int j;
-
+    
+    void draw_rect(); /* DSE */
+    
     if (!Scr->DoZoom || Scr->ZoomCount < 1) return;
 
 #if (0)
@@ -213,31 +218,75 @@ Zoom(wf, wt)
     XGetGeometry (dpy, wf, &JunkRoot, &fx, &fy, &fw, &fh, &JunkBW, &JunkDepth);
     XGetGeometry (dpy, wt, &JunkRoot, &tx, &ty, &tw, &th, &JunkBW, &JunkDepth);
 #else
-    if (wf == None && wt == None) return;
+
+    /* if (wf == None && wt == None) return; */
+
 	if ( wt == None)
-	{	/* Zoom from nowhere, RFB */
-		tx = ( rand() & 1 ) * Scr->MyDisplayWidth;
-		tw = ( rand() & 1 ) * Scr->MyDisplayWidth;
-		ty = ( rand() & 1 ) * Scr->MyDisplayHeight;
-		th = ( rand() & 1 ) * Scr->MyDisplayHeight;
-	}
+		{
+		if (Scr->LessRandomZoomZoom) /* DSE */
+			{
+			int temp,x1,y1,x2,y2;
+			x1 = ( (int)rand() % (Scr->MyDisplayWidth >> 3) );
+			x2 = Scr->MyDisplayWidth - 
+			       ( (int)rand() % (Scr->MyDisplayWidth >> 3) );
+			y1 = ( (int)rand() % (Scr->MyDisplayHeight >> 3) );
+			y2 = Scr->MyDisplayHeight - 
+			       ( (int)rand() % (Scr->MyDisplayHeight >> 3) );
+			if(x1>x2){temp=x1;x1=x2;x2=temp;}
+			if(y1>y2){temp=y1;y1=y2;y2=temp;}
+			tx = x1; ty = y1;
+			tw = x2 - x1; th = y2 - y1;
+			}
+		else
+			{
+			/* Zoom from nowhere, RFBZOOM */
+			tx = ( (int)rand() % Scr->MyDisplayWidth );
+			tw = ( (int)rand() % Scr->MyDisplayWidth );
+			ty = ( (int)rand() % Scr->MyDisplayWidth );
+			th = ( (int)rand() % Scr->MyDisplayWidth );
+			}
+		}
 	else
-	{	/* Normal. */
+		{	/* Normal. */
 		XGetGeometry (dpy, wt, &JunkRoot,
 			&tx, &ty, &tw, &th, &JunkBW, &JunkDepth);
-	}
+		}
+
 	if ( wf == None )
-	{	/* Zoom from nowhere, RFB */
-		fx = ( rand() & 1 ) * Scr->MyDisplayWidth;
-		fw = ( rand() & 1 ) * Scr->MyDisplayWidth;
-		fy = ( rand() & 1 ) * Scr->MyDisplayHeight;
-		fh = ( rand() & 1 ) * Scr->MyDisplayHeight;
-	}
+		{
+		if (Scr->LessRandomZoomZoom) /* DSE */
+			{
+			/* zoom from somewhere on the screen, DSE */
+			int temp,x1,y1,x2,y2;
+			do
+				{
+				x1 = ( (int)rand() % Scr->MyDisplayWidth );
+				x2 = ( (int)rand() % Scr->MyDisplayWidth );
+				y1 = ( (int)rand() % Scr->MyDisplayHeight );
+				y2 = ( (int)rand() % Scr->MyDisplayHeight );
+				if(x1>x2){temp=x1;x1=x2;x2=temp;}
+				if(y1>y2){temp=y1;y1=y2;y2=temp;}
+				fx = x1; fy = y1;
+				fw = x2 - x1; fh = y2 - y1;
+				}
+			while ( fw > (Scr->MyDisplayWidth >> 2) || fh > (Scr->MyDisplayHeight >> 2) );
+			}
+		else
+			{
+			/* Zoom from nowhere, RFB */
+			/* fx = ( rand() & 1 ) * Scr->MyDisplayWidth; */
+			fx = ( (int)rand() % Scr->MyDisplayWidth );
+			fw = ( (int)rand() % Scr->MyDisplayWidth );
+			fy = ( (int)rand() % Scr->MyDisplayWidth );
+			fh = ( (int)rand() % Scr->MyDisplayWidth );
+			}
+		}
+
 	else
-	{	/* Normal. */
+		{	/* Normal. */
 		XGetGeometry (dpy, wf, &JunkRoot,
 			&fx, &fy, &fw, &fh, &JunkBW, &JunkDepth);
-	}
+		}
 #endif
 
     dx = ((long) (tx - fx));	/* going from -> to */
@@ -249,20 +298,55 @@ Zoom(wf, wt)
     for (j = 0; j < 2; j++) {
 	long i;
 
-	XDrawRectangle (dpy, Scr->Root, Scr->DrawGC, fx, fy, fw, fh);
-	for (i = 1; i < z; i++) {
+	draw_rect (dpy, Scr->Root, Scr->DrawGC, fx, fy, fw, fh); /* DSE */
+	for (i = 1; i < z; i++)
+		{
 	    int x = fx + (int) ((dx * i) / z);
 	    int y = fy + (int) ((dy * i) / z);
 	    unsigned width = (unsigned) (((long) fw) + (dw * i) / z);
 	    unsigned height = (unsigned) (((long) fh) + (dh * i) / z);
 
-	    XDrawRectangle (dpy, Scr->Root, Scr->DrawGC,
-			    x, y, width, height);
-	}
-	XDrawRectangle (dpy, Scr->Root, Scr->DrawGC, tx, ty, tw, th);
+	    draw_rect (dpy, Scr->Root, Scr->DrawGC, x, y, width, height); /* DSE */
+		}
+	draw_rect (dpy, Scr->Root, Scr->DrawGC, tx, ty, tw, th); /* DSE */
     }
 }
 
+
+/*
+ *	Use any routine to draw your own rectangles here. -- DSE
+ */
+void draw_rect (display,drawable,gc,x,y,width,height) /* DSE */
+		Display *display;
+		Drawable drawable;
+		GC gc;
+		int x,y;
+		unsigned int width,height;
+	{
+	void draw_scaled_rect();
+	draw_scaled_rect (display,drawable,gc,x,y,width,height, 20,20);
+	if (Scr->PrettyZoom)
+		{
+		draw_scaled_rect (display,drawable,gc,x,y,width,height, 18,20);
+		draw_scaled_rect (display,drawable,gc,x,y,width,height, 16,20);
+		}
+	}
+void draw_scaled_rect (display,drawable,gc,x,y,
+                       width,height,scale,over) /* DSE */
+		Display *display;
+		Drawable drawable;
+		GC gc;
+		int x,y;
+		unsigned int width,height;
+		unsigned long int scale,over;
+	{
+	XDrawRectangle(dpy,drawable,gc,
+		x + ( over + width * (over - scale) ) / (2 * over),
+		  y + ( over  + width * (over - scale) ) / (2 * over),
+		( (over / 2) + width * scale ) / over,
+		  ( (over / 2) + height * scale ) / over
+		);
+	}
 
 /***********************************************************************
  *
@@ -515,14 +599,20 @@ char *name;
     Colormap cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
 
 #ifndef TOM
-    if (!Scr->FirstTime)
-	return;
+    if (!Scr->FirstTime) return;
 #endif
 
-    if (Scr->Monochrome != kind)
-	return;
+    if (Scr->Monochrome != kind) return;
 
+#if ( XlibSpecificationRelease < 5 )
+    /* eyckmans@imec.be */
+	if ( ! ( ( name[0] == '#')
+			? ( (stat = XParseColor (dpy, cmap, name, &color))
+				&& XAllocColor (dpy, cmap, &color))
+			: XAllocNamedColor (dpy, cmap, name, &color, &junkcolor)))
+#else
     if (!XAllocNamedColor (dpy, cmap, name, &color, &junkcolor))
+#endif
     {
 	/* if we could not allocate the color, let's see if this is a
 	 * standard colormap

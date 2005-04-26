@@ -42,20 +42,35 @@ char *name, *position, *destination;
 {
 	int px, py, pw, ph, dx, dy;
 
-	/* parse the geometries given */
 	JunkMask = XParseGeometry (position, &JunkX, &JunkY,
 				   &JunkWidth, &JunkHeight);
+
+	/* we have some checking for negative (x,y) to do 
+	   sorta taken from desktop.c by DSE */
+	if ((JunkMask & XNegative) == XNegative) {
+		JunkX += Scr->MyDisplayWidth - JunkWidth -
+			(2 * Scr->BorderWidth);
+		}
+	if ((JunkMask & YNegative) == YNegative) {
+		JunkY += Scr->MyDisplayHeight - JunkHeight -
+			(2 * Scr->BorderWidth);
+		}
+
 	if ((JunkMask & (XValue | YValue)) !=
 	    (XValue | YValue)) {
 		twmrc_error_prefix();
 		fprintf (stderr, "bad Door position \"%s\"\n", position);
 		return NULL;
 	}
-	if (JunkX <= 0 || JunkY <= 0) {
+
+/*	if (JunkX <= 0 || JunkY <= 0) {  */
+
+	if (JunkX < 0 || JunkY < 0) { /* 0,0 accepted now -- DSE */
 		twmrc_error_prefix();
 		fprintf (stderr, "silly Door position \"%s\"\n", position);
 		return NULL;
 	}
+
 	/* they seemed ok */
 	px = JunkX;
 	py = JunkY;
@@ -236,6 +251,44 @@ TwmDoor *d;
 
 	/* go to it */
 	SetRealScreen(d->goto_x, d->goto_y);
+}
+
+/*
+ * delete a door
+ */
+void door_delete(w, d)
+Window w;
+TwmDoor *d;
+{	/*marcel@duteca.et.tudelft.nl*/
+	if (!d)
+		/* find the door */
+		if (XFindContext(dpy, w, DoorContext, (caddr_t *)&d)
+		    == XCNOENT)
+			/* not a door ! */
+			return;
+
+	/* unlink it: */
+	if (Scr->Doors == d)
+		Scr->Doors = d->next;
+	if (d->prev != NULL)
+		d->prev->next = d->next;
+	if (d->next != NULL)
+		d->next->prev = d->prev;
+/* Must this be done here ? Is it do by XDestroyWindow, or by
+	HandleDestroyNotify() in events.c, or should it be done there...?
+
+	XDeleteContext(dpy, d->w, DoorContext);
+	XDeleteContext(dpy, d->w,  TwmContext);
+	XDeleteContext(dpy, d->twin, DoorContext);
+	XUnmapWindow(dpy, d->w);
+	XUnmapWindow(dpy, w);
+*/
+	XDestroyWindow(dpy, w);
+	XFree(d->class);
+	free(d);
+	/*
+	 * Did I release all allocated memory ??? M.J.E. Mol.
+	 */
 }
 
 /*

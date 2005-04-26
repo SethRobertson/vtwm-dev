@@ -109,6 +109,10 @@ extern void TwmOutput();
 #define F_SQUEEZELEFT		62/*RFB F_SQUEEZE*/
 #define F_SQUEEZERIGHT		63/*RFB F_SQUEEZE*/
 #define F_SQUEEZECENTER		64/*RFB F_SQUEEZE*/
+#define F_SNAPREALSCREEN	65/*RFB F_SNAPREALSCREEN*/
+#define F_VIRTUALGEOMETRIES	66/*marcel@duteca.et.tudelft.nl*/
+#define F_DELETEDOOR		67/*marcel@duteca.et.tudelft.nl*/
+#define F_ZOOMZOOM		68 /* RFB silly */
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */

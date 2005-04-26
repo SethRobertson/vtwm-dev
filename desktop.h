@@ -21,7 +21,10 @@ extern Window moving_window; /* indicates that we are doing a move in the vd dis
 
 extern void CreateDesktopDisplay();
 extern void UpdateDesktop();
-extern void RemoveFromDesktop();
+/* extern void RemoveFromDesktop(); */
+extern void MoveResizeDesktop();
+extern void NailDesktop();
+
 extern void DisplayScreenOnDesktop();
 extern void StartMoveWindowOnDesktop();
 extern void EndMoveWindowOnDesktop();
@@ -48,4 +51,4 @@ extern void RaiseAutoPan();
 #define SCALE_U(x) ((x)*Scr->VirtualDesktopDScale)
 
 /* how wide/high the autopan windows are */
-#define AP_SIZE 5
+#define AP_SIZE (Scr->AutoPanBorderWidth) /* DSE */

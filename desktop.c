@@ -29,12 +29,56 @@ extern void SetRealScreenInternal();
 extern void SetRealScreen();
 extern void SnapRealScreen();
 
+static void GetDesktopWindowCoordinates(tmp_win, x, y, w, h)
+TwmWindow *tmp_win;
+int *x, *y, *w, *h;
+{	/* Stig Ostholm <ostholm%ce.chalmers.se@uunet> */
+	if (tmp_win->nailed)
+	{	if (x)
+			*x = tmp_win->frame_x / Scr->VirtualDesktopDScale;
+		if (y)
+			*y = tmp_win->virtual_frame_y / Scr->VirtualDesktopDScale;
+		/* RFB 4/92 no SCALE_D */
+		/* *x = SCALE_D(tmp_win->virtual_frame_x); */
+		/* *y = SCALE_D(tmp_win->virtual_frame_y); */
+	} else {
+		if (x)
+			*x = tmp_win->virtual_frame_x / Scr->VirtualDesktopDScale;
+		if (y)
+			*y = tmp_win->virtual_frame_y / Scr->VirtualDesktopDScale;
+		/* RFB 4/92 no SCALE_D */
+		/* *x = SCALE_D(tmp_win->virtual_frame_x); */
+		/* *y = SCALE_D(tmp_win->virtual_frame_y); */
+	}
+
+	if (w)
+	{	*w = SCALE_D(
+			tmp_win->frame_width + Scr->VirtualDesktopDScale / 2
+			+ tmp_win->frame_bw + tmp_win->frame_bw )
+			- 2;
+		if ( *w <= 0 ) *w = 1;  /* 4/92 RFB */
+	}
+
+	if (h)
+	{	*h = SCALE_D(
+			tmp_win->frame_height + Scr->VirtualDesktopDScale / 2
+/* #ifdef SHAPE */
+				/* + tmp_win->title_height  */
+/* #ifdef SHAPE */
+			+ tmp_win->frame_bw + tmp_win->frame_bw ) - 2;
+/* 4/92 RFB -- subtract borderwidth from windowwidth... */
+		if ( *h <= 0 ) *h = 1;  /* 4/92 RFB */
+	}
+}	/* Stig Ostholm <ostholm%ce.chalmers.se@uunet> */
+
+
 /*
  * create the virtual desktop display and store the window in the screen structure
  */
 void CreateDesktopDisplay()
 {
 	int width, height;
+	int border;
 
 	if (!Scr->Virtual)
 		return;
@@ -56,25 +100,29 @@ void CreateDesktopDisplay()
 		XCreateSimpleWindow(dpy, Scr->Root,
 				    Scr->VirtualDesktopDX, Scr->VirtualDesktopDY,
 				    width, height,
-				    1,
+				    Scr->BorderWidth,
 				    Scr->Black, Scr->VirtualDesktopDisplayC.back);
+
+	if ( width > Scr->VirtualDesktopMaxWidth )
+		Scr->VirtualDesktopMaxWidth = width;
+	if ( height > Scr->VirtualDesktopMaxHeight )
+		Scr->VirtualDesktopMaxHeight = height;
+/* vtwm 5.2: RFB growable but not unreasonable interior window! */
 
 	Scr->VirtualDesktopDisplay =
 		XCreateSimpleWindow(dpy, Scr->VirtualDesktopDisplayOuter,
 				    0, 0,
-/*				    Scr->MaxWindowWidth, Scr->MaxWindowHeight, */
-/*RFB no need for such a huge interior window!*/
-				width, height,
+					Scr->VirtualDesktopMaxWidth,
+					Scr->VirtualDesktopMaxHeight,
 				    0,
-
-/*				    Scr->Black, Scr->VirtualDesktopDisplayC.back);/*RFB VCOLOR*/
 				    Scr->VirtualDesktopDisplayBorder,
 					Scr->VirtualC.back);/*RFB VCOLOR*/
-	XDefineCursor( dpy, Scr->VirtualDesktopDisplay,/*RFBCURSOR*/
-	Scr->VirtualCursor );/*RFBCURSOR*/
+
+	XDefineCursor( dpy, Scr->VirtualDesktopDisplay,
+		Scr->VirtualCursor );	/*RFBCURSOR*/
 
 	if ( Scr->virtualPm ) /*RFB PIXMAP*/
-	{	/* Background pixmap */
+	{	/* Background pixmap, copied from tvtwm */
 	    Pixmap pm = None;
 	    GC gc;
 	    XGCValues gcv;
@@ -106,24 +154,24 @@ void CreateDesktopDisplay()
 			       "Virtual Desktop", "Virtual Desktop",
 			       None, NULL, 0, NULL);
 
-	Scr->VirtualDesktopDisplayTwin =
-		AddWindow(Scr->VirtualDesktopDisplayOuter, FALSE, NULL);
+/* Stig Ostholm moved a few lines away from here */
 
-#ifdef GROSS_HACK
-	/* this is a gross hack, but people wanted it */
-	Scr->VirtualDesktopDisplayTwin->nailed = TRUE;
-#endif /* GROSS_HACK */
-
-	SetMapStateProp(Scr->VirtualDesktopDisplayTwin, NormalState);
+	border = 0;
+	if ( Scr->UseRealScreenBorder )
+		{
+		/* border = 2; */
+		border = Scr->RealScreenBorderWidth; /* DSE */
+		}
 
 	/* create the real screen display */
 	Scr->VirtualDesktopDScreen =
 		XCreateSimpleWindow(dpy, Scr->VirtualDesktopDisplay,
 				    0, 0,
-				    SCALE_D(Scr->MyDisplayWidth),
-				    SCALE_D(Scr->MyDisplayHeight),
-				    0, /* make it distinctive */
+				    SCALE_D(Scr->MyDisplayWidth - 2*border ),
+				    SCALE_D(Scr->MyDisplayHeight - 2*border ),
+				    border, /* make it distinctive */
 /* RFB 4/92: make borderwidth 0 instead of 2 */
+/* RFB 5.2: some people need the border... */
 				    Scr->VirtualDesktopDisplayBorder,
 					Scr->RealScreenC.back ); /* RFB 4/92 */
 
@@ -160,6 +208,20 @@ void CreateDesktopDisplay()
 	XSelectInput(dpy, Scr->VirtualDesktopDisplay, ButtonPressMask | ButtonReleaseMask |
 		     KeyPressMask | KeyReleaseMask );
 
+
+
+/* Stig Ostholm moved some lines to here: */
+	Scr->VirtualDesktopDisplayTwin =
+		AddWindow(Scr->VirtualDesktopDisplayOuter, FALSE, NULL);
+
+#ifdef GROSS_HACK
+	/* this is a gross hack, but people wanted it */
+	Scr->VirtualDesktopDisplayTwin->nailed = TRUE;
+#endif /* GROSS_HACK */
+
+	SetMapStateProp(Scr->VirtualDesktopDisplayTwin, NormalState);
+/* :ereh ot senil emos devom mlohtsO gitS */
+
 	/* position the representation */
 	DisplayScreenOnDesktop();
 
@@ -169,7 +231,7 @@ void CreateDesktopDisplay()
 	XMapWindow(dpy, Scr->VirtualDesktopDisplayOuter);
 
 	/* create the autopan windows if we are doing this */
-	if (Scr->AutoPan > 0) {
+	if (Scr->AutoPanX > 0) {
 		short l;
 
 		/* left */
@@ -227,6 +289,9 @@ void CreateDesktopDisplay()
 				     EnterWindowMask /* | lowernotify (or something) */ );
 			XMapWindow(dpy, Scr->VirtualDesktopAutoPan[l]);
 		} /* end for l */
+	
+	RaiseAutoPan (); /* it may work, why not? -- DSE */
+	
 	} /* end if Scr->AutoPan */
 }
 
@@ -266,6 +331,7 @@ void UpdateDesktop(tmp_win)
 TwmWindow *tmp_win;
 {
 	int x, y, width, height;
+	Window dwindow;
 
 	if (!Scr->Virtual)
 		return;
@@ -277,6 +343,11 @@ TwmWindow *tmp_win;
 		XUnmapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
 		return;
 	}
+
+	GetDesktopWindowCoordinates(tmp_win, &x, &y, &width, &height);
+/* Stig Ostholm <ostholm%ce.chalmers.se@uunet> these 3 lines */
+	dwindow = (tmp_win->nailed)
+		? Scr->VirtualDesktopDScreen : Scr->VirtualDesktopDisplay;
 
 	/* if it already has a vd display window, just move it to the right place
 	   and map it, else actually create the window */
@@ -301,9 +372,9 @@ TwmWindow *tmp_win;
 
 		/* the position and size don't matter */
 		tmp_win->VirtualDesktopDisplayWindow =
-			XCreateSimpleWindow(dpy, Scr->VirtualDesktopDisplay,
-					    0, 0, 1, 1, 1,
-					    border, background);
+			XCreateSimpleWindow(dpy,
+				dwindow, x, y, width, height, /* Stig */
+				1, border, background);
 
 /*RFBCURSOR*/XDefineCursor( dpy, tmp_win->VirtualDesktopDisplayWindow,
 /*RFBCURSOR*/Scr->DesktopCursor );
@@ -319,97 +390,165 @@ TwmWindow *tmp_win;
 		XSaveContext(dpy, tmp_win->VirtualDesktopDisplayWindow,
 			     TwmContext, (caddr_t) tmp_win);
 
-	} else
-		/* unmap whilst we reconfigure it */
-		XUnmapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
 
-	if (tmp_win->nailed) {
-		x = tmp_win->frame_x / Scr->VirtualDesktopDScale;
-		y = tmp_win->frame_y / Scr->VirtualDesktopDScale;
-/* RFB 4/92 no SCALE_D */
-		/* x = SCALE_D(tmp_win->frame_x); */
-		/* y = SCALE_D(tmp_win->frame_y); */
-
-		/* reparent this window into the little screen representation */
+#if 0
+0		/* Stig Ostholm <ostholm%ce.chalmers.se@uunet> */
+0		/* comment out this section */
+0	} else
+0		/* unmap whilst we reconfigure it */
+0		XUnmapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+0
+0	if (tmp_win->nailed) {
+0		x = tmp_win->frame_x / Scr->VirtualDesktopDScale;
+0		y = tmp_win->frame_y / Scr->VirtualDesktopDScale;
+0/* RFB 4/92 no SCALE_D */
+0		/* x = SCALE_D(tmp_win->frame_x); */
+0		/* y = SCALE_D(tmp_win->frame_y); */
+0
+0		/* reparent this window into the little screen representation */
+0		XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+0				Scr->VirtualDesktopDScreen, x, y);
+0	} else {
+0		x = tmp_win->virtual_frame_x / Scr->VirtualDesktopDScale;
+0		y = tmp_win->virtual_frame_y / Scr->VirtualDesktopDScale;
+0/* RFB 4/92 no SCALE_D */
+0		/* x = SCALE_D(tmp_win->virtual_frame_x); */
+0		/* y = SCALE_D(tmp_win->virtual_frame_y); */
+0
+0		XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+0				Scr->VirtualDesktopDisplay, x, y);
+0	}
+0
+0	/* calculate the sizes and position */
+0	width = SCALE_D(
+0		tmp_win->frame_width + Scr->VirtualDesktopDScale / 2
+0		+ tmp_win->frame_bw + tmp_win->frame_bw )
+0		- 2;
+0	height = SCALE_D(
+0		tmp_win->frame_height + Scr->VirtualDesktopDScale / 2
+0/* #ifdef SHAPE */
+0			/* + tmp_win->title_height  */
+0/* #endif */
+0		+ tmp_win->frame_bw + tmp_win->frame_bw ) - 2;
+0/* 4/92 RFB -- subtract borderwidth from windowwidth... */
+0	if ( width <= 0 ) width = 1;	/* 4/92 RFB */
+0	if ( height <= 0 ) height = 1;	/* 4/92 RFB */
+0
+0#ifdef DEBUG
+0	fprintf(stderr, "%d*%d+%d+%d\n", x, y, width, height);
+0#endif /* DEBUG */
+0
+0	/* move and size it */
+0	XMoveWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+0		    x, y);
+0	XResizeWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+0		      width, height);
+#else	/* 0, Stig */
+	} else {	/* Unmapping is fixed by XReparentWindow */
 		XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
-				Scr->VirtualDesktopDScreen, x, y);
-	} else {
-		x = tmp_win->virtual_frame_x / Scr->VirtualDesktopDScale;
-		y = tmp_win->virtual_frame_y / Scr->VirtualDesktopDScale;
-/* RFB 4/92 no SCALE_D */
-		/* x = SCALE_D(tmp_win->virtual_frame_x); */
-		/* y = SCALE_D(tmp_win->virtual_frame_y); */
-
-		XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
-				Scr->VirtualDesktopDisplay, x, y);
+			dwindow, x, y);
+		XResizeWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+			width, height);
 	}
-
-	/* calculate the sizes and position */
-	width = SCALE_D(
-		tmp_win->frame_width + Scr->VirtualDesktopDScale / 2
-		+ tmp_win->frame_bw + tmp_win->frame_bw )
-		- 2;
-	height = SCALE_D(
-		tmp_win->frame_height + Scr->VirtualDesktopDScale / 2
-/* #ifdef SHAPE */
-			/* + tmp_win->title_height  */
-/* #endif */
-		+ tmp_win->frame_bw + tmp_win->frame_bw ) - 2;
-/* 4/92 RFB -- subtract borderwidth from windowwidth... */
-	if ( width <= 0 ) width = 1;	/* 4/92 RFB */
-	if ( height <= 0 ) height = 1;	/* 4/92 RFB */
-
-#ifdef DEBUG
-	fprintf(stderr, "%d*%d+%d+%d\n", x, y, width, height);
-#endif /* DEBUG */
-
-	/* move and size it */
-	XMoveWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
-		    x, y);
-	XResizeWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
-		      width, height);
+#endif
 	XMapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
 }
 
-/*
- * remove a window from the desktop display - aka unnail it
+#if 0	/* Stig */
+0/* Stig Ostholm <ostholm%ce.chalmers.se@uunet> */
+0/*
+0 * remove a window from the desktop display - aka unnail it
+0 */
+0void RemoveFromDesktop(tmp_win)
+0TwmWindow *tmp_win;
+0{
+0	int x, y;
+0
+0	if (!Scr->Virtual)
+0		return;
+0
+0	/*
+0	if (tmp_win->VirtualDesktopDisplayWindow)
+0		XUnmapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+0	*/
+0	/* reparent its representation out of the real screen window */
+0	x = tmp_win->virtual_frame_x /Scr->VirtualDesktopDScale;
+0	y = tmp_win->virtual_frame_y / Scr->VirtualDesktopDScale;
+0/* RFB 4/92 no SCALE_D */
+0	/* x = SCALE_D(tmp_win->virtual_frame_x); */
+0	/* y = SCALE_D(tmp_win->virtual_frame_y); */
+0
+0	XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+0			Scr->VirtualDesktopDisplay, x, y);
+0}
+#endif /* 0, Stig */
+
+/* Stig Ostholm <ostholm%ce.chalmers.se@uunet>
+ * Nail/unnail a window on the desktop display.
  */
-void RemoveFromDesktop(tmp_win)
+void NailDesktop(tmp_win)
 TwmWindow *tmp_win;
 {
 	int x, y;
 
-	if (!Scr->Virtual)
+	if (!tmp_win->VirtualDesktopDisplayWindow
+	|| !Scr->Virtual
+	|| tmp_win->icon)
 		return;
 
-	/*
-	if (tmp_win->VirtualDesktopDisplayWindow)
-		XUnmapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
-	*/
-	/* reparent its representation out of the real screen window */
-	x = tmp_win->virtual_frame_x /Scr->VirtualDesktopDScale;
-	y = tmp_win->virtual_frame_y / Scr->VirtualDesktopDScale;
-/* RFB 4/92 no SCALE_D */
-	/* x = SCALE_D(tmp_win->virtual_frame_x); */
-	/* y = SCALE_D(tmp_win->virtual_frame_y); */
-
+	GetDesktopWindowCoordinates(tmp_win, &x, &y, (int *) 0, (int *) 0);
 	XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
-			Scr->VirtualDesktopDisplay, x, y);
+		(tmp_win->nailed)
+			? Scr->VirtualDesktopDScreen
+			: Scr->VirtualDesktopDisplay,
+		x, y);
+	XMapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
 }
+
+/*
+ * state during the move
+ */
+static unsigned int moving_x, moving_y, moving_w, moving_h, moving_bw;
+static unsigned int moving_off_x, moving_off_y;
+Window moving_window;
+TwmWindow *moving_twindow;
+
+/**********************************************************/
+/*                                                        */
+/*  RFB 7/16/93 -- moved these static variables up to     */
+/*  this part of the file so that I could use moving_bw   */
+/*  in DisplayScreenOnDesktop().                          */
+/*                                                        */
+/*  Note that moving_bw is set to 0 if you clicked *in*   */
+/*  the window; therefore it can only have a non-zero     */
+/*  value if you clicked at a random location in the      */
+/*  panner, making the RealScreen jump to the pointer,    */
+/*  AND you also had UseRealScreenBorder set.             */
+/*                                                        */
+/*  This is almost the final step in getting the panner   */
+/*  to behave pefectly! It still jitters a bit at the     */
+/*  edges...                                              */
+/*                                                        */
+/**********************************************************/
 
 /*
  * correctly position the real screen representation on the virtual desktop display
  */
 void DisplayScreenOnDesktop()
 {
+	int border;
+
 	if (!Scr->Virtual)
 		return;
+
+	border = ( Scr->UseRealScreenBorder ) ? moving_bw : 0;
+	moving_bw = 0;
 
 	/* the -3 is to account for the 2 pixel border and the 1 pixel
 	 * offset added by SCALE_D.... */
 	XMoveWindow(dpy, Scr->VirtualDesktopDScreen,
-		Scr->VirtualDesktopX / Scr->VirtualDesktopDScale,
-		Scr->VirtualDesktopY / Scr->VirtualDesktopDScale
+		Scr->VirtualDesktopX / Scr->VirtualDesktopDScale - border,
+		Scr->VirtualDesktopY / Scr->VirtualDesktopDScale - border
 		    /* SCALE_D(Scr->VirtualDesktopX), /* - RFB changed 3 to 1 */
 		    /* SCALE_D(Scr->VirtualDesktopY) /* - RFB changed 3 to 1 */
 			);
@@ -418,6 +557,7 @@ void DisplayScreenOnDesktop()
 ** just gives the right result otherwise.
 */
 
+	/* Way back, somebody wrote:    */
 	/* I've convinced myself that this is not necessary */
 	/* XLowerWindow(dpy, Scr->VirtualDesktopDScreen); */
 }
@@ -429,6 +569,21 @@ int w, h;
 
 	if (!Scr->Virtual)
 		return;
+
+	np = 0;
+	if ( w > Scr->VirtualDesktopMaxWidth )
+	{	Scr->VirtualDesktopMaxWidth = w;
+		np = 1;
+	}
+	if ( h > Scr->VirtualDesktopMaxHeight )
+	{	Scr->VirtualDesktopMaxHeight = h;
+		np = 1;
+	}
+	if ( np )
+	{	XResizeWindow( dpy, Scr->VirtualDesktopDisplay,
+			Scr->VirtualDesktopMaxWidth,
+			Scr->VirtualDesktopMaxHeight );
+	}
 
 	/* calculate the new vd size */
 	Scr->VirtualDesktopWidth = SCALE_U(w);
@@ -461,12 +616,6 @@ int w, h;
 #endif /* notdef */
 }
 
-/*
- * state during the move
- */
-static unsigned int moving_x, moving_y, moving_w, moving_h, moving_bw;
-Window moving_window;
-TwmWindow *moving_twindow;
 
 /*
  * F_MOVESCREEN function
@@ -495,9 +644,6 @@ XMotionEvent ev;
 		     GrabModeAsync, GrabModeAsync,
 		     Scr->VirtualDesktopDisplay, Scr->NoCursor, CurrentTime);
 
-	XGetGeometry(dpy, moving_window, &nowindow, &xoff, &yoff,
-		     &moving_w, &moving_h, &moving_bw, &d);
-
 	moving_x = ev.x;
 	moving_y = ev.y;
 
@@ -511,6 +657,20 @@ XMotionEvent ev;
 		return;
 	}
 
+	XGetGeometry(dpy, moving_window, &nowindow, &xoff, &yoff,
+		     &moving_w, &moving_h, &moving_bw, &d);
+
+	moving_off_x = moving_off_y = 0;
+	if ( xoff <= moving_x && moving_x <= ( xoff + moving_w )
+	&&   yoff <= moving_y && moving_y <= ( yoff + moving_h ))
+	{	/* The pointer is IN the window.
+		** don't start by moving the window so its upper-left is at
+		** the cursor! RFB
+		*/
+		moving_off_x = xoff - moving_x;
+		moving_off_y = yoff - moving_y;
+		moving_bw = 0;
+	}
 	/* get things going */
 	DoMoveWindowOnDesktop(ev.x, ev.y);
 }
@@ -521,6 +681,8 @@ int x, y;
 	if (!Scr->Virtual)
 		return;
 
+	x += moving_off_x;
+	y += moving_off_y;
 	/* check that we are legit */
 	if (x < 0)
 		x = 0;
@@ -558,7 +720,8 @@ void EndMoveWindowOnDesktop()
 		return;
 
 	if (moving_window == Scr->VirtualDesktopDScreen) {
-		SetRealScreen(SCALE_U(moving_x), SCALE_U(moving_y));
+		SetRealScreen(SCALE_U(moving_x),/* - moving_bw,*/
+			SCALE_U(moving_y) /*- moving_bw*/ );
 	} else {
 		/* move the window in virtual space */
 		moving_twindow->virtual_frame_x = SCALE_U(moving_x);
@@ -590,6 +753,28 @@ void EndMoveWindowOnDesktop()
 	moving_twindow = NULL;
 }
 
+/* Stig Ostholm <ostholm%ce.chalmers.se@uunet>
+ * move and resize a window on the desktop.
+ */
+void MoveResizeDesktop(tmp_win, noraise)
+TwmWindow *tmp_win;
+int noraise;
+{
+	int x, y, w, h;
+
+	if (!tmp_win->VirtualDesktopDisplayWindow
+	|| !Scr->Virtual
+	|| tmp_win->icon)
+		return;
+
+	GetDesktopWindowCoordinates(tmp_win, &x, &y, &w, &h);
+	/* Resize the desktop representation window */
+	XMoveResizeWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+		x, y, w, h);
+	if (!noraise)
+		XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+}
+
 void SetVirtualDesktop(geom, scale)
 char *geom;
 int scale;
@@ -610,6 +795,7 @@ int scale;
 	Scr->VirtualDesktopDScale = scale;
 
 	JunkMask = XParseGeometry (geom, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
+
 	if ((JunkMask & (WidthValue | HeightValue)) !=
 	    (WidthValue | HeightValue)) {
 	    twmrc_error_prefix();
@@ -621,6 +807,30 @@ int scale;
 	    fprintf (stderr, "VirtualDesktop \"%s\" must be positive\n", geom);
 	    return;
 	}
+
+	/*
+	 * More flexible way of selecting size of virtual desktop (ala tvtwm)
+	 * M.J.E. Mol marcel@duteca.et.tudelft.nl
+         */
+	if (JunkWidth > Scr->MyDisplayWidth)
+		/* specified as total pixels */
+		JunkWidth /= Scr->VirtualDesktopDScale;
+	else if (JunkWidth*Scr->VirtualDesktopDScale < Scr->MyDisplayWidth) {
+        	/* specified as number of physical screens */
+		JunkWidth *= Scr->MyDisplayWidth;
+		JunkWidth /= Scr->VirtualDesktopDScale;
+	}
+        /* else specified as size of panner window */
+
+	if (JunkHeight > Scr->MyDisplayHeight)
+		/* specified as total pixels */
+		JunkHeight /= Scr->VirtualDesktopDScale;
+	else if (JunkHeight*Scr->VirtualDesktopDScale < Scr->MyDisplayHeight) {
+        	/* specified as number of physical screens */
+		JunkHeight *= Scr->MyDisplayHeight;
+		JunkHeight /= Scr->VirtualDesktopDScale;
+	}
+        /* else specified as size of panner window */
 
 	/* tar@math.ksu.edu: fix handling of -0 X and Y geometry */
 	if (JunkMask & XValue) {
@@ -642,16 +852,17 @@ int scale;
 	JunkHeight *= Scr->VirtualDesktopDScale;
 
 	/* check that the vd is at least as big as the screen */
-	if ((JunkWidth < Scr->MyDisplayWidth)
-	    || (JunkHeight < Scr->MyDisplayHeight))
-	{
-		twmrc_error_prefix();
-		fprintf(stderr,
-			"VirtualDesktop must be larger than screen (%dx%d)\n",
-			Scr->MyDisplayWidth, Scr->MyDisplayHeight);
-		return;
-	}
-
+/* handled above, M.J.E. Mol
+**	if ((JunkWidth < Scr->MyDisplayWidth)
+**	    || (JunkHeight < Scr->MyDisplayHeight))
+**	{
+**		twmrc_error_prefix();
+**		fprintf(stderr,
+**			"VirtualDesktop must be larger than screen (%dx%d)\n",
+**			Scr->MyDisplayWidth, Scr->MyDisplayHeight);
+**		return;
+**	}
+*/
 	Scr->VirtualDesktopWidth = JunkWidth;
 	Scr->VirtualDesktopHeight = JunkHeight;
 
@@ -678,11 +889,12 @@ int x, y;
 		    t->frame_x, t->frame_y);
 
 	/* update the display */
-	UpdateDesktop(t);
+	/* UpdateDesktop(t); Stig */
+	MoveResizeDesktop(t, FALSE); /* Stig */
 
 	if (!Scr->NoRaiseMove) {
 		XRaiseWindow(dpy, t->frame);
-		XRaiseWindow(dpy, t->VirtualDesktopDisplayWindow);
+		/* XRaiseWindow(dpy, t->VirtualDesktopDisplayWindow); Stig */
 
 		RaiseAutoPan();
 	}
@@ -714,7 +926,7 @@ void SnapRealScreen()
 	else
 		newy = Scr->VirtualDesktopPanDistanceY * div;
 
-	SetRealScreenInternal(newx, newy, FALSE);
+	SetRealScreenInternal(newx, newy, FALSE, NULL, NULL); /* DSE */
 }
 
 
@@ -722,34 +934,58 @@ void SetRealScreen(x, y)
 int x, y;
 {
 	if (Scr->SnapRealScreen)
-		SetRealScreenInternal(x, y, TRUE);
+		SetRealScreenInternal(x, y, TRUE, NULL, NULL); /* DSE */
 	else
-		SetRealScreenInternal(x, y, FALSE);
+		SetRealScreenInternal(x, y, FALSE, NULL, NULL); /* DSE */
 }
 
 /*
  * handles the possibility of snapping
  */
-void SetRealScreenInternal(x, y, dosnap)
+void SetRealScreenInternal(x, y, dosnap, dx, dy)
 int x, y;
+int *dx, *dy; /* a pointer to an integer that contains the value
+                 (AutoPanBorderWidth + AutoPanExtraWarp) is passed in to
+                 both dx and dy when autopanning, or NULL is passed.  On
+                 return, the value is modified to store how much the pointer
+                 should actually be warped, in case
+                 AutoPanWarpWithRespectToRealScreen is nonzero. -- DSE */
 short dosnap;
 {
 	int xdiff, ydiff;
 	TwmWindow *Tmp_win;
 
 	/* check bounds */
-	if (x < 0)
-		x = 0;
-	if (y < 0)
-		y = 0;
+	if (x < 0) x = 0;
+	if (y < 0) y = 0;
 	if (x > (Scr->VirtualDesktopWidth - Scr->MyDisplayWidth))
 		x = Scr->VirtualDesktopWidth - Scr->MyDisplayWidth;
 	if (y > (Scr->VirtualDesktopHeight - Scr->MyDisplayHeight))
 		y = Scr->VirtualDesktopHeight - Scr->MyDisplayHeight;
 
+	/* if ( Scr->UseRealScreenBorder ) */
+	/* {	x -= 2; */
+		/* y -= 2; */
+	/* } */
+
 	/* how big a move is this ? */
 	xdiff = Scr->VirtualDesktopX - x;
 	ydiff = Scr->VirtualDesktopY - y;
+	
+	/* DSE */
+	{
+	int x_warp = ((xdiff<0) ? -1 : 1) * 
+	    ( (50 + abs(xdiff) * Scr->AutoPanWarpWithRespectToRealScreen) / 100 );
+	int y_warp = ((ydiff<0) ? -1 : 1) *
+	    ( (50 + abs(ydiff) * Scr->AutoPanWarpWithRespectToRealScreen) / 100 );
+	
+	if (dx)
+		if ( abs(x_warp) > abs(*dx) ) /* gonna warp the pointer enough */
+			*dx = x_warp;
+	if (dy)
+		if ( abs(y_warp) > abs(*dy) ) /* gonna warp the pointer enough */
+			*dy = y_warp;
+	}
 
 	/* move all of the windows by walking the twm list */
 	for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL; Tmp_win = Tmp_win->next)
@@ -786,12 +1022,14 @@ short dosnap;
 /*
  * pan the real screen on the virtual desktop by (xoff, yoff)
  */
-void PanRealScreen(xoff, yoff)
+void PanRealScreen(xoff, yoff, dx, dy)
 int xoff, yoff;
+int *dx, *dy; /* DSE */
 {
 	/* panning the screen can never mean that you need to snap */
 	SetRealScreenInternal(Scr->VirtualDesktopX + xoff, Scr->VirtualDesktopY + yoff,
-			      FALSE);
+			      FALSE, dx, dy);
+			             /* DSE */
 }
 
 /*
@@ -801,7 +1039,7 @@ void RaiseAutoPan()
 {
 	int i;
 
-	if (Scr->AutoPan > 0)
+	if (Scr->AutoPanX > 0)
 		for (i = 0; i <= 3; i++)
 			XRaiseWindow(dpy, Scr->VirtualDesktopAutoPan[i]);
 }

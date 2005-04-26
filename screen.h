@@ -69,6 +69,8 @@ typedef struct ScreenInfo
     int MaxWindowWidth;		/* largest window to allow */
     int MaxWindowHeight;	/* ditto */
 
+    int VirtualDesktopMaxWidth;		/* max width of virtual desktop */
+    int VirtualDesktopMaxHeight;	/* max height of virtual desktop */
     int VirtualDesktopWidth;	/* width of virtual desktop */
     int VirtualDesktopHeight;	/* height of virtual desktop */
     int VirtualDesktopX;	/* top left x of my screen on the desktop */
@@ -82,7 +84,9 @@ typedef struct ScreenInfo
     int VirtualDesktopDY;	/* position of the vd display */
 
     /* the autopan stuff */
-    int AutoPan;		/* how wide should the autopan windows be */
+    int AutoPanX;		/* how far should autopan travel */
+		/* AutoPanX is also "whether autopan configured". */
+    int AutoPanY;		/* how far should autopan travel */
     Window VirtualDesktopAutoPan[4]; /* the autopan windows */
     				/* 0 = left, 1 = right, 2 = top, 3 = bottom */
 
@@ -249,6 +253,8 @@ typedef struct ScreenInfo
     int ButtonIndent;		/* amount to shrink buttons on each side */
     int NumAutoRaises;		/* number of autoraise windows on screen */
     short NoDefaults;		/* do not add in default UI stuff */
+    short OldFashionedTwmWindowsMenu;
+	short UseRealScreenBorder;
     short UsePPosition;		/* what do with PPosition, see values below */
     short AutoRelativeResize;	/* start resize relative to position in quad */
     short FocusRoot;		/* is the input focus on the root ? */
@@ -293,10 +299,22 @@ typedef struct ScreenInfo
     short Virtual;		/* are we virtual ? (like, hey man....) */
     short NamesInVirtualDesktop;/* show names in virtual desktop display ? */
     short AutoRaiseDefault;   /* AutoRaise all windows if true *//*RAISEDELAY*/
+	short UseWindowRing;   /* put all windows in the ring? */
+	short StayUpMenus;
 
     FuncKey FuncKeyRoot;
-
     TwmDoor *Doors;		/* a list of doors on this screen */
+
+/*DSE*/ int AutoPanBorderWidth;           /* of autopan windows, really */
+/*DSE*/ int AutoPanExtraWarp;             /* # of extra pixels to warp */
+/*DSE*/ short EnhancedExecResources;      /* instead of normal behavior */
+/*DSE*/ short RightHandSidePulldownMenus; /* instead of left-right center */
+/*DSE*/ int RealScreenBorderWidth;        /* in virtual desktop */
+/*DSE*/ short LessRandomZoomZoom;         /* makes zoomzoom a better 
+                                             visual bell */
+/*DSE*/ short PrettyZoom;                 /* nicer-looking animation */
+/*DSE*/ int AutoPanWarpWithRespectToRealScreen /* percent */
+    
 } ScreenInfo;
 
 extern int MultiScreen;
