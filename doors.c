@@ -135,6 +135,9 @@ TwmDoor *tmp_door;
 			      tmp_door->name,
 			      tmp_door->class, &tmp_door->colors.back))
 		tmp_door->colors.back = Scr->DoorC.back;
+	if (Scr->use3Dtitles && !Scr->BeNiceToColormap)
+	    GetShadeColors(&tmp_door->colors);
+	FB(tmp_door->colors.fore, tmp_door->colors.back);
 
 	if (tmp_door->width < 0)
 		tmp_door->width = XTextWidth(Scr->DoorFont.font,
@@ -194,7 +197,7 @@ TwmDoor *tmp_door;
 	SetMapStateProp(tmp_door->twin, NormalState);
 
 	/* interested in... */
-	XSelectInput(dpy, tmp_door->w, ExposureMask |
+	XSelectInput(dpy, tmp_door->w, ExposureMask | 
 		     ButtonPressMask | ButtonReleaseMask);
 
 	/* store the address of the door on the window */
@@ -214,7 +217,6 @@ TwmDoor *tmp_door;
 void door_open_all()
 {
 	TwmDoor *tmp_door;
-	Window w;
 
 	for (tmp_door = Scr->Doors; tmp_door; tmp_door = tmp_door->next)
 		door_open(tmp_door);
@@ -245,8 +247,6 @@ void door_new()
 {
 	TwmDoor *d;
 	char name[256];
-	XSizeHints *hints;
-	long ret;
 
 	sprintf(name, "+%d+%d", Scr->VirtualDesktopX, Scr->VirtualDesktopY);
 
@@ -254,4 +254,43 @@ void door_new()
 			      Scr->VirtualDesktopX, Scr->VirtualDesktopY);
 
 	door_open(d);
+}
+
+void
+door_paste_name(w, d)
+Window w;
+TwmDoor* d;
+{
+    int count;
+    register int i;
+    char* ptr;
+    char name[128];
+
+    if (!d) {
+        /* find the door */
+        if (XFindContext(dpy, w, DoorContext, (caddr_t *)&d) == XCNOENT) {
+            /* not a door ! */
+            return;
+        }
+    }
+
+    ptr = XFetchBytes(dpy, &count);
+    if (ptr) {
+        if (sscanf(ptr, "%s", name) == 1) {
+            XFree(ptr);
+        }
+    }
+
+    i = strlen(name);
+    if (d->name) {
+        d->name = realloc(d->name, i+1);
+    } else {
+        d->name = malloc(i+1);
+    }
+
+    strcpy(d->name, name);
+
+    SetupWindow(d->twin, d->twin->frame_x, d->twin->frame_y, 
+        XTextWidth(Scr->DoorFont.font,d->name,i)+SIZE_HINDENT,d->height,-1);
+    HandleExpose(w);
 }

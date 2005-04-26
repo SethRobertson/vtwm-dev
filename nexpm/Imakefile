@@ -1,4 +1,0 @@
-LOCAL_LIBRARIES = -lXpm $(XMULIB) $(XTOOLLIB) $(XLIB)
-        DEPLIBS = $(DEPXMULIB) $(DEPXTOOLLIB) $(DEPXLIB)
-
-SimpleProgramTarget(nexpm)

@@ -144,7 +144,8 @@ int context;
 	    ResizeWindow = tmp_win->VirtualDesktopDisplayWindow;
     else
 	    ResizeWindow = tmp_win->frame;
-    XGrabServer(dpy);
+    if (!tmp_win->OpaqueResize || resizeWhenAdd)
+	XGrabServer(dpy);
     if (context == C_VIRTUAL_WIN)
 	    XGrabPointer(dpy, Scr->VirtualDesktopDisplay, True,
 			 ButtonPressMask | ButtonReleaseMask |
@@ -175,25 +176,26 @@ int context;
     if (Scr->AutoRelativeResize && !fromtitlebar)
       do_auto_clamp (tmp_win, evp);
 
-    Scr->SizeStringOffset = SIZE_HINDENT;
-    XResizeWindow (dpy, Scr->SizeWindow,
-		   Scr->SizeStringWidth + SIZE_HINDENT * 2, 
-		   Scr->SizeFont.height + SIZE_VINDENT * 2);
-    XMapRaised(dpy, Scr->SizeWindow);
+    if (!resizeWhenAdd) {
+	SetupSizeInfo(0, RESIZE_FMT, dragWidth, dragHeight);
+    }
+
+    DisplaySize(tmp_win, dragWidth, dragHeight);
     InstallRootColormap();
     last_width = 0;
     last_height = 0;
-    DisplaySize(tmp_win, origWidth, origHeight);
-    if (resize_context == C_VIRTUAL_WIN)
+    if (!tmp_win->OpaqueResize || resizeWhenAdd) {
+	if (resize_context == C_VIRTUAL_WIN)
 	    MoveOutline (Scr->VirtualDesktopDisplay, dragx,
 			 dragy, dragWidth,
 			 dragHeight,
 			 tmp_win->frame_bw, 0);
-    else
+	else
 	    MoveOutline (Scr->Root, dragx - tmp_win->frame_bw,
 			 dragy - tmp_win->frame_bw, dragWidth + 2 * tmp_win->frame_bw,
 			 dragHeight + 2 * tmp_win->frame_bw,
 			 tmp_win->frame_bw, tmp_win->title_height);
+    }
 }
 
 
@@ -205,7 +207,8 @@ int x, y, w, h;
 {
   Window junkRoot;
   unsigned int junkbw, junkDepth;
-    XGrabServer(dpy);
+
+  if (!tmp_win->OpaqueResize) XGrabServer(dpy);
     XGrabPointer(dpy, Scr->Root, True,
         ButtonPressMask | ButtonMotionMask | PointerMotionMask,
         GrabModeAsync, GrabModeAsync,
@@ -219,23 +222,20 @@ int x, y, w, h;
     clampTop = clampBottom = clampLeft = clampRight = clampDX = clampDY = 0;
     last_width = 0;
     last_height = 0;
-    Scr->SizeStringOffset = SIZE_HINDENT;
-    XResizeWindow (dpy, Scr->SizeWindow,
-		   Scr->SizeStringWidth + SIZE_HINDENT * 2, 
-		   Scr->SizeFont.height + SIZE_VINDENT * 2);
-    XMapRaised(dpy, Scr->SizeWindow);
-    DisplaySize(tmp_win, origWidth, origHeight);
-    MoveOutline (Scr->Root, dragx - tmp_win->frame_bw,
-		 dragy - tmp_win->frame_bw, 
-		 dragWidth + 2 * tmp_win->frame_bw,
-		 dragHeight + 2 * tmp_win->frame_bw,
-		 tmp_win->frame_bw, tmp_win->title_height);
+  SetupSizeInfo(0, RESIZE_FMT, origWidth, origHeight);
+    if (!tmp_win->OpaqueResize) {
+	MoveOutline (Scr->Root, dragx - tmp_win->frame_bw,
+		     dragy - tmp_win->frame_bw, 
+		     dragWidth + 2 * tmp_win->frame_bw,
+		     dragHeight + 2 * tmp_win->frame_bw,
+		     tmp_win->frame_bw, tmp_win->title_height);
+    }
 }
 
 /***********************************************************************
  *
  *  Procedure:
- *      AddStartResize - begin a windorew resize operation from AddWindow
+ *      AddStartResize - begin a window resize operation from AddWindow
  *
  *  Inputs:
  *      tmp_win - the TwmWindow pointer
@@ -269,6 +269,12 @@ int x, y, w, h;
     last_width = 0;
     last_height = 0;
     DisplaySize(tmp_win, origWidth, origHeight);
+    MoveOutline(Scr->Root,
+		dragx - tmp_win->frame_bw,
+		dragy - tmp_win->frame_bw,
+		dragWidth + 2 * tmp_win->frame_bw,
+		dragHeight + 2 * tmp_win->frame_bw,
+		tmp_win->frame_bw, tmp_win->title_height);
 }
 
 
@@ -367,20 +373,26 @@ TwmWindow *tmp_win;
             dragx = origx + origWidth - dragWidth;
         if (clampTop)
             dragy = origy + origHeight - dragHeight;
-	if (resize_context == C_VIRTUAL_WIN)
+	if (resize_context == C_VIRTUAL_WIN) {
 		MoveOutline(Scr->VirtualDesktopDisplay,
 			    dragx,
 			    dragy,
 			    dragWidth,
 			    dragHeight,
 			    tmp_win->frame_bw, 0);
-	else
+	} else {
+	    if (tmp_win->OpaqueResize) {
+		SetupWindow(tmp_win, dragx - tmp_win->frame_bw,
+			    dragy - tmp_win->frame_bw, dragWidth, dragHeight, -1);
+	    } else {
 		MoveOutline(Scr->Root,
 			    dragx - tmp_win->frame_bw,
 			    dragy - tmp_win->frame_bw,
 			    dragWidth + 2 * tmp_win->frame_bw,
 			    dragHeight + 2 * tmp_win->frame_bw,
 			    tmp_win->frame_bw, tmp_win->title_height);
+	    }
+	}
     }
 
     DisplaySize(tmp_win, dragWidth, dragHeight);
@@ -498,12 +510,17 @@ TwmWindow *tmp_win;
             dragx = origx + origWidth - dragWidth;
         if (clampTop)
             dragy = origy + origHeight - dragHeight;
-        MoveOutline(Scr->Root,
-            dragx - tmp_win->frame_bw,
-            dragy - tmp_win->frame_bw,
-            dragWidth + 2 * tmp_win->frame_bw,
-            dragHeight + 2 * tmp_win->frame_bw,
-	    tmp_win->frame_bw, tmp_win->title_height);
+	if (tmp_win->OpaqueResize && !resizeWhenAdd) {
+	    SetupWindow(tmp_win, dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
+			dragWidth, dragHeight, -1);
+	} else {
+	    MoveOutline(Scr->Root,
+			dragx - tmp_win->frame_bw,
+			dragy - tmp_win->frame_bw,
+			dragWidth + 2 * tmp_win->frame_bw,
+			dragHeight + 2 * tmp_win->frame_bw,
+			tmp_win->frame_bw, tmp_win->title_height);
+	}
     }
 
     DisplaySize(tmp_win, dragWidth, dragHeight);
@@ -567,13 +584,7 @@ int height;
         dheight /= tmp_win->hints.height_inc;
     }
 
-    (void) sprintf (str, " %4d x %-4d ", dwidth, dheight);
-    XRaiseWindow(dpy, Scr->SizeWindow);
-    FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);
-    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
-		      Scr->SizeStringOffset,
-		      Scr->SizeFont.font->ascent + SIZE_VINDENT,
-		      str, 13);
+    DisplaySizeInfo(RESIZE_FMT, dwidth, dheight);
 }
 
 /***********************************************************************
@@ -597,7 +608,7 @@ EndResize()
 	    MoveOutline(Scr->VirtualDesktopDisplay, 0, 0, 0, 0, 0, 0);
     else
 	    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
-    XUnmapWindow(dpy, Scr->SizeWindow);
+    RemoveSizeInfo();
 
     XFindContext(dpy, ResizeWindow, TwmContext, (caddr_t *)&tmp_win);
 
@@ -655,7 +666,7 @@ MenuEndResize(tmp_win)
 TwmWindow *tmp_win;
 {
     MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
-    XUnmapWindow(dpy, Scr->SizeWindow);
+    RemoveSizeInfo();
     ConstrainSize (tmp_win, &dragWidth, &dragHeight);
     AddingX = dragx;
     AddingY = dragy;
@@ -990,6 +1001,9 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     {
 	xwc.width = (tmp_win->rightx - tmp_win->highlightx);
 	if (Scr->TBInfo.nright > 0) xwc.width -= Scr->TitlePadding;
+	if (Scr->use3Dtitles) {
+	    xwc.width -= 4;
+	}
         if (xwc.width <= 0) {
             xwc.x = Scr->MyDisplayWidth;	/* move offscreen */
             xwc.width = 1;
@@ -1004,6 +1018,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     if (HasShape && reShape) {
 	SetFrameShape (tmp_win);
     }
+    UpdateDesktop(tmp_win);
 
     if (sendEvent)
     {

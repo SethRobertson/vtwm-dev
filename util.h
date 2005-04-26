@@ -46,7 +46,23 @@ extern void	GetUnknownIcon();
 extern char 	*ExpandFilename();
 extern int	GetColor();
 extern Cursor	NoCursor();
+extern void     SetupSizeInfo();
+extern void     DisplaySizeInfo();
+extern void     RemoveSizeInfo();
+extern char**   buildSymbolList();
 
 extern int HotX, HotY;
+
+#if defined (XPM)
+#   include <X11/xpm.h>
+
+typedef struct _XpmIcon {
+    Pixmap pixmap;
+    Pixmap mask;
+    XpmAttributes attributes;
+} XpmIcon;
+extern XpmIcon *GetXpmPixmap ();
+#endif
+
 
 #endif /* _UTIL_ */

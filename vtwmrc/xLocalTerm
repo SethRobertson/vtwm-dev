@@ -1,9 +1,0 @@
-#set -x
-SHL=
-# this is the top-level shell.
-LAYER=$1
-# this is the window name, and therefore the history-file name.
-export SHL LAYER
-#echo $1 `date` > $HOME/xxx
-exec nice --39 ksh
-

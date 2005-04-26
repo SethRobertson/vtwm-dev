@@ -43,13 +43,22 @@
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/extensions/shape.h>
-/* #include <X11/Xfuncs.h> */
+#ifndef X11R4
+#include <X11/Xfuncs.h>
+#endif
+#include "list.h"
+
+#include <X11/Intrinsic.h>
+
+#if defined(XPM)
+#include "util.h"
+#endif
 
 #ifndef WithdrawnState
 #define WithdrawnState 0
 #endif
 
-typedef unsigned long Pixel;
+
 #define PIXEL_ALREADY_TYPEDEFED		/* for Xmu/Drawing.h */
 
 #ifdef SIGNALRETURNSINT
@@ -119,6 +128,10 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 /* defines for zooming/unzooming */
 #define ZOOM_NONE 0
 
+/* Defines for the format of the size window */
+#define MOVE_FMT     " +%-4d +%-4d "
+#define RESIZE_FMT   " %-4d x %-4d "
+
 #define FBF(fix_fore, fix_back, fix_font)\
     Gcv.foreground = fix_fore;\
     Gcv.background = fix_back;\
@@ -140,13 +153,16 @@ typedef struct MyFont
 
 typedef struct ColorPair
 {
-    Pixel fore, back;
+    Pixel fore, back, shadc, shadd;
 } ColorPair;
+
+typedef enum {on, off} ButtonState;
 
 typedef struct _TitleButton {
     struct _TitleButton *next;		/* next link in chain */
     char *name;				/* bitmap name in case of deferal */
     Pixmap bitmap;			/* image to display in button */
+    int depth;			        /* depth of image to display in button */
     int srcx, srcy;			/* from where to start copying */
     unsigned int width, height;		/* size of pixmap */
     int dstx, dsty;			/* to where to start copying */
@@ -158,6 +174,7 @@ typedef struct _TitleButton {
 
 typedef struct _TBWindow {
     Window window;			/* which window in this frame */
+    Pixmap bitmap;		        /* image to display in button */
     TitleButton *info;			/* description of this window */
 } TBWindow;
 
@@ -205,6 +222,29 @@ typedef struct Colormaps
 #define ColormapsScoreboardLength(cm) ((cm)->number_cwins * \
 				       ((cm)->number_cwins - 1) / 2)
 
+typedef enum {match_none, match_class, match_name, match_icon} Matchtype;
+ 
+typedef struct Icon
+{
+    Matchtype match;
+    Window    w;		/* the icon window */
+    Window    bm_w;		/* the icon bitmap window */
+#if defined (XPM)
+    XpmIcon   *xpmicon;		/* xpm icon structure */
+#endif
+    int               x;	/* icon text x coordinate */
+    int               y;	/* icon text y coordiante */
+    int               w_width;	/* width of the icon window */
+    int               w_height;	/* height of the icon window */
+    int               width;	/* width of the icon bitmap */
+    int               height;	/* height of the icon bitmap */
+    char      *pattern;		/* Why this icon was choosed */
+    Pixel     border;		/* border color */
+    ColorPair iconc;
+} Icon;
+ 
+
+
 /* for each window that is on the display, one of these structures
  * is allocated and linked into a list 
  */
@@ -219,8 +259,8 @@ typedef struct TwmWindow
     Window title_w;		/* the title bar window */
     Window hilite_w;		/* the hilite window */
     Pixmap gray;
-    Window icon_w;		/* the icon window */
-    Window icon_bm_w;		/* the icon bitmap window */
+    Icon* icon;			/* the current icon */
+    name_list* iconslist;	/* the current list of icons */
     int frame_x;		/* x position of frame */
     int frame_y;		/* y position of frame */
     int virtual_frame_x;        /* virtual x position of frame */
@@ -258,13 +298,13 @@ typedef struct TwmWindow
      * color definitions per window
      **********************************************************************/
     Pixel border;		/* border color */
+    Pixel Virtual_border;	/* Desktop representation border */
     Pixel icon_border;		/* border color */
     ColorPair border_tile;
     ColorPair title;
-    ColorPair iconc;
     ColorPair virtual;
     short iconified;		/* has the window ever been iconified? */
-    short icon;			/* is the window an icon now ? */
+    short isicon;		/* is the window an icon now ? */
     short icon_on;		/* is the icon visible */
     short mapped;		/* is the window mapped ? */
     short auto_raise;		/* should we auto-raise this window ? */
@@ -296,6 +336,11 @@ typedef struct TwmWindow
 	Bool cursor_valid;
 	int curs_x, curs_y;
     } ring;
+
+    /* Opaqueness cab be on a per-window basis -njw */
+    short OpaqueResize;
+    short OpaqueMove;
+
 } TwmWindow;
 
 #define DoesWmTakeFocus		(1L << 0)
@@ -310,7 +355,14 @@ typedef struct TwmWindow
 #define TBPM_MENU ":menu"	/* name of titlebar pixmap for menus */
 #define TBPM_QUESTION ":question"	/* name of unknown titlebar pixmap */
 
-/*#include <X11/Xosdefs.h> */
+#define TBPM_3DDOT ":xpm:dot"         /* name of titlebar pixmap for dot */
+#define TBPM_3DRESIZE ":xpm:resize"   /* name of titlebar pixmap for resize button */
+#define TBPM_3DMENU ":xpm:menu"       /* name of titlebar pixmap for menus */
+#define TBPM_3DZOOM ":xpm:zoom"
+#define TBPM_3DBAR ":xpm:bar"
+
+
+#include <X11/Xosdefs.h>
 #ifndef X_NOT_STDC_ENV
 #include <stdlib.h>
 #else
@@ -362,6 +414,7 @@ extern char **Argv;
 extern char **Environ;
 extern void NewFontCursor();
 extern Pixmap CreateMenuIcon();
+extern Pixmap Create3DMenuIcon();
 
 extern Bool ErrorOccurred;
 extern XErrorEvent LastErrorEvent;

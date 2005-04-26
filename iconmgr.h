@@ -36,6 +36,7 @@ typedef struct WList
 {
     struct WList *next;
     struct WList *prev;
+    struct WList *nextv;		/* pointer to the next virtual Wlist C.L. */
     struct TwmWindow *twm;
     struct IconMgr *iconmgr;
     Window w;
@@ -43,7 +44,9 @@ typedef struct WList
     int x, y, width, height;
     int row, col;
     int me;
-    Pixel fore, back, highlight;
+    ColorPair cp;
+    Pixel highlight;
+    Pixmap iconifypm;
     unsigned top, bottom;
     short active;
     short down;
@@ -54,11 +57,13 @@ typedef struct IconMgr
     struct IconMgr *next;		/* pointer to the next icon manager */
     struct IconMgr *prev;		/* pointer to the previous icon mgr */
     struct IconMgr *lasti;		/* pointer to the last icon mgr */
+    struct IconMgr *nextv;		/* pointer to the next virtual icon mgr C.L. */
     struct WList *first;		/* first window in the list */
     struct WList *last;			/* last window in the list */
     struct WList *active;		/* the active entry */
     TwmWindow *twm_win;			/* back pointer to the new parent */
     struct ScreenInfo *scr;		/* the screen this thing is on */
+    int vScreen;			/* the virtual screen this thing is on */
     Window w;				/* this icon manager window */
     char *geometry;			/* geometry string */
     char *name;

@@ -1,30 +1,70 @@
-#XCOMM $XConsortium: Imakefile,v 1.33 91/07/17 00:48:06 gildea Exp $
-#XCOMM
-#XCOMM Here is an Imakefile for vtwm.  It depends on having TWMDIR defined
-#XCOMM in Imake.tmpl.  I like to use Imakefiles for everything, and I am sure
-#XCOMM other people do also, so perhaps you could do us all a favor and
-#XCOMM distribute this one.
-#XCOMM
+XCOMM $XConsortium: Imakefile,v 1.33 91/07/17 00:48:06 gildea Exp $
+XCOMM
+XCOMM Here is an Imakefile for vtwm.  It depends on having TWMDIR defined
+XCOMM in Imake.tmpl.  I like to use Imakefiles for everything, and I am sure
+XCOMM other people do also, so perhaps you could do us all a favor and
+XCOMM distribute this one.
+XCOMM
+
+#MAINTAINER=`whoami`
+MAINTAINER="Nick Williams (njw@cs.city.ac.uk)"
+
+#define XPM /* */
 
          YFLAGS = -d
-        DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
-#LOCAL_LIBRARIES = $(XMULIB) $(EXTENSIONLIB) $(XLIB)
- LOCAL_LIBRARIES = -lX11 -lXext -lXmu -lXt -lm 	
-
        LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
-        DEFINES = $(SIGNAL_DEFINES)
+
+#ifdef XPM
+      XPMLIBDIR = 
+      XPMINCDIR = 
+
+     XPMDEFINES = -DXPM
+         XPMLIB = $(XPMLIBDIR) -lXpm
+#else
+         XPMLIB = 
+      XPMLIBDIR = 
+      XPMINCDIR = 
+     XPMDEFINES = 
+#endif
+
+        DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
+LOCAL_LIBRARIES = $(XPMLIB) $(XMULIB) $(XTOOLLIB) $(EXTENSIONLIB) $(XLIB)
+        DEFINES = $(SIGNAL_DEFINES) $(XPMDEFINES)
 
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c twm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
-		cursor.c icons.c desktop.c doors.c
+		cursor.c icons.c desktop.c doors.c move.c
 
            OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o twm.o \
 		parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
-		cursor.o icons.o desktop.o doors.o
+		cursor.o icons.o desktop.o doors.o move.o
+
+  PIXMAPFILES =	xpm/IslandD.xpm        xpm/mail1.xpm          xpm/xgopher.xpm \
+		xpm/IslandW.xpm        xpm/nothing.xpm        xpm/xgrab.xpm \
+		xpm/LRom.xpm           xpm/pixmap.xpm         xpm/xhpcalc.xpm \
+		xpm/LRom1.xpm          xpm/postit.xpm         xpm/xmail.xpm \
+		xpm/arthur.xpm         xpm/term.xpm           xpm/xman.xpm \
+		xpm/cdrom1.xpm         xpm/unknown.xpm        xpm/xnomail.xpm \
+		xpm/claude.xpm         xpm/unread.xpm         xpm/xrn.goodnews.xpm \
+		xpm/datebook.xpm       xpm/xarchie.xpm        xpm/xrn.nonews.xpm \
+		xpm/emacs.xpm          xpm/xcalc.xpm          xpm/xrn.xpm \
+		xpm/hpterm.xpm         xpm/xcalc2.xpm         xpm/xterm.xpm \
+		xpm/mail0.xpm          xpm/xedit.xpm          xpm/welcome.xpm \
+		xpm/audio_editor.xpm   xpm/clipboard.xpm      xpm/ghostview.xpm \
+		xpm/xirc.xpm           xpm/xmosaic.xpm        xpm/unknown1.xpm \
+		xpm/xrn-compose.xpm \
+		xpm/3D_Expand15.xpm    xpm/3D_Iconify15.xpm   xpm/3D_Lightning15.xpm \
+		xpm/3D_Menu15.xpm      xpm/3D_Resize15.xpm    xpm/3D_Zoom15.xpm \
+		xpm/background1.xpm    xpm/background2.xpm    xpm/background3.xpm \
+		xpm/background4.xpm    xpm/background5.xpm    xpm/background6.xpm \
+		xpm/background7.xpm    xpm/background8.xpm    xpm/background9.xpm
+
 
 AllTarget(vtwm)
 
 SpecialObjectRule(parse.o,parse.c,'-DSYSTEM_INIT_FILE="'$(TWMDIR)'/system.vtwmrc"')
+SpecialObjectRule(menus.o,menus.c,'-DMAINTAINER="'$(MAINTAINER)'"')
+SpecialObjectRule(twm.o,twm.c,'-DPIXMAP_DIRECTORY="'$(TWMDIR)'"')
 #if !HasPutenv
 SpecialObjectRule(util.o,NullParameter,-DNOPUTENV)
 #endif
@@ -32,8 +72,10 @@ SpecialObjectRule(util.o,NullParameter,-DNOPUTENV)
 depend:: lex.c gram.c deftwmrc.c 
 
 ComplexProgramTarget(vtwm)
-
-#InstallNonExecFile(system.vtwmrc,$(TWMDIR))
+InstallNonExecFile(system.vtwmrc,$(TWMDIR))
+#ifdef XPM
+InstallMultipleFlags($(PIXMAPFILES),$(TWMDIR),$(INSTLIBFLAGS))
+#endif
 
 gram.h gram.c: gram.y
 	yacc $(YFLAGS) gram.y

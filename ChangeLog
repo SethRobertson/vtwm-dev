@@ -1,3 +1,167 @@
+Tue Sep 14 10:01:14 1993  Nick Williams  (njw at wilma.cs.city.ac.uk)
+
+	* Fixed the random color code. Ack.
+
+Tue Sep  7 11:09:31 1993  Nick Williams  (njw at wilma.cs.city.ac.uk)
+
+	* Finally got around to adding in the m4 pre-processing of the
+	startup file.  Used dme's code. 
+
+Fri Sep  3 10:57:37 1993  Nick Williams  (njw at wilma.cs.city.ac.uk)
+
+	* Fixed up the color code to be a bit more reasonable. At least,
+	to me, it's more reasonable.  Allows the virtual desktop colors to
+	correctly default from the main window colors.
+
+	* Added in ":random" as an internal color name. Generates a random
+	supposedly pleasing color. 
+
+	* Added SaveUnders to the Size/Position info window, so that when
+	moving underneath that window with Opacity, it isn't too graunchy.
+
+Wed Sep  1 13:06:04 1993  Nick Williams  (njw at mimsy.cs.city.ac.uk)
+
+	* Added NoRaiseDesktopOnMove keyword, and made the default
+	behaviour raise the desktop at start of move.
+
+Fri Aug 20 14:22:20 1993  Nick Williams  (njw at mimsy.cs.city.ac.uk)
+
+	* Fixed bug with add_window not correctly nailing windows. A new
+	bug which I had introduced. sigh.
+
+	* removed backingstore from virtual desktop windows. Wasn't
+	neccessary with the new move code and caused update problems. at
+	least, it did on sun server.
+
+	* Fixed the highlight focus for f.raiselower.
+
+Thu Aug 19 09:49:28 1993  Nick Williams  (njw at mimsy.cs.city.ac.uk)
+
+	* fixed deiconify bug: updatedesktop was called before the icon
+	flag in the tmp_win had been corrected.  Optimised some of the
+	calls to updatedesktop which I've been adding in
+	left/right/center...
+
+Tue Aug 17 10:20:19 1993  Nick Williams  (njw at wilma.cs.city.ac.uk)
+
+	* Fixed the redraw of the icon names by removing stupidity code.
+
+Fri Aug 13 11:25:33 1993  Nick Williams  (njw at pebbles.cs.city.ac.uk)
+
+	* BUGS:
+	  - f.raiselower does not configure the virtual desktop windows
+	  - f.raiselower can lose the focus highlighting
+	  - icon names do not get redrawn properly
+
+	* Fixed the add_window code. I had introduced a new bug with
+	uposition, now fixed.
+
+	* Re-jigged the UpdateDesktop into many different functions doing
+	nice things.  Now things work muchos better.
+
+	* got the new move system actually working. Shock, horror, probe.
+
+Thu Aug 12 13:38:34 1993  Nick Williams  (njw at pebbles.cs.city.ac.uk)
+
+	* Picked up tvtwm's move mechanism and incorporated it into the
+	vtwm source.  Now you can move in and out of the desktop
+
+Tue Aug 10 13:36:16 1993  Nick Williams  (njw at pebbles.cs.city.ac.uk)
+
+	* Fixed snug functions such that they ignore icons.
+
+	* Added DefaultFont and InfoFont keywords, to allow the user to
+	override the default font name without having to specify
+	everything, and to provide the font to use when giving the info
+	window.
+
+	* Changed the version/identify information to be seperate.
+
+	* Fixed DeIconifyToScreen so that it always ensures windows will
+	appear at least partially on the real screen.
+
+	* Fixed ConstrainedMove so that the desktop window moves opaquely
+	in the correct place (not from 0,0).
+
+Mon Aug  9 14:45:53 1993  Nick Williams  (njw at pebbles.cs.city.ac.uk)
+
+	* Added patch from athena: CenteredInfoBox keyword will place the
+	resize/position info window into the centre of the screen.
+
+	* Made the desktop display windows have saveunders enabled, so
+	that redrawing them doesn't kill your server.
+
+	* Fixed the raising and lowering so it remains consistent inside
+	the desktop display.  RaiseLower doesn't work properly tho...
+
+	* Added patch from athena: VirtualDesktop size can be specified as
+	multipliers of the real screen. e.g. desktop =3x4.  It works by
+	noticing if the first character of the geom string is an '='.
+
+	* BUG: Even when it isn't neccessary, an UpdateDesktop is called.
+	As the desktop code can't tell if anything has changed or not, it
+	always reconfigures the window, causing the stacking order to go
+	bad and other horrid things to happen. Not only that, but it isn't
+	called enough! For example, when a window resizes itself (under
+	program control), the desktop doesn't notice.
+
+	* Fixed coredump when iconifying doors.  
+
+Fri Aug  6 10:20:14 1993  Nick Williams  (njw at pebbles.cs.city.ac.uk)
+
+	* Increased the size of the desktop window to be maxsize, so that
+	it's background is correctly filled in. If this isn't done, then
+	you can't resize the desktop window later to a larger size,
+	without making it look gross.
+
+	* OpaqueResize now handles expose events and so the titlebars get done.
+
+	* TODO:
+	  - allow moving of windows into and out of the desktop display
+	  - fix OpaqueResize so it redraws the titles
+
+	* Fixed the moving code, so it correctly displays the name and
+	position of the window.
+
+	* Changed loads of NULLs to '0' to make gcc happy
+
+	* Fixed the bug in iconification code.
+
+	* Bug in iconification code.  When icon name changes, vtwm
+	believes the window has iconified itself and then is severely
+	confused with reality.
+
+	* The ctwm stuff merged. Bug still in the moving code.  The m4
+	preprocessing hasn't been put in yet. Shall I or shan't I?
+	Decisions...
+
+Thu Aug  5 09:56:57 1993  Nick Williams  (njw at pebbles.cs.city.ac.uk)
+
+	* Going through merging all of the things from ctwm: 3d menus,
+	etc, xpixmaps, seperators in menus.... and more! 
+
+	* Added in the OpaqueResize stuff from ctwm. Oh, for a fast Xserver!
+
+Wed Aug  4 10:20:58 1993  Nick Williams  (njw at pebbles.cs.city.ac.uk)
+
+	* Modified desktop.c so that it always keeps an up-to-date
+	property on the root window with the current virtual coordinates
+	of the real screen.
+
+	* Added saveunders for desktop windows, so that if you have the
+	names written in them, they don't take ages to redraw all the
+	time. 
+
+	* Added door_paste_name to doors.c (and handle for using it in
+	parse.[ch] and menus.c.  This will grab the current contents of
+	the cutbuffer and change the name of the door.
+
+	* Modified desktop.c, events.c, menus.c, parse.c, screen.h, twm.c
+	to allow the virtual desktop windows to accept focus, if
+	TitleFocus is enabled by user.
+
+	* Updated version.c to indicate hacking in progress!
+
 Thu Jun 24 15:24:36 EDT 1993 Ralph Betza (gnohmon@ssiny.com)
 
 	* Includes RaiseDelay patch from

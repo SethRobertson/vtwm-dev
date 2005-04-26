@@ -12,7 +12,7 @@
 .if t .sp .5
 ..
 .ta .3i .6i .9i 1.2i 1.5i 1.8i
-.TH VTWM 1 "Release 5" "X Version 11"
+.TH VTWM 1 "Release 5.2" "X Version 11"
 .SH NAME
 .PP
 vtwm - Virtual Tab Window Manager for the X Window System
@@ -62,7 +62,12 @@ clicking in the title or highlight region raises the window without moving it.
 When new windows are created, \fIvtwm\fP will honor any size and location
 information requested by the user (usually through \fI-geometry\fP
 command line argument or resources for the individual applications).
-Otherwise, an outline of the window's default size, its titlebar, and lines
+Although,
+with the virtual desktop enabled,
+the geometry can have different effects,
+depending on whether it is program-specified or user-specified.
+When the geometry is not specified,
+an outline of the window's default size, its titlebar, and lines
 dividing the
 window into a 3x3 grid that track the pointer are displayed.
 Clicking pointer Button1
@@ -144,6 +149,17 @@ file for a
 default configuration.  This is often tailored by the site administrator to
 provide convenient menus or familiar bindings for novice users.
 .PP
+Whichever startup file is chosen, it is pre-processed with 
+.B m4 
+before parsing.
+The pre-process stage allows you to conditionally specify the
+behaviour of 
+.B vtwm 
+depending on what sort of X server you are using.
+The symbols which are passed in to the pre-process stage can be looked
+at by using
+.B "xrdb -symbols".
+.PP
 If no startup files are found, \fIvtwm\fP will use the built-in defaults
 described above.  The only resource used by \fIvtwm\fP is
 \fIbitmapFilePath\fP for a colon-separated list of directories to search
@@ -167,6 +183,101 @@ by double quote characters (e.g. "blue") and are case-sensitive.
 A pound sign (#) outside
 of a string causes the remainder of the line in which the character appears to
 be treated as a comment.
+.SH "FEATURE INDEX"
+This is a quick reference list showing which variables you should play
+with to affect interesting parts of the window manager.
+.\"----------------
+.IP "\fBVirtual Desktop\fP" 8
+This is controlled by the variables:
+AutoPan,
+DeiconifyToScreen,
+DesktopDisplayBackground,
+DesktopDisplayBorder,
+DesktopDisplayForeground,
+DontShowInDisplay,
+Door,
+DoorFont,
+DoorForeground,
+DoorBackground,
+Doors,
+NailedDown,
+NoRaiseDesktopOnMove,
+PanDistanceX,
+PanDistanceY,
+VirtualBackground,
+VirtualDesktop,
+VirtualDesktopBorderWidth,
+VirtualDesktopFont,
+WarpWindows.
+.\"----------------
+.IP "\fB3D Appearance\fP" 8
+This is controlled by:
+BeNiceToColormap,
+ButtonBorderWidth,
+ClearShadowContrast,
+DarkShadowContrast,
+UseThreeDIconManagers,
+UseThreeDTitles,
+UseThreeDMenus.
+.\"----------------
+.IP "\fBFonts\fP" 8
+DefaultFont,
+DoorFont,
+IconFont,
+IconManagerFont,
+InfoFont,
+MenuFont,
+ResizeFont,
+TitleFont,
+VirtualDesktopFont.
+.\"----------------
+.IP "\fBIcons\fP" 8
+DeiconifyToScreen,
+Icons,
+IconBackground,
+IconBorderColor,
+IconDirectory,
+IconFont,
+IconForeground,
+IconifyByUnmapping,
+IconRegion,
+IconManagerFont,
+IconManagerForeground,
+IconManagerBackground,
+IconManagerGeometry,
+IconManagerHighlight,
+IconManagerShow,
+IconManagers,
+NoIconTitle,
+UseThreeDIconManagers,
+XpmDirectory.
+.\"-----------------
+.IP "\fBColor\fP" 8
+BeNiceToColormap,
+BorderColor,
+BorderTileBackground,
+BorderTileForeground,
+Color,
+DefaultForeground,
+DesktopDisplayBackground,
+DesktopDisplayBorder,
+DesktopDisplayForeground,
+DoorBackground,
+DoorForeground,
+IconForeground,
+IconBackground,
+IconManagerForeground,
+IconManagerBackgound,
+InterpolateMenuColors,
+Monochrome,
+MenuForeground,
+MenuBackground,
+MenuShadowColor,
+MenuTitleBackground,
+MenuTitleForeground,
+TitleForeground,
+TitleBackground.
+.\"-----------------
 .SH VARIABLES
 .PP
 Many of the aspects of \fIvtwm\fP's user interface are controlled by variables
@@ -245,6 +356,11 @@ titlebutton, \fIvtwm\fP will still wait for the pointer to cross a window
 edge (to prevent accidents).  This option is
 particularly useful for people who like the press-drag-release method of
 sweeping out window sizes.
+.IP "\fBBeNiceToColormap\fP" 8
+By defaults new colors are allocated for shadows when a 3D look is used,
+but when you specify \fBBeNiceToColormap\fP vtwm uses stipling instead of
+new colors, the effect is less beautiful, but acceptable. In this case
+ClearShadowContrast and DarkShadowContrast have no effects.
 .IP "\fBBorderColor\fP \fIstring\fP [{ \fIwincolorlist\fP }]" 8
 This variable specifies the default color of the border to be placed around
 all
@@ -283,6 +399,16 @@ indented on all sides.  Positive values cause the buttons to be smaller than
 the window text and highlight area so that they stand out.  Setting this
 and the \fBTitleButtonBorderWidth\fP variables to 0 makes titlebuttons be as
 tall and wide as possible.  The default is 1.
+.IP "\fBCenteredInfoBox\fP" 8
+Indicated that the information window giving the geometry of a
+window when moving or resizing should be centered in the screen.
+.IP "\fBClearShadowContrast\fP \fIcontrast\fP" 8
+Indicates to vtwm hos to calculate the clear shadow color for 3D items.
+The value is a comprised between 0 and 100. The formula used is :
+.EX 0
+    clear.{RGB} = (65535 - color.{RGB}) * (contrast / 100).
+.EE
+Has no effect if \fBBeNiceToColormap\fP is active.
 .IP "\fBClientBorderWidth\fP" 8
 This variable indicates that border width of a window's frame should be set to
 the initial border width of the window, rather than to the value of
@@ -335,6 +461,8 @@ For example:
 All of these color variables may also be specified for the \fBMonochrome\fP
 variable, allowing the same initialization file to be used on both color and
 monochrome displays.
+The special name of ":random" may be given as any color definition, in
+which case a random color is allocated for that assignment.
 .IP "\fBConstrainedMoveTime\fP \fImilliseconds\fP" 8
 This variable specifies the length of time between button clicks needed to
 begin
@@ -388,6 +516,9 @@ are not reparented.
 .IP "\fBDefaultBackground\fP \fIstring\fP" 8
 This variable specifies the background color to be used for sizing and
 information windows.  The default is "white".
+.IP "\fBDefaultFont\fP \fIstring\fP" 8
+This gives the default font to use for all text.  Specific fonts (e.g.
+the ResizeFont), when set, will override this value. 
 .IP "\fBDefaultForeground\fP \fIstring\fP" 8
 This variable specifies the foreground color to be used for sizing and
 information windows.  The default is "black".
@@ -607,6 +738,12 @@ would try to use
 the icon bitmap in the file ``xterm.icon''.  If \fBForceIcons\fP is
 specified, this bitmap will be used even if the client has requested its
 own icon pixmap.
+.IP "\fBInfoFont\fP \fIfont\fP" 8
+This specifies the font to use when displaying the version
+information,
+or when identifying a window.
+It is best if this font is of fixed width,
+as the window information is tabulated with spaces.
 .IP "\fBInterpolateMenuColors\fP" 8
 This variable indicates that menu entry colors should be interpolated between
 entry specified colors.  In the example below:
@@ -704,6 +841,11 @@ This variable indicates that no icon manager should be created.
 This variable indicates that menus should not have drop shadows drawn behind
 them.  This is typically used with slower servers since it speeds up menu
 drawing at the expense of making the menu slightly harder to read.
+.IP "\fBNoRaiseDesktopOnMove\fP" 8
+When moving windows around the screen,
+the default behaviour of vtwm is to raise the desktop window at the
+start.  This ensures that you can move the window in and out of the
+desktop easily.  This keyword disables the raising of the window.
 .IP "\fBNoRaiseOnDeiconify\fP" 8
 This variable indicates that windows that are deiconified should not be
 raised.
@@ -796,8 +938,6 @@ but which we might call the "panner",
 is a little window that shows where the physical screen
 is located in virtual space.
 The vtwm source code calls this little window the RealScreen.
-It currently has no border, and can be distinguished from the normal
-backdrop of the panner only by its color or bitmap.
 Its foreground color has no meaning unless you give it a bitmap.
 .IP "\fBRealScreenPixmap\fP \fIstring\fP" 8
 Names a bitmap used to decorate the RealScreen window.
@@ -886,6 +1026,9 @@ programs that do not support an \fI-iconic\fP command line option or
 resource.
 .IP "\fBSticky\fP { \fIlist\fP }" 8
 A synonym for NailedDown.
+.IP "\fBSunkFocusWindowTitle\fP" 8
+This variable specifies that the title of the focus window (if exists)
+should be sunken instead of raised. Only valid if UseThreeDTitles is set.
 .IP "\fBTitleBackground\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies the background color used in titlebars,
 and may only be specified inside of a
@@ -911,6 +1054,11 @@ The default is "black".
 .IP "\fBTitlePadding\fP \fIpixels\fP" 8
 This variable specifies the distance between the various buttons, text, and
 highlight areas in the titlebar.  The default is 8 pixels.
+.IP "\fBTransientOnTop\fP \fIpercentage\fP" 8
+The paramater (required) is a percentage and tells vtwm to put transient
+(and non-group leader) windows always on top of their leader if and only
+if their surface is smaller than this fraction of the surface of their
+leader. The surface of a window is the its width times its weight.
 .IP "\fBUnknownIcon\fP \fIstring\fP" 8
 This variable specifies the filename of a bitmap file to be
 used as the default icon.  This bitmap will be used as the icon of all
@@ -929,6 +1077,16 @@ should be used, and
 \fB"non-zero"\fP indicating that the position should used if
 it is other than (0,0).  The latter option is for working around a bug in
 older toolkits.
+.IP "\fBUseThreeDIconManagers\fP" 8
+Tells \fBvtwm\fP to use 3D-looking IconManagers if any.
+.IP "\fBUseThreeDMenus\fP" 8
+Tells \fBvtwm\fP to use 3D-looking menus.
+.IP "\fBUseThreeDTitles\fP" 8
+Tells \fBvtwm\fP to use 3D-looking windows titles. In which case the default
+values of \fBTitleButtonBorderWidth\fP, \fBFramePadding\fP, \fBTitlePadding\fP
+and \fBButtonIndent\fP are set to 0.
+There is 5 built-in scalable pixmap for buttons, :xpm:menu, :xpm:dot,
+:xpm:resize, :xpm:zoom and :xpm:bar.
 .IP "\fBVirtualBackground\fP \fIstring\fP
 This is the background color for the panner, a.k.a. the Virtual
 Desktop window.
@@ -958,6 +1116,12 @@ This required the creation of a huge window, to accomodate the
 largest possible panner. This is no longer true. The startup size is
 already the maximum size.
 The scaling value is also fixed at startup and cannot be changed.
+.IP "\fBVirtualDesktopBorderWidth\fP \fIwidth\fP" 8
+This specifies the width of the border placed around the real screen
+area in the desktop window.  If zero, then no line is drawn.  The
+default is a border of 1 when using a monochrome display, else no
+border with a color display.  It is assumed that the user will use
+color to differentiate between the desktop and the real screen.
 .IP "\fBVirtualFont\fP \fIfont\fP" 8
 This variable causes \fIfont\fP to be used when displaying the names
 of windows in the virtual desktop display.  If this variable is not
@@ -1255,6 +1419,9 @@ first button.
 .IP "\fBf.nail\fP" 8
 This function nails or unnails the specified window onto the real screen\(emthe
 current value of this property is toggled on the specified window.
+.IP "\fBf.namedoor\fP" 8
+This replaces the name of the door in which the cursor is currently
+located with the contents of the cutbuffer. Consider it a paste.
 .IP "\fBf.newdoor\fP" 8
 This function creates a new door with it's destination and name set to the real
 screen's current position in the virtual desktop.
@@ -1503,10 +1670,11 @@ Technology,  See \fIX(1)\fP for a full statement of rights and permissions.
 .SH AUTHORS
 Tom LaStrange, Solbourne Computer; Jim Fulton, MIT X Consortium;
 Steve Pitschke, Stardent Computer; Keith Packard, MIT X Consortium;
-Dave Payne, Apple Computer; Nick Williams <njw@athena.mit.edu>;
+Dave Payne, Apple Computer; Nick Williams <njw@cs.city.ac.uk>;
 Dave Edmondson, Santa Cruz Operation, <davided@sco.com>;
 Dana Chee, Bellcore, (R5 conversion) <dana@thumper.bellcore.com>;
 Warren Jessop, University of Washington, whj@cs.washington.edu;
 thoth@reef.cis.ufl.edu (Gilligan);
 tar@math.ksu.edu (Tim Ramsey),
-Ralph Betza, gnohmon@ssiny.com.
+Ralph Betza, gnohmon@ssiny.com, 
+Claude Lecommandeur (lecom@sic.epfl.ch)

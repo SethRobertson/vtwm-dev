@@ -1,0 +1,5 @@
+* The iconmanager does not show the correct iconification state.
+* The f.raiselower function gets the stcking order completely screwed in the
+  panner. On looking at the X server code and everything else, we've decided
+  it's impossible to fix.  StackingOrderOpposite just won't work. 
+* The doors do not opaquely resize correctly.  They do really weird things...

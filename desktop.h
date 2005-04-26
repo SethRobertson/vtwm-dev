@@ -33,6 +33,12 @@ extern void SetRealScreen();
 extern void PanRealScreen();
 extern void RaiseAutoPan();
 
+extern void desktopCreateWindow();
+extern void desktopNailWindow();
+extern void MapFrame();
+extern void RaiseFrame();
+extern void LowerFrame();
+
 /* convert real space to virtual space */
 #define R_TO_V_X(x) ((x) + Scr->VirtualDesktopX)
 #define R_TO_V_Y(y) ((y) + Scr->VirtualDesktopY)

@@ -54,6 +54,7 @@
 static char *Action = "";
 static char *Name = "";
 static MenuRoot	*root, *pull = NULL;
+static MenuItem* lastmenuitem = (MenuItem*)0;
 
 static MenuRoot *GetRoot();
 
@@ -84,7 +85,7 @@ extern int yylineno;
 %token <num> ICONMGR_SHOW ICONMGR WINDOW_FUNCTION ZOOM ICONMGRS
 %token <num> ICONMGR_GEOMETRY ICONMGR_NOSHOW MAKE_TITLE
 %token <num> ICONIFY_BY_UNMAPPING DONT_ICONIFY_BY_UNMAPPING
-%token <num> NO_TITLE AUTO_RAISE NO_HILITE ICON_REGION
+%token <num> NO_ICON_TITLE NO_TITLE AUTO_RAISE NO_HILITE ICON_REGION
 %token <num> META SHIFT LOCK CONTROL WINDOW TITLE ICON ROOT FRAME VIRTUAL VIRTUAL_WIN
 %token <num> COLON EQUALS SQUEEZE_TITLE DONT_SQUEEZE_TITLE
 %token <num> START_ICONIFIED NO_TITLE_HILITE TITLE_HILITE
@@ -92,6 +93,7 @@ extern int yylineno;
 %token <num> NUMBER KEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD
 %token <num> SKEYWORD DKEYWORD JKEYWORD WINDOW_RING WARP_CURSOR ERRORTOKEN
 %token <num> NO_STACKMODE NAILEDDOWN VIRTUALDESKTOP NO_SHOW_IN_DISPLAY
+%token <num> OPAQUEMOVE NOOPAQUEMOVE OPAQUERESIZE NOOPAQUERESIZE
 %token <num> DOORS DOOR
 /*RFB PIXMAP:*/
 %token <num> VIRTUALMAP
@@ -122,12 +124,12 @@ stmt		: error
 					{ AddIconRegion($2, $3, $4, $5, $6); }
 		| ICONMGR_GEOMETRY string number	{ if (Scr->FirstTime)
 						  {
-						    Scr->iconmgr.geometry=$2;
-						    Scr->iconmgr.columns=$3;
+						    Scr->iconmgr->geometry= $2;
+						    Scr->iconmgr->columns=$3;
 						  }
 						}
 		| ICONMGR_GEOMETRY string	{ if (Scr->FirstTime)
-						    Scr->iconmgr.geometry = $2;
+						    Scr->iconmgr->geometry = $2;
 						}
 		| ZOOM number		{ if (Scr->FirstTime)
 					  {
@@ -135,18 +137,32 @@ stmt		: error
 						Scr->ZoomCount = $2;
 					  }
 					}
-		| ZOOM			{ if (Scr->FirstTime)
+		| ZOOM			{ if (Scr->FirstTime) 
 						Scr->DoZoom = TRUE; }
 		| PIXMAPS pixmap_list	{}
 		| CURSORS cursor_list	{}
 		| ICONIFY_BY_UNMAPPING	{ list = &Scr->IconifyByUn; }
 		  win_list
-		| ICONIFY_BY_UNMAPPING	{ if (Scr->FirstTime)
+		| ICONIFY_BY_UNMAPPING	{ if (Scr->FirstTime) 
 		    Scr->IconifyByUnmapping = TRUE; }
-		| LEFT_TITLEBUTTON string EQUALS action {
+
+		| OPAQUEMOVE	{ list = &Scr->OpaqueMoveList; }
+		  win_list
+		| OPAQUEMOVE	{ if (Scr->FirstTime) Scr->DoOpaqueMove = TRUE; }
+		| NOOPAQUEMOVE	{ list = &Scr->NoOpaqueMoveList; }
+		  win_list
+		| NOOPAQUEMOVE	{ if (Scr->FirstTime) Scr->DoOpaqueMove = FALSE; }
+		| OPAQUERESIZE	{ list = &Scr->OpaqueMoveList; }
+		  win_list
+		| OPAQUERESIZE	{ if (Scr->FirstTime) Scr->DoOpaqueResize = TRUE; }
+		| NOOPAQUERESIZE	{ list = &Scr->NoOpaqueResizeList; }
+		  win_list
+		| NOOPAQUERESIZE	{ if (Scr->FirstTime) Scr->DoOpaqueResize = FALSE; }
+
+		| LEFT_TITLEBUTTON string EQUALS action { 
 					  GotTitleButton ($2, $4, False);
 					}
-		| RIGHT_TITLEBUTTON string EQUALS action {
+		| RIGHT_TITLEBUTTON string EQUALS action { 
 					  GotTitleButton ($2, $4, True);
 					}
 		| button string		{ root = GetRoot($2, NULLSTR, NULLSTR);
@@ -192,6 +208,10 @@ stmt		: error
 		  win_list
 		| NO_STACKMODE		{ if (Scr->FirstTime)
 						Scr->StackMode = FALSE; }
+		| NO_ICON_TITLE		{ list = &Scr->NoIconTitle; }
+		  win_list
+		| NO_ICON_TITLE		{ if (Scr->FirstTime)
+						Scr->NoIconTitlebar = TRUE; }
 		| NO_TITLE		{ list = &Scr->NoTitle; }
 		  win_list
 		| NO_TITLE		{ if (Scr->FirstTime)
@@ -202,7 +222,7 @@ stmt		: error
 		  win_list
 		| AUTO_RAISE		{ list = &Scr->AutoRaise; }
 		  win_list
-		| AUTO_RAISE        { Scr->AutoRaiseDefault = TRUE; }/*RAISEDELAY*/
+		| AUTO_RAISE		{ Scr->AutoRaiseDefault = TRUE; }
 		| MENU string LP string COLON string RP	{
 					root = GetRoot($2, $4, $6); }
 		  menu			{ root->real_menu = TRUE;}
@@ -583,24 +603,31 @@ function_entry	: action		{ AddToMenu(root, "", Action, NULLSTR, $1,
 					}
 		;
 
-menu		: LB menu_entries RB
+menu		: LB menu_entries RB {lastmenuitem = (MenuItem*) 0;}
 		;
 
 menu_entries	: /* Empty */
 		| menu_entries menu_entry
 		;
 
-menu_entry	: string action		{ AddToMenu(root, $1, Action, pull, $2,
-						NULLSTR, NULLSTR);
+menu_entry	: string action		{ 
+                        if ($2 == F_SEPERATOR) {
+			    if (lastmenuitem) lastmenuitem->separated = 1;
+			} else {
+                            lastmenuitem = AddToMenu(root, $1, Action, pull, $2, NULLSTR, NULLSTR);
 					  Action = "";
 					  pull = NULL;
-					}
+			}
+		    }
 		| string LP string COLON string RP action {
-					  AddToMenu(root, $1, Action, pull, $7,
-						$3, $5);
-					  Action = "";
-					  pull = NULL;
-					}
+		        if ($7 == F_SEPERATOR) {
+			    if (lastmenuitem) lastmenuitem->separated = 1;
+			} else {
+			    lastmenuitem = AddToMenu(root, $1, Action, pull, $7, $3, $5);
+			    Action = "";
+			    pull = NULL;
+			}
+		    }
 		;
 
 action		: FKEYWORD	{ $$ = $1; }
@@ -777,8 +804,8 @@ char *fore, *back;
 
 	save = Scr->FirstTime;
 	Scr->FirstTime = TRUE;
-	GetColor(COLOR, &tmp->hi_fore, fore);
-	GetColor(COLOR, &tmp->hi_back, back);
+	GetColor(COLOR, &tmp->highlight.fore, fore);
+	GetColor(COLOR, &tmp->highlight.back, back);
 	Scr->FirstTime = save;
     }
 

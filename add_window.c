@@ -43,7 +43,9 @@
 #include "add_window.h"
 #include "util.h"
 #include "resize.h"
+#include "move.h"
 #include "parse.h"
+#include "gram.h"
 #include "list.h"
 #include "events.h"
 #include "menus.h"
@@ -55,6 +57,8 @@
 #define gray_height 2
 static char gray_bits[] = {
    0x02, 0x01};
+static char black_bits[] = {
+   0xFF, 0xFF};
 
 int AddingX;
 int AddingY;
@@ -66,7 +70,7 @@ static int PlaceY = 50;
 static void CreateWindowTitlebarButtons();
 
 char NoName[] = "Untitled"; /* name if no name is specified */
-
+int resizeWhenAdd;
 
 /************************************************************************
  *
@@ -143,8 +147,12 @@ IconMgr *iconp;
     unsigned long nitems, bytesafter;
     int ask_user;		/* don't know where to put the window */
     int gravx, gravy;			/* gravity signs for positioning */
-    int namelen;
     int bw2;
+    int cancel;
+    int tmpX;
+    int saveDelta;
+    int saveOpaque;
+    int doNail;
 
 #ifdef DEBUG
     fprintf(stderr, "AddWindow: w = 0x%x\n", w);
@@ -182,7 +190,7 @@ IconMgr *iconp;
 
     tmp_win->wmhints = XGetWMHints(dpy, tmp_win->w);
     if (tmp_win->wmhints && (tmp_win->wmhints->flags & WindowGroupHint))
-      tmp_win->group = tmp_win->wmhints->window_group;
+	tmp_win->group = tmp_win->wmhints->window_group;
     else
 	tmp_win->group = tmp_win->w/* NULL */;
 
@@ -201,18 +209,17 @@ IconMgr *iconp;
     	tmp_win->class.res_class = NoName;
 
     tmp_win->full_name = tmp_win->name;
-    namelen = strlen (tmp_win->name);
 
-    tmp_win->highlight = Scr->Highlight &&
-	(!(short)(int) LookInList(Scr->NoHighlight, tmp_win->full_name,
+    tmp_win->highlight = Scr->Highlight && 
+	(!(short)(int) LookInList(Scr->NoHighlight, tmp_win->full_name, 
 	    &tmp_win->class));
 
     tmp_win->stackmode = Scr->StackMode &&
-	(!(short)(int) LookInList(Scr->NoStackModeL, tmp_win->full_name,
+	(!(short)(int) LookInList(Scr->NoStackModeL, tmp_win->full_name, 
 	    &tmp_win->class));
 
-    tmp_win->titlehighlight = Scr->TitleHighlight &&
-	(!(short)(int) LookInList(Scr->NoTitleHighlight, tmp_win->full_name,
+    tmp_win->titlehighlight = Scr->TitleHighlight && 
+	(!(short)(int) LookInList(Scr->NoTitleHighlight, tmp_win->full_name, 
 	    &tmp_win->class));
 
     tmp_win->auto_raise =
@@ -228,7 +235,7 @@ IconMgr *iconp;
 	    !(short)(int) LookInList(Scr->DontIconify, tmp_win->full_name,
 		&tmp_win->class);
     }
-    tmp_win->iconify_by_unmapping |=
+    tmp_win->iconify_by_unmapping |= 
 	(short)(int) LookInList(Scr->IconifyByUn, tmp_win->full_name,
 	    &tmp_win->class);
 
@@ -247,9 +254,9 @@ IconMgr *iconp;
     tmp_win->ring.cursor_valid = False;
 
     if (LookInList(Scr->NailedDown, tmp_win->full_name, &tmp_win->class))
-	    tmp_win->nailed = TRUE;
+	    doNail = TRUE;
     else
-	    tmp_win->nailed = FALSE;
+	    doNail = FALSE;
 
     if (LookInList(Scr->DontShowInDisplay, tmp_win->full_name, &tmp_win->class))
 	    tmp_win->showindesktopdisplay = FALSE;
@@ -292,6 +299,20 @@ IconMgr *iconp;
     if (LookInList(Scr->NoTitle, tmp_win->full_name, &tmp_win->class))
         tmp_win->title_height = 0;
 
+    tmp_win->OpaqueMove = Scr->DoOpaqueMove;
+    if (LookInList(Scr->OpaqueMoveList, tmp_win->full_name, &tmp_win->class))
+	tmp_win->OpaqueMove = TRUE;
+    else
+    if (LookInList(Scr->NoOpaqueMoveList, tmp_win->full_name, &tmp_win->class))
+	tmp_win->OpaqueMove = FALSE;
+
+    tmp_win->OpaqueResize = Scr->DoOpaqueResize;
+    if (LookInList(Scr->OpaqueResizeList, tmp_win->full_name, &tmp_win->class))
+	tmp_win->OpaqueResize = TRUE;
+    else
+    if (LookInList(Scr->NoOpaqueResizeList, tmp_win->full_name, &tmp_win->class))
+	tmp_win->OpaqueResize = FALSE;
+
     /* if it is a transient window, don't put a title on it */
     if (tmp_win->transient && !Scr->DecorateTransients)
 	tmp_win->title_height = 0;
@@ -309,7 +330,6 @@ IconMgr *iconp;
 
     GetWindowSizeHints (tmp_win);
     GetGravityOffsets (tmp_win, &gravx, &gravy);
-
     /*
      * Don't bother user if:
      *
@@ -328,20 +348,204 @@ IconMgr *iconp;
 	  tmp_win->attr.x != 0 || tmp_win->attr.y != 0)))
       ask_user = FALSE;
 
-    if (LookInList(Scr->NailedDown, tmp_win->full_name, &tmp_win->class))
-	    tmp_win->nailed = TRUE;
+    if (!Scr->ClientBorderWidth) {	/* need to adjust for twm borders */
+	int delta = tmp_win->attr.border_width - tmp_win->frame_bw;
+	tmp_win->attr.x += gravx * delta;
+	tmp_win->attr.y += gravy * delta;
+    }
+
+    tmp_win->title_width = tmp_win->attr.width;
+
+    if (tmp_win->old_bw) XSetWindowBorderWidth (dpy, tmp_win->w, 0);
+
+    tmp_win->name_width = XTextWidth(Scr->TitleBarFont.font, tmp_win->name,
+				     strlen(tmp_win->name));
+
+    if (XGetWindowProperty (dpy, tmp_win->w, XA_WM_ICON_NAME, 0L, 200L, False,
+			    XA_STRING, &actual_type, &actual_format, &nitems,
+			    &bytesafter,(unsigned char **)&tmp_win->icon_name))
+	tmp_win->icon_name = tmp_win->name;
+
+    if (tmp_win->icon_name == NULL)
+	tmp_win->icon_name = tmp_win->name;
+
+    tmp_win->iconified = FALSE;
+    tmp_win->isicon = FALSE;
+    tmp_win->icon_on = FALSE;
+
+    XGrabServer(dpy);
+
+    /*
+     * Make sure the client window still exists.  We don't want to leave an
+     * orphan frame window if it doesn't.  Since we now have the server
+     * grabbed, the window can't disappear later without having been
+     * reparented, so we'll get a DestroyNotify for it.  We won't have
+     * gotten one for anything up to here, however.
+     */
+    if (XGetGeometry(dpy, tmp_win->w, &JunkRoot, &JunkX, &JunkY,
+		     &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth) == 0)
+    {
+	free((char *)tmp_win);
+	XUngrabServer(dpy);
+	return(NULL);
+    }
+
+    /* add the window into the twm list */
+    tmp_win->next = Scr->TwmRoot.next;
+    if (Scr->TwmRoot.next != NULL)
+	Scr->TwmRoot.next->prev = tmp_win;
+    tmp_win->prev = &Scr->TwmRoot;
+    Scr->TwmRoot.next = tmp_win;
+
+    /* get all the colors for the window */
+    if (!GetColorFromList(Scr->BorderColorL, tmp_win->full_name, &tmp_win->class, &tmp_win->border)) {
+	tmp_win->border = Scr->BorderColor;
+    }
+    if (!GetColorFromList(Scr->BorderTileForegroundL, tmp_win->full_name, &tmp_win->class, &tmp_win->border_tile.fore)) {
+	tmp_win->border_tile.fore = Scr->BorderTileC.fore;
+    }
+    if (!GetColorFromList(Scr->BorderTileBackgroundL, tmp_win->full_name, &tmp_win->class, &tmp_win->border_tile.back)) {
+	tmp_win->border_tile.back = Scr->BorderTileC.back;
+    }
+    if (!GetColorFromList(Scr->TitleForegroundL, tmp_win->full_name, &tmp_win->class, &tmp_win->title.fore)) {
+	tmp_win->title.fore = Scr->TitleC.fore;
+    }
+    if (!GetColorFromList(Scr->TitleBackgroundL, tmp_win->full_name, &tmp_win->class, &tmp_win->title.back)) {
+	tmp_win->title.back = Scr->TitleC.back;
+    }
+
+    if (!GetColorFromList(Scr->VirtualDesktopColorFL, tmp_win->full_name, &tmp_win->class, &tmp_win->virtual.fore))
+	tmp_win->virtual.fore = tmp_win->title.fore;
+    if (!GetColorFromList(Scr->VirtualDesktopColorBL, tmp_win->full_name, &tmp_win->class, &tmp_win->virtual.back))
+	tmp_win->virtual.back = tmp_win->title.back;
+
+    if (Scr->use3Dtitles && !Scr->BeNiceToColormap) {
+	GetShadeColors (&tmp_win->title);
+    }
+
+    /* create windows */
+
+    tmp_win->frame_width	 = tmp_win->attr.width;
+    tmp_win->frame_height	 = tmp_win->attr.height + tmp_win->title_height;
+
+    valuemask			 = CWBackPixmap | CWBorderPixel | CWCursor | CWEventMask;
+    attributes.background_pixmap = None;
+    attributes.border_pixel	 = tmp_win->border;
+    attributes.cursor		 = Scr->FrameCursor;
+    attributes.event_mask	 = (SubstructureRedirectMask |
+				    ButtonPressMask | ButtonReleaseMask |
+				    EnterWindowMask | LeaveWindowMask);
+    if (tmp_win->attr.save_under) {
+	attributes.save_under = True;
+	valuemask |= CWSaveUnder;
+    }
+
+    tmp_win->frame = XCreateWindow (dpy, Scr->Root, tmp_win->frame_x,
+				    tmp_win->frame_y,
+				    (unsigned int) tmp_win->frame_width,
+				    (unsigned int) tmp_win->frame_height,
+				    (unsigned int) tmp_win->frame_bw,
+				    Scr->d_depth,
+				    (unsigned int) CopyFromParent,
+				    Scr->d_visual, valuemask, &attributes);
+
+    if (tmp_win->title_height)
+    {
+	valuemask = (CWEventMask | CWBorderPixel | CWBackPixel);
+	attributes.event_mask = (KeyPressMask | ButtonPressMask |
+				 ButtonReleaseMask | ExposureMask);
+	attributes.border_pixel = tmp_win->border;
+	attributes.background_pixel = tmp_win->title.back;
+	tmp_win->title_w = XCreateWindow (dpy, tmp_win->frame,
+					  -tmp_win->frame_bw,
+					  -tmp_win->frame_bw,
+					  (unsigned int) tmp_win->attr.width,
+					  (unsigned int) Scr->TitleHeight,
+					  (unsigned int) tmp_win->frame_bw,
+					  Scr->d_depth,
+					  (unsigned int) CopyFromParent,
+					  Scr->d_visual, valuemask,
+					  &attributes);
+    }
+    else {
+	tmp_win->title_w = 0;
+	tmp_win->squeeze_info = NULL;
+    }
+
+    if (tmp_win->highlight)
+    {
+	if (Scr->use3Dtitles && (Scr->Monochrome != COLOR))
+	    tmp_win->gray = XCreatePixmapFromBitmapData(dpy, Scr->Root,
+	        black_bits, gray_width, gray_height, 
+	        tmp_win->border_tile.fore, tmp_win->border_tile.back,
+	        Scr->d_depth);
+	else
+	    tmp_win->gray = XCreatePixmapFromBitmapData(dpy, Scr->Root, 
+	        gray_bits, gray_width, gray_height,
+	        tmp_win->border_tile.fore, tmp_win->border_tile.back,
+	        Scr->d_depth);
+
+	SetBorder (tmp_win, False);
+    }
     else
-	    tmp_win->nailed = FALSE;
+	tmp_win->gray = None;
+
+
+    if (tmp_win->title_w) {
+	CreateWindowTitlebarButtons (tmp_win);
+	ComputeTitleLocation (tmp_win);
+	XMoveWindow (dpy, tmp_win->title_w,
+		     tmp_win->title_x, tmp_win->title_y);
+	XDefineCursor(dpy, tmp_win->title_w, Scr->TitleCursor);
+    }
+
+    valuemask = (CWEventMask | CWDontPropagate);
+    attributes.event_mask = (StructureNotifyMask | PropertyChangeMask |
+			     ColormapChangeMask | VisibilityChangeMask |
+			     EnterWindowMask | LeaveWindowMask);
+    attributes.do_not_propagate_mask = ButtonPressMask | ButtonReleaseMask;
+    XChangeWindowAttributes (dpy, tmp_win->w, valuemask, &attributes);
+
+    if (HasShape)
+	XShapeSelectInput (dpy, tmp_win->w, ShapeNotifyMask);
+
+    if (tmp_win->title_w) {
+	XMapWindow (dpy, tmp_win->title_w);
+    }
+
+    if (HasShape) {
+	int xws, yws, xbs, ybs;
+	unsigned wws, hws, wbs, hbs;
+	int boundingShaped, clipShaped;
+
+	XShapeSelectInput (dpy, tmp_win->w, ShapeNotifyMask);
+	XShapeQueryExtents (dpy, tmp_win->w,
+			    &boundingShaped, &xws, &yws, &wws, &hws,
+			    &clipShaped, &xbs, &ybs, &wbs, &hbs);
+	tmp_win->wShaped = boundingShaped;
+    }
+
+    if (!tmp_win->iconmgr)
+	XAddToSaveSet(dpy, tmp_win->w);
+
+    XReparentWindow(dpy, tmp_win->w, tmp_win->frame, 0, tmp_win->title_height);
+    /*
+     * Reparenting generates an UnmapNotify event, followed by a MapNotify.
+     * Set the map state to FALSE to prevent a transition back to
+     * WithdrawnState in HandleUnmapNotify.  Map state gets set correctly
+     * again in HandleMapNotify.
+     */
+    tmp_win->mapped = FALSE;
 
     /* 25/09/90 - nailed windows should always be on the real screen,
      * regardless of PPosition or UPosition */
     /* if we are dealing with PPosition, then offset by the current real
      * screen offset on the vd */
-    if (tmp_win->nailed ||
-	((tmp_win->hints.flags & PPosition) && (ask_user == FALSE))) {
+    if (doNail || ((tmp_win->hints.flags & PPosition) && (ask_user == FALSE))) {
 	    tmp_win->attr.x = R_TO_V_X(tmp_win->attr.x);
 	    tmp_win->attr.y = R_TO_V_Y(tmp_win->attr.y);
     }
+    desktopCreateWindow(tmp_win);
 
     /*
      * do any prompting for position
@@ -405,120 +609,38 @@ IconMgr *iconp;
 		/*
 		 * this will cause a warp to the indicated root
 		 */
-		stat = XGrabPointer(dpy, Scr->Root, False,
-		    ButtonPressMask | ButtonReleaseMask |
-		    PointerMotionMask | PointerMotionHintMask,
-		    GrabModeAsync, GrabModeAsync,
-		    Scr->Root, UpperLeftCursor, CurrentTime);
-
+		stat = XGrabPointer(dpy, Scr->Root, True,
+				    PointerMotionMask | ButtonPressMask | ButtonReleaseMask |
+				    EnterWindowMask | LeaveWindowMask,
+				    GrabModeAsync, GrabModeAsync,
+				    Scr->Root, UpperLeftCursor, CurrentTime);
 		if (stat == GrabSuccess)
 		    break;
 	    }
 
-	    width = (SIZE_HINDENT + XTextWidth (Scr->SizeFont.font,
-						tmp_win->name, namelen));
-	    height = Scr->SizeFont.height + SIZE_VINDENT * 2;
-
-	    XResizeWindow (dpy, Scr->SizeWindow, width + SIZE_HINDENT, height);
-	    XMapRaised(dpy, Scr->SizeWindow);
 	    InstallRootColormap();
-
-	    FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
-		Scr->SizeFont.font->fid);
-	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
-			      SIZE_HINDENT,
-			      SIZE_VINDENT + Scr->SizeFont.font->ascent,
-			      tmp_win->name, namelen);
 
 	    AddingW = tmp_win->attr.width + bw2;
 	    AddingH = tmp_win->attr.height + tmp_win->title_height + bw2;
+            XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
+			  &AddingX, &AddingY, &JunkX, &JunkY, &JunkMask);
 
-		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
-			    tmp_win->frame_bw, tmp_win->title_height);
+	    SetupSizeInfo(tmp_win->name, MOVE_FMT, AddingX, AddingY);
 
-	    while (TRUE)
-		{
-		XMaskEvent(dpy, ButtonPressMask | PointerMotionMask, &event);
+	    XMoveWindow(dpy, tmp_win->frame, AddingX, AddingY);
+            saveDelta = Scr->MoveDelta;
+            saveOpaque = tmp_win->OpaqueMove;
+            Scr->MoveDelta = 0;
+            tmp_win->OpaqueMove = False;
+            StartMove(tmp_win, tmp_win->frame, tmp_win->title_height,
+		      &AddingX, &AddingY, &cancel, OUT_PANNER, 1, 0, 0, True, False);
+            Scr->MoveDelta = saveDelta;
+            tmp_win->OpaqueMove = saveOpaque;
 
-		if (Event.type == MotionNotify) {
-		    /* discard any extra motion events before a release */
-		    while(XCheckMaskEvent(dpy,
-			ButtonMotionMask | ButtonPressMask, &Event))
-			if (Event.type == ButtonPress)
-			    break;
-		}
 
-		if (event.type == ButtonPress) {
-		  AddingX = event.xbutton.x_root;
-		  AddingY = event.xbutton.y_root;
-
-		  /* DontMoveOff prohibits user form off-screen placement */
-		  if (Scr->DontMoveOff)
-  		    {
-		      int AddingR, AddingB;
-
-		      AddingR = AddingX + AddingW;
-		      AddingB = AddingY + AddingH;
-
-		      if (AddingX < 0)
-			AddingX = 0;
-		      if (AddingR > Scr->MyDisplayWidth)
-			AddingX = Scr->MyDisplayWidth - AddingW;
-
-		      if (AddingY < 0)
-			AddingY = 0;
-		      if (AddingB > Scr->MyDisplayHeight)
-			AddingY = Scr->MyDisplayHeight - AddingH;
-
- 		    }
-		  break;
-		}
-
-		if (event.type != MotionNotify) {
-		    continue;
-	    }
-
-		XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
-		    &JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
-
-		if (Scr->DontMoveOff)
-		{
-		    int AddingR, AddingB;
-
-		    AddingR = AddingX + AddingW;
-		    AddingB = AddingY + AddingH;
-
-		    if (AddingX < 0)
-		        AddingX = 0;
-		    if (AddingR > Scr->MyDisplayWidth)
-		        AddingX = Scr->MyDisplayWidth - AddingW;
-
-		    if (AddingY < 0)
-			AddingY = 0;
-		    if (AddingB > Scr->MyDisplayHeight)
-			AddingY = Scr->MyDisplayHeight - AddingH;
-		}
-
-		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
-			    tmp_win->frame_bw, tmp_win->title_height);
-
-	    }
-
-	    if (event.xbutton.button == Button2) {
+	    if (cancel == Button2) {
 		int lastx, lasty;
 
-		Scr->SizeStringOffset = width +
-		  XTextWidth(Scr->SizeFont.font, ": ", 2);
-		XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
-			       Scr->SizeStringWidth, height);
-		XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
-				  SIZE_VINDENT + Scr->SizeFont.font->ascent,
-				  ": ", 2);
-#if 0
-		if (0/*Scr->AutoRelativeResize*/) {
-My R5 vtvwm came with this commented out, always 0.
-Why?
-#endif
 		if (Scr->AutoRelativeResize) {
 		    int dx = (tmp_win->attr.width / 4);
 		    int dy = (tmp_win->attr.height / 4);
@@ -545,47 +667,24 @@ Why?
 		lasty = -10000;
 		while (TRUE)
 		{
-		    XMaskEvent(dpy,
-			       ButtonReleaseMask | ButtonMotionMask, &event);
-
-		    if (Event.type == MotionNotify) {
-			/* discard any extra motion events before a release */
-			while(XCheckMaskEvent(dpy,
-			    ButtonMotionMask | ButtonReleaseMask, &Event))
-			    if (Event.type == ButtonRelease)
-				break;
-		    }
-
-		    if (event.type == ButtonRelease)
-		    {
-			AddEndResize(tmp_win);
-			break;
-		    }
-
-		    if (event.type != MotionNotify) {
-			continue;
-		    }
-
-		    /*
-		     * XXX - if we are going to do a loop, we ought to consider
-		     * using multiple GXxor lines so that we don't need to
-		     * grab the server.
-		     */
 		    XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
-			&JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
+				  &JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
 
-		    if (lastx != AddingX || lasty != AddingY)
-		    {
+                    if (lastx != AddingX || lasty != AddingY) {
+			resizeWhenAdd = TRUE;
 			DoResize(AddingX, AddingY, tmp_win);
+			resizeWhenAdd = FALSE;
+                        lastx = AddingX;
+                        lasty = AddingY;
+                    }
 
-			lastx = AddingX;
-			lasty = AddingY;
-		    }
-
-		}
-	    }
-	    else if (event.xbutton.button == Button3)
-	    {
+                    if (XCheckMaskEvent(dpy, ButtonReleaseMask, &event)) {
+                        AddEndResize(tmp_win);
+                        break;
+                    }
+                }
+                MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
+	    } else if (cancel == Button3) {
 		int maxw = Scr->MyDisplayWidth - AddingX - bw2;
 		int maxh = Scr->MyDisplayHeight - AddingY - bw2;
 
@@ -600,14 +699,11 @@ Why?
 		ConstrainSize (tmp_win, &AddingW, &AddingH);  /* w/o borders */
 		AddingW += bw2;
 		AddingH += bw2;
-	    }
-	    else
-	    {
+	    } else {
 		XMaskEvent(dpy, ButtonReleaseMask, &event);
 	    }
 
-	    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
-	    XUnmapWindow(dpy, Scr->SizeWindow);
+	    RemoveSizeInfo();
 	    UninstallRootColormap();
 	    XUngrabPointer(dpy, CurrentTime);
 
@@ -618,7 +714,7 @@ Why?
 
 	    XUngrabServer(dpy);
 	}
-      }
+    }
     } else {				/* put it where asked, mod title bar */
 	    /* interpret the position specified as a virtual one if asked */
 	    if (Scr->GeometriesAreVirtual) {
@@ -630,6 +726,11 @@ Why?
 	if (gravy < 0) tmp_win->attr.y -= gravy * tmp_win->title_height;
     }
 
+    tmp_win->frame_x = tmp_win->attr.x + tmp_win->old_bw - tmp_win->frame_bw;
+    tmp_win->frame_y = tmp_win->attr.y - tmp_win->title_height +
+        tmp_win->old_bw - tmp_win->frame_bw;
+    tmp_win->frame_width = tmp_win->attr.width;
+    tmp_win->frame_height = tmp_win->attr.height + tmp_win->title_height;
 
 #ifdef DEBUG
 	fprintf(stderr, "  position window  %d, %d  %dx%d\n",
@@ -639,214 +740,16 @@ Why?
 	    tmp_win->attr.height);
 #endif
 
-    if (!Scr->ClientBorderWidth) {	/* need to adjust for twm borders */
-	int delta = tmp_win->attr.border_width - tmp_win->frame_bw;
-	tmp_win->attr.x += gravx * delta;
-	tmp_win->attr.y += gravy * delta;
-    }
 
-    tmp_win->title_width = tmp_win->attr.width;
-
-    if (tmp_win->old_bw) XSetWindowBorderWidth (dpy, tmp_win->w, 0);
-
-    tmp_win->name_width = XTextWidth(Scr->TitleBarFont.font, tmp_win->name,
-				     namelen);
-
-    if (XGetWindowProperty (dpy, tmp_win->w, XA_WM_ICON_NAME, 0L, 200L, False,
-			    XA_STRING, &actual_type, &actual_format, &nitems,
-			    &bytesafter,(unsigned char **)&tmp_win->icon_name))
-	tmp_win->icon_name = tmp_win->name;
-
-    if (tmp_win->icon_name == NULL)
-	tmp_win->icon_name = tmp_win->name;
-
-    tmp_win->iconified = FALSE;
-    tmp_win->icon = FALSE;
-    tmp_win->icon_on = FALSE;
-
-    XGrabServer(dpy);
-
-    /*
-     * Make sure the client window still exists.  We don't want to leave an
-     * orphan frame window if it doesn't.  Since we now have the server
-     * grabbed, the window can't disappear later without having been
-     * reparented, so we'll get a DestroyNotify for it.  We won't have
-     * gotten one for anything up to here, however.
-     */
-    if (XGetGeometry(dpy, tmp_win->w, &JunkRoot, &JunkX, &JunkY,
-		     &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth) == 0)
-    {
-	free((char *)tmp_win);
-	XUngrabServer(dpy);
-	return(NULL);
-    }
-
-    /* add the window into the twm list */
-    tmp_win->next = Scr->TwmRoot.next;
-    if (Scr->TwmRoot.next != NULL)
-	Scr->TwmRoot.next->prev = tmp_win;
-    tmp_win->prev = &Scr->TwmRoot;
-    Scr->TwmRoot.next = tmp_win;
-
-    /* get all the colors for the window */
-
-    tmp_win->border = Scr->BorderColor;
-    tmp_win->icon_border = Scr->IconBorderColor;
-    tmp_win->border_tile.fore = Scr->BorderTileC.fore;
-    tmp_win->border_tile.back = Scr->BorderTileC.back;
-    tmp_win->title.fore = Scr->TitleC.fore;
-    tmp_win->title.back = Scr->TitleC.back;
-    tmp_win->iconc.fore = Scr->IconC.fore;
-    tmp_win->iconc.back = Scr->IconC.back;
-    tmp_win->virtual.fore = Scr->VirtualDesktopDisplayC.fore;
-    tmp_win->virtual.back = Scr->VirtualDesktopDisplayC.back;
-
-    GetColorFromList(Scr->BorderColorL, tmp_win->full_name, &tmp_win->class,
-	&tmp_win->border);
-    GetColorFromList(Scr->IconBorderColorL, tmp_win->full_name, &tmp_win->class,
-	&tmp_win->icon_border);
-    GetColorFromList(Scr->BorderTileForegroundL, tmp_win->full_name,
-	&tmp_win->class, &tmp_win->border_tile.fore);
-    GetColorFromList(Scr->BorderTileBackgroundL, tmp_win->full_name,
-	&tmp_win->class, &tmp_win->border_tile.back);
-    GetColorFromList(Scr->TitleForegroundL, tmp_win->full_name, &tmp_win->class,
-	&tmp_win->title.fore);
-    GetColorFromList(Scr->TitleBackgroundL, tmp_win->full_name, &tmp_win->class,
-	&tmp_win->title.back);
-    GetColorFromList(Scr->IconForegroundL, tmp_win->full_name, &tmp_win->class,
-	&tmp_win->iconc.fore);
-    GetColorFromList(Scr->IconBackgroundL, tmp_win->full_name, &tmp_win->class,
-	&tmp_win->iconc.back);
-    if (!GetColorFromList(Scr->VirtualDesktopColorFL, tmp_win->full_name,
-		     &tmp_win->class, &tmp_win->virtual.fore))
-	    GetColorFromList(Scr->TitleBackgroundL, tmp_win->full_name,
-			     &tmp_win->class, &tmp_win->virtual.fore);
-    if (!GetColorFromList(Scr->VirtualDesktopColorBL, tmp_win->full_name,
-		     &tmp_win->class, &tmp_win->virtual.back))
-	    GetColorFromList(Scr->TitleForegroundL, tmp_win->full_name,
-			     &tmp_win->class, &tmp_win->virtual.back);
-
-
-    /* create windows */
-
-    tmp_win->frame_x = tmp_win->attr.x + tmp_win->old_bw - tmp_win->frame_bw;
-    tmp_win->frame_y = tmp_win->attr.y - tmp_win->title_height +
-	tmp_win->old_bw - tmp_win->frame_bw;
-    tmp_win->frame_width = tmp_win->attr.width;
-    tmp_win->frame_height = tmp_win->attr.height + tmp_win->title_height;
-    tmp_win->virtual_frame_x = R_TO_V_X(tmp_win->frame_x);
-    tmp_win->virtual_frame_y = R_TO_V_Y(tmp_win->frame_y);
-
-    valuemask = CWBackPixmap | CWBorderPixel | CWCursor | CWEventMask;
-    attributes.background_pixmap = None;
-    attributes.border_pixel = tmp_win->border;
-    attributes.cursor = Scr->FrameCursor;
-    attributes.event_mask = (SubstructureRedirectMask |
-			     ButtonPressMask | ButtonReleaseMask |
-			     EnterWindowMask | LeaveWindowMask);
-    if (tmp_win->attr.save_under) {
-	attributes.save_under = True;
-	valuemask |= CWSaveUnder;
-    }
-
-    tmp_win->frame = XCreateWindow (dpy, Scr->Root, tmp_win->frame_x,
-				    tmp_win->frame_y,
-				    (unsigned int) tmp_win->frame_width,
-				    (unsigned int) tmp_win->frame_height,
-				    (unsigned int) tmp_win->frame_bw,
-				    Scr->d_depth,
-				    (unsigned int) CopyFromParent,
-				    Scr->d_visual, valuemask, &attributes);
-
-    if (tmp_win->title_height)
-    {
-	valuemask = (CWEventMask | CWBorderPixel | CWBackPixel);
-	attributes.event_mask = (KeyPressMask | ButtonPressMask |
-				 ButtonReleaseMask | ExposureMask);
-	attributes.border_pixel = tmp_win->border;
-	attributes.background_pixel = tmp_win->title.back;
-	tmp_win->title_w = XCreateWindow (dpy, tmp_win->frame,
-					  -tmp_win->frame_bw,
-					  -tmp_win->frame_bw,
-					  (unsigned int) tmp_win->attr.width,
-					  (unsigned int) Scr->TitleHeight,
-					  (unsigned int) tmp_win->frame_bw,
-					  Scr->d_depth,
-					  (unsigned int) CopyFromParent,
-					  Scr->d_visual, valuemask,
-					  &attributes);
-    }
-    else {
-	tmp_win->title_w = 0;
-	tmp_win->squeeze_info = NULL;
-    }
-
-    if (tmp_win->highlight)
-    {
-	tmp_win->gray = XCreatePixmapFromBitmapData(dpy, Scr->Root,
-	    gray_bits, gray_width, gray_height,
-	    tmp_win->border_tile.fore, tmp_win->border_tile.back,
-	    Scr->d_depth);
-
-	SetBorder (tmp_win, False);
-    }
-    else
-	tmp_win->gray = None;
-
-
-    if (tmp_win->title_w) {
-	CreateWindowTitlebarButtons (tmp_win);
-	ComputeTitleLocation (tmp_win);
-	XMoveWindow (dpy, tmp_win->title_w,
-		     tmp_win->title_x, tmp_win->title_y);
-	XDefineCursor(dpy, tmp_win->title_w, Scr->TitleCursor);
-    }
-
-    valuemask = (CWEventMask | CWDontPropagate);
-    attributes.event_mask = (StructureNotifyMask | PropertyChangeMask |
-			     ColormapChangeMask | VisibilityChangeMask |
-			     EnterWindowMask | LeaveWindowMask);
-    attributes.do_not_propagate_mask = ButtonPressMask | ButtonReleaseMask;
-    XChangeWindowAttributes (dpy, tmp_win->w, valuemask, &attributes);
-
-    if (HasShape)
-	XShapeSelectInput (dpy, tmp_win->w, ShapeNotifyMask);
-
-    if (tmp_win->title_w) {
-	XMapWindow (dpy, tmp_win->title_w);
-    }
-
-    if (HasShape) {
-	int xws, yws, xbs, ybs;
-	unsigned wws, hws, wbs, hbs;
-	int boundingShaped, clipShaped;
-
-	XShapeSelectInput (dpy, tmp_win->w, ShapeNotifyMask);
-	XShapeQueryExtents (dpy, tmp_win->w,
-			    &boundingShaped, &xws, &yws, &wws, &hws,
-			    &clipShaped, &xbs, &ybs, &wbs, &hbs);
-	tmp_win->wShaped = boundingShaped;
-    }
-
-    if (!tmp_win->iconmgr)
-	XAddToSaveSet(dpy, tmp_win->w);
-
-    XReparentWindow(dpy, tmp_win->w, tmp_win->frame, 0, tmp_win->title_height);
-    /*
-     * Reparenting generates an UnmapNotify event, followed by a MapNotify.
-     * Set the map state to FALSE to prevent a transition back to
-     * WithdrawnState in HandleUnmapNotify.  Map state gets set correctly
-     * again in HandleMapNotify.
-     */
-    tmp_win->mapped = FALSE;
-
-    SetupFrame (tmp_win, tmp_win->frame_x, tmp_win->frame_y,
-		tmp_win->frame_width, tmp_win->frame_height, -1, True);
-
+    tmpX = tmp_win->frame_x;
+    tmp_win->frame_x = -tmpX;
+    SetupFrame(tmp_win, tmpX, tmp_win->frame_y, tmp_win->frame_width,
+	       tmp_win->frame_height, -1, True);
     /* wait until the window is iconified and the icon window is mapped
      * before creating the icon window
      */
-    tmp_win->icon_w = NULL;
+    tmp_win->icon = (Icon*) 0;
+    tmp_win->iconslist = (name_list*) 0;
 
     if (!tmp_win->iconmgr)
     {
@@ -855,8 +758,6 @@ Why?
     }
 
     (void) AddIconManager(tmp_win);
-    UpdateDesktop(tmp_win);
-
     XSaveContext(dpy, tmp_win->w, TwmContext, (caddr_t) tmp_win);
     XSaveContext(dpy, tmp_win->w, ScreenContext, (caddr_t) Scr);
     XSaveContext(dpy, tmp_win->frame, TwmContext, (caddr_t) tmp_win);
@@ -880,7 +781,9 @@ Why?
 	    XSaveContext(dpy, tmp_win->hilite_w, ScreenContext, (caddr_t)Scr);
 	}
     }
-
+    if (doNail) {
+	desktopNailWindow(tmp_win);
+    }
     XUngrabServer(dpy);
 
     /* if we were in the middle of a menu activated function, regrab
@@ -986,7 +889,7 @@ TwmWindow *tmp_win;
     {
 	for (j = 0; j < MOD_SIZE; j++)
 	{
-	    if (Scr->Mouse[i][C_WINDOW][j].func != NULL)
+	    if (Scr->Mouse[i][C_WINDOW][j].func != 0)
 	    {
 	        /* twm used to do this grab on the application main window,
                  * tmp_win->w . This was not ICCCM complient and was changed.
@@ -1028,9 +931,10 @@ TwmWindow *tmp_win;
 	    break;
 
 	case C_ICON:
-	    if (tmp_win->icon_w)
-		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon_w, True,
+	    if (tmp_win->icon && tmp_win->icon->w)
+		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon->w, True,
 		    GrabModeAsync, GrabModeAsync);
+	    break;
 
 	case C_TITLE:
 	    if (tmp_win->title_w)
@@ -1041,8 +945,8 @@ TwmWindow *tmp_win;
 	case C_NAME:
 	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->w, True,
 		GrabModeAsync, GrabModeAsync);
-	    if (tmp_win->icon_w)
-		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon_w, True,
+	    if (tmp_win->icon && tmp_win->icon->w)
+		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon->w, True,
 		    GrabModeAsync, GrabModeAsync);
 	    if (tmp_win->title_w)
 		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w, True,
@@ -1060,7 +964,7 @@ TwmWindow *tmp_win;
     {
 	if (tmp->cont == C_ICONMGR && !Scr->NoIconManagers)
 	{
-	    for (p = &Scr->iconmgr; p != NULL; p = p->next)
+	    for (p = Scr->iconmgr; p != NULL; p = p->next)
 	    {
 		XUngrabKey(dpy, tmp->keycode, tmp->mods, p->twm_win->w);
 	    }
@@ -1093,13 +997,22 @@ static Window CreateHighlightWindow (tmp_win)
      * solid line.
      */
     if (!Scr->hilitePm) {
+	if (Scr->use3Dtitles && (Scr->Monochrome != COLOR))
 	Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w,
+					       black_bits, gray_width, 
+					       gray_height);
+	else
+	    Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w, 
 					       gray_bits, gray_width,
 					       gray_height);
 	Scr->hilite_pm_width = gray_width;
 	Scr->hilite_pm_height = gray_height;
     }
     if (Scr->hilitePm) {
+      if (Scr->hilite_pm_depth == Scr->d_depth) {
+	pm = Scr->hilitePm;
+      }
+      else {
 	pm = XCreatePixmap (dpy, tmp_win->title_w,
 			    Scr->hilite_pm_width, Scr->hilite_pm_height,
 			    Scr->d_depth);
@@ -1110,7 +1023,7 @@ static Window CreateHighlightWindow (tmp_win)
 			(GCForeground|GCBackground|GCGraphicsExposures),
 			&gcv);
 	if (gc) {
-	    XCopyPlane (dpy, Scr->hilitePm, pm, gc, 0, 0,
+	    XCopyPlane (dpy, Scr->hilitePm, pm, gc, 0, 0, 
 			Scr->hilite_pm_width, Scr->hilite_pm_height,
 			0, 0, 1);
 	    XFreeGC (dpy, gc);
@@ -1118,6 +1031,7 @@ static Window CreateHighlightWindow (tmp_win)
 	    XFreePixmap (dpy, pm);
 	    pm = None;
 	}
+      }
     }
     if (pm) {
 	valuemask = CWBackPixmap;
@@ -1127,12 +1041,19 @@ static Window CreateHighlightWindow (tmp_win)
 	attributes.background_pixel = tmp_win->title.fore;
     }
 
-    w = XCreateWindow (dpy, tmp_win->title_w, 0, Scr->FramePadding,
+    if (Scr->use3Dtitles)
+	w = XCreateWindow (dpy, tmp_win->title_w, 0, Scr->FramePadding + 2,
+		       (unsigned int) Scr->TBInfo.width, (unsigned int) (h - 4),
+		       (unsigned int) 0,
+		       Scr->d_depth, (unsigned int) CopyFromParent,
+		       Scr->d_visual, valuemask, &attributes);
+    else
+	w = XCreateWindow (dpy, tmp_win->title_w, 0, Scr->FramePadding,
 		       (unsigned int) Scr->TBInfo.width, (unsigned int) h,
 		       (unsigned int) 0,
 		       Scr->d_depth, (unsigned int) CopyFromParent,
 		       Scr->d_visual, valuemask, &attributes);
-    if (pm) XFreePixmap (dpy, pm);
+    if (pm && (Scr->hilite_pm_depth != Scr->d_depth)) XFreePixmap (dpy, pm);
     return w;
 }
 
@@ -1151,6 +1072,7 @@ void ComputeCommonTitleOffsets ()
       Scr->TBInfo.rightoff += (Scr->ButtonIndent +
 			       ((Scr->TBInfo.nright * buttonwidth) -
 				Scr->TBInfo.pad));
+
     return;
 }
 
@@ -1159,11 +1081,12 @@ void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
     Bool squeeze;
 {
     tmp_win->highlightx = (Scr->TBInfo.titlex + tmp_win->name_width);
-    if (tmp_win->hilite_w || Scr->TBInfo.nright > 0)
+    if (Scr->use3Dtitles) tmp_win->highlightx += 6;
+    if (tmp_win->hilite_w || Scr->TBInfo.nright > 0) 
       tmp_win->highlightx += Scr->TitlePadding;
     tmp_win->rightx = width - Scr->TBInfo.rightoff;
     if (squeeze && tmp_win->squeeze_info) {
-	int rx = (tmp_win->highlightx +
+	int rx = (tmp_win->highlightx + 
 		  (tmp_win->hilite_w
 		    ? Scr->TBInfo.width * 2 : 0) +
 		  (Scr->TBInfo.nright > 0 ? Scr->TitlePadding : 0) +
@@ -1293,12 +1216,21 @@ static void CreateWindowTitlebarButtons (tmp_win)
 					     0, (unsigned int) CopyFromParent,
 					     (Visual *) CopyFromParent,
 					     valuemask, &attributes);
+		if (Scr->use3Dtitles && (tb->depth == Scr->d_depth) &&
+		    (tmp_win->title.back != Scr->TitleC.back)) {
+		    unsigned int junkw, junkh, junkd;
+
+		    tbw->bitmap = FindPixmap (tb->name, &junkw, &junkh, &junkd, tmp_win->title);
+		}
+		else {
+		    tbw->bitmap = tb->bitmap;
+		}
 		tbw->info = tb;
 	    }
 	}
     }
 
-    tmp_win->hilite_w = (tmp_win->titlehighlight
+    tmp_win->hilite_w = (tmp_win->titlehighlight 
 			 ? CreateHighlightWindow (tmp_win) : None);
 
     XMapSubwindows(dpy, tmp_win->title_w);
@@ -1311,14 +1243,34 @@ static void CreateWindowTitlebarButtons (tmp_win)
 SetHighlightPixmap (filename)
     char *filename;
 {
-    Pixmap pm = GetBitmap (filename);
+    Pixmap pm;
+
+#ifdef XPM
+    if ((filename [0] == '@') || (strncmp (filename, "xpm:", 4) == 0)) {
+	XpmIcon *xpmicon;
+	int startn;
+
+	if (filename [0] == '@') startn = 1; else startn = 4;
+	xpmicon = GetXpmPixmap (&filename [startn]);
+	if (xpmicon != None) {
+	    if (Scr->hilitePm) XFreePixmap (dpy, Scr->hilitePm);
+	    Scr->hilitePm         = xpmicon->pixmap;
+	    Scr->hilite_pm_depth  = Scr->d_depth;
+	    Scr->hilite_pm_width  = xpmicon->attributes.width;
+	    Scr->hilite_pm_height = xpmicon->attributes.height;
+	}
+	return;
+    }
+#endif
+    pm = GetBitmap (filename);
 
     if (pm) {
 	if (Scr->hilitePm) {
 	    XFreePixmap (dpy, Scr->hilitePm);
 	}
 	Scr->hilitePm = pm;
-	Scr->hilite_pm_width = JunkWidth;
+	Scr->hilite_pm_depth  = 1;
+	Scr->hilite_pm_width  = JunkWidth;
 	Scr->hilite_pm_height = JunkHeight;
     }
 }
@@ -1420,7 +1372,7 @@ CreateColormapWindow(w, creating_parent, property_window)
 
     return (cwin);
 }
-
+		
 FetchWmColormapWindows (tmp)
     TwmWindow *tmp;
 {

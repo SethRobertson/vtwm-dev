@@ -75,6 +75,7 @@ typedef struct ScreenInfo
     int VirtualDesktopY;	/* top left y of my screen on the desktop */
     int VirtualDesktopPanDistanceX; /* distance to pan screen */
     int VirtualDesktopPanDistanceY; /* distance to pan screen */
+    int VirtualDesktopDisplayBorderWidth;
 
     /* these are for the little vd display */
     int VirtualDesktopDScale;	/* scale of the virtual desktop display */
@@ -99,10 +100,14 @@ typedef struct ScreenInfo
     name_list *Icons;		/* list of icon pixmaps */
     TitlebarPixmaps tbpm;	/* titlebar pixmaps */
     Pixmap UnknownPm;		/* the unknown icon pixmap */
+#ifdef XPM
+    XpmIcon *UnknownXpmIcon;
+#endif
     Pixmap siconifyPm;		/* the icon manager iconify pixmap */
     Pixmap pullPm;		/* pull right menu icon */
     int	pullW, pullH;		/* size of pull right menu icon */
     Pixmap hilitePm;		/* focus highlight window background */
+    int hilite_pm_depth;	/* depth of hilight image */
     int hilite_pm_width, hilite_pm_height;  /* cache the size */
     Pixmap virtualPm;		/* panner background pixmap RFB PIXMAP*/
     int virtual_pm_width, virtual_pm_height;/*RFB PIXMAP*/
@@ -146,6 +151,7 @@ typedef struct ScreenInfo
 	int leftx;			/* start of left buttons */
 	int titlex;			/* start of title string */
 	int rightoff;			/* offset back from right edge */
+	int titlew;		        /* with of title part */
     } TBInfo;
     ColorPair BorderTileC;	/* border tile colors */
     ColorPair TitleC;		/* titlebar colors */
@@ -157,12 +163,14 @@ typedef struct ScreenInfo
     ColorPair VirtualDesktopDisplayC; /* desktop display color */
     ColorPair DoorC;		/* default door colors */
     ColorPair VirtualC;     /* default virtual colors *//*RFB VCOLOR*/
-	ColorPair RealScreenC;	/* "real screen" in panner RFB 4/92 */
+    ColorPair RealScreenC;	/* "real screen" in panner RFB 4/92 */
     Pixel VirtualDesktopDisplayBorder; /* desktop display default border */
     Pixel BorderColor;		/* color of window borders */
     Pixel MenuShadowColor;	/* menu shadow color */
     Pixel IconBorderColor;	/* icon border color */
     Pixel IconManagerHighlight;	/* icon manager highlight */
+    short ClearShadowContrast;  /* The contrast of the clear shadow */
+    short DarkShadowContrast;   /* The contrast of the dark shadow */
 
     Cursor TitleCursor;		/* title bar cursor */
     Cursor FrameCursor;		/* frame cursor */
@@ -175,10 +183,17 @@ typedef struct ScreenInfo
     Cursor MenuCursor;		/* menu cursor */
     Cursor SelectCursor;	/* dot cursor for f.move, etc. from menus */
     Cursor DestroyCursor;	/* skull and cross bones, f.destroy */
-	Cursor DoorCursor;/*RFBCURSOR*/
-	Cursor VirtualCursor;/*RFBCURSOR*/
-	Cursor DesktopCursor;/*RFBCURSOR*/
+    Cursor DoorCursor;/*RFBCURSOR*/
+    Cursor VirtualCursor;/*RFBCURSOR*/
+    Cursor DesktopCursor;/*RFBCURSOR*/
     Cursor NoCursor;		/* a black cursor - used on desktop display */
+
+    short use3Dmenus;
+    short use3Dtitles;
+    short use3Diconmanagers;
+    short SunkFocusWindowTitle;
+    short BeNiceToColormap;
+    short CenteredInfoBox;
 
     name_list *BorderColorL;
     name_list *IconBorderColorL;
@@ -191,6 +206,7 @@ typedef struct ScreenInfo
     name_list *IconManagerFL;
     name_list *IconManagerBL;
     name_list *IconMgrs;
+    name_list *NoIconTitle;	/* list of windows without icon titles */
     name_list *NoTitle;		/* list of window names with no title bar */
     name_list *MakeTitle;	/* list of window names with title bar */
     name_list *AutoRaise;	/* list of window names to auto-raise */
@@ -215,14 +231,23 @@ typedef struct ScreenInfo
     name_list *DontShowInDisplay;      /* don't show these in the desktop display */
     name_list *DoorForegroundL; /* doors foreground */
     name_list *DoorBackgroundL; /* doors background */
+    
+    /* Opacity(?) can be on a per window basis -njw. Courtesy of ctwm */
+    name_list* OpaqueMoveList;
+    name_list* NoOpaqueMoveList;
+    name_list* OpaqueResizeList;
+    name_list* NoOpaqueResizeList;
 
     GC NormalGC;		/* normal GC for everything */
     GC MenuGC;			/* gc for menus */
     GC DrawGC;			/* GC to draw lines for move and resize */
+    GC GreyGC;			/* for shadowing on monochrome displays */
+    GC ShadGC;			/* for shadowing on with patterns */
 
     unsigned long Black;
     unsigned long White;
     unsigned long XORvalue;	/* number to use when drawing xor'ed */
+    MyFont DefaultFont;		/* default for all other fonts */
     MyFont TitleBarFont;	/* title bar font structure */
     MyFont MenuFont;		/* menu font structure */
     MyFont IconFont;		/* icon font structure */
@@ -230,11 +255,12 @@ typedef struct ScreenInfo
     MyFont IconManagerFont;	/* window list font structure */
     MyFont VirtualFont;		/* virtual display windows */
     MyFont DoorFont;		/* for drawing in doors */
-    MyFont DefaultFont;
-    IconMgr iconmgr;		/* default icon manager */
+    MyFont InfoFont;		/* for the identify/version window */
+    IconMgr *iconmgr;		/* default icon manager  */
     struct IconRegion *FirstRegion;	/* pointer to icon regions */
     struct IconRegion *LastRegion;	/* pointer to the last icon region */
     char *IconDirectory;	/* icon directory to search */
+    char* PixmapDirectory;	/* pixmap directory to search */
     int SizeStringOffset;	/* x offset in size window for drawing */
     int SizeStringWidth;	/* minimum width of size window */
     int BorderWidth;		/* border width of twm windows */
@@ -248,6 +274,7 @@ typedef struct ScreenInfo
     int TitlePadding;		/* distance between items in titlebar */
     int ButtonIndent;		/* amount to shrink buttons on each side */
     int NumAutoRaises;		/* number of autoraise windows on screen */
+    short TransientOnTop;	/* percentage of the surface of it's leader */
     short NoDefaults;		/* do not add in default UI stuff */
     short UsePPosition;		/* what do with PPosition, see values below */
     short AutoRelativeResize;	/* start resize relative to position in quad */
@@ -255,6 +282,7 @@ typedef struct ScreenInfo
     short WarpCursor;		/* warp cursor on de-iconify ? */
     short ForceIcon;		/* force the icon to the user specified */
     short NoGrabServer;		/* don't do server grabs */
+    short NoRaiseDesktop;	/* don't raise the desktop at start of move */
     short NoRaiseMove;		/* don't raise window following move */
     short NoRaiseResize;	/* don't raise window following resize */
     short NoRaiseDeicon;	/* don't raise window on deiconify */
@@ -262,6 +290,7 @@ typedef struct ScreenInfo
     short DontMoveOff;		/* don't allow windows to be moved off */
     short DoZoom;		/* zoom in and out of icons */
     short TitleFocus;		/* focus on window in title bar ? */
+    short NoIconTitlebar;	/* put title bars on icons */
     short NoTitlebar;		/* put title bars on windows */
     short DecorateTransients;	/* put title bars on transients */
     short IconifyByUnmapping;	/* simply unmap windows when iconifying */
@@ -271,6 +300,11 @@ typedef struct ScreenInfo
     short SaveUnder;		/* use save under's for menus */
     short RandomPlacement;	/* randomly place windows that no give hints */
     short OpaqueMove;		/* move the window rather than outline */
+    short DoOpaqueMove;		/* move the window rather than outline */
+    short OpaqueMoveThreshold;		/*  */
+    short DoOpaqueResize;		/* resize the window rather than outline */
+    short OpaqueResize;		/* resize the window rather than outline */
+    short OpaqueResizeThreshold; /*  */
     short Highlight;		/* should we highlight the window borders */
     short StackMode;		/* should we honor stack mode requests */
     short TitleHighlight;	/* should we highlight the titlebar */
@@ -291,6 +325,7 @@ typedef struct ScreenInfo
     short SnapRealScreen;       /* should the real screen snap to a pandistance grid ? */
     short GeometriesAreVirtual; /* should geometries be interpreted as virtual or real ? */
     short Virtual;		/* are we virtual ? (like, hey man....) */
+    short HighlightDesktopFocus; /* do we muck about with the borders in the desktop */
     short NamesInVirtualDesktop;/* show names in virtual desktop display ? */
     short AutoRaiseDefault;   /* AutoRaise all windows if true *//*RAISEDELAY*/
 
@@ -304,6 +339,7 @@ extern int NumScreens;
 extern ScreenInfo **ScreenList;
 extern ScreenInfo *Scr;
 extern int FirstScreen;
+extern Window windowmask;
 
 #define PPOS_OFF 0
 #define PPOS_ON 1

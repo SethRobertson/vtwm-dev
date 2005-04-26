@@ -49,6 +49,12 @@
 static Pixmap CreateXLogoPixmap(), CreateResizePixmap();
 static Pixmap CreateQuestionPixmap(), CreateMenuPixmap();
 static Pixmap CreateDotPixmap();
+static Pixmap Create3DMenuPixmap ();
+static Pixmap Create3DDotPixmap ();
+static Pixmap Create3DResizePixmap ();
+static Pixmap Create3DZoomPixmap ();
+static Pixmap Create3DBarPixmap ();
+static char* generateRandomColor();
 int HotX, HotY;
 
 /***********************************************************************
@@ -314,6 +320,16 @@ void
 GetUnknownIcon(name)
 char *name;
 {
+#ifdef XPM
+    int startn;
+
+    Scr->UnknownXpmIcon = None;
+    if ((name [0] == '@') || (strncmp (name, "xpm:", 4) == 0)) {
+	if (name [0] == '@') startn = 1; else startn = 4;
+	Scr->UnknownXpmIcon = GetXpmPixmap (&(name [startn]));
+    }
+    else
+#endif
     if ((Scr->UnknownPm = GetBitmap(name)) != None)
     {
 	XGetGeometry(dpy, Scr->UnknownPm, &JunkRoot, &JunkX, &JunkY,
@@ -416,12 +432,263 @@ Pixmap FindBitmap (name, widthp, heightp)
     return pm;
 }
 
+Pixmap FindPixmap (name, widthp, heightp, depthp, cp)
+char *name;
+unsigned int *widthp, *heightp, *depthp;
+ColorPair cp;
+{
+    if (!name) return None;
+
+    /*
+     * Names of the form :name refer to hardcoded images that are scaled to
+     * look nice in title buttons.  Eventually, it would be nice to put in a
+     * menu symbol as well....
+     */
+#ifdef XPM
+    if ((name [0] == '@') || (strncmp (name, "xpm:", 4) == 0)) {
+	XpmIcon *xpmicon;
+	int startn;
+
+	if (name [0] == '@') startn = 1; else startn = 4;
+	xpmicon = GetXpmPixmap (&name [startn]);
+	if (xpmicon != None) {
+	    *widthp   = xpmicon->attributes.width;
+	    *heightp  = xpmicon->attributes.height;
+	    *depthp   = Scr->d_depth;
+	    return (xpmicon->pixmap);
+	}
+	else return (None);
+    }
+    else
+#endif
+    if (strncmp (name, ":xpm:", 5) == 0) {
+	int i;
+	static struct {
+	    char *name;
+	    Pixmap (*proc)();
+	} pmtab[] = {
+	    { TBPM_3DDOT,	Create3DDotPixmap },
+	    { TBPM_3DRESIZE,	Create3DResizePixmap },
+	    { TBPM_3DMENU,	Create3DMenuPixmap },
+	    { TBPM_3DZOOM,	Create3DZoomPixmap },
+	    { TBPM_3DBAR,	Create3DBarPixmap },
+	};
+	
+	for (i = 0; i < (sizeof pmtab)/(sizeof pmtab[0]); i++) {
+	    if (XmuCompareISOLatin1 (pmtab[i].name, name) == 0) {
+	      *depthp   = Scr->d_depth;
+	      return (*pmtab[i].proc) (widthp, heightp, cp);
+	    }
+	}
+	fprintf (stderr, "%s:  no such built-in pixmap \"%s\"\n",
+		 ProgramName, name);
+	return (None);
+    }
+    else {
+	*depthp = 1;
+	return (FindBitmap (name, widthp, heightp));
+    }
+}
+
 Pixmap GetBitmap (name)
     char *name;
 {
     return FindBitmap (name, &JunkWidth, &JunkHeight);
 }
 
+static int reportxpmerror = 1;
+
+#ifdef XPM
+XpmIcon *GetXpmPixmap (name)
+char *name;
+{
+    char fullPath [1024];
+    int  status;
+    XpmIcon *ret;
+    char *bigname;
+
+    if ((! Scr->PixmapDirectory) && (name [0] != '/') && (name [0] != '~')) return (None);
+
+    bigname = ExpandFilename (name);
+    if (bigname [0] == '/') {
+	sprintf (fullPath, "%s", bigname);
+    }
+    else
+    if (Scr->PixmapDirectory)
+	sprintf (fullPath, "%s/%s", Scr->PixmapDirectory, name);
+    else {
+	if (bigname != name) free (bigname);
+	return (None);
+    }
+    if (bigname != name) free (bigname);
+    ret = (XpmIcon*) malloc (sizeof (XpmIcon));
+    if (ret == NULL) return (None);
+
+    ret->attributes.valuemask  = 0;
+    ret->attributes.valuemask |= XpmSize;
+    ret->attributes.valuemask |= XpmReturnPixels;
+    status = XpmReadFileToPixmap(dpy, Scr->Root, fullPath,
+				 &(ret->pixmap), &(ret->mask), &(ret->attributes));
+    switch (status) {
+	case XpmSuccess:
+	    return (ret);
+
+	case XpmColorError:
+	    if (reportxpmerror)
+		fprintf (stderr, "Could not parse or alloc requested color : %s\n", fullPath);
+	    free (ret);
+	    return (None);
+
+	case XpmOpenFailed:
+	    if (reportxpmerror)
+		fprintf (stderr, "Cannot open XPM file : %s\n", fullPath);
+	    free (ret);
+	    return (None);
+
+	case XpmFileInvalid:
+	    fprintf (stderr, "invalid XPM file : %s\n", fullPath);
+	    free (ret);
+	    return (None);
+
+	case XpmNoMemory:
+	    if (reportxpmerror)
+		fprintf (stderr, "Not enough memory for XPM file : %s\n", fullPath);
+	    free (ret);
+	    return (None);
+
+	case XpmColorFailed:
+	    if (reportxpmerror)
+		fprintf (stderr, "Color not found in : %s\n", fullPath);
+	    free (ret);
+	    return (None);
+
+	default :
+	    fprintf (stderr, "Unknown error in : %s\n", fullPath);
+	    free (ret);
+	    return (None);
+    }
+}
+
+static XpmIcon	*ctwmflag = None;
+static GC	welcomeGC;
+#endif
+
+MaskScreen (file)
+char *file;
+{
+    unsigned long valuemask;
+    XSetWindowAttributes attributes;
+    XEvent event;
+    Cursor waitcursor;
+    int x, y;
+
+    NewFontCursor (&waitcursor, "watch");
+    valuemask = (CWBackingStore | CWSaveUnder | CWBackPixel |
+		 CWOverrideRedirect | CWEventMask | CWCursor);
+    attributes.backing_store	 = NotUseful;
+    attributes.save_under	 = False;
+    attributes.background_pixel	 = Scr->Black;
+    attributes.override_redirect = True;
+    attributes.event_mask	 = ExposureMask;
+    attributes.cursor		 = waitcursor;
+    windowmask = XCreateWindow (dpy, Scr->Root, 0, 0,
+			(unsigned int) Scr->MyDisplayWidth,
+			(unsigned int) Scr->MyDisplayHeight,
+			(unsigned int) 0,
+			CopyFromParent, (unsigned int) CopyFromParent,
+			(Visual *) CopyFromParent, valuemask,
+			&attributes);
+
+    XMapWindow (dpy, windowmask);
+    XMaskEvent (dpy, ExposureMask, &event);
+#ifdef XPM
+    reportxpmerror = 0;
+    if (file != NULL) {
+	ctwmflag = GetXpmPixmap (file);
+    }
+    else {
+	ctwmflag = GetXpmPixmap ("welcome.xpm");
+    }
+    reportxpmerror = 1;
+    if (ctwmflag == None) return;
+
+    welcomeGC = XCreateGC (dpy, windowmask, 0, NULL);
+    x = (Scr->MyDisplayWidth  -  ctwmflag->attributes.width) / 2;
+    y = (Scr->MyDisplayHeight - ctwmflag->attributes.height) / 2;
+    XCopyArea (dpy, ctwmflag->pixmap, windowmask, welcomeGC, 0, 0,
+		ctwmflag->attributes.width, ctwmflag->attributes.height, x, y);
+#endif
+}
+
+
+UnmaskScreen () {
+#ifdef XPM
+    if (ctwmflag != None) {
+	XFreeGC (dpy, welcomeGC);
+	XFreeColors (dpy, DefaultColormap (dpy, Scr->screen),
+			ctwmflag->attributes.pixels,
+			ctwmflag->attributes.npixels, 0);
+	XFreePixmap (dpy, ctwmflag->pixmap);
+	XpmFreeAttributes (&ctwmflag->attributes);
+    }
+#endif
+    XDestroyWindow (dpy, windowmask);
+    windowmask = (Window) 0;
+}
+
+/* not used, this is a try to hide the ugly pop up of windows when
+   ctwm restart. But when the server reparents all the windows in
+   the saveset, it always puts them on top of the hierarchy. I don't
+   see any way to avoid it.
+
+ExternMaskScreen () {
+    Window		*w;
+    Atom		_XA_WM_MASKWINDOW;
+    unsigned long	nitems, bytesafter;
+    Atom		actual_type;
+    int			actual_format;
+    int			status;
+    XEvent		event;
+
+    if (windowmask != (Window) 0) return;
+    _XA_WM_MASKWINDOW = XInternAtom (dpy, "WM_MASKWINDOW", True);
+    if (_XA_WM_MASKWINDOW != None) {
+	if (XGetWindowProperty (dpy, Scr->Root, _XA_WM_MASKWINDOW, 0L, 4, False,
+			XA_WINDOW, &actual_type, &actual_format, &nitems,
+			&bytesafter, &w) == Success) {
+	    if (nitems != 0) {
+		windowmask = *w;
+		return;
+	    }
+	}
+    }
+    status =  system ("/users/lecom/devel/X/ctwm/maskscreen &");
+    XMaskEvent (dpy, PropertyChangeMask, &event);
+    if (XGetWindowProperty (dpy, Scr->Root, _XA_WM_MASKWINDOW, 0L, 4, False,
+			XA_WINDOW, &actual_type, &actual_format, &nitems,
+			&bytesafter, &w) == Success) {
+	windowmask = *w;
+    }
+}
+
+ExternUnmaskScreen () {
+    Window		*w;
+    Atom		_XA_WM_MASKWINDOW;
+    unsigned long	nitems, bytesafter;
+    Atom		actual_type;
+    int			actual_format;
+    int			status;
+
+    _XA_WM_MASKWINDOW = XInternAtom (dpy, "WM_MASKWINDOW", True);
+    XGetWindowProperty (dpy, Scr->Root, _XA_WM_MASKWINDOW, 0L, 4, True,
+			XA_WINDOW, &actual_type, &actual_format, &nitems,
+			&bytesafter, &w);
+    if (windowmask != (Window) 0) {
+	XDestroyWindow (dpy, windowmask);    
+	windowmask = (Window) 0;
+    }
+}
+*/
 
 InsertRGBColormap (a, maps, nmaps, replace)
     Atom a;
@@ -471,7 +738,7 @@ RemoveRGBColormap (a)
     StdCmap *sc, *prev;
 
     prev = NULL;
-    for (sc = Scr->StdCmapInfo.head; sc; sc = sc->next) {
+    for (sc = Scr->StdCmapInfo.head; sc; sc = sc->next) {  
 	if (sc->atom == a) break;
 	prev = sc;
     }
@@ -522,7 +789,17 @@ char *name;
     if (Scr->Monochrome != kind)
 	return;
 
-    if (!XAllocNamedColor (dpy, cmap, name, &color, &junkcolor))
+    if (strcmp(name, ":random") == 0) {
+	/* generate a nice `random' color */
+	name = generateRandomColor();
+    }
+
+
+    if (! XParseColor (dpy, cmap, name, &color)) {
+	fprintf (stderr, "%s:  invalid color name \"%s\"\n", ProgramName, name);
+	return;
+    }
+    if (! XAllocColor (dpy, cmap, &color))
     {
 	/* if we could not allocate the color, let's see if this is a
 	 * standard colormap
@@ -585,6 +862,42 @@ char *name;
     *what = color.pixel;
 }
 
+GetShadeColors (cp)
+ColorPair *cp;
+{
+    XColor	xcol;
+    Colormap	cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    int		save;
+    float	clearfactor;
+    float	darkfactor;
+    char	clearcol [32], darkcol [32];
+    unsigned short nr, ng, nb;
+
+    clearfactor = (float) Scr->ClearShadowContrast / 100.0;
+    darkfactor  = (100.0 - (float) Scr->DarkShadowContrast)  / 100.0;
+    xcol.pixel = cp->back;
+    XQueryColor (dpy, cmap, &xcol);
+/*
+    nr = (unsigned short) min (65535, xcol.red   * clearfactor);
+    ng = (unsigned short) min (65535, xcol.green * clearfactor);
+    nb = (unsigned short) min (65535, xcol.blue  * clearfactor);
+*/
+    sprintf (clearcol, "#%04x%04x%04x",
+		xcol.red   + (unsigned short) ((65535 -   xcol.red) * clearfactor),
+		xcol.green + (unsigned short) ((65535 - xcol.green) * clearfactor),
+		xcol.blue  + (unsigned short) ((65535 -  xcol.blue) * clearfactor));
+    sprintf (darkcol,  "#%04x%04x%04x",
+		(unsigned short) (xcol.red   * darkfactor),
+		(unsigned short) (xcol.green * darkfactor),
+		(unsigned short) (xcol.blue  * darkfactor));
+
+    save = Scr->FirstTime;
+    Scr->FirstTime = True;
+    GetColor (Scr->Monochrome, &cp->shadc, clearcol);
+    GetColor (Scr->Monochrome, &cp->shadd,  darkcol);
+    Scr->FirstTime = save;
+}
+
 GetFont(font)
 MyFont *font;
 {
@@ -593,7 +906,7 @@ MyFont *font;
     if (font->font != NULL)
 	XFreeFont(dpy, font->font);
 
-    if ((font->font = XLoadQueryFont(dpy, font->name)) == NULL)
+    if (!font->name || ((font->font = XLoadQueryFont(dpy, font->name)) == NULL))
     {
 	if (Scr->DefaultFont.name) {
 	    deffontname = Scr->DefaultFont.name;
@@ -816,6 +1129,213 @@ static Pixmap CreateDotPixmap (widthp, heightp)
     return Scr->tbpm.delete;
 }
 
+struct Colori {
+    Pixel color;
+    Pixmap pix;
+    struct Colori *next;
+};
+
+static Pixmap Create3DDotPixmap (widthp, heightp, cp)
+unsigned int *widthp, *heightp;
+ColorPair cp;
+{
+    int		h;
+    struct Colori *col;
+    static struct Colori *colori = NULL;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (! (h & 1)) h--;
+    *widthp = *heightp = (unsigned int) h;
+
+    for (col = colori; col; col = col->next) {
+	if (col->color == cp.back) break;
+    }
+    if (col != NULL) return (col->pix);
+    col = (struct Colori*) malloc (sizeof (struct Colori));
+    col->color = cp.back;
+    col->pix   = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+
+    Draw3DBorder (col->pix, 0, 0, h, h, 2, cp, off, True, False);
+    Draw3DBorder (col->pix, (h / 2) - 2, (h / 2) - 2, 5, 5, 2, cp, off, True, False);
+    col->next = colori;
+    colori = col;
+
+    return (colori->pix);
+}
+
+static Pixmap Create3DBarPixmap (widthp, heightp, cp)
+unsigned int *widthp, *heightp;
+ColorPair cp;
+{
+    int		h;
+    struct Colori *col;
+    static struct Colori *colori = NULL;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+    *widthp = *heightp = (unsigned int) h;
+
+    for (col = colori; col; col = col->next) {
+	if (col->color == cp.back) break;
+    }
+    if (col != NULL) return (col->pix);
+    col = (struct Colori*) malloc (sizeof (struct Colori));
+    col->color = cp.back;
+    col->pix   = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    Draw3DBorder (col->pix, 0, 0, h, h, 2, cp, off, True, False);
+    Draw3DBorder (col->pix, 4, (h / 2) - 2, h - 8, 5, 2, cp, off, True, False);
+    col->next = colori;
+    colori = col;
+
+    return (colori->pix);
+}
+
+static Pixmap Create3DMenuPixmap (widthp, heightp, cp)
+unsigned int *widthp, *heightp;
+ColorPair cp;
+{
+    int		h, i;
+    struct Colori *col;
+    static struct Colori *colori = NULL;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+    *widthp = *heightp = (unsigned int) h;
+
+    for (col = colori; col; col = col->next) {
+	if (col->color == cp.back) break;
+    }
+    if (col != NULL) return (col->pix);
+    col = (struct Colori*) malloc (sizeof (struct Colori));
+    col->color = cp.back;
+    col->pix   = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    Draw3DBorder (col->pix, 0, 0, h, h, 2, cp, off, True, False);
+    for (i = 4; i < h - 7; i += 5) {
+	Draw3DBorder (col->pix, 4, i, h - 8, 4, 2, cp, off, True, False);
+    }
+    col->next = colori;
+    colori = col;
+
+    return (colori->pix);
+}
+
+Pixmap Create3DMenuIcon (height, widthp, heightp, cp)
+unsigned int height, *widthp, *heightp;
+ColorPair cp;
+{
+    unsigned int h, w;
+    int		i;
+    struct Colori *col;
+    static struct Colori *colori = NULL;
+
+    h = height;
+    w = h * 7 / 8;
+    if (h < 1)
+	h = 1;
+    if (w < 1)
+	w = 1;
+    *widthp  = w;
+    *heightp = h;
+
+    for (col = colori; col; col = col->next) {
+	if (col->color == cp.back) break;
+    }
+    if (col != NULL) return (col->pix);
+    col = (struct Colori*) malloc (sizeof (struct Colori));
+    col->color = cp.back;
+    col->pix   = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    Draw3DBorder (col->pix, 0, 0, w, h, 1, cp, off, True, False);
+    for (i = 3; i < h - 4; i += 4) {
+	Draw3DBorder (col->pix, 4, i, w - 8, 2, 1, Scr->MenuC, off, True, False);
+    }
+    col->next = colori;
+    colori = col;
+
+    return (colori->pix);
+}
+
+#include "siconify.bm"
+
+Pixmap Create3DIconManagerIcon (cp)
+ColorPair cp;
+{
+    int		i;
+    unsigned int w, h;
+    struct Colori *col;
+    static struct Colori *colori = NULL;
+
+    w = (unsigned int) siconify_width;
+    h = (unsigned int) siconify_height;
+
+    for (col = colori; col; col = col->next) {
+	if (col->color == cp.back) break;
+    }
+    if (col != NULL) return (col->pix);
+    col = (struct Colori*) malloc (sizeof (struct Colori));
+    col->color = cp.back;
+    col->pix   = XCreatePixmap (dpy, Scr->Root, w, h, Scr->d_depth);
+    Draw3DBorder (col->pix, 0, 0, w, h, 4, cp, off, True, False);
+    col->next = colori;
+    colori = col;
+
+    return (colori->pix);
+}
+
+static Pixmap Create3DResizePixmap (widthp, heightp, cp)
+unsigned int *widthp, *heightp;
+ColorPair cp;
+{
+    int		h;
+    struct Colori *col;
+    static struct Colori *colori = NULL;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+    *widthp = *heightp = (unsigned int) h;
+
+    for (col = colori; col; col = col->next) {
+	if (col->color == cp.back) break;
+    }
+    if (col != NULL) return (col->pix);
+    col = (struct Colori*) malloc (sizeof (struct Colori));
+    col->color = cp.back;
+    col->pix   = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    Draw3DBorder (col->pix, 0, 0, h, h, 2, cp, off, True, False);
+    Draw3DBorder (col->pix, 0, h / 4, ((3 * h) / 4) + 1, ((3 * h) / 4) + 1, 2, cp, off, True, False);
+    Draw3DBorder (col->pix, 0, h / 2, (h / 2) + 1, (h / 2) + 1, 2, cp, off, True, False);
+    col->next = colori;
+    colori = col;
+
+    return (colori->pix);
+}
+
+static Pixmap Create3DZoomPixmap (widthp, heightp, cp)
+unsigned int *widthp, *heightp;
+ColorPair cp;
+{
+    int		h;
+    struct Colori *col;
+    static struct Colori *colori = NULL;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+    *widthp = *heightp = (unsigned int) h;
+
+    for (col = colori; col; col = col->next) {
+	if (col->color == cp.back) break;
+    }
+    if (col != NULL) return (col->pix);
+    col = (struct Colori*) malloc (sizeof (struct Colori));
+    col->color = cp.back;
+    col->pix   = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    Draw3DBorder (col->pix, 0, 0, h, h, 2, cp, off, True);
+    Draw3DBorder (col->pix, h / 4, h / 4, (h / 2) + 2, (h / 2) + 2, 2, cp, off, True, False);
+    col->next = colori;
+    colori = col;
+
+    return (colori->pix);
+}
+
 #define questionmark_width 8
 #define questionmark_height 8
 static char questionmark_bits[] = {
@@ -842,7 +1362,7 @@ static Pixmap CreateQuestionPixmap (widthp, heightp)
 static Pixmap CreateMenuPixmap (widthp, heightp)
     int *widthp, *heightp;
 {
-    return CreateMenuIcon (Scr->TBInfo.width - Scr->TBInfo.border * 2,widthp,heightp);
+    CreateMenuIcon (Scr->TBInfo.width - Scr->TBInfo.border * 2,widthp,heightp);
 }
 
 Pixmap CreateMenuIcon (height, widthp, heightp)
@@ -920,17 +1440,445 @@ Pixmap CreateMenuIcon (height, widthp, heightp)
     return Scr->tbpm.menu;
 }
 
+Draw3DBorder (w, x, y, width, height, bw, cp, state, fill, forcebw)
+Window w;
+int    x, y, width, height, bw;
+ColorPair cp;
+int state, fill, forcebw;
+{
+    int		  i;
+    XGCValues	  gcv;
+    unsigned long gcm;
+    static int firsttime = 1;
+
+    if (Scr->Monochrome != COLOR) {
+	if (fill) {
+	    gcm = GCFillStyle;
+	    gcv.fill_style = FillOpaqueStippled;
+	    XChangeGC (dpy, Scr->GreyGC, gcm, &gcv);
+	    XFillRectangle (dpy, w, Scr->GreyGC, x, y, width, height);
+	}
+	gcm  = 0;
+	gcm |= GCLineStyle;		
+	gcv.line_style = (state == on) ? LineSolid : LineDoubleDash;
+	gcm |= GCFillStyle;
+	gcv.fill_style = FillSolid;
+	XChangeGC (dpy, Scr->GreyGC, gcm, &gcv);
+	for (i = 0; i < bw; i++) {
+	    XDrawLine (dpy, w, Scr->GreyGC, x,                 y + i,
+					    x + width - i - 1, y + i);
+	    XDrawLine (dpy, w, Scr->GreyGC, x + i,                  y,
+					    x + i, y + height - i - 1);
+	}
+
+	gcm  = 0;
+	gcm |= GCLineStyle;		
+	gcv.line_style = (state == on) ? LineDoubleDash : LineSolid;
+	gcm |= GCFillStyle;
+	gcv.fill_style = FillSolid;
+	XChangeGC (dpy, Scr->GreyGC, gcm, &gcv);
+	for (i = 0; i < bw; i++) {
+	    XDrawLine (dpy, w, Scr->GreyGC, x + width - i - 1,          y + i,
+					    x + width - i - 1, y + height - 1);
+	    XDrawLine (dpy, w, Scr->GreyGC, x + i,         y + height - i - 1,
+					    x + width - 1, y + height - i - 1);
+	}
+	return;
+    }
+
+    if (fill) {
+	FB (cp.back, cp.fore);
+	XFillRectangle (dpy, w, Scr->NormalGC, x, y, width, height);
+    }
+    if (Scr->BeNiceToColormap) {
+	int dashoffset = 0;
+
+	gcm  = 0;
+	gcm |= GCLineStyle;		
+	gcv.line_style = (forcebw) ? LineSolid : LineDoubleDash;
+	gcm |= GCBackground;
+	gcv.background = cp.back;
+	XChangeGC (dpy, Scr->ShadGC, gcm, &gcv);
+	    
+	if (state == on)
+	    XSetForeground (dpy, Scr->ShadGC, Scr->Black);
+	else
+	    XSetForeground (dpy, Scr->ShadGC, Scr->White);
+	for (i = 0; i < bw; i++) {
+	    XDrawLine (dpy, w, Scr->ShadGC, x + i,     y + dashoffset,
+					    x + i, y + height - i - 1);
+	    XDrawLine (dpy, w, Scr->ShadGC, x + dashoffset,    y + i,
+					    x + width - i - 1, y + i);
+	    dashoffset = 1 - dashoffset;
+	}
+	if (state == on)
+	    XSetForeground (dpy, Scr->ShadGC, Scr->White);
+	else
+	    XSetForeground (dpy, Scr->ShadGC, Scr->Black);
+	for (i = 0; i < bw; i++) {
+	    XDrawLine (dpy, w, Scr->ShadGC, x + i,         y + height - i - 1,
+					    x + width - 1, y + height - i - 1);
+	    XDrawLine (dpy, w, Scr->ShadGC, x + width - i - 1,          y + i,
+					    x + width - i - 1, y + height - 1);
+	}
+	return;
+    }
+
+    if (state == on) {
+	FB (cp.shadd, cp.shadc);
+    }
+    else {
+	FB (cp.shadc, cp.shadd);
+    }
+    for (i = 0; i < bw; i++) {
+	XDrawLine (dpy, w, Scr->NormalGC, x,                 y + i,
+					  x + width - i - 1, y + i);
+	XDrawLine (dpy, w, Scr->NormalGC, x + i,                  y,
+					  x + i, y + height - i - 1);
+    }
+
+    if (state == on) {
+	FB (cp.shadc, cp.shadd);
+    }
+    else {
+	FB (cp.shadd, cp.shadc);
+    }
+    for (i = 0; i < bw; i++) {
+	XDrawLine (dpy, w, Scr->NormalGC, x + width - i - 1,          y + i,
+					  x + width - i - 1, y + height - 1);
+	XDrawLine (dpy, w, Scr->NormalGC, x + i,         y + height - i - 1,
+					  x + width - 1, y + height - i - 1);
+    }
+}
+
 /* Returns a blank cursor */
 Cursor NoCursor()
 {
-	static Cursor blank = (Cursor) NULL;
-	Pixmap nopixmap;
-	XColor nocolor;
-
-	if (!blank) {
-		nopixmap = XCreatePixmap(dpy, Scr->Root, 1, 1, 1);
-		nocolor.red = nocolor.blue = nocolor.green = 0;
-		blank = XCreatePixmapCursor(dpy, nopixmap, nopixmap, &nocolor, &nocolor, 1, 1);
-	}
-	return(blank);
+        static Cursor blank = (Cursor) NULL;
+        Pixmap nopixmap;
+        XColor nocolor;
+        
+        if (!blank) {
+                nopixmap = XCreatePixmap(dpy, Scr->Root, 1, 1, 1);
+                nocolor.red = nocolor.blue = nocolor.green = 0;
+                blank = XCreatePixmapCursor(dpy, nopixmap, nopixmap, &nocolor, &
+nocolor, 1, 1);
+        }
+        return(blank);
 }
+
+void
+SetupSizeInfo(name, fmt, x, y)
+char* name;
+char* fmt;
+int x, y;
+{
+    int namelen;
+    int height;
+    char buf[100];
+
+    if (name) {
+	sprintf(buf, "%s: ", name);
+	namelen = strlen(buf);
+	Scr->SizeStringOffset = (SIZE_HINDENT + XTextWidth (Scr->SizeFont.font, buf, namelen));
+    } else {
+	Scr->SizeStringOffset = SIZE_HINDENT;
+    }
+    height = Scr->SizeFont.height + SIZE_VINDENT * 2;
+	    
+    XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
+		   Scr->SizeStringWidth, height);
+    if (Scr->CenteredInfoBox) {
+	XMoveWindow(dpy, Scr->SizeWindow,
+		    (Scr->MyDisplayWidth - (Scr->SizeStringWidth + Scr->SizeStringOffset))/2,
+		    (Scr->MyDisplayHeight - (Scr->SizeFont.height + SIZE_VINDENT*2))/2);
+    }
+    XMapRaised(dpy, Scr->SizeWindow);
+    if (name) {
+	FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
+	    Scr->SizeFont.font->fid);
+	XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
+			  SIZE_HINDENT,
+			  SIZE_VINDENT + Scr->SizeFont.font->ascent,
+			  buf, namelen);
+    }
+    DisplaySizeInfo(fmt, x, y);
+}
+
+void
+DisplaySizeInfo(fmt, x, y)
+char* fmt;
+int x, y;
+{
+    char str[100];
+
+    (void) sprintf (str, fmt, x, y);
+    XRaiseWindow (dpy, Scr->SizeWindow);
+    FBF (Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);
+    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
+                      Scr->SizeStringOffset,
+                      Scr->SizeFont.font->ascent + SIZE_VINDENT,
+                      str, strlen(str));
+}
+
+void
+RemoveSizeInfo()
+{
+    XUnmapWindow(dpy, Scr->SizeWindow);
+}
+
+/* the order in which these are called is significant. */
+
+#define MAXHOSTNAME 255
+
+static char *client[MAXHOSTNAME], server[MAXHOSTNAME], *r;
+static Screen *scr;
+static Visual *vis;
+
+#define SYM_ALLOC_CHAR(a, b) {		\
+	r = (char *)malloc(strlen(a) + strlen(b) + 4);	\
+	sprintf(r, "-D%s=%s", a, b);			\
+	return r;					\
+}
+#define SYM_ALLOC_NUM(a, b) {	\
+	r = (char *)malloc(strlen(a) + 10 + 4);		\
+	sprintf(r, "-D%s=%d", a, b);			\
+	return r;					\
+}
+
+static char *
+get_m4()
+{
+	return "m4";
+}
+
+static char *
+get_HOST()
+{
+	char *colon;
+
+	XmuGetHostname(client, MAXHOSTNAME);
+	strcpy(server, XDisplayName(NULL));
+	if ((colon = index(server, ':')) != NULL)
+		*colon = '\0';
+	if (server[0] == '\0')
+		strcpy(server, client);
+
+	SYM_ALLOC_CHAR("HOST", server);
+}
+
+static char *
+get_SERVERHOST()
+{
+	SYM_ALLOC_CHAR("SERVERHOST", server);
+}
+
+static char *
+get_CLIENTHOST()
+{
+	SYM_ALLOC_CHAR("CLIENTHOST", client);
+}
+
+static char *
+get_VERSION()
+{
+	SYM_ALLOC_NUM("VERSION", ProtocolVersion(dpy));
+}
+
+static char *
+get_REVISION()
+{
+	SYM_ALLOC_NUM("REVISION", ProtocolRevision(dpy));
+}
+
+static char *
+get_VENDOR()
+{
+	SYM_ALLOC_CHAR("VENDOR", ServerVendor(dpy));
+}
+
+static char *
+get_RELEASE()
+{
+	SYM_ALLOC_NUM("RELEASE", VendorRelease(dpy));
+}
+
+static char *
+get_WIDTH()
+{
+	scr = DefaultScreenOfDisplay(dpy);
+
+	SYM_ALLOC_NUM("WIDTH", scr->width);
+}
+
+static char *
+get_HEIGHT()
+{
+	SYM_ALLOC_NUM("HEIGHT", scr->height);
+}
+
+static char *
+get_X_RESOLUTION()
+{
+	SYM_ALLOC_NUM("X_RESOLUTION",
+		      ((scr->width * 100000 / scr->mwidth) + 50) / 100);
+}
+
+static char *
+get_Y_RESOLUTION()
+{
+	SYM_ALLOC_NUM("Y_RESOLUTION",
+		      ((scr->height * 100000 / scr->mheight) + 50) / 100);
+}
+
+static char *
+get_PLANES()
+{
+	SYM_ALLOC_NUM("PLANES", DisplayPlanes(dpy, DefaultScreen(dpy)));
+}
+
+static char *
+get_BITS_PER_RGB()
+{
+	vis = DefaultVisualOfScreen(scr);
+
+	SYM_ALLOC_NUM("BITS_PER_RGB", vis->bits_per_rgb);
+}
+
+static char *
+get_CLASS()
+{
+	switch (vis->class) {
+	case StaticGray:
+		SYM_ALLOC_CHAR("CLASS", "StaticGray");
+		break;
+	case GrayScale:
+		SYM_ALLOC_CHAR("CLASS", "GrayScale");
+		break;
+	case StaticColor:
+		SYM_ALLOC_CHAR("CLASS", "StaticColor");
+		break;
+	case PseudoColor:
+		SYM_ALLOC_CHAR("CLASS", "PseudoColor");
+		break;
+	case TrueColor:
+		SYM_ALLOC_CHAR("CLASS", "PseudoColor");
+		break;
+	case DirectColor:
+		SYM_ALLOC_CHAR("CLASS", "DirectColor");
+		break;
+	default:
+		SYM_ALLOC_CHAR("CLASS", "Unknown");
+		break;
+	}
+}
+
+static char *
+get_COLOR()
+{
+	char *r;
+
+	switch (vis->class) {
+	case StaticGray:
+	case GrayScale:
+		r = "-DMONO";
+		break;
+	case StaticColor:
+	case PseudoColor:
+	case TrueColor:
+	case DirectColor:
+		r = "-DCOLOR";
+		break;
+	}
+
+	return r;
+}
+
+static char *(*symbols[])() = {
+	get_m4,
+	get_HOST,
+	get_SERVERHOST,
+	get_CLIENTHOST,
+	get_VERSION,
+	get_REVISION,
+	get_VENDOR,
+	get_RELEASE,
+	get_WIDTH,
+	get_HEIGHT,
+	get_X_RESOLUTION,
+	get_Y_RESOLUTION,
+	get_PLANES,
+	get_BITS_PER_RGB,
+	get_CLASS,
+	get_COLOR,
+};
+
+/* build a list of `xrdb -symbols' style definitions for
+ * passing to m4
+ */
+char **
+buildSymbolList()
+{
+	char **values;
+	int v, z;
+	int nsyms = sizeof(symbols) / sizeof(char *(*)());
+
+	if ((values = (char **)malloc((nsyms+1)*sizeof(char *))) == NULL) {
+		fprintf(stderr,
+			"%s: cannot allocate memory for #define list\n",
+			ProgramName);
+		exit(1);
+	}
+
+	for(v = 0; v < nsyms; v++)
+		values[v] = (symbols[v])();
+
+	values[nsyms] = NULL;	/* NULL terminate the list */
+
+	return values;
+}
+
+
+static char *
+generateRandomColor()
+{
+    extern double atof();
+    static char ret[8];
+    static unsigned int seed = 0;
+    static int desiredIntensity = 166;
+
+    int newIntensity = 0;
+    int tooDark, red, green, blue;
+    int i, c, errflg=0;
+	
+    if (seed == 0) {
+	seed = time(0) + getpid();
+	srand(seed);
+    }
+
+    /* assign preset values of guns */
+    red   = 0;
+    green = 0;
+    blue  = 0;
+
+    tooDark = 1;
+
+    /* We want a bit of everything, but ensure that it's bright overall */
+    while (tooDark && !(red && green && blue)) {
+	red   = rand()&255;
+	green = rand()&255;
+	blue  = rand()&255;
+
+	/* I've seen a better formula for computing intensity 
+	 * somewhere, but I can't remember where. 
+	 * This is good enough for now. -njw
+	 */
+	newIntensity = (red + green + blue)/3; 
+	tooDark = (newIntensity < desiredIntensity);
+    }
+    
+    sprintf(ret, "#%02x%02x%02x", red, green, blue);
+    
+    return ret;
+}
+

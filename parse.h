@@ -100,15 +100,20 @@ extern void TwmOutput();
 #define F_SNAP			53
 #define F_HIDEDESKTOP		54
 #define F_SHOWDESKTOP		55
+
 #define F_ENTERDOOR		56
 #define F_NEWDOOR		57
-#define F_SNUGDESKTOP     58
-#define F_SNUGWINDOW      59
-#define F_AUTOPAN			60/*RFB F_AUTOPAN*/
-#define F_RING				61/*RFB F_RING*/
-#define F_SQUEEZELEFT		62/*RFB F_SQUEEZE*/
-#define F_SQUEEZERIGHT		63/*RFB F_SQUEEZE*/
-#define F_SQUEEZECENTER		64/*RFB F_SQUEEZE*/
+#define F_NAME_DOOR             58
+
+#define F_SEPERATOR             60
+
+#define F_SNUGDESKTOP           70
+#define F_SNUGWINDOW            71
+#define F_AUTOPAN		72/*RFB F_AUTOPAN*/
+#define F_RING			73/*RFB F_RING*/
+#define F_SQUEEZELEFT		74/*RFB F_SQUEEZE*/
+#define F_SQUEEZERIGHT		75/*RFB F_SQUEEZE*/
+#define F_SQUEEZECENTER		76/*RFB F_SQUEEZE*/
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */

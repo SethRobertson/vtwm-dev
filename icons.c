@@ -37,8 +37,8 @@
 #include "parse.h"
 #include "util.h"
 
-#define iconWidth(w)	(Scr->IconBorderWidth * 2 + w->icon_w_width)
-#define iconHeight(w)	(Scr->IconBorderWidth * 2 + w->icon_w_height)
+#define iconWidth(w)	(Scr->IconBorderWidth * 2 + w->icon->w_width)
+#define iconHeight(w)	(Scr->IconBorderWidth * 2 + w->icon->w_height)
 
 static
 splitEntry (ie, grav1, grav2, w, h)
@@ -107,6 +107,7 @@ int *final_x, *final_y;
     IconRegion	*ir;
     IconEntry	*ie;
     int		w = 0, h = 0;
+    static int  ranX = 10, ranY = 10;
 
     ie = 0;
     for (ir = Scr->FirstRegion; ir; ir = ir->next) {
@@ -128,9 +129,27 @@ int *final_x, *final_y;
 	*final_x = ie->x + (ie->w - iconWidth (tmp_win)) / 2;
 	*final_y = ie->y + (ie->h - iconHeight (tmp_win)) / 2;
     } else {
+#ifdef BIZARRE
+    if ((def_x == -100) && (def_y == -100)) {
+	w = iconWidth  (tmp_win);
+	h = iconHeight (tmp_win);
+	if ((ranX + w) > Scr->MyDisplayWidth) {
+	    ranX  = 10;
+	    ranY += 80;
+	    if ((ranY + h) > Scr->MyDisplayHeight) ranY = 10;
+	}
+	*final_x = ranX;
+	*final_y = ranY;
+	ranX += w + 10;
+    } else {
 	*final_x = def_x;
 	*final_y = def_y;
     }
+#else
+	*final_x = def_x;
+	*final_y = def_y;
+    }
+#endif
     return;
 }
 
@@ -169,7 +188,7 @@ IconUp (tmp_win)
       return;
 
     if (tmp_win->icon_moved) {
-	if (!XGetGeometry (dpy, tmp_win->icon_w, &JunkRoot, &defx, &defy,
+	if (!XGetGeometry (dpy, tmp_win->icon->w, &JunkRoot, &defx, &defy,
 			   &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth))
 	  return;
 
@@ -188,7 +207,7 @@ IconUp (tmp_win)
     defy = -100;
     PlaceIcon(tmp_win, defx, defy, &x, &y);
     if (x != defx || y != defy) {
-	XMoveWindow (dpy, tmp_win->icon_w, x, y);
+	XMoveWindow (dpy, tmp_win->icon->w, x, y);
 	tmp_win->icon_moved = FALSE;	/* since we've restored it */
     }
 }
@@ -271,11 +290,10 @@ int grav1, grav2;
 
     ir = (IconRegion *)malloc(sizeof(IconRegion));
     ir->next = NULL;
-    if (Scr->LastRegion)
-	Scr->LastRegion->next = ir;
+
+    if (Scr->LastRegion) Scr->LastRegion->next = ir;
     Scr->LastRegion = ir;
-    if (!Scr->FirstRegion)
-	Scr->FirstRegion = ir;
+    if (!Scr->FirstRegion) Scr->FirstRegion = ir;
 
     ir->entries = NULL;
     ir->grav1 = grav1;
@@ -333,6 +351,8 @@ FreeIconRegions()
 }
 #endif
 
+#define BitmapType 0
+
 CreateIconWindow(tmp_win, def_x, def_y)
 TwmWindow *tmp_win;
 int def_x, def_y;
@@ -343,9 +363,39 @@ int def_x, def_y;
     Pixmap pm = None;			/* tmp pixmap variable */
     int final_x, final_y;
     int x;
+    int		hastitle;
+    Icon	*icon;
+    Matchtype	match;
+    int		icontype = BitmapType;
+#ifdef XPM
+    XpmIcon *xpmicon = None;
+#   define XpmType 1
+#endif
+#ifdef XPM
+#   define ImType 2
+#endif
 
+    icon = (Icon*) malloc (sizeof (struct Icon));
 
-    FB(tmp_win->iconc.fore, tmp_win->iconc.back);
+    /* Define the colors */
+    if (!GetColorFromList(Scr->IconBorderColorL, tmp_win->full_name, &tmp_win->class, &icon->border)) {
+	icon->border = Scr->IconBorderColor;
+    }
+    if (!GetColorFromList(Scr->IconForegroundL, tmp_win->full_name, &tmp_win->class, &icon->iconc.fore)) {
+	icon->iconc.fore = Scr->IconC.fore;
+    }
+    if (!GetColorFromList(Scr->IconBackgroundL, tmp_win->full_name, &tmp_win->class, &icon->iconc.back)) {
+	icon->iconc.back = Scr->IconC.back;
+    }
+    if (Scr->use3Diconmanagers && !Scr->BeNiceToColormap) GetShadeColors (&icon->iconc);
+
+    FB(icon->iconc.fore, icon->iconc.back);
+
+    icon->match   = match_none;
+    icon->pattern = NULL;
+#ifdef XPM
+    icon->xpmicon = None;
+#endif
 
     tmp_win->forced = FALSE;
     tmp_win->icon_not_ours = FALSE;
@@ -359,14 +409,67 @@ int def_x, def_y;
 	char *icon_name;
 	Pixmap bm;
 
-	icon_name = LookInNameList(Scr->IconNames, tmp_win->full_name);
-        if (icon_name == NULL)
-	    icon_name = LookInList(Scr->IconNames, tmp_win->full_name,
-				   &tmp_win->class);
-
+	icon_name = LookInNameList(Scr->IconNames, tmp_win->icon_name);
+        if (icon_name != NULL) {
+	    icon->pattern = LookPatternInNameList (Scr->IconNames, tmp_win->icon_name);
+	    icon->match = match_icon;
+	}
+        if (icon->match == match_none)
+	    icon_name = LookInNameList(Scr->IconNames, tmp_win->full_name);
+        if ((icon->match == match_none) && (icon_name != NULL)) {
+	    icon->pattern = LookPatternInNameList (Scr->IconNames, tmp_win->full_name);
+	    icon->match = match_name;
+	}
+        if (icon->match == match_none)
+	    icon_name = LookInList(Scr->IconNames, tmp_win->full_name, &tmp_win->class);
+        if ((icon->match == match_none) && (icon_name != NULL)) {
+	    icon->pattern = LookPatternInList (Scr->IconNames, tmp_win->full_name, &tmp_win->class);
+	    icon->match = match_class;
+	}
 	bm = None;
 	if (icon_name != NULL)
 	{
+#ifdef XPM
+	    int startn;
+
+	    if ((icon_name [0] == '@') || (strncmp (icon_name, "xpm:", 4) == 0)) {
+		if (icon_name [0] == '@') startn = 1; else startn = 4;
+		if ((xpmicon = (XpmIcon*) LookInNameList (Scr->Icons, icon_name)) == None) {
+		    if ((xpmicon = GetXpmPixmap (&(icon_name [startn]))) != None) {
+			AddToList(&Scr->Icons, icon_name, (char *)xpmicon);
+		    }
+		}
+		if (xpmicon != None) {
+		    pm = xpmicon->pixmap;
+		    icon->width   = xpmicon->attributes.width;
+		    icon->height  = xpmicon->attributes.height;
+		    icon->xpmicon = xpmicon;
+		    tmp_win->forced  = TRUE;
+		    icontype = XpmType;
+		}
+	    }
+	    else
+#endif
+#ifdef IMCONV
+	    if (strncmp (icon_name, "im:", 3) == 0) {
+		int width, height;
+
+		if ((pm = (Pixmap) LookInNameList (Scr->Icons, icon_name)) != None) {
+		    XGetGeometry (dpy, pm, &JunkRoot, &JunkX, &JunkY,
+			(unsigned int *) &icon->width, (unsigned int *) &icon->height,
+			&JunkBW, &JunkDepth);
+		}
+		else
+		if ((pm = im_read_file (&icon_name [3], &width, &height)) != None) {
+		    AddToList (&Scr->Icons, icon_name, (char *)pm);
+		    icon->width  = width;
+		    icon->height = height;
+		    tmp_win->forced  = TRUE;
+		}
+		if (pm != None) icontype = ImType;
+	    }
+	    else
+#endif
 	    if ((bm = (Pixmap)LookInNameList(Scr->Icons, icon_name)) == None)
 	    {
 		if ((bm = GetBitmap (icon_name)) != None)
@@ -377,17 +480,18 @@ int def_x, def_y;
 	if (bm != None)
 	{
 	    XGetGeometry(dpy, bm, &JunkRoot, &JunkX, &JunkY,
-		(unsigned int *) &tmp_win->icon_width, (unsigned int *)&tmp_win->icon_height,
+		(unsigned int *) &icon->width, (unsigned int *)&icon->height,
 		&JunkBW, &JunkDepth);
 
-	    pm = XCreatePixmap(dpy, Scr->Root, tmp_win->icon_width,
-		tmp_win->icon_height, Scr->d_depth);
+	    pm = XCreatePixmap(dpy, Scr->Root, icon->width,
+		icon->height, Scr->d_depth);
 
 	    /* the copy plane works on color ! */
 	    XCopyPlane(dpy, bm, pm, Scr->NormalGC,
-		0,0, tmp_win->icon_width, tmp_win->icon_height, 0, 0, 1 );
+		0,0, icon->width, icon->height, 0, 0, 1 );
 
 	    tmp_win->forced = TRUE;
+	    icontype = BitmapType;
 	}
     }
 
@@ -401,14 +505,15 @@ int def_x, def_y;
     
 	XGetGeometry(dpy,   tmp_win->wmhints->icon_pixmap,
              &JunkRoot, &JunkX, &JunkY,
-	     (unsigned int *)&tmp_win->icon_width, (unsigned int *)&tmp_win->icon_height, &JunkBW, &JunkDepth);
+	     (unsigned int *)&icon->width, (unsigned int *)&icon->height, &JunkBW, &JunkDepth);
 
 	pm = XCreatePixmap(dpy, Scr->Root,
-			   tmp_win->icon_width, tmp_win->icon_height,
+			   icon->width, icon->height,
 			   Scr->d_depth);
 
 	XCopyPlane(dpy, tmp_win->wmhints->icon_pixmap, pm, Scr->NormalGC,
-	    0,0, tmp_win->icon_width, tmp_win->icon_height, 0, 0, 1 );
+	    0,0, icon->width, icon->height, 0, 0, 1 );
+	icontype = BitmapType;
     }
 
     /* if we still haven't got an icon, let's look in the Icon list 
@@ -419,55 +524,120 @@ int def_x, def_y;
 	char *icon_name;
 	Pixmap bm;
 
-	icon_name = LookInNameList(Scr->IconNames, tmp_win->full_name);
-        if (icon_name == NULL)
-	    icon_name = LookInList(Scr->IconNames, tmp_win->full_name,
-				   &tmp_win->class);
-
+	icon->match   = match_none;
+	icon->pattern = NULL;
+	icon_name = LookInNameList(Scr->IconNames, tmp_win->icon_name);
+        if (icon_name != NULL) {
+	    icon->pattern = LookPatternInNameList (Scr->IconNames, tmp_win->icon_name);
+	    icon->match = match_icon;
+	}
+        if (icon->match == match_none)
+	    icon_name = LookInNameList(Scr->IconNames, tmp_win->full_name);
+        if ((icon->match == match_none) && (icon_name != NULL)) {
+	    icon->pattern = LookPatternInNameList (Scr->IconNames, tmp_win->full_name);
+	    icon->match = match_name;
+	}
+        if (icon->match == match_none)
+	    icon_name = LookInList(Scr->IconNames, tmp_win->full_name, &tmp_win->class);
+        if ((icon->match == match_none) && (icon_name != NULL)) {
+	    icon->pattern = LookPatternInList (Scr->IconNames, tmp_win->full_name, &tmp_win->class);
+	    icon->match = match_class;
+	}
 	bm = None;
 	if (icon_name != NULL)
 	{
+#ifdef XPM
+	    int startn;
+
+	    if ((icon_name [0] == '@') || (strncmp (icon_name, "xpm:", 4) == 0)) {
+		if (icon_name [0] == '@') startn = 1; else startn = 4;
+		if ((xpmicon = (XpmIcon*) LookInNameList (Scr->Icons, icon_name)) == None) {
+		    if ((xpmicon = GetXpmPixmap (&(icon_name [startn]))) != None) {
+			AddToList(&Scr->Icons, icon_name, (char *)xpmicon);
+		    }
+		}
+		if (xpmicon != None) {
+		    pm = xpmicon->pixmap;
+		    icon->width   = xpmicon->attributes.width;
+		    icon->height  = xpmicon->attributes.height;
+		    icon->xpmicon = xpmicon;
+		    icontype = XpmType;
+		}
+	    }
+	    else
+#endif
+#ifdef IMCONV
+	    if (strncmp (icon_name, "im:", 3) == 0) {
+		int width, height;
+
+		if ((pm = (Pixmap) LookInNameList (Scr->Icons, icon_name)) == None) {
+		    XGetGeometry (dpy, pm, &JunkRoot, &JunkX, &JunkY,
+			(unsigned int *) &icon->width, (unsigned int *) &icon->height,
+			&JunkBW, &JunkDepth);
+		}
+		else
+		if ((pm = im_read_file (&icon_name [3], &width, &height)) != None) {
+		    AddToList(&Scr->Icons, icon_name, (char *)pm);
+		    icon->width  = width;
+		    icon->height = height;
+		}
+		if (pm != None) icontype = ImType;
+	    }
+	    else
+#endif
 	    if ((bm = (Pixmap)LookInNameList(Scr->Icons, icon_name)) == None)
 	    {
 		if ((bm = GetBitmap (icon_name)) != None)
 		    AddToList(&Scr->Icons, icon_name, (char *)bm);
 	    }
 	}
-
 	if (bm != None)
 	{
 	    XGetGeometry(dpy, bm, &JunkRoot, &JunkX, &JunkY,
-		(unsigned int *)&tmp_win->icon_width, (unsigned int *)&tmp_win->icon_height,
+		(unsigned int *)&icon->width, (unsigned int *)&icon->height,
 		&JunkBW, &JunkDepth);
 
-	    pm = XCreatePixmap(dpy, Scr->Root, tmp_win->icon_width,
-		tmp_win->icon_height, Scr->d_depth);
+	    pm = XCreatePixmap(dpy, Scr->Root, icon->width,
+		icon->height, Scr->d_depth);
 
 	    /* the copy plane works on color ! */
 	    XCopyPlane(dpy, bm, pm, Scr->NormalGC,
-		0,0, tmp_win->icon_width, tmp_win->icon_height, 0, 0, 1 );
+		0,0, icon->width, icon->height, 0, 0, 1 );
+	    icontype = BitmapType;
 	}
     }
 
     /* if we still don't have an icon, assign the UnknownIcon */
-
+#ifdef XPM
+    if (pm == None && Scr->UnknownXpmIcon != None)
+    {
+	xpmicon = Scr->UnknownXpmIcon;
+	pm = xpmicon->pixmap;
+	icon->width   = xpmicon->attributes.width;
+	icon->height  = xpmicon->attributes.height;
+	icon->xpmicon = xpmicon;
+	icontype = XpmType;
+    }
+    else
+#endif
     if (pm == None && Scr->UnknownPm != None)
     {
-	tmp_win->icon_width = Scr->UnknownWidth;
-	tmp_win->icon_height = Scr->UnknownHeight;
+	icon->width  = Scr->UnknownWidth;
+	icon->height = Scr->UnknownHeight;
 
-	pm = XCreatePixmap(dpy, Scr->Root, tmp_win->icon_width,
-	    tmp_win->icon_height, Scr->d_depth);
+	pm = XCreatePixmap(dpy, Scr->Root, icon->width,
+	    icon->height, Scr->d_depth);
 
 	/* the copy plane works on color ! */
 	XCopyPlane(dpy, Scr->UnknownPm, pm, Scr->NormalGC,
-	    0,0, tmp_win->icon_width, tmp_win->icon_height, 0, 0, 1 );
+	    0,0, icon->width, icon->height, 0, 0, 1 );
+	icontype = BitmapType;
     }
 
     if (pm == None)
     {
-	tmp_win->icon_height = 0;
-	tmp_win->icon_width = 0;
+	icon->height = 0;
+	icon->width = 0;
 	valuemask = 0;
     }
     else
@@ -476,33 +646,45 @@ int def_x, def_y;
 	attributes.background_pixmap = pm;
     }
 
-    tmp_win->icon_w_width = XTextWidth(Scr->IconFont.font,
-	tmp_win->icon_name, strlen(tmp_win->icon_name));
+    if (Scr->NoIconTitlebar ||
+	LookInList(Scr->NoIconTitle, tmp_win->full_name, &tmp_win->class))
+    {
+	icon->w_width  = icon->width;
+	icon->w_height = icon->height;
+	icon->x = 0;
+	icon->y = 0;
+	hastitle = False;
+    }
+    else {
+	icon->w_width = XTextWidth(Scr->IconFont.font,
+		tmp_win->icon_name, strlen(tmp_win->icon_name));
 
-    tmp_win->icon_w_width += 6;
-    if (tmp_win->icon_w_width < tmp_win->icon_width)
-    {
-	tmp_win->icon_x = (tmp_win->icon_width - tmp_win->icon_w_width)/2;
-	tmp_win->icon_x += 3;
-	tmp_win->icon_w_width = tmp_win->icon_width;
+	icon->w_width += 6;
+	if (icon->w_width < icon->width)
+	{
+	    icon->x = (icon->width - icon->w_width)/2;
+	    icon->x += 3;
+	    icon->w_width = icon->width;
+	}
+	else
+	{
+	    icon->x = 3;
+	}
+	icon->y = icon->height + Scr->IconFont.height;
+	icon->w_height = icon->height + Scr->IconFont.height + 6;
+	hastitle = True;
     }
-    else
-    {
-	tmp_win->icon_x = 3;
-    }
-    tmp_win->icon_y = tmp_win->icon_height + Scr->IconFont.height;
-    tmp_win->icon_w_height = tmp_win->icon_height + Scr->IconFont.height + 4;
 
     event_mask = 0;
     if (tmp_win->wmhints && tmp_win->wmhints->flags & IconWindowHint)
     {
-	tmp_win->icon_w = tmp_win->wmhints->icon_window;
+	icon->w = tmp_win->wmhints->icon_window;
 	if (tmp_win->forced ||
-	    XGetGeometry(dpy, tmp_win->icon_w, &JunkRoot, &JunkX, &JunkY,
-		     (unsigned int *)&tmp_win->icon_w_width, (unsigned int *)&tmp_win->icon_w_height,
+	    XGetGeometry(dpy, icon->w, &JunkRoot, &JunkX, &JunkY,
+		     (unsigned int *)&icon->w_width, (unsigned int *)&icon->w_height,
 		     &JunkBW, &JunkDepth) == 0)
 	{
-	    tmp_win->icon_w = None;
+	    icon->w = None;
 	    tmp_win->wmhints->flags &= ~IconWindowHint;
 	}
 	else
@@ -513,43 +695,63 @@ int def_x, def_y;
     }
     else
     {
-	tmp_win->icon_w = None;
+	icon->w = None;
     }
 
-    if (tmp_win->icon_w == None)
+    if (icon->w == None)
     {
-	tmp_win->icon_w = XCreateSimpleWindow(dpy, Scr->Root,
+	icon->w = XCreateSimpleWindow(dpy, Scr->Root,
 	    0,0,
-	    tmp_win->icon_w_width, tmp_win->icon_w_height,
-	    Scr->IconBorderWidth, tmp_win->icon_border, tmp_win->iconc.back);
+	    icon->w_width, icon->w_height,
+	    Scr->IconBorderWidth, icon->border, icon->iconc.back);
 	event_mask = ExposureMask;
     }
 
-    XSelectInput (dpy, tmp_win->icon_w,
+    XSelectInput (dpy, icon->w,
 		  KeyPressMask | ButtonPressMask | ButtonReleaseMask |
 		  event_mask);
 
-    tmp_win->icon_bm_w = None;
+    icon->bm_w = None;
     if (pm != None &&
 	(! (tmp_win->wmhints && tmp_win->wmhints->flags & IconWindowHint)))
     {
 	int y;
 
 	y = 0;
-	if (tmp_win->icon_w_width == tmp_win->icon_width)
+	if (icon->w_width == icon->width)
 	    x = 0;
 	else
-	    x = (tmp_win->icon_w_width - tmp_win->icon_width)/2;
+	    x = (icon->w_width - icon->width)/2;
 
-	tmp_win->icon_bm_w = XCreateWindow (dpy, tmp_win->icon_w, x, y,
-					    (unsigned int)tmp_win->icon_width,
-					    (unsigned int)tmp_win->icon_height,
+	icon->bm_w = XCreateWindow (dpy, icon->w, x, y,
+					    (unsigned int)icon->width,
+					    (unsigned int)icon->height,
 					    (unsigned int) 0, Scr->d_depth,
 					    (unsigned int) CopyFromParent,
 					    Scr->d_visual, valuemask,
 					    &attributes);
+#ifdef XPM
+	if ((xpmicon != None) && xpmicon->mask) {
+	    XRectangle rect;
+	    Pixmap     title;
+
+	    XShapeCombineMask(dpy, icon->w, ShapeBounding, x, y, xpmicon->mask, ShapeSet);
+	    if (hastitle) {
+		rect.x = 0;
+		rect.y = icon->height;
+		rect.width  = icon->w_width;
+		rect.height = Scr->IconFont.height + 6;
+		XShapeCombineRectangles (dpy,  icon->w, ShapeBounding,  0,
+					0, &rect, 1, ShapeUnion, 0);
+	    }
+	    XShapeCombineMask(dpy, icon->bm_w, ShapeBounding, 0, 0, xpmicon->mask, ShapeSet);
+	}
+#endif
     }
 
+    if (icon->match != match_none) AddToList(&tmp_win->iconslist, icon->pattern, (char *) icon);
+
+    tmp_win->icon = icon;
     /* I need to figure out where to put the icon window now, because 
      * getting here means that I am going to make the icon visible
      */
@@ -565,20 +767,28 @@ int def_x, def_y;
     }
 
     if (final_x > Scr->MyDisplayWidth)
-	final_x = Scr->MyDisplayWidth - tmp_win->icon_w_width -
+	final_x = Scr->MyDisplayWidth - icon->w_width -
 	    (2 * Scr->IconBorderWidth);
+    if (final_x < 0) final_x = 0;
 
     if (final_y > Scr->MyDisplayHeight)
-	final_y = Scr->MyDisplayHeight - tmp_win->icon_height -
-	    Scr->IconFont.height - 4 - (2 * Scr->IconBorderWidth);
+	final_y = Scr->MyDisplayHeight - icon->height -
+	    Scr->IconFont.height - 6 - (2 * Scr->IconBorderWidth);
+    if (final_y < 0) final_y = 0;
 
-    XMoveWindow(dpy, tmp_win->icon_w, final_x, final_y);
+    XMoveWindow(dpy, icon->w, final_x, final_y);
     tmp_win->iconified = TRUE;
 
-    XMapSubwindows(dpy, tmp_win->icon_w);
-    XSaveContext(dpy, tmp_win->icon_w, TwmContext, (caddr_t)tmp_win);
-    XSaveContext(dpy, tmp_win->icon_w, ScreenContext, (caddr_t)Scr);
-    XDefineCursor(dpy, tmp_win->icon_w, Scr->IconCursor);
-    if (pm) XFreePixmap (dpy, pm);
+    XMapSubwindows(dpy, icon->w);
+    XSaveContext(dpy, icon->w, TwmContext, (caddr_t)tmp_win);
+    XSaveContext(dpy, icon->w, ScreenContext, (caddr_t)Scr);
+    XDefineCursor(dpy, icon->w, Scr->IconCursor);
+
+#ifdef XPM
+    if ((icontype == XpmType) && (xpmicon == None) && (pm != None)) {
+	XFreePixmap (dpy, pm);
+    }
+#endif
+    if ((icontype == BitmapType) && (pm != None)) XFreePixmap (dpy, pm);
     return;
 }

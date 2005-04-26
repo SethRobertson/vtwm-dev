@@ -66,7 +66,7 @@ int iconifybox_height = siconify_height;
 
 void CreateIconManagers()
 {
-    IconMgr *p;
+    IconMgr *p, *q;
     int mask;
     char str[100];
     char str1[100];
@@ -82,7 +82,7 @@ void CreateIconManagers()
 	    (char *)siconify_bits, siconify_width, siconify_height, 1, 0, 1);
     }
 
-    for (p = &Scr->iconmgr; p != NULL; p = p->next)
+    for (p = Scr->iconmgr; p != NULL; p = p->next)
     {
 	mask = XParseGeometry(p->geometry, &JunkX, &JunkY,
 			      (unsigned int *) &p->width, (unsigned int *)&p->height);
@@ -95,9 +95,9 @@ void CreateIconManagers()
 	    JunkY = Scr->MyDisplayHeight - p->height -
 	      (2 * Scr->BorderWidth) + JunkY;
 
-	background = Scr->IconManagerC.back;
-	GetColorFromList(Scr->IconManagerBL, p->name, (XClassHint *)NULL,
-			 &background);
+	if (!GetColorFromList(Scr->IconManagerBL, p->name, (XClassHint *)NULL, &background)) {
+	    background = Scr->IconManagerC.back;
+	}
 
 	p->w = XCreateSimpleWindow(dpy, Scr->Root,
 	    JunkX, JunkY, p->width, p->height, 1,
@@ -115,7 +115,7 @@ void CreateIconManagers()
 	p->twm_win = AddWindow(p->w, TRUE, p);
 	SetMapStateProp (p->twm_win, WithdrawnState);
     }
-    for (p = &Scr->iconmgr; p != NULL; p = p->next)
+    for (p = Scr->iconmgr; p != NULL; p = p->next)
     {
 	GrabButtons(p->twm_win);
 	GrabKeys(p->twm_win);
@@ -167,12 +167,19 @@ IconMgr *AllocateIconManager(name, icon_name, geom, columns)
     p->y = 0;
     p->width = 150;
     p->height = 10;
-
-    Scr->iconmgr.lasti->next = p;
-    p->prev = Scr->iconmgr.lasti;
-    Scr->iconmgr.lasti = p;
     p->next = NULL;
+    p->prev = NULL;
+    p->nextv = NULL;
 
+    if (Scr->iconmgr == NULL) {
+	Scr->iconmgr = p;
+	Scr->iconmgr->lasti = p;
+    }
+    else {
+	Scr->iconmgr->lasti->next = p;
+	p->prev = Scr->iconmgr->lasti;
+	Scr->iconmgr->lasti = p;
+    }
     return(p);
 }
 
@@ -334,7 +341,7 @@ void JumpIconManager(dir)
 
 
 #define ITER(i) (dir == F_NEXTICONMGR ? (i)->next : (i)->prev)
-#define IPOFSP(sp) (dir == F_NEXTICONMGR ? &(sp->iconmgr) : sp->iconmgr.lasti)
+#define IPOFSP(sp) (dir == F_NEXTICONMGR ? sp->iconmgr : sp->iconmgr->lasti)
 #define TEST(ip) if ((ip)->count != 0 && (ip)->twm_win->mapped) \
 		 { got_it = TRUE; break; }
 
@@ -395,13 +402,11 @@ void JumpIconManager(dir)
 WList *AddIconManager(tmp_win)
     TwmWindow *tmp_win;
 {
-    WList *tmp;
+    WList *tmp, *old;
     int h;
     unsigned long valuemask;		/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
     IconMgr *ip;
-
-    tmp_win->list = NULL;
 
     if (tmp_win->iconmgr || tmp_win->transient || Scr->NoIconManagers)
 	return NULL;
@@ -413,7 +418,7 @@ WList *AddIconManager(tmp_win)
 	return NULL;
     if ((ip = (IconMgr *)LookInList(Scr->IconMgrs, tmp_win->full_name,
 	    &tmp_win->class)) == NULL)
-	ip = &Scr->iconmgr;
+	ip = Scr->iconmgr;
 
     tmp = (WList *) malloc(sizeof(WList));
     tmp->iconmgr = ip;
@@ -425,17 +430,20 @@ WList *AddIconManager(tmp_win)
 
     tmp->twm = tmp_win;
 
-    tmp->fore = Scr->IconManagerC.fore;
-    tmp->back = Scr->IconManagerC.back;
-    tmp->highlight = Scr->IconManagerHighlight;
+    if (!GetColorFromList(Scr->IconManagerFL, tmp_win->full_name, &tmp_win->class, &tmp->cp.fore)) {
+	tmp->cp.fore = Scr->IconManagerC.fore;
+    }
+    if (!GetColorFromList(Scr->IconManagerBL, tmp_win->full_name, &tmp_win->class, &tmp->cp.back)) {
+	tmp->cp.back = Scr->IconManagerC.back;
+    }
+    if (!GetColorFromList(Scr->IconManagerHighlightL, tmp_win->full_name, &tmp_win->class, &tmp->highlight)) {
+	tmp->highlight = Scr->IconManagerHighlight;
+    }
 
-    GetColorFromList(Scr->IconManagerFL, tmp_win->full_name, &tmp_win->class,
-	&tmp->fore);
-    GetColorFromList(Scr->IconManagerBL, tmp_win->full_name, &tmp_win->class,
-	&tmp->back);
-    GetColorFromList(Scr->IconManagerHighlightL, tmp_win->full_name,
-	&tmp_win->class, &tmp->highlight);
-
+    if (Scr->use3Diconmanagers) {
+	if (!Scr->BeNiceToColormap) GetShadeColors (&tmp->cp);
+	tmp->iconifypm = Create3DIconManagerIcon (tmp->cp);
+    }
     h = Scr->IconManagerFont.height + 10;
     if (h < (siconify_height + 4))
 	h = siconify_height + 4;
@@ -446,8 +454,8 @@ WList *AddIconManager(tmp_win)
     tmp->y = -1;
     
     valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
-    attributes.background_pixel = tmp->back;
-    attributes.border_pixel = tmp->back;
+    attributes.background_pixel = tmp->cp.back;
+    attributes.border_pixel = tmp->cp.back;
     attributes.event_mask = (KeyPressMask | ButtonPressMask |
 			     ButtonReleaseMask | ExposureMask |
 			     EnterWindowMask | LeaveWindowMask);
@@ -459,7 +467,7 @@ WList *AddIconManager(tmp_win)
 
 
     valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
-    attributes.background_pixel = tmp->back;
+    attributes.background_pixel = tmp->cp.back;
     attributes.border_pixel = Scr->Black;
     attributes.event_mask = (ButtonReleaseMask| ButtonPressMask |
 			     ExposureMask);
@@ -474,6 +482,7 @@ WList *AddIconManager(tmp_win)
 
     ip->count += 1;
     PackIconManager(ip);
+    if (windowmask) XRaiseWindow (dpy, windowmask);
     XMapWindow(dpy, tmp->w);
 
     XSaveContext(dpy, tmp->w, IconManagerContext, (caddr_t) tmp);
@@ -483,10 +492,13 @@ WList *AddIconManager(tmp_win)
     XSaveContext(dpy, tmp->icon, ScreenContext, (caddr_t) Scr);
     tmp_win->list = tmp;
 
-    if (!ip->twm_win->icon)
+    if (! Scr->ShowIconManager) {
+	ip->twm_win->mapped = FALSE;
+	ip->twm_win->isicon = TRUE;
+    }
+    if (!ip->twm_win->isicon)
     {
-	XMapWindow(dpy, ip->w);
-	XMapWindow(dpy, ip->twm_win->frame);
+	MapFrame(ip->twm_win);
     }
 
     return (tmp);
@@ -606,7 +618,6 @@ void RemoveIconManager(tmp_win)
     {
 	XUnmapWindow(dpy, ip->twm_win->frame);
     }
-
 }
 
 void ActiveIconManager(active)
@@ -615,33 +626,42 @@ void ActiveIconManager(active)
     active->active = TRUE;
     Active = active;
     Active->iconmgr->active = active;
-    DrawIconManagerBorder(active);
+    DrawIconManagerBorder(active, False);
 }
 
 void NotActiveIconManager(active)
     WList *active;
 {
     active->active = FALSE;
-    DrawIconManagerBorder(active);
+    DrawIconManagerBorder(active, False);
 }
 
-void DrawIconManagerBorder(tmp)
+void DrawIconManagerBorder(tmp, fill)
     WList *tmp;
+    int fill;
 {
-    {
-	XSetForeground(dpy, Scr->NormalGC, tmp->fore);
-	    XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 2, 2,
-		tmp->width-5, tmp->height-5);
+    if (Scr->use3Diconmanagers) {
+	int shadow_width;
+
+	shadow_width = 2;
+	if (tmp->active && Scr->Highlight)
+	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
+				tmp->cp, on, fill, False);
+	else
+	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
+				tmp->cp, off, fill, False);
+    }
+    else {
+	XSetForeground(dpy, Scr->NormalGC, tmp->cp.fore);
+	XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 2, 2, tmp->width-5, tmp->height-5);
 
 	if (tmp->active && Scr->Highlight)
 	    XSetForeground(dpy, Scr->NormalGC, tmp->highlight);
 	else
-	    XSetForeground(dpy, Scr->NormalGC, tmp->back);
+	    XSetForeground(dpy, Scr->NormalGC, tmp->cp.back);
 
-	XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 0, 0,
-	    tmp->width-1, tmp->height-1);
-	XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 1, 1,
-	    tmp->width-3, tmp->height-3);
+        XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 0, 0, tmp->width-1, tmp->height-1);
+        XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 1, 1, tmp->width-3, tmp->height-3);
     }
 }
 

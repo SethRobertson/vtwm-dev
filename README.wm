@@ -1,0 +1,97 @@
+What's in a window manager?
+===========================
+					Last updated: njw on 1 Sep, 1993.
+
+
+There are several window managers available nowadays and it has become
+pure personal preference for the "look & feel" of a window manager as
+to which one you should use.  Here is a summary of the available
+window managers with their features.
+
+Twm and its derivatives:
+------------------------
+
+* twm:
+	This is the vanilla flavour. Providing no especially fancy
+	features, with rather a plain, but distinctive look&feel.
+	Written	originally by Tom LaStrange, later hacked by everyone.
+	Current version: 5.0 (sync'd with the X11 release number).
+	Availability:  X11 contrib tape
+
+* vtwm:
+	The virtual version of twm.  This adds a "virtual desktop"
+	concept to twm, allowing the user to place windows anywhere on
+	the desktop and then viewing only part of the desktop.  The
+	desktop is implemented by keeping note of the virtual
+	coordinates of all the windows and moving/mapping/unmapping
+	windows as the viewing position changes.  The root window of
+	the display is unaffected by vtwm.  Originally carved into
+	shape by Dave Edmondson and later hacked by everyone who didn't
+	play with the original twm. Also features 3D appearance and
+	color XPM icons, courtesy of Claude Lecommandeur (ctwm author).
+	Current version: 5.2 (major number sync'd with the X11 release)
+	Availability:  X11 contrib ftp-site
+
+* tvtwm:
+	Another version of twm with a virtual desktop, done by
+	Tom LaStrange.  This version is implemented by creating an
+	X window which is the desktop and then just moving the viewing 
+	position of the window.  This means that compared to vtwm:
+
+		- the root window is obscured by the desktop window
+		  and so programs which attempt to modify the root
+		  window need to be modified to look at the desktop
+		  window instead.
+
+		- the communication between twm and the Xserver is
+		  less as twm only needs to move the desktop window
+		  and the server can figure out the rest. Also makes 
+		  it faster.
+	Current version: Revision 10.0
+	Availability:  X11 contrib ftp-site
+
+* ctwm:
+	This adds rooms to twm, categorised by occupation.  Windows
+	can switch rooms when they change their occupation, or be in
+	multiple rooms simultaneously.  Comes with a programming
+	library to communicate with the window manager about occupations
+	and rooms...
+	Also features 3D appearance and allows color XPM icons.
+	Current version: 3.0
+	Availability:  X11 contrib ftp-site
+
+* piewm:
+	This provides circular menus onto vanilla twm, which are
+	supposedly easier to use.
+	Availability:  X11 contrib ftp-site
+
+
+Other window managers
+---------------------
+
+* olvwm:
+	The Open Look Virtual Window Manager. Phew. Title says it all
+	really.
+	Current version: 3 + patchlevel 3
+	Availability:  X11 contrib ftp-site
+	
+* gwm:
+	The generic window manager.  This is the emacs of the window
+	managers. Yes, it's a lisp interpreter. Very very customisable 
+	but a bit slow. Can be made to look like twm or mwm easily.
+	Why you'd want to...
+	Current version: 1.7o-beta3 (ick!)
+	Availability:  X11 contrib ftp-site
+
+* swm:
+	The solbourne window manager, written by Tom LaStrange. 
+	This is proprietry to Solbourne.  It has a virtual desktop 
+	facility; tvtwm and swm share many features.
+
+* mwm:
+	The motif window manager.  Very distinctive look and feel.
+	Considered clunky and slow by some.  Some feel it looks flash.
+	Oh well.  The configuration of mwm is done largely by X
+	resources, which is quite nice. maybe.
+	Availability: Comes with motif.
+
