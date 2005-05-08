@@ -131,9 +131,23 @@ extern void TwmOutput();
 #define F_WARPCLASSPREV		113 /* string -- PF */
 #define F_WARPTONEWEST		114	/* string -- PF */
 
+/* djhjr - 4/30/96 */
+#define F_SEPARATOR		115
+
 #define D_NORTH			1
 #define D_SOUTH			2
 #define D_EAST			3
 #define D_WEST			4
+
+/* djhjr - 5/15/96 */
+#define R_NORTH			1
+#define R_NORTHEAST		2
+#define R_EAST			3
+#define R_SOUTHEAST		4
+#define R_SOUTH			5
+#define R_SOUTHWEST		6
+#define R_WEST			7
+#define R_NORTHWEST		8
+#define R_CENTERED		9
 
 #endif /* _PARSE_ */

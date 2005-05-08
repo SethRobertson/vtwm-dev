@@ -268,7 +268,7 @@ main(argc, argv)
 	else
 	{
 		XSetWindowBackground(dpy, win, NameToPixel( solid_color,
-		    0 ));
+		    0L ));
 	}
 
 	XClearWindow(dpy, win);

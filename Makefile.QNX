@@ -1,0 +1,133 @@
+
+#
+# Here is a makefile for vtwm.  It depends on having TWMDIR defined.
+#
+# It's a hand-tweaked version of the makefile made with xmkmf,
+# it may prove useful as a template for those who don't have xmkmf.
+#
+# This makefile guarantees that the build info is absolutely current
+#
+# djhjr
+#
+
+# To omit platform and build info on the Version window
+# #define NO_BUILD_INFO
+
+# #define DEBUG
+
+MV = mv
+CP = cp
+RM = rm -f
+AR = wlib -b -c -p=128
+CC = cc
+LEX =                  lex
+YACC = yacc
+
+YFLAGS = -d
+
+LIBDIR = 	/usr/lib/X11
+USRLIBDIR = /usr/lib/X11
+
+TWMDIR = $(LIBDIR)/twm
+
+DEPXMULIB = $(USRLIBDIR)/Xmu3r.lib
+DEPXTOOLLIB =
+DEPEXTENSIONLIB = $(USRLIBDIR)/Xext3r.lib
+DEPXLIB = $(DEPEXTENSIONLIB) $(USRLIBDIR)/X11_s3r.lib
+DEPLIBS = $(DEPXMULIB) $(DEPXTOOLLIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
+
+XMULIB = 			 -lXmu
+XTOOLLIB =
+EXTENSIONLIB = 			 -lXext
+XLIB = $(EXTENSIONLIB) 			 -lX11_s
+
+LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB) $(XLIB)
+EXTRA_LIBRARIES = -lXqnx -lsocket
+LDLIBS = $(LOCAL_LIBRARIES) $(EXTRA_LIBRARIES)
+
+DEBUG_DEFS =
+STD_DEFINES = -D__QNX__ -DMetroLink -DSTRINGS_ALIGNED -DNO_REGEX -DBOGUS_MB_MAX
+EXTRA_DEFINES =
+PROTO_DEFINES =
+DEFINES = $(DEBUG_DEFS)
+
+INCLUDES =
+EXTRA_INCLUDES = 
+STD_INCLUDES =
+
+ALLINCLUDES = $(INCLUDES) $(EXTRA_INCLUDES) $(STD_INCLUDES)
+ALLDEFINES = $(ALLINCLUDES) $(STD_DEFINES) $(EXTRA_DEFINES) $(PROTO_DEFINES) $(DEFINES)
+
+CDEBUGFLAGS =
+CCOPTIONS = -Otx -zp1 -mf -b -j -Wc,-s -N32k
+CFLAGS = $(CDEBUGFLAGS) $(CCOPTIONS) $(ALLDEFINES) -L$(USRLIBDIR)
+
+SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c twm.c \
+ 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
+ 		cursor.c icons.c desktop.c doors.c lastmake.c
+
+OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o twm.o \
+ 		parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
+ 		cursor.o icons.o desktop.o doors.o lastmake.o
+
+all: vtwm
+
+parse.o: parse.c
+	$(RM) $@
+	$(CC) -c $(CFLAGS) '-DSYSTEM_INIT_FILE="'$(DESTDIR)$(TWMDIR)'/system.vtwmrc"' parse.c
+
+util.o: util.c
+	$(RM) $@
+	$(CC) -c $(CFLAGS) -DNOPUTENV util.c
+
+depend: lex.c gram.c deftwmrc.c lastmake.c
+
+PROGRAM = vtwm
+
+all: vtwm
+
+vtwm: $(OBJS) $(DEPLIBS) version.c
+	$(RM) $@
+	$(CC) -o $@ $(OBJS) $(CFLAGS) $(LDLIBS)
+	$(RM) lastmake.*
+
+lex.o: gram.h
+
+gram.h: gram.c
+	$(MV) y.tab.h gram.h
+
+gram.c: gram.y
+	$(YACC) $(YFLAGS) gram.y
+	$(MV) y.tab.c gram.c
+
+clean:
+	$(RM) $(PROGRAM) *.o *.b *.err y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c lastmake.c
+
+deftwmrc.o: deftwmrc.c
+	$(CC) -c $(CFLAGS) '-DSYSTEM_INIT_FILE="'$(DESTDIR)$(TWMDIR)'/system.vtwmrc"' deftwmrc.c
+
+deftwmrc.c:  system.vtwmrc
+	$(RM) $@
+	echo '/* ' >>$@
+	echo ' * This file is generated automatically from the default' >>$@
+	echo ' * vtwm bindings file system.vtwmrc by the vtwm Imakefile.' >>$@
+	echo ' */' >>$@
+	echo '' >>$@
+	echo 'char *defTwmrc[] = {' >>deftwmrc.c
+	sed -e '/^#/d' -e 's/"/\\"/g' -e 's/^/    "/' -e 's/$$/",/' 		system.vtwmrc >>$@
+	echo '    (char *) 0 };' >>$@
+
+lastmake.o: lastmake.c
+	$(CC) -c $(CFLAGS) lastmake.c
+
+lastmake.c:
+	$(RM) $@
+	echo '/* ' >>$@
+	echo ' * This file is generated automatically by the vtwm Imakefile.' >>$@
+	echo ' */' >>$@
+	echo '' >>$@
+	echo 'char *lastmake[] = {' >>lastmake.c
+	echo '\t"Platform:  '`uname -s`' Version '`uname -v`' Release '`uname -r`'",' >>$@
+	echo '\t"Build:  '`date`'",' >>$@
+	echo '};\n' >>$@
+

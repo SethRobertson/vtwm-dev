@@ -1,0 +1,66 @@
+Collection Name:        vtwm
+Source From:            http://www.PLiG.org/xwinman/
+Download Date:		1997-12-08
+
+Virtual TWM (a window manager based on TWM).
+
+---
+Compiled On:		storm.cise.ufl.edu	(sun4-sol2.5)
+	 By:		sbeck
+       Date:		1997-12-08
+
+export DEPOT=`pwd`
+export DEPOT=/depot/collections1/`basename $DEPOT`
+
+menus.c:
+        Moved PaintEntry function below PaintNormalEntry.
+
+xmkmf
+make
+
+mkdir -p $DEPOT
+mkdir -p /var/tmp/zzz/usr
+ln -s $DEPOT /var/tmp/zzz/usr/local
+make DESTDIR=/var/tmp/zzz install
+make DESTDIR=/var/tmp/zzz install.man
+strip $DEPOT/bin/*
+rm -r /var/tmp/zzz
+
+mkdir -p $DEPOT/doc/vtwm
+cp -r [1-4]* vtwmrc $DEPOT/doc/vtwm
+
+---
+Compiled On:		tick.cise.ufl.edu	(sun4-sol2.6)
+	 By:		sbeck
+       Date:		1997-12-08
+
+export DEPOT=`pwd`
+export DEPOT=/depot/c0/`basename $DEPOT`
+
+Similar to above.
+
+---
+Compiled On:		hail.cise.ufl.edu	(sgi-irix6.2)
+	 By:		sbeck
+       Date:		1997-12-08
+
+export DEPOT=`pwd`
+export DEPOT=/depot/collections0/`basename $DEPOT`
+
+xmkmf
+make
+
+mkdir -p $DEPOT
+mkdir -p /var/tmp/zzz
+ln -s $DEPOT /var/tmp/zzz/usr
+make DESTDIR=/var/tmp/zzz install
+mv $DEPOT/bin/X11/* $DEPOT/bin
+rmdir $DEPOT/bin/X11
+strip $DEPOT/bin/*
+rm -r /var/tmp/zzz
+
+mkdir -p $DEPOT/man/man1
+cp vtwm.man $DEPOT/man/man1/vtwm.1
+
+Similar to above.
+

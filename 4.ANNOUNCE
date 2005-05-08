@@ -1,0 +1,44 @@
+
+
+This is the announcement of VTWM Version 5.4, the first upgrade (by all
+accounts contained herein) in over two years. I'm un-officially bumping the
+minor number because VTWM-5.3 is the latest I've seen in distribution, and
+this is a significant change, both in end-user impression and in code.
+
+This all started because I wanted an esthetically pleasing alternative to
+the Motif window manager, a good workout, and leaner system requirements.
+Enhanced and extended functionality is way cool.
+
+It has taken me about one hobby-month to apply a 3D appearance to VTWM-5.3.
+I did it by borrowing (stealing?) code from CTWM-3.1 and plugging it in.
+I also added 3D borders to the size, position(!), and info windows. Then I
+wanted variable info window fonts. Then resize/position window locations.
+And a bunch of other tweaks.
+
+I have read that VTWM-5.2b has some or all of these enhancements, but I
+could not find a package to evaluate (I tried with Xarchie using around 15
+different hosts). CTWM-3.1 is pretty, lean, and fast, but I don't like it's
+virtual desktop implementation. I found, made, and tried a version of FVWM,
+but it didn't port right (or was way buggy), and I didn't/don't think I
+could have overcome that/those bug/s before becoming thoroughly frustrated.
+
+This is not bug-free code. I "inherited" two documented flaws, and others
+may exist. By fixing one, I seem to have introduced another, but it is
+easily worked around.
+
+I do not want to be the maintainer of VTWM. I don't even think of myself as
+an "X programmer", though I like it, and *I*am*learning*. I will entertain
+comments, bug reports, etc., especially to my work, and will try to respond
+in kind. I am not planning on further effort, as it now fills my needs.
+
+D. J. Hawkey Jr. (hawkeyd@visi.com)
+May 15, 1996
+
+
+
+It looks like, for the time being anyway, due to incoming mail, I am the
+maintainer of VTWM.
+
+D. J. Hawkey Jr. (hawkeyd@visi.com)
+November 17, 1997
+

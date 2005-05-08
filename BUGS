@@ -1,12 +1,44 @@
+
 A LISTING OF BUGS
 =================
 
   * Windows don't resize correctly when resize is called from a menu; you
     have to use a keybinding to resize it, i.e., 
-    `Button2 = m : window|frame : resize' --- DSE
+    'Button2 = m : window|frame : resize' --- DSE
 
   * Behavior of transients on the virtual desktop, when the real screen is
     not at (0,0), is almost unpredictable.  Hence the
-    FixTransientVirtualGeometries variable, new to 5.3, which is not
+    'FixTransientVirtualGeometries' variable, new to 5.3, which is not
     guaranteed to work in every case. --- DSE
+
+  * Move and resize from a menu not belonging to the window in question
+    don't behave the same; This may be just a clarification of DSE's
+    first bug. --- djhjr
+
+  * Windows won't move correctly when move is called from a menu in the
+    Icon Manager; This may also be a clarification of DSE's first bug.
+    --- djhjr
+
+  * The behavior of moving the Virtual Desktop window will be less than
+    perfect if its dimensions as specified do not work out to exact whole
+    numbers. --- djhjr
+
+  * Icon borders will not do 3D, and I don't want to to mess with it.
+    The icons are 3D when UseThreeDIconManagers is set, however, and look
+    good with IconBorderWidth set to 0. --- djhjr
+
+  * The code to vertically center a Door name in the window is correct.
+    It just won't always show it, due to the window and font heights.
+    Play with the Door geometry. --- djhjr
+
+  * Sometimes the window manager doesn't accept the next button click
+    after using a non-root menu. I don't think I did this... --- djhjr
+
+  * Haven't figured out how to properly draw the top frame segment when
+    3D borders are used with squeezed titles; look for the define
+    'WHEN_I_FIGURE_OUT_WHY_THIS_BORDER_DOESNT_APPEAR' in resize.c and
+    util.c if you want a crack at it. --- djhjr
+
+  * Something is corrupting titlebutton names. Or TBWindow structures
+    aren't properly freed. --- djhjr
 

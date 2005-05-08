@@ -35,19 +35,18 @@
  *
  * 11-Apr-88 Tom LaStrange        Initial Version.
  *
+ * Do the necessary modification to be integrated in ctwm.
+ * Can no longer be used for the standard twm.
+ *
+ * 22-April-92 Claude Lecommandeur.
+ *
+ *
  **********************************************************************/
 
 #include <stdio.h>
 #include "twm.h"
 #include "screen.h"
 #include "gram.h"
-
-struct name_list_struct
-{
-    name_list *next;		/* pointer to the next name */
-    char *name;			/* the name of the window */
-    char *ptr;			/* list dependent data */
-};
 
 /***********************************************************************
  *
@@ -67,6 +66,9 @@ struct name_list_struct
  *
  ***********************************************************************
  */
+
+int match ();
+int is_pattern ();
 
 void
 AddToList(list_head, name, ptr)
@@ -88,7 +90,7 @@ char *ptr;
     }
 
     nptr->next = *list_head;
-    nptr->name = name;
+    nptr->name = (char*) strdup (name);
     nptr->ptr = (ptr == NULL) ? (char *)TRUE : ptr;
     *list_head = nptr;
 }    
@@ -120,19 +122,19 @@ XClassHint *class;
 
     /* look for the name first */
     for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	if (strcmp(name, nptr->name) == 0)
+	if (match (nptr->name, name))
 	    return (nptr->ptr);
 
     if (class)
     {
 	/* look for the res_name next */
 	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	    if (strcmp(class->res_name, nptr->name) == 0)
+	    if (match (nptr->name, class->res_name))
 		return (nptr->ptr);
 
 	/* finally look for the res_class */
 	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	    if (strcmp(class->res_class, nptr->name) == 0)
+	    if (match (nptr->name, class->res_class))
 		return (nptr->ptr);
     }
     return (NULL);
@@ -144,6 +146,39 @@ name_list *list_head;
 char *name;
 {
     return (LookInList(list_head, name, NULL));
+}
+
+char *
+LookPatternInList(list_head, name, class)
+name_list *list_head;
+char *name;
+XClassHint *class;
+{
+    name_list *nptr;
+
+    for (nptr = list_head; nptr != NULL; nptr = nptr->next)
+	if (match (nptr->name, name))
+	    return (nptr->name);
+
+    if (class)
+    {
+	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
+	    if (match (nptr->name, class->res_name))
+		return (nptr->name);
+
+	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
+	    if (match (nptr->name, class->res_class))
+		return (nptr->name);
+    }
+    return (NULL);
+}
+
+char *
+LookPatternInNameList (list_head, name)
+name_list *list_head;
+char *name;
+{
+    return (LookPatternInList(list_head, name, NULL));
 }
 
 /***********************************************************************
@@ -176,7 +211,7 @@ Pixel *ptr;
     name_list *nptr;
 
     for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	if (strcmp(name, nptr->name) == 0)
+	if (match (nptr->name, name))
 	{
 	    save = Scr->FirstTime;
 	    Scr->FirstTime = TRUE;
@@ -188,7 +223,7 @@ Pixel *ptr;
     if (class)
     {
 	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	    if (strcmp(class->res_name, nptr->name) == 0)
+	    if (match (nptr->name, class->res_name))
 	    {
 		save = Scr->FirstTime;
 		Scr->FirstTime = TRUE;
@@ -198,7 +233,7 @@ Pixel *ptr;
 	    }
 
 	for (nptr = list_head; nptr != NULL; nptr = nptr->next)
-	    if (strcmp(class->res_class, nptr->name) == 0)
+	    if (match (nptr->name, class->res_class))
 	    {
 		save = Scr->FirstTime;
 		Scr->FirstTime = TRUE;
@@ -231,4 +266,128 @@ name_list **list;
 	nptr = tmp;
     }
     *list = NULL;
+}
+
+int regex_match_after_star ();
+
+int is_pattern (p)
+char *p;
+{
+    while ( *p ) {
+	switch ( *p++ ) {
+	    case '?':
+	    case '*':
+	    case '[':
+		return TRUE;
+	    case '\\':
+		if ( !*p++ ) return FALSE;
+	}
+    }
+    return FALSE;
+}
+
+#define ABORT 2
+
+int regex_match (p, t)
+char *p, *t;
+{
+    register char range_start, range_end;
+    int invert;
+    int member_match;
+    int loop;
+
+    for ( ; *p; p++, t++ ) {
+	if (!*t)  return ( *p == '*' && *++p == '\0' ) ? TRUE : ABORT;
+	switch ( *p ) {
+	    case '?':
+		break;
+	    case '*':
+		return regex_match_after_star (p, t);
+	    case '[': {
+		p++;
+		invert = FALSE;
+		if ( *p == '!' || *p == '^') {
+		    invert = TRUE;
+		    p++;
+		}
+		if ( *p == ']' ) return ABORT;
+		member_match = FALSE;
+		loop = TRUE;
+		while ( loop ) {
+		    if (*p == ']') {
+			loop = FALSE;
+			continue;
+		    }
+		    if (*p == '\\') range_start = range_end = *++p;
+		    else range_start = range_end = *p;
+		    if (!range_start) return ABORT;
+		    if (*++p == '-') {
+			range_end = *++p;
+			if (range_end == '\0' || range_end == ']') return ABORT;
+			if (range_end == '\\') range_end = *++p;
+			p++;
+		    }
+		    if ( range_start < range_end  ) {
+			if (*t >= range_start && *t <= range_end) {
+			    member_match = TRUE;
+			    loop = FALSE;
+			}
+		    }
+		    else {
+			if (*t >= range_end && *t <= range_start) {
+			    member_match = TRUE;
+			    loop = FALSE;
+			}
+		    }
+		}
+		if ((invert && member_match) || !(invert || member_match)) return (FALSE);
+		if (member_match) {
+		    while (*p != ']') {
+			if (!*p) return (ABORT);
+			if (*p == '\\')  p++;
+			p++;
+		    }
+		}
+		break;
+	    }
+	    case '\\':
+		p++;
+
+	    default:
+		if (*p != *t) return (FALSE);
+	}
+    }
+    return (!*t);
+}
+
+int regex_match_after_star (p, t)
+char *p, *t;
+{
+    register int match;
+    register nextp;
+
+    while ((*p == '?') || (*p == '*')) {
+	if (*p == '?') {
+	    if ( !*t++ ) return ABORT;
+	}
+	p++;
+    }
+    if ( !*p ) return TRUE;
+
+    nextp = *p;
+    if (nextp == '\\') nextp = p[1];
+
+    match = FALSE;
+    while (match == FALSE) {
+	if ( nextp == *t || nextp == '[' ) match = regex_match(p, t);
+	if ( !*t++ ) match = ABORT;
+    }
+    return (match);
+}
+
+int match (p, t)
+char *p, *t;
+{
+    if ((p == NULL) || (t == NULL)) return (FALSE);
+    return ((regex_match (p,t) == TRUE) ? TRUE : FALSE);
 }

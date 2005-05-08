@@ -43,6 +43,10 @@ extern char *ProgramName;
 
 extern int ParseError;
 
+#ifdef FLEX_SCANNER
+#undef	YY_INPUT
+#define YY_INPUT(b,r,s)		r = ((b[0] = (*twmInputFunc)()) != 0)
+#endif
 %}
 
 string				\"([^"]|\\.)*\"
@@ -87,13 +91,15 @@ number				[0-9]+
 				  ParseError = 1;
 				}
 %%
+#ifndef FLEX_SCANNER
 yywrap() { return(1);}
 
-#undef unput
 #undef input
-#undef output
 #undef feof
-#define unput(c)	twmUnput(c)
-#define input()		(*twmInputFunc)()
-#define output(c)	TwmOutput(c)
 #define feof()		(1)
+#define input()		(*twmInputFunc)()
+#endif
+#undef output
+#define output(c)	TwmOutput(c)
+#undef unput
+#define unput(c)	twmUnput(c)

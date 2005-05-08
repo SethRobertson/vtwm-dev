@@ -8,7 +8,7 @@ vtwm 5.3 is available now via anonymous ftp at:
 A SUMMARY OF CHANGES FROM VTWM-5.2.2 TO VTWM-5.3
 ================================================
     
-    The file `ChangeLog' in the vtwm-5.3 archive contains more detailed info
+    The file `CHANGELOG' in the vtwm-5.3 archive contains more detailed info
     concerning changes made since version 5.0.
 
     New Variables:

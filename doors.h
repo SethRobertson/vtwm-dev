@@ -23,7 +23,10 @@
 #include "twm.h"
 
 /* the class of twm doors */
+/* djhjr - 4/27/96
 #define TWM_DOOR_CLASS "Twm Door"
+*/
+#define TWM_DOOR_CLASS "VTWM Door"
 
 /*
  * the door structure

@@ -42,18 +42,19 @@ char *name, *position, *destination;
 {
 	int px, py, pw, ph, dx, dy;
 
+	/* djhjr - 4/26/96 */
+	int	bw = (Scr->use3Dborders) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
+
 	JunkMask = XParseGeometry (position, &JunkX, &JunkY,
 				   &JunkWidth, &JunkHeight);
 
 	/* we have some checking for negative (x,y) to do 
 	   sorta taken from desktop.c by DSE */
 	if ((JunkMask & XNegative) == XNegative) {
-		JunkX += Scr->MyDisplayWidth - JunkWidth -
-			(2 * Scr->BorderWidth);
+		JunkX += Scr->MyDisplayWidth - JunkWidth - (2 * bw);
 		}
 	if ((JunkMask & YNegative) == YNegative) {
-		JunkY += Scr->MyDisplayHeight - JunkHeight -
-			(2 * Scr->BorderWidth);
+		JunkY += Scr->MyDisplayHeight - JunkHeight - (2 * bw);
 		}
 
 	if ((JunkMask & (XValue | YValue)) !=
@@ -141,6 +142,9 @@ TwmDoor *tmp_door;
 {
 	Window w;
 
+	/* djhjr - 4/26/96 */
+	int	bw = (Scr->use3Dborders) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
+
 	/* look up colours */
 	if (!GetColorFromList(Scr->DoorForegroundL,
 			      tmp_door->name,
@@ -163,7 +167,7 @@ TwmDoor *tmp_door;
 	w = XCreateSimpleWindow(dpy, Scr->Root,
 				tmp_door->x, tmp_door->y,
 				tmp_door->width, tmp_door->height,
-				Scr->BorderWidth,
+				bw,
 				tmp_door->colors.fore,
 				tmp_door->colors.back);
 	tmp_door->w = XCreateSimpleWindow(dpy, w,

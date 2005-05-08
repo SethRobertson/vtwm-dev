@@ -62,6 +62,9 @@ int MoveFunction;			/* either F_MOVE or F_FORCEMOVE */
 int WindowMoved = FALSE;
 int menuFromFrameOrWindowOrTitlebar = FALSE;
 
+/* djhjr - 4/27/96 */
+void DisplayPosition ();
+
 int ConstMove = FALSE;		/* constrained move variables */
 int ConstMoveDir;
 int ConstMoveX;
@@ -85,6 +88,9 @@ static Cursor LastCursor;
 
 void WarpAlongRing(), WarpToWindow();
 
+/* djhjr - 4/18/96 */
+void Paint3DEntry();
+
 extern char *Action;
 extern int Context;
 extern TwmWindow *ButtonWindow, *Tmp_win;
@@ -98,6 +104,7 @@ static void Identify();
 #define SHADOWWIDTH 5			/* in pixels */
 
 #define EDGE_OFFSET 5 /* DSE */
+
 #define PULLDOWNMENU_OFFSET ((Scr->RightHandSidePulldownMenus)?\
 	(ActiveMenu->width - EDGE_OFFSET * 2 - Scr->pullW):\
 	(ActiveMenu->width >> 1)) /* DSE */
@@ -140,7 +147,6 @@ InitMenus()
 	}
 	Scr->FuncKeyRoot.next = NULL;
     }
-
 }
 
 
@@ -219,6 +225,7 @@ int CreateTitleButton (name, func, action, menuroot, rightside, append)
     Bool rightside;
     Bool append;
 {
+	int i;
     TitleButton *tb = (TitleButton *) malloc (sizeof(TitleButton));
 
     if (!tb) {
@@ -230,7 +237,11 @@ int CreateTitleButton (name, func, action, menuroot, rightside, append)
 
     tb->next = NULL;
     tb->name = name;			/* note that we are not copying */
-    tb->bitmap = None;			/* WARNING, values not set yet */
+
+	/* djhjr - 4/19/96 */
+	tb->image = NULL;
+
+/*    tb->bitmap = None;*/			/* WARNING, values not set yet */
     tb->width = 0;			/* see InitTitlebarButtons */
     tb->height = 0;			/* ditto */
     tb->func = func;
@@ -254,27 +265,28 @@ int CreateTitleButton (name, func, action, menuroot, rightside, append)
      * (since fonts not loaded and heights not known).
      */
     if ((!Scr->TBInfo.head) || ((!append) && (!rightside))) {	/* 1 */
-	tb->next = Scr->TBInfo.head;
-	Scr->TBInfo.head = tb;
+		tb->next = Scr->TBInfo.head;
+		Scr->TBInfo.head = tb;
     } else if (append && rightside) {	/* 3 */
-	register TitleButton *t;
-	for /* SUPPRESS 530 */
-	  (t = Scr->TBInfo.head; t->next; t = t->next);
-	t->next = tb;
-	tb->next = NULL;
-    } else {				/* 2 */
-	register TitleButton *t, *prev = NULL;
-	for (t = Scr->TBInfo.head; t && !t->rightside; t = t->next) {
-	    prev = t;
-	}
-	if (prev) {
-	    tb->next = prev->next;
-	    prev->next = tb;
-	} else {
-	    tb->next = Scr->TBInfo.head;
-	    Scr->TBInfo.head = tb;
-	}
-    }
+		register TitleButton *t;
+
+		for (t = Scr->TBInfo.head; t->next; t = t->next)
+			; /* SUPPRESS 530 */
+		t->next = tb;
+		tb->next = NULL;
+   	} else {				/* 2 */
+		register TitleButton *t, *prev = NULL;
+
+		for (t = Scr->TBInfo.head; t && !t->rightside; t = t->next)
+    		prev = t;
+		if (prev) {
+    		tb->next = prev->next;
+    		prev->next = tb;
+		} else {
+		    tb->next = Scr->TBInfo.head;
+		    Scr->TBInfo.head = tb;
+		}
+   	}
 
     return 1;
 }
@@ -297,9 +309,18 @@ void InitTitlebarButtons ()
      */
     Scr->TBInfo.width = (Scr->TitleHeight -
 			 2 * (Scr->FramePadding + Scr->ButtonIndent));
+
+	/* djhjr - 4/19/96 */
+    if (Scr->use3Dtitles) 
+	Scr->TBInfo.pad = ((Scr->TitlePadding > 1)
+		       ? ((Scr->TitlePadding + 1) / 2) : 0);
+    else
+
     Scr->TBInfo.pad = ((Scr->TitlePadding > 1)
 		       ? ((Scr->TitlePadding + 1) / 2) : 1);
+
     h = Scr->TBInfo.width - 2 * Scr->TBInfo.border;
+
 
     /*
      * add in some useful buttons and bindings so that novices can still
@@ -309,16 +330,25 @@ void InitTitlebarButtons ()
     if (!Scr->NoDefaultTitleButtons) /* DSE */
     	{
 		/* insert extra buttons */
+
+	/* djhjr - 4/19/96 */
+	if (Scr->use3Dtitles) {
+	    if (!CreateTitleButton (TBPM_3DDOT, F_ICONIFY, "", (MenuRoot *) NULL,
+				False, False))
+	        fprintf (stderr, "%s:  unable to add iconify button\n", ProgramName);
+	    if (!CreateTitleButton (TBPM_3DRESIZE, F_RESIZE, "", (MenuRoot *) NULL,
+				True, True))
+	        fprintf (stderr, "%s:  unable to add resize button\n", ProgramName);
+	}
+	else {
+
 		if (!CreateTitleButton (TBPM_ICONIFY, F_ICONIFY, "", (MenuRoot *) NULL,
 				False, False))
-			{
 			fprintf(stderr,"%s:  unable to add iconify button\n",ProgramName);
-			}
 		if (!CreateTitleButton (TBPM_RESIZE, F_RESIZE, "", (MenuRoot *) NULL,
 				True, True))
-			{
 			fprintf(stderr,"%s:  unable to add resize button\n",ProgramName);
-			}
+	}
 		}
 	if (!Scr->NoDefaultMouseOrKeyboardBindings) /* DSE */
 		{
@@ -327,23 +357,37 @@ void InitTitlebarButtons ()
 
     ComputeCommonTitleOffsets ();
 
-    /*
-     * load in images and do appropriate centering
-     */
+/* djhjr - 9/14/96 - moved to CreateWindowTitlebarButtons()...
+    *
+    * load in images and do appropriate centering
+    *
 
     for (tb = Scr->TBInfo.head; tb; tb = tb->next) {
+
+* djhjr - 4/19/96
 	tb->bitmap = FindBitmap (tb->name, &tb->width, &tb->height);
 	if (!tb->bitmap) {
 	    tb->bitmap = FindBitmap (TBPM_QUESTION, &tb->width, &tb->height);
-	    if (!tb->bitmap) {		/* cannot happen (see util.c) */
+	    if (!tb->bitmap) {		* cannot happen (see util.c) *
 		fprintf (stderr,
 			 "%s:  unable to add titlebar button \"%s\"\n",
 			 ProgramName, tb->name);
 	    }
 	}
+*
+	tb->image = GetImage (tb->name, Scr->TitleC);
+	if (!tb->image) {
+	    tb->image = GetImage (TBPM_QUESTION, Scr->TitleC);
+	    if (!tb->image) {		* cannot happen (see util.c) *
+		fprintf (stderr, "%s:  unable to add titlebar button \"%s\"\n",
+			 ProgramName, tb->name);
+	    }
+	}
+	tb->width  = tb->image->width;
+	tb->height = tb->image->height;
 
 	tb->dstx = (h - tb->width + 1) / 2;
-	if (tb->dstx < 0) {		/* clip to minimize copying */
+	if (tb->dstx < 0) {		* clip to minimize copying *
 	    tb->srcx = -(tb->dstx);
 	    tb->width = h;
 	    tb->dstx = 0;
@@ -358,12 +402,14 @@ void InitTitlebarButtons ()
 	} else {
 	    tb->srcy = 0;
 	}
-    }
+    } * for(...) *
+... end of moved */
+
 }
 
 
 
-PaintEntry(mr, mi, exposure)
+void Paint3DEntry(mr, mi, exposure)
 MenuRoot *mr;
 MenuItem *mi;
 int exposure;
@@ -371,109 +417,260 @@ int exposure;
     int y_offset;
     int text_y;
     GC gc;
-    MyFont *font; /* DSE */
 
-#ifdef DEBUG_MENUS
-    fprintf(stderr, "Paint entry\n");
-#endif
+    y_offset = mi->item_num * Scr->EntryHeight + 2;
+
+/* djhjr - 9/25/96
+    text_y = y_offset + Scr->MenuFont.y + 2;
+*/
+	text_y = y_offset + (((Scr->EntryHeight - Scr->MenuFont.height) / 2) + Scr->MenuFont.y);
+
+    if (mi->func != F_TITLE)
+	{
+		int x, y;
+
+		if (mi->state)
+		{
+
+/* djhjr - 9/25/96
+			Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight, 1, 
+				mi->highlight, off, True, False);
+*/
+			Draw3DBorder (mr->w, 2, y_offset + 1, mr->width - 4, Scr->EntryHeight - 1, 1,
+				mi->highlight, off, True, False);
+
+			FBF(mi->highlight.fore, mi->highlight.back, Scr->MenuFont.font->fid);
+
+			XDrawImageString(dpy, mr->w, Scr->NormalGC, mi->x + 2, text_y, mi->item, mi->strlen);
+
+			gc = Scr->NormalGC;
+		}
+		else
+		{
+			if (mi->user_colors || !exposure)
+			{
+				XSetForeground (dpy, Scr->NormalGC, mi->normal.back);
+
+/* djhjr - 9/25/96
+				XFillRectangle (dpy, mr->w, Scr->NormalGC, 2, y_offset,
+					mr->width - 4, Scr->EntryHeight);
+*/
+				XFillRectangle (dpy, mr->w, Scr->NormalGC, 2, y_offset + 1,
+					mr->width - 4, Scr->EntryHeight - 1);
+
+				FBF (mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
+
+				gc = Scr->NormalGC;
+		    }
+			else
+			{
+				gc = Scr->MenuGC;
+			}
+
+			XDrawImageString (dpy, mr->w, gc, mi->x + 2, text_y, mi->item, mi->strlen);
+
+			if (mi->separated)
+			{
+				FB (Scr->MenuC.shadd, Scr->MenuC.shadc);
+
+/* djhjr - 9/25/96
+				XDrawLine (dpy, mr->w, Scr->NormalGC, 1, y_offset + Scr->MenuFont.y + 5,
+					mr->width - 2, y_offset + Scr->MenuFont.y + 5);
+*/
+				XDrawLine (dpy, mr->w, Scr->NormalGC, 1, y_offset + Scr->EntryHeight - 1,
+					mr->width - 2, y_offset + Scr->EntryHeight - 1);
+
+				FB (Scr->MenuC.shadc, Scr->MenuC.shadd);
+
+/* djhjr - 9/25/96
+				XDrawLine (dpy, mr->w, Scr->NormalGC, 2, y_offset + Scr->MenuFont.y + 6,
+					mr->width - 3, y_offset + Scr->MenuFont.y + 6);
+*/
+				XDrawLine (dpy, mr->w, Scr->NormalGC, 2, y_offset + Scr->EntryHeight,
+					mr->width - 3, y_offset + Scr->EntryHeight);
+			}
+		}
+
+		if (mi->func == F_MENU)
+		{
+			/* create the pull right pixmap if needed */
+			if (Scr->pullPm == None)
+			{
+				Scr->pullPm = Create3DMenuIcon (Scr->MenuFont.height, &Scr->pullW,
+					&Scr->pullH, Scr->MenuC);
+			}
+			x = mr->width - Scr->pullW - 5;
+
+/* djhjr - 9/25/96
+			y = y_offset + ((Scr->MenuFont.height - Scr->pullH) / 2) + 2;
+*/
+			y = y_offset + ((Scr->EntryHeight - Scr->pullH) / 2) + 1;
+
+			XCopyArea (dpy, Scr->pullPm, mr->w, gc, 0, 0, Scr->pullW, Scr->pullH, x, y);
+		}
+	}
+	else
+	{
+
+/* djhjr - 4/29/96
+		Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight, 1, 
+			mi->normal, off, True, False);
+*/
+		Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight + 1, 1, 
+			mi->normal, off, True, False);
+
+/* djhjr - 4/29/96
+		FBF (mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
+*/
+		FBF (mi->normal.fore, mi->normal.back, Scr->MenuTitleFont.font->fid);
+
+/* djhjr - 9/25/96
+		XDrawImageString (dpy, mr->w, Scr->NormalGC, mi->x + 2, text_y, mi->item, mi->strlen);
+*/
+		XDrawImageString (dpy, mr->w, Scr->NormalGC, mi->x, text_y, mi->item, mi->strlen);
+	}
+}
+    
+
+
+void PaintNormalEntry(mr, mi, exposure)
+MenuRoot *mr;
+MenuItem *mi;
+int exposure;
+{
+    int y_offset;
+    int text_y;
+    GC gc;
 
     y_offset = mi->item_num * Scr->EntryHeight;
 
-    if (mi->func != F_TITLE)
-    {
-	int x, y;
-	
-	font = &(Scr->MenuFont); /* DSE */
-	text_y = y_offset + font->y; /* DSE */
+/* djhjr - 9/26/96
+    text_y = y_offset + Scr->MenuFont.y;
+*/
+	text_y = y_offset + (((Scr->EntryHeight - Scr->MenuFont.height) / 2) + Scr->MenuFont.y);
 
-	if (mi->state)
+	if (mi->func != F_TITLE)
 	{
-	    XSetForeground(dpy, Scr->NormalGC, mi->hi_back);
+		int x, y;
 
-	    XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
-		mr->width, Scr->EntryHeight);
+		if (mi->state)
+		{
+			XSetForeground(dpy, Scr->NormalGC, mi->highlight.back);
 
-		FBF(mi->hi_fore, mi->hi_back, font->font->fid); /* DSE */
+			XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
+				mr->width, Scr->EntryHeight);
 
-	    XDrawString(dpy, mr->w, Scr->NormalGC, mi->x,
-		text_y, mi->item, mi->strlen);
+			FBF(mi->highlight.fore, mi->highlight.back, Scr->MenuFont.font->fid);
 
-	    gc = Scr->NormalGC;
-	}
-	else
-	{
-	    if (mi->user_colors || !exposure)
-	    {
-		XSetForeground(dpy, Scr->NormalGC, mi->back);
+			XDrawString(dpy, mr->w, Scr->NormalGC, mi->x,
+				text_y, mi->item, mi->strlen);
 
-		XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
-		    mr->width, Scr->EntryHeight);
-
-		FBF(mi->fore, mi->back, font->font->fid); /* DSE */
-		
-		gc = Scr->NormalGC;
+			gc = Scr->NormalGC;
 		}
-	    else
-		gc = Scr->MenuGC;
+		else
+		{
+			if (mi->user_colors || !exposure)
+			{
+				XSetForeground(dpy, Scr->NormalGC, mi->normal.back);
 
-	    XDrawString(dpy, mr->w, gc, mi->x, text_y, mi->item, mi->strlen);
+				XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
+					mr->width, Scr->EntryHeight);
+
+				FBF(mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
+
+				gc = Scr->NormalGC;
+			}
+			else
+			{
+				gc = Scr->MenuGC;
+			}
+
+			XDrawString(dpy, mr->w, gc, mi->x, text_y, mi->item, mi->strlen);
+
+			if (mi->separated)
+
+/* djhjr - 9/26/96
+				XDrawLine (dpy, mr->w, gc, 0, y_offset + Scr->MenuFont.y + 5,
+					mr->width, y_offset + Scr->MenuFont.y + 5);
+*/
+				XDrawLine (dpy, mr->w, gc, 0, y_offset + Scr->EntryHeight - 1,
+					mr->width, y_offset + Scr->EntryHeight - 1);
+		}
+
+		if (mi->func == F_MENU)
+		{
+			/* create the pull right pixmap if needed */
+			if (Scr->pullPm == None)
+			{
+				Scr->pullPm = CreateMenuIcon (Scr->MenuFont.height,
+					&Scr->pullW, &Scr->pullH);
+			}
+			x = mr->width - Scr->pullW - 5;
+
+/* djhjr - 9/26/96
+			y = y_offset + ((Scr->MenuFont.height - Scr->pullH) / 2);
+*/
+			y = y_offset + ((Scr->EntryHeight - Scr->pullH) / 2);
+
+			XCopyPlane(dpy, Scr->pullPm, mr->w, gc, 0, 0,
+				Scr->pullW, Scr->pullH, x, y, 1);
+		}
 	}
-
-	if (mi->func == F_MENU)
-	{
-	    /* create the pull right pixmap if needed */
-	    if (Scr->pullPm == None)
-	    {
-		Scr->pullPm = CreateMenuIcon (Scr->MenuFont.height,
-			&Scr->pullW,&Scr->pullH);
-	    }
-	    x = mr->width - Scr->pullW - EDGE_OFFSET; /* DSE */
-	    y = y_offset + ((font->height - Scr->pullH) / 2); /* DSE */
-	    XCopyPlane(dpy, Scr->pullPm, mr->w, gc, 0, 0,
-		Scr->pullW, Scr->pullH, x, y, 1);
-	}
-    }
-    else
-    {
-	int y;
-
-	if ( Scr->MenuTitleFont.name != NULL ) /* DSE */
-	    font = &(Scr->MenuTitleFont);
 	else
-	    font = &(Scr->MenuFont);
-	
-	text_y = y_offset + font->y; /* DSE */
-
-	XSetForeground(dpy, Scr->NormalGC, mi->back);
-
-	/* fill the rectangle with the title background color */
-	XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
-	    mr->width, Scr->EntryHeight);
-
 	{
-	    XSetForeground(dpy, Scr->NormalGC, mi->fore);
-	    /* now draw the dividing lines */
-	    if (y_offset)
-	      XDrawLine (dpy, mr->w, Scr->NormalGC, 0, y_offset,
-			 mr->width, y_offset);
-	    y = ((mi->item_num+1) * Scr->EntryHeight)-1;
-	    XDrawLine(dpy, mr->w, Scr->NormalGC, 0, y, mr->width, y);
-	}
+		int y;
 
-	FBF(mi->fore, mi->back, font->font->fid); /* DSE */
-	/* finally render the title */
-	XDrawString(dpy, mr->w, Scr->NormalGC, mi->x,
-	    text_y, mi->item, mi->strlen);
-    }
+		XSetForeground(dpy, Scr->NormalGC, mi->normal.back);
+
+		/* fill the rectangle with the title background color */
+		XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
+			mr->width, Scr->EntryHeight);
+
+		XSetForeground(dpy, Scr->NormalGC, mi->normal.fore);
+
+		/* now draw the dividing lines */
+		if (y_offset)
+			XDrawLine (dpy, mr->w, Scr->NormalGC, 0, y_offset,
+				mr->width, y_offset);
+
+		y = ((mi->item_num+1) * Scr->EntryHeight)-1;
+		XDrawLine(dpy, mr->w, Scr->NormalGC, 0, y, mr->width, y);
+
+/* djhjr - 4/29/96
+		FBF(mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
+*/
+		FBF (mi->normal.fore, mi->normal.back, Scr->MenuTitleFont.font->fid);
+
+		/* finally render the title */
+		XDrawString(dpy, mr->w, Scr->NormalGC, mi->x,
+			text_y, mi->item, mi->strlen);
+	}
 }
 
-
+void PaintEntry(mr, mi, exposure)
+MenuRoot *mr;
+MenuItem *mi;
+int exposure;
+{
+    if (Scr->use3Dmenus)
+	Paint3DEntry (mr, mi, exposure);
+
+	/* djhjr - 4/22/96 */
+	else
+
+    PaintNormalEntry (mr, mi, exposure);
+}
 
 PaintMenu(mr, e)
 MenuRoot *mr;
 XEvent *e;
 {
     MenuItem *mi;
+
+	/* djhjr - 4/22/96 */
+    if (Scr->use3Dmenus) {
+	Draw3DBorder (mr->w, 0, 0, mr->width, mr->height, 2, Scr->MenuC, off, False, False);
+    }
 
     for (mi = mr->first; mi != NULL; mi = mi->next)
     {
@@ -495,6 +692,8 @@ XEvent *e;
 
 static Bool fromMenu;
 extern int GlobalFirstTime; /* for StayUpMenus -- PF */
+
+#ifdef USE_VTWM53 /* start of vtwm-5.3 */
 
 UpdateMenu()
 {
@@ -662,6 +861,142 @@ UpdateMenu()
 
 }
 
+#else /* end of vtwm-5.3, start of ctwm-3.1 */
+
+UpdateMenu()
+{
+    MenuItem *mi;
+    int i, x, y, x_root, y_root, entry;
+    int done;
+    MenuItem *badItem = NULL;
+
+    fromMenu = TRUE;
+
+    while (TRUE)
+    {
+	/* block until there is an event */
+        if (!menuFromFrameOrWindowOrTitlebar) {
+	  XMaskEvent(dpy,
+		     ButtonPressMask | ButtonReleaseMask |
+		     EnterWindowMask | ExposureMask |
+		     VisibilityChangeMask | LeaveWindowMask |
+		     ButtonMotionMask, &Event);
+	}
+	if (Event.type == MotionNotify) {
+	    /* discard any extra motion events before a release */
+	    while(XCheckMaskEvent(dpy,
+		ButtonMotionMask | ButtonReleaseMask, &Event))
+		if (Event.type == ButtonRelease)
+		    break;
+	}
+
+	if (!DispatchEvent ())
+	    continue;
+
+	if ((! ActiveMenu) || Cancel) {
+	  menuFromFrameOrWindowOrTitlebar = FALSE;
+	  fromMenu = FALSE;
+	  return (0);
+	}
+
+	if (Event.type != MotionNotify)
+	    continue;
+
+	done = FALSE;
+	XQueryPointer( dpy, ActiveMenu->w, &JunkRoot, &JunkChild,
+	    &x_root, &y_root, &x, &y, &JunkMask);
+
+	/* if we haven't recieved the enter notify yet, wait */
+	if (ActiveMenu && !ActiveMenu->entered)
+	    continue;
+
+	XFindContext(dpy, ActiveMenu->w, ScreenContext, (caddr_t *)&Scr);
+
+	if (x < 0 || y < 0 ||
+	    x >= ActiveMenu->width || y >= ActiveMenu->height)
+	{
+	    if (ActiveItem && ActiveItem->func != F_TITLE)
+	    {
+		ActiveItem->state = 0;
+		PaintEntry(ActiveMenu, ActiveItem, False);
+	    }
+	    ActiveItem = NULL;
+	    continue;
+	}
+
+	/* look for the entry that the mouse is in */
+	entry = y / Scr->EntryHeight;
+	for (i = 0, mi = ActiveMenu->first; mi != NULL; i++, mi=mi->next)
+	{
+	    if (i == entry)
+		break;
+	}
+
+	/* if there is an active item, we might have to turn it off */
+	if (ActiveItem)
+	{
+	    /* is the active item the one we are on ? */
+	    if (ActiveItem->item_num == entry && ActiveItem->state)
+		done = TRUE;
+
+	    /* if we weren't on the active entry, let's turn the old
+	     * active one off 
+	     */
+	    if (!done && ActiveItem->func != F_TITLE)
+	    {
+		ActiveItem->state = 0;
+		PaintEntry(ActiveMenu, ActiveItem, False);
+	    }
+	}
+
+	/* if we weren't on the active item, change the active item and turn
+	 * it on 
+	 */
+	if (!done)
+	{
+	    ActiveItem = mi;
+	    if (ActiveItem && ActiveItem->func != F_TITLE && !ActiveItem->state)
+	    {
+		ActiveItem->state = 1;
+		PaintEntry(ActiveMenu, ActiveItem, False);
+	    }
+	}
+
+	/* now check to see if we were over the arrow of a pull right entry */
+	if (ActiveItem && ActiveItem->func == F_MENU && 
+	   ((ActiveMenu->width - x) < (ActiveMenu->width / 3)))
+	{
+	    MenuRoot *save = ActiveMenu;
+	    int savex = MenuOrigins[MenuDepth - 1].x; 
+	    int savey = MenuOrigins[MenuDepth - 1].y;
+
+	    if (MenuDepth < MAXMENUDEPTH) {
+		PopUpMenu (ActiveItem->sub, 
+			   (savex + (((2 * ActiveMenu->width) / 3) - 1)), 
+			   (savey + ActiveItem->item_num * Scr->EntryHeight)
+			   /*(savey + ActiveItem->item_num * Scr->EntryHeight +
+			    (Scr->EntryHeight >> 1))*/, False);
+	    } else if (!badItem) {
+		XBell (dpy, 0);
+		badItem = ActiveItem;
+	    }
+
+	    /* if the menu did get popped up, unhighlight the active item */
+	    if (save != ActiveMenu && ActiveItem->state)
+	    {
+		ActiveItem->state = 0;
+		PaintEntry(save, ActiveItem, False);
+		ActiveItem = NULL;
+	    }
+	}
+	if (badItem != ActiveItem) badItem = NULL;
+	XFlush(dpy);
+    }
+
+}
+
+#endif /* end of ctwm-3.1 */
+
 
 
 /***********************************************************************
@@ -687,8 +1022,14 @@ NewMenuRoot(name)
 #define UNUSED_PIXEL ((unsigned long) (~0))	/* more than 24 bits */
 
 	tmp = (MenuRoot *) malloc(sizeof(MenuRoot));
+
+/* djhjr - 5/22/96
 	tmp->hi_fore = UNUSED_PIXEL;
 	tmp->hi_back = UNUSED_PIXEL;
+*/
+	tmp->highlight.fore = UNUSED_PIXEL;
+	tmp->highlight.back = UNUSED_PIXEL;
+
 	tmp->name = name;
 	tmp->prev = NULL;
 	tmp->first = NULL;
@@ -787,6 +1128,9 @@ AddToMenu(menu, item, action, sub, func, fore, back)
 	tmp->state = 0;
 	tmp->func = func;
 
+	/* djhjr - 4/22/96 */
+	tmp->separated = 0;
+
     if ( func == F_TITLE && (Scr->MenuTitleFont.name != NULL) ) /* DSE */
 		font= &(Scr->MenuTitleFont);
     else
@@ -806,8 +1150,17 @@ AddToMenu(menu, item, action, sub, func, fore, back)
 
 	save = Scr->FirstTime;
 	Scr->FirstTime = TRUE;
+
+/* djhjr - 4/22/96
 	GetColor(COLOR, &tmp->fore, fore);
 	GetColor(COLOR, &tmp->back, back);
+*/
+	GetColor(COLOR, &tmp->normal.fore, fore);
+	GetColor(COLOR, &tmp->normal.back, back);
+
+	/* djhjr - 4/22/96 */
+	if (Scr->use3Dmenus && !Scr->BeNiceToColormap) GetShadeColors (&tmp->normal);
+
 	Scr->FirstTime = save;
 	tmp->user_colors = TRUE;
 	}
@@ -849,6 +1202,10 @@ MenuRoot *mr;
 	int fred, fgreen, fblue;
 	int bred, bgreen, bblue;
 	int width;
+
+	/* djhjr - 4/22/96 */
+	int borderwidth;
+
 	unsigned long valuemask;
 	XSetWindowAttributes attributes;
 	Colormap cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
@@ -874,6 +1231,9 @@ MenuRoot *mr;
 		mr->width += 16 + 2 * EDGE_OFFSET; /* DSE */
 	}
 
+	/* djhjr - 9/18/96 */
+	if (Scr->use3Dmenus) mr->width += 4;
+
 	width = mr->width + 2 * EDGE_OFFSET; /* DSE */
 
 	for (cur = mr->first; cur != NULL; cur = cur->next)
@@ -888,6 +1248,10 @@ MenuRoot *mr;
 		}
 	}
 	mr->height = mr->items * Scr->EntryHeight;
+
+	/* djhjr - 4/22/96 */
+	if (Scr->use3Dmenus) mr->height += 4;
+
 	mr->width += 10;
 
 	if (Scr->Shadow)
@@ -925,8 +1289,17 @@ MenuRoot *mr;
 		valuemask |= CWBackingStore;
 		attributes.backing_store = Always;
 	}
+
+	/* djhjr - 4/22/96 */
+	borderwidth = Scr->use3Dmenus ? 0 : 1;
+
 	mr->w = XCreateWindow (dpy, Scr->Root, 0, 0, (unsigned int) mr->width,
+
+/* djhjr - 4/22/96
 				   (unsigned int) mr->height, (unsigned int) 1,
+*/
+				   (unsigned int) mr->height, (unsigned int) borderwidth,
+
 				   CopyFromParent, (unsigned int) CopyFromParent,
 				   (Visual *) CopyFromParent,
 				   valuemask, &attributes);
@@ -938,9 +1311,41 @@ MenuRoot *mr;
 	mr->mapped = UNMAPPED;
 	}
 
+    if (Scr->use3Dmenus && (Scr->Monochrome == COLOR) &&  (mr->highlight.back == UNUSED_PIXEL)) {
+	XColor xcol;
+	char colname [32];
+	short save;
+
+	xcol.pixel = Scr->MenuC.back;
+	XQueryColor (dpy, cmap, &xcol);
+	sprintf (colname, "#%04x%04x%04x", 
+		5 * (xcol.red / 6), 5 * (xcol.green / 6), 5 * (xcol.blue / 6));
+	save = Scr->FirstTime;
+	Scr->FirstTime = True;
+	GetColor (Scr->Monochrome, &mr->highlight.back, colname);
+	Scr->FirstTime = save;
+    }
+
+	/* djhjr - 4/22/96 */
+    if (Scr->use3Dmenus && (Scr->Monochrome == COLOR) && (mr->highlight.fore == UNUSED_PIXEL)) {
+	XColor xcol;
+	char colname [32];
+	short save;
+	xcol.pixel = Scr->MenuC.fore;
+	XQueryColor (dpy, cmap, &xcol);
+	sprintf (colname, "#%04x%04x%04x",
+		5 * (xcol.red / 6), 5 * (xcol.green / 6), 5 * (xcol.blue / 6));
+	save = Scr->FirstTime;
+	Scr->FirstTime = True;
+	GetColor (Scr->Monochrome, &mr->highlight.fore, colname);
+	Scr->FirstTime = save;
+    }
+    if (Scr->use3Dmenus && !Scr->BeNiceToColormap) GetShadeColors (&mr->highlight);
+
 	/* get the default colors into the menus */
 	for (tmp = mr->first; tmp != NULL; tmp = tmp->next)
 	{
+/* djhjr - 4/22/96
 	if (!tmp->user_colors) {
 		if (tmp->func != F_TITLE) {
 		tmp->fore = Scr->MenuC.fore;
@@ -961,7 +1366,36 @@ MenuRoot *mr;
 		tmp->hi_fore = tmp->back;
 		tmp->hi_back = tmp->fore;
 	}
+*/
+	if (!tmp->user_colors) {
+	    if (tmp->func != F_TITLE) {
+		tmp->normal.fore = Scr->MenuC.fore;
+		tmp->normal.back = Scr->MenuC.back;
+	    } else {
+		tmp->normal.fore = Scr->MenuTitleC.fore;
+		tmp->normal.back = Scr->MenuTitleC.back;
+	    }
 	}
+
+	if (mr->highlight.fore != UNUSED_PIXEL)
+	{
+	    tmp->highlight.fore = mr->highlight.fore;
+	    tmp->highlight.back = mr->highlight.back;
+	}
+	else
+	{
+	    tmp->highlight.fore = tmp->normal.back;
+	    tmp->highlight.back = tmp->normal.fore;
+	}
+	if (Scr->use3Dmenus && !Scr->BeNiceToColormap) {
+	    if (tmp->func != F_TITLE)
+		GetShadeColors (&tmp->highlight);
+	    else
+		GetShadeColors (&tmp->normal);
+	}
+
+
+	} /* end for(...) */
 
 	if (Scr->Monochrome == MONOCHROME || !Scr->InterpolateMenuColors)
 	return;
@@ -988,6 +1422,7 @@ MenuRoot *mr;
 	/* we have a start and end to interpolate between */
 	num = end->item_num - start->item_num;
 
+/* djhjr - 4/22/96
 	f1.pixel = start->fore;
 	XQueryColor(dpy, cmap, &f1);
 	f2.pixel = end->fore;
@@ -996,6 +1431,15 @@ MenuRoot *mr;
 	b1.pixel = start->back;
 	XQueryColor(dpy, cmap, &b1);
 	b2.pixel = end->back;
+	XQueryColor(dpy, cmap, &b2);
+*/
+	f1.pixel = start->normal.fore;
+	XQueryColor(dpy, cmap, &f1);
+	f2.pixel = end->normal.fore;
+	XQueryColor(dpy, cmap, &f2);
+	b1.pixel = start->normal.back;
+	XQueryColor(dpy, cmap, &b1);
+	b2.pixel = end->normal.back;
 	XQueryColor(dpy, cmap, &b2);
 
 	fred = ((int)f2.red - (int)f1.red) / num;
@@ -1011,6 +1455,10 @@ MenuRoot *mr;
 
 	b3 = b1;
 	b3.flags = DoRed | DoGreen | DoBlue;
+
+	/* djhjr - 4/23/96 */
+	start->highlight.back = start->normal.fore;
+	start->highlight.fore = start->normal.back;
 
 	num -= 1;
 	for (i = 0, cur = start->next; i < num; i++, cur = cur->next)
@@ -1030,14 +1478,24 @@ MenuRoot *mr;
 		
 		XAllocColor(dpy, cmap, &f3);
 		XAllocColor(dpy, cmap, &b3);
+
+/* djhjr - 4/22/96
 		cur->hi_back = cur->fore = f3.pixel;
 		cur->hi_fore = cur->back = b3.pixel;
+*/
+		cur->highlight.back = cur->normal.fore = f3.pixel;
+		cur->highlight.fore = cur->normal.back = b3.pixel;
 		cur->user_colors = True;
 
 		f3 = save_fore;
 		b3 = save_back;
 	}
 	start = end;
+
+	/* djhjr - 4/22/96
+	start->highlight.back = start->normal.fore;
+	start->highlight.fore = start->normal.back;
+	*/
 	}
 }
 
@@ -1120,10 +1578,22 @@ Bool PopUpMenu (menu, x, y, center)
 			&& Scr->Monochrome == COLOR)/*RFBCOLOR*/
 			{/*RFBCOLOR*/
 				menu->last->user_colors = TRUE;/*RFBCOLOR*/
+
+/* djhjr - 4/22/96
 				menu->last->fore =
+					WindowNames[i]->virtual.fore;*RFBCOLOR*
+*/
+				menu->last->normal.fore =
 					WindowNames[i]->virtual.fore;/*RFBCOLOR*/
+
+
+/* djhjr - 4/22/96
 				menu->last->back =
+					WindowNames[i]->virtual.back;*RFBCOLOR*
+*/
+				menu->last->normal.back =
 					WindowNames[i]->virtual.back;/*RFBCOLOR*/
+
 /**********************************************************/
 /*														  */
 /*	Okay, okay, it's a bit of a kludge.					  */
@@ -1323,8 +1793,14 @@ void resizeFromCenter(w, tmp_win)
 
   namelen = strlen (tmp_win->name);
   bw2 = tmp_win->frame_bw * 2;
+
+/* djhjr - 4/22/96
   AddingW = tmp_win->attr.width + bw2;
   AddingH = tmp_win->attr.height + tmp_win->title_height + bw2;
+*/
+  AddingW = tmp_win->attr.width + bw2 + 2 * tmp_win->frame_bw3D;
+  AddingH = tmp_win->attr.height + tmp_win->title_height + bw2 + 2 * tmp_win->frame_bw3D;
+
   width = (SIZE_HINDENT + XTextWidth (Scr->SizeFont.font,
 					  tmp_win->name, namelen));
   height = Scr->SizeFont.height + SIZE_VINDENT * 2;
@@ -1514,6 +1990,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	XSync (dpy, 0);
 	Reborder (eventp->xbutton.time);
 	XSync (dpy, 0);
+
+	/* djhjr - 3/13/97 */
+	XCloseDisplay(dpy);
+
 	execvp(*Argv, Argv);
 	fprintf (stderr, "%s:  unable to restart:  %s\n", ProgramName, *Argv);
 	break;
@@ -1758,6 +2238,17 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		if (!Scr->NoGrabServer || !Scr->OpaqueMove)
 		{	XGrabServer(dpy);
 		}
+
+/* use initialized size... djhjr - 5/9/96
+		* djhjr - 4/27/96 *
+		Scr->SizeStringOffset = SIZE_HINDENT;
+		XResizeWindow (dpy, Scr->SizeWindow,
+			   Scr->SizeStringWidth + SIZE_HINDENT * 2, 
+			   Scr->SizeFont.height + SIZE_VINDENT * 2);
+*/
+
+		XMapRaised (dpy, Scr->SizeWindow);
+
 		XGrabPointer(dpy, eventp->xbutton.root, True,
 			ButtonPressMask | ButtonReleaseMask |
 			ButtonMotionMask | PointerMotionMask,
@@ -1835,7 +2326,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 					origDragX - JunkBW, origDragY - JunkBW,
 					DragWidth + 2 * JunkBW, DragHeight + 2 * JunkBW,
 					tmp_win->frame_bw,
+/* djhjr - 4/22/96
 					moving_icon ? 0 : tmp_win->title_height);
+*/
+		    		moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
+
 				/*
 				* This next line causes HandleReleaseNotify to call
 				* XRaiseWindow().  This is solely to preserve the
@@ -1854,15 +2349,16 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		fromtitlebar =
 			belongs_to_twm_window (tmp_win, eventp->xbutton.window);
 
-		if ( menuFromFrameOrWindowOrTitlebar
-		&& ! fromtitlebar
-		)
+		if ( menuFromFrameOrWindowOrTitlebar && ! fromtitlebar )
 		{	/* warp the pointer to the middle of the window */
 			XWarpPointer(dpy, None, Scr->Root, 0, 0, 0, 0,
 				origDragX + DragWidth / 2,
 				origDragY + DragHeight / 2);
 				XFlush(dpy);
 		}
+
+		/* djhjr - 4/27/96 */
+		DisplayPosition (tmp_win, CurrentDragX, CurrentDragY);
 
 		while (TRUE)
 		{
@@ -2026,7 +2522,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 					else
 						MoveOutline(eventp->xmotion.root, xl, yt, w, h,
 							tmp_win->frame_bw,
+/* djhjr 4/22/96
 							moving_icon ? 0 : tmp_win->title_height);
+*/
+			    			moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
 
 					/* move the small representation window */
 					/* this knows a bit much about the internals i guess */
@@ -2072,16 +2571,25 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 				else
 					MoveOutline(eventp->xmotion.root, xl, yt, w, h,
 						tmp_win->frame_bw,
+/* djhjr - 4/22/96
 						moving_icon ? 0 : tmp_win->title_height);
+*/
+						moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
 
 				/* move the small representation window */
 				/* this knows a bit much about the internals i guess */
 				/* left out at the minute */
 				/* XMoveWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
 					SCALE_D(xl), SCALE_D(yt)); */
+
+				/* djhjr - 4/27/96 */
+	    		DisplayPosition (tmp_win, CurrentDragX, CurrentDragY);
 			}
 
 		}
+
+		/* djhjr - 4/27/96 */
+		XUnmapWindow (dpy, Scr->SizeWindow);
 
 		MovedFromKeyPress = False;
 
@@ -2204,12 +2712,22 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    {
 		if (Scr->Focus != NULL) {
 		    SetBorder (Scr->Focus, False);
+
+/* djhjr - 4/25/96
 		    if (Scr->Focus->hilite_w)
 		      XUnmapWindow (dpy, Scr->Focus->hilite_w);
+*/
+			PaintTitleHighlight(Scr->Focus, off);
+
 		}
 
 		InstallWindowColormaps (0, tmp_win);
+
+/* djhjr - 4/25/96
 		if (tmp_win->hilite_w) XMapWindow (dpy, tmp_win->hilite_w);
+*/
+		PaintTitleHighlight(tmp_win, on);
+
 		SetBorder (tmp_win, True);
 		SetFocus (tmp_win, eventp->xbutton.time);
 		Scr->FocusRoot = FALSE;
@@ -2221,6 +2739,23 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
     case F_DESTROY:
 	if (DeferExecution(context, func, Scr->DestroyCursor))
 	    return TRUE;
+
+/* djhjr - 9/10/96 */
+	if (tmp_win == Scr->VirtualDesktopDisplayTwin)
+	{
+		XBell (dpy, 0);
+		break;
+	}
+	{
+		TwmDoor *d;
+
+		if (XFindContext(dpy, tmp_win->w, DoorContext,
+				(caddr_t *) &d) != XCNOENT)
+		{
+			XBell (dpy, 0);
+			break;
+		}
+	}
 
 	if (tmp_win->iconmgr)
 	    XBell(dpy, 0);
@@ -2704,7 +3239,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	break;
 
 	case F_SNAPREALSCREEN:
-		Scr->SnapRealScreen = ! Scr->SnapRealScreen;
+		Scr->snapRealScreen = ! Scr->snapRealScreen;
 		break;
 
     case F_SETREALSCREEN:
@@ -2736,8 +3271,13 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	break;
 
     case F_SHOWDESKTOP:
-	if (Scr->Virtual)
+	if (Scr->Virtual) {
 		XMapWindow(dpy, Scr->VirtualDesktopDisplayTwin->frame);
+
+		/* djhjr - 9/14/96 */
+		if (Scr->VirtualDesktopDisplayTwin->icon)
+		    DeIconify(Scr->VirtualDesktopDisplayTwin);
+	}
 	break;
 
     case F_ENTERDOOR:
@@ -2767,7 +3307,9 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	break;
 
      case F_QUIT:
+/* djhjr - 9/14/96 - it's in Done()...
 	SetRealScreen(0,0);
+*/
 	Done();
 	break;
 
@@ -2974,7 +3516,12 @@ FocusOnRoot()
     if (Scr->Focus != NULL)
     {
 	SetBorder (Scr->Focus, False);
+
+/* djhjr - 4/25/96
 	if (Scr->Focus->hilite_w) XUnmapWindow (dpy, Scr->Focus->hilite_w);
+*/
+	PaintTitleHighlight(Scr->Focus, off);
+
     }
     InstallWindowColormaps(0, &Scr->TwmRoot);
     Scr->Focus = NULL;
@@ -3198,7 +3745,7 @@ int def_x, def_y;
 static void Identify (t)
 TwmWindow *t;
 {
-    int i, n, twidth, width, height;
+    int i, j, n, twidth, width, height;
     int x, y;
     unsigned int wwidth, wheight, bw, depth;
     Window junk;
@@ -3206,7 +3753,7 @@ TwmWindow *t;
     unsigned udummy;
 
     n = 0;
-    (void) sprintf(Info[n++], "Twm version:  %s", Version);
+    (void) sprintf(Info[n++], "%s", Version);
     Info[n++][0] = '\0';
 
     if (t) {
@@ -3214,32 +3761,54 @@ TwmWindow *t;
 		      &wwidth, &wheight, &bw, &depth);
 	(void) XTranslateCoordinates (dpy, t->w, Scr->Root, 0, 0,
 				      &x, &y, &junk);
+
+/* looks bad with variable fonts... djhjr - 5/10/96
 	(void) sprintf(Info[n++], "Name             = \"%s\"", t->full_name);
 	(void) sprintf(Info[n++], "Class.res_name   = \"%s\"", t->class.res_name);
 	(void) sprintf(Info[n++], "Class.res_class  = \"%s\"", t->class.res_class);
 	Info[n++][0] = '\0';
-	(void) sprintf(Info[n++], "Geometry/root    = %dx%d+%d+%d", wwidth, wheight,
-		x, y);
+	(void) sprintf(Info[n++], "Geometry/root    = %dx%d+%d+%d", wwidth, wheight, x, y);
 	(void) sprintf(Info[n++], "Border width     = %d", bw);
 	(void) sprintf(Info[n++], "Depth            = %d", depth);
-    }
+*/
+	(void) sprintf(Info[n++], "Name:  \"%s\"", t->full_name);
+	(void) sprintf(Info[n++], "Class.res_name:  \"%s\"", t->class.res_name);
+	(void) sprintf(Info[n++], "Class.res_class:  \"%s\"", t->class.res_class);
+	Info[n++][0] = '\0';
+	(void) sprintf(Info[n++], "Geometry/root:  %dx%d+%d+%d", wwidth, wheight, x, y);
+	(void) sprintf(Info[n++], "Border width:  %d", bw);
+	(void) sprintf(Info[n++], "Depth:  %d", depth);
 
     Info[n++][0] = '\0';
-    (void) sprintf(Info[n++], "Click to dismiss....");
+    }
+
+/* djhjr - 9/19/96 */
+#ifndef NO_BUILD_INFO
+	else
+	{
+		i = 0;
+		do {
+			j = sprintf(Info[n++], "%s", lastmake[i++]);
+		} while (j);
+    	Info[n][0] = '\0';
+	}
+#endif
+
+    (void) sprintf(Info[n++], "Click to dismiss...");
 
     /* figure out the width and height of the info window */
-    height = n * (Scr->DefaultFont.height+2);
+    height = (n * (Scr->InfoFont.height+2)) + 10; /* some padding */
     width = 1;
     for (i = 0; i < n; i++)
     {
-	twidth = XTextWidth(Scr->DefaultFont.font, Info[i],
+	twidth = XTextWidth(Scr->InfoFont.font, Info[i],
 	    strlen(Info[i]));
 	if (twidth > width)
 	    width = twidth;
     }
     if (InfoLines) XUnmapWindow(dpy, Scr->InfoWindow);
 
-    width += 10;		/* some padding */
+    width += 20; /* some padding */
     if (XQueryPointer (dpy, Scr->Root, &JunkRoot, &JunkChild, &px, &py,
 		       &dummy, &dummy, &udummy)) {
 	px -= (width / 2);
@@ -3253,7 +3822,18 @@ TwmWindow *t;
     } else {
 	px = py = 0;
     }
+
     XMoveResizeWindow(dpy, Scr->InfoWindow, px, py, width, height);
+
+	/* djhjr - 5/9/96 */
+	if (Scr->use3Dborders)
+	{
+		XGetGeometry (dpy, Scr->InfoWindow, &JunkRoot, &JunkX, &JunkY,
+				&JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
+	    Draw3DBorder(Scr->InfoWindow, 0, 0, JunkWidth, JunkHeight,
+			 BW, Scr->DefaultC, off, False, False);
+	}
+
     XMapRaised(dpy, Scr->InfoWindow);
     InfoLines = n;
 }
@@ -3456,14 +4036,39 @@ SetBorder (tmp, onoroff)
     Bool onoroff;
 {
     if (tmp->highlight) {
+
+	/* djhjr - 4/22/96 */
+	if (Scr->use3Dborders) PaintBorders (tmp, onoroff);
+
 	if (onoroff) {
+/* djhjr - 4/24/96
 	    XSetWindowBorder (dpy, tmp->frame, tmp->border);
+*/
+/* djhjr - 11/17/97
+	    XSetWindowBorder (dpy, tmp->frame, tmp->border_tile.back);
+*/
+	    XSetWindowBorder (dpy, tmp->frame, tmp->border.back);
 	    if (tmp->title_w)
+/* djhjr - 4/24/96
 	      XSetWindowBorder (dpy, tmp->title_w, tmp->border);
+*/
+/* djhjr - 11/17/97
+	      XSetWindowBorder (dpy, tmp->title_w, tmp->border_tile.back);
+*/
+	      XSetWindowBorder (dpy, tmp->title_w, tmp->border.back);
 	} else {
 	    XSetWindowBorderPixmap (dpy, tmp->frame, tmp->gray);
 	    if (tmp->title_w)
 	      XSetWindowBorderPixmap (dpy, tmp->title_w, tmp->gray);
+	}
+
+	/* djhjr - 11/17/97 */
+	if (Scr->ButtonColorIsFrame && tmp->titlebuttons) {
+		int i, nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
+		TBWindow *tbw;
+
+		for (i = 0, tbw = tmp->titlebuttons; i < nb; i++, tbw++)
+			PaintTitleButtonHighlight(tmp, tbw, onoroff);
 	}
     }
 }
@@ -3630,8 +4235,13 @@ TwmWindow *t;
 		y = t->ring.curs_y;
 		}
 	else {
+#ifdef ORIGINAL_WARPCOORDINATES
 		x = t->frame_width / 2;
 		y = t->frame_height / 2;
+#else
+		x = t->title_width / 2 + ((Scr->use3Dborders) ? t->frame_bw3D : t->frame_bw);
+		y = t->title_height / 2 + ((Scr->use3Dborders) ? t->frame_bw3D : t->frame_bw);
+#endif
 		}
 	XWarpPointer (dpy, None, t->frame, 0, 0, 0, 0, x, y);
 	}
@@ -3685,3 +4295,47 @@ SendTakeFocusMessage (tmp, timestamp)
 {
     send_clientmessage (tmp->w, _XA_WM_TAKE_FOCUS, timestamp);
 }
+
+/* djhjr - 4/27/96 */
+void DisplayPosition (tmp_win, x, y)
+TwmWindow *tmp_win;
+int x, y;
+{
+    char str [100];
+
+/* djhjr - 5/10/96
+    char signx = '+';
+    char signy = '+';
+
+    if (x < 0) {
+	x = -x;
+	signx = '-';
+    }
+    if (y < 0) {
+	y = -y;
+	signy = '-';
+    }
+
+    (void) sprintf (str, " %c%-4d %c%-4d ", signx, x, signy, y);
+*/
+    (void) sprintf (str, "%+6d %-+6d", x, y);
+
+    XRaiseWindow (dpy, Scr->SizeWindow);
+    FBF (Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);
+    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
+
+/* djhjr - 5/9/96
+		      Scr->SizeStringOffset,
+*/
+			  (Scr->SizeStringWidth - XTextWidth(Scr->SizeFont.font, str, 13)) / 2,
+
+		      Scr->SizeFont.font->ascent + SIZE_VINDENT, str, 13);
+
+	/* I know, I know, but the above code overwrites it... djhjr - 5/9/96 */
+	if (Scr->use3Dborders)
+	    Draw3DBorder(Scr->SizeWindow, 0, 0,
+				Scr->SizeStringWidth,
+				(unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2),
+				BW, Scr->DefaultC, off, False, False);
+}
+

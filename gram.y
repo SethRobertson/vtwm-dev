@@ -57,6 +57,9 @@ static MenuRoot	*root, *pull = NULL;
 
 static MenuRoot *GetRoot();
 
+/* djhjr - 4/30/96 */
+static MenuItem *lastmenuitem = (MenuItem*) 0;
+
 static Bool CheckWarpScreenArg(), CheckWarpRingArg();
 static Bool CheckColormapArg();
 static void GotButton(), GotKey(), GotTitleButton();
@@ -69,7 +72,8 @@ unsigned int mods_used = (ShiftMask | ControlMask | Mod1Mask);
 
 extern int do_single_keyword(), do_string_keyword(), do_number_keyword();
 extern name_list **do_colorlist_keyword();
-extern int do_color_keyword(), do_string_savecolor();
+extern int do_color_keyword();
+extern void do_string_savecolor();
 extern int yylineno;
 %}
 
@@ -585,13 +589,17 @@ function_entry	: action		{ AddToMenu(root, "", Action, NULLSTR, $1,
 					}
 		;
 
+/* djhjr - 4/30/96
 menu		: LB menu_entries RB
+*/
+menu		: LB menu_entries RB {lastmenuitem = (MenuItem*) 0;}
 		;
 
 menu_entries	: /* Empty */
 		| menu_entries menu_entry
 		;
 
+/* djhjr - 4/30/96
 menu_entry	: string action		{ AddToMenu(root, $1, Action, pull, $2,
 						NULLSTR, NULLSTR);
 					  Action = "";
@@ -603,6 +611,28 @@ menu_entry	: string action		{ AddToMenu(root, $1, Action, pull, $2,
 					  Action = "";
 					  pull = NULL;
 					}
+		;
+*/
+menu_entry	: string action		{
+			if ($2 == F_SEPARATOR) {
+			    if (lastmenuitem) lastmenuitem->separated = 1;
+			}
+			else {
+			    lastmenuitem = AddToMenu(root, $1, Action, pull, $2, NULLSTR, NULLSTR);
+			    Action = "";
+			    pull = NULL;
+			}
+		}
+		| string LP string COLON string RP action {
+			if ($7 == F_SEPARATOR) {
+			    if (lastmenuitem) lastmenuitem->separated = 1;
+			}
+			else {
+			    lastmenuitem = AddToMenu(root, $1, Action, pull, $7, $3, $5);
+			    Action = "";
+			    pull = NULL;
+			}
+		}
 		;
 
 action		: FKEYWORD	{ $$ = $1; }
@@ -779,8 +809,14 @@ char *fore, *back;
 
 	save = Scr->FirstTime;
 	Scr->FirstTime = TRUE;
+
+/* djhjr - 4/22/96
 	GetColor(COLOR, &tmp->hi_fore, fore);
 	GetColor(COLOR, &tmp->hi_back, back);
+*/
+	GetColor(COLOR, &tmp->highlight.fore, fore);
+	GetColor(COLOR, &tmp->highlight.back, back);
+
 	Scr->FirstTime = save;
     }
 
@@ -798,16 +834,20 @@ int butt, func;
 	    continue;
 
 	Scr->Mouse[butt][i][mods].func = func;
+
 	if (func == F_MENU)
 	{
 	    pull->prev = NULL;
+
 	    Scr->Mouse[butt][i][mods].menu = pull;
 	}
 	else
 	{
 	    root = GetRoot(TWM_ROOT, NULLSTR, NULLSTR);
+
 	    Scr->Mouse[butt][i][mods].item = AddToMenu(root,"x",Action,
 		    NULLSTR, func, NULLSTR, NULLSTR);
+
 	}
     }
     Action = "";

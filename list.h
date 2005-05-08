@@ -41,9 +41,18 @@
 
 typedef struct name_list_struct name_list;
 
+struct name_list_struct
+{
+    name_list *next;		/* pointer to the next name */
+    char *name;			/* the name of the window */
+    char *ptr;			/* list dependent data */
+};
+
 extern void	AddToList();
 extern char*	LookInList();
 extern char*	LookInNameList();
+extern char*	LookPatternInList();
+extern char*	LookPatternInNameList();
 extern int 	GetColorFromList();
 extern void	FreeList();
 

@@ -309,6 +309,10 @@ main(argc, argv, environ)
 	Scr->DontSqueezeTitleL = NULL;
 	Scr->WindowRingL = NULL;
 	Scr->WarpCursorL = NULL;
+
+	/* djhjr - 4/22/96 */
+	Scr->ImageCache = NULL;
+
 	/* remember to put an initialization in InitVariables also
 	 */
 
@@ -338,7 +342,12 @@ main(argc, argv, environ)
 
 	Scr->TBInfo.nleft = Scr->TBInfo.nright = 0;
 	Scr->TBInfo.head = NULL;
+
+/* djhjr - 4/19/96
 	Scr->TBInfo.border = 1;
+*/
+	Scr->TBInfo.border = -100;
+
 	Scr->TBInfo.width = 0;
 	Scr->TBInfo.leftx = 0;
 	Scr->TBInfo.titlex = 0;
@@ -415,6 +424,39 @@ main(argc, argv, environ)
 	/* Parse it once for each screen. */
 	ParseTwmrc(InitFile);
 	assign_var_savecolor(); /* storeing pixels for twmrc "entities" */
+
+	/* djhjr - 4/19/96 */
+	if (Scr->use3Dtitles) {
+	    if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 0;
+
+/* djhjr - 3/12/97
+	    if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 0;
+	    if (Scr->FramePadding  == -100) Scr->FramePadding  = 0;
+	    if (Scr->TitlePadding  == -100) Scr->TitlePadding  = 0;
+*/
+	    Scr->ButtonIndent  = 0;
+	    Scr->FramePadding  = 0;
+	    Scr->TitlePadding  = 0;
+
+		/* djhjr - 4/26/96 */
+		if (Scr->SunkFocusWindowTitle) Scr->TitleHighlight = FALSE;
+	}
+	else {
+	    if (Scr->FramePadding  == -100) Scr->FramePadding  = 2; /* values that look */
+	    if (Scr->TitlePadding  == -100) Scr->TitlePadding  = 8; /* "nice" on */
+	    if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 1; /* 75 and 100dpi displays */
+	    if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 1;
+	}
+	if (Scr->use3Dtitles  && !Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
+	if (Scr->use3Dmenus   && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
+	if (Scr->use3Dmenus   && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuTitleC);
+	if (Scr->use3Dborders && !Scr->BeNiceToColormap) GetShadeColors (&Scr->BorderColorC);
+	if (! Scr->use3Dborders)
+		Scr->ThreeDBorderWidth = 0;
+	else
+    	if (!Scr->BeNiceToColormap)
+			GetShadeColors(&Scr->DefaultC);
+
 	if (Scr->SqueezeTitle == -1) Scr->SqueezeTitle = FALSE;
 	if (!Scr->HaveFonts) CreateFonts();
 	CreateGCs();
@@ -422,6 +464,10 @@ main(argc, argv, environ)
 
 	Scr->TitleBarFont.y += Scr->FramePadding;
 	Scr->TitleHeight = Scr->TitleBarFont.height + Scr->FramePadding * 2;
+
+	/* djhjr - 4/19/96 */
+	if (Scr->use3Dtitles) Scr->TitleHeight += 4;
+
 	/* make title height be odd so buttons look nice and centered */
 	if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
 
@@ -488,31 +534,95 @@ main(argc, argv, environ)
 	    }
 	}
 
+	/* djhjr - 5/9/96 */
+	if (!Scr->use3Dborders)
+		attributes.border_pixel = Scr->DefaultC.fore;
 
-	attributes.border_pixel = Scr->DefaultC.fore;
 	attributes.background_pixel = Scr->DefaultC.back;
 	attributes.event_mask = (ExposureMask | ButtonPressMask |
 				 KeyPressMask | ButtonReleaseMask);
 	attributes.backing_store = NotUseful;
-	attributes.cursor = XCreateFontCursor (dpy, XC_hand2);
-	valuemask = (CWBorderPixel | CWBackPixel | CWEventMask |
-		     CWBackingStore | CWCursor);
+
+#ifdef ORIGINAL_INFOCURSOR
+	attributes.cursor = XCreateFontCursor (dpy, Scr->WaitCursor);
+
+	/* djhjr - 5/9/96 */
+	if (!Scr->use3Dborders)
+		valuemask = (CWBorderPixel | CWBackPixel | CWEventMask |
+			     CWBackingStore | CWCursor);
+	else
+		valuemask = (CWBackPixel | CWEventMask | CWBackingStore | CWCursor);
+#else
+
+	/* djhjr - 5/9/96 */
+	if (!Scr->use3Dborders)
+		valuemask = (CWBorderPixel | CWBackPixel | CWEventMask |
+			     CWBackingStore);
+	else
+		valuemask = (CWBackPixel | CWEventMask | CWBackingStore);
+#endif
+
 	Scr->InfoWindow = XCreateWindow (dpy, Scr->Root, 0, 0,
 					 (unsigned int) 5, (unsigned int) 5,
-					 (unsigned int) BW, 0,
+
+					 /* djhjr - 5/9/96 */
+					 (unsigned int) (Scr->use3Dborders) ? 0 : BW, 0,
+
 					 (unsigned int) CopyFromParent,
 					 (Visual *) CopyFromParent,
 					 valuemask, &attributes);
 
 	Scr->SizeStringWidth = XTextWidth (Scr->SizeFont.font,
+/* djhjr - 5/9/96
 					   " 8888 x 8888 ", 13);
-	valuemask = (CWBorderPixel | CWBackPixel | CWBitGravity);
+*/
+					   "nnnnnnnnnnnnn", 13);
+
+	/* djhjr - 5/9/96 */
+	if (!Scr->use3Dborders)
+		valuemask = (CWBorderPixel | CWBackPixel | CWBitGravity);
+	else
+		valuemask = (CWBackPixel | CWBitGravity);
+
+	/* djhjr - 5/15/96 */
+	switch (Scr->ResizeX)
+	{
+		case R_NORTHWEST:
+			Scr->ResizeX = 20;
+			Scr->ResizeY = 20;
+			break;
+		case R_NORTHEAST:
+			Scr->ResizeX = (Scr->MyDisplayWidth - Scr->SizeStringWidth) - 20;
+			Scr->ResizeY = 20;
+			break;
+		case R_SOUTHWEST:
+			Scr->ResizeX = 20;
+			Scr->ResizeY = (Scr->MyDisplayHeight - (Scr->SizeFont.height + SIZE_VINDENT*2)) - 20;
+			break;
+		case R_SOUTHEAST:
+			Scr->ResizeX = (Scr->MyDisplayWidth - Scr->SizeStringWidth) - 20;
+			Scr->ResizeY = (Scr->MyDisplayHeight - (Scr->SizeFont.height + SIZE_VINDENT*2)) - 20;
+			break;
+		case R_CENTERED:
+			Scr->ResizeX = (Scr->MyDisplayWidth - Scr->SizeStringWidth) / 2;
+			Scr->ResizeY = (Scr->MyDisplayHeight - (Scr->SizeFont.height + SIZE_VINDENT*2)) / 2;
+			break;
+	}
+
 	attributes.bit_gravity = NorthWestGravity;
-	Scr->SizeWindow = XCreateWindow (dpy, Scr->Root, 0, 0,
+	Scr->SizeWindow = XCreateWindow (dpy, Scr->Root,
+
+/* djhjr - 5/15/96
+					 0,0,
+*/
+					 Scr->ResizeX, Scr->ResizeY,
+
 					 (unsigned int) Scr->SizeStringWidth,
-					 (unsigned int) (Scr->SizeFont.height +
-							 SIZE_VINDENT*2),
-					 (unsigned int) BW, 0,
+					 (unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2),
+
+					 /* djhjr - 5/9/96 */
+					 (unsigned int) (Scr->use3Dborders) ? 0 : BW, 0,
+
 					 (unsigned int) CopyFromParent,
 					 (Visual *) CopyFromParent,
 					 valuemask, &attributes);
@@ -634,6 +744,16 @@ InitVariables()
     Scr->IconManagerC.fore = black;
     Scr->IconManagerC.back = white;
     Scr->IconManagerHighlight = black;
+
+	/* djhjr - 4/19/96 */
+    Scr->FramePadding = -100;
+    Scr->TitlePadding = -100;
+    Scr->ButtonIndent = -100;
+    Scr->ThreeDBorderWidth = 6;
+
+	/* djhjr - 5/15/96 */
+	Scr->ResizeX = Scr->ResizeY = 0;
+
     Scr->VirtualC.fore = black;/*RFB VCOLOR*/
     Scr->VirtualC.back = white;/*RFB VCOLOR*/
 	Scr->RealScreenC.back = black;/*RFB 4/92 */
@@ -701,7 +821,27 @@ InitVariables()
     Scr->DeIconifyToScreen = FALSE;
     Scr->WarpWindows = FALSE;
     Scr->WarpToTransients = FALSE; /* PF */
-    Scr->SnapRealScreen = FALSE;
+
+	/* djhjr - 6/25/96 */
+    Scr->ShallowReliefWindowButton = 2;
+
+	/* djhjr - 4/19/96 */
+    Scr->use3Diconmanagers = FALSE;
+    Scr->use3Dmenus = FALSE;
+    Scr->use3Dtitles = FALSE;
+    Scr->use3Dborders = FALSE;
+    Scr->ClearShadowContrast = 50;
+    Scr->DarkShadowContrast  = 40;
+    Scr->BeNiceToColormap = FALSE;
+
+	/* djhjr - 4/26/96 */
+    Scr->SunkFocusWindowTitle = FALSE;
+
+
+	/* djhjr - 9/21/96 */
+    Scr->ButtonColorIsFrame = FALSE;
+
+    Scr->snapRealScreen = FALSE;
 	Scr->OldFashionedTwmWindowsMenu = FALSE;
     Scr->GeometriesAreVirtual = TRUE;
 	Scr->UseWindowRing = FALSE;
@@ -721,6 +861,11 @@ InitVariables()
     Scr->IconFont.name = DEFAULT_NICE_FONT;
     Scr->SizeFont.font = NULL;
     Scr->SizeFont.name = DEFAULT_FAST_FONT;
+
+	/* djhjr - 5/10/96 */
+    Scr->InfoFont.font = NULL;
+    Scr->InfoFont.name = DEFAULT_FAST_FONT;
+
     Scr->IconManagerFont.font = NULL;
     Scr->IconManagerFont.name = DEFAULT_NICE_FONT;
     Scr->VirtualFont.font = NULL;
@@ -782,6 +927,10 @@ CreateFonts ()
     GetFont(&Scr->MenuFont);
     GetFont(&Scr->IconFont);
     GetFont(&Scr->SizeFont);
+
+	/* djhjr - 5/10/96 */
+    GetFont(&Scr->InfoFont);
+
     GetFont(&Scr->IconManagerFont);
     GetFont(&Scr->VirtualFont);
     GetFont(&Scr->DoorFont);
@@ -803,6 +952,10 @@ RestoreWithdrawnLocation (tmp)
 
 	GetGravityOffsets (tmp, &gravx, &gravy);
 	if (gravy < 0) xwc.y -= tmp->title_height;
+
+	/* djhjr - 4/19/96 */
+	xwc.x += gravx * tmp->frame_bw3D;
+	xwc.y += gravy * tmp->frame_bw3D;
 
 	if (bw != tmp->old_bw) {
 	    int xoff, yoff;

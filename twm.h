@@ -44,6 +44,8 @@
 #include <X11/extensions/shape.h>
 #include <X11/Xfuncs.h>
 
+#include "util.h"
+
 #ifndef WithdrawnState
 #define WithdrawnState 0
 #endif
@@ -129,6 +131,8 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
     Gcv.background = fix_back;\
     XChangeGC(dpy, Scr->NormalGC, GCForeground|GCBackground,&Gcv)
 
+typedef enum {on, off} ButtonState;
+
 typedef struct MyFont
 {
     char *name;			/* name of the font */
@@ -140,12 +144,19 @@ typedef struct MyFont
 typedef struct ColorPair
 {
     Pixel fore, back;
+
+    /* djhjr - 4/19/96 */
+    Pixel shadc, shadd;
 } ColorPair;
 
 typedef struct _TitleButton {
     struct _TitleButton *next;		/* next link in chain */
     char *name;				/* bitmap name in case of deferal */
-    Pixmap bitmap;			/* image to display in button */
+
+	/* might not need 'bitmap anymore... djhjr - 4/19/96 */
+    Image *image;			/* image to display in button */
+
+/*    Pixmap bitmap;*/			/* image to display in button */
     int srcx, srcy;			/* from where to start copying */
     unsigned int width, height;		/* size of pixmap */
     int dstx, dsty;			/* to where to start copying */
@@ -157,6 +168,10 @@ typedef struct _TitleButton {
 
 typedef struct _TBWindow {
     Window window;			/* which window in this frame */
+
+	/* djhjr - 4/19/96 */
+    /*Image *image;*/			/* image to display in button */
+
     TitleButton *info;			/* description of this window */
 } TBWindow;
 
@@ -227,6 +242,10 @@ typedef struct TwmWindow
     int frame_width;		/* width of frame */
     int frame_height;		/* height of frame */
     int frame_bw;		/* borderwidth of frame */
+
+    /* djhjr - 4/18/96 */
+    int frame_bw3D;		/* 3D borderwidth of frame */
+
     int title_x;
     int title_y;
     int virtual_title_x;        /* virtual x position of title */
@@ -256,36 +275,77 @@ typedef struct TwmWindow
     /***********************************************************************
      * color definitions per window
      **********************************************************************/
-    Pixel border;		/* border color */
     Pixel icon_border;		/* border color */
+
+/* djhjr - 4/19/96
+    Pixel border;		* border color *
+*/
+    ColorPair border;		/* border color */
+
     ColorPair border_tile;
     ColorPair title;
     ColorPair iconc;
     ColorPair virtual;
-    short iconified;		/* has the window ever been iconified? */
-    short icon;			/* is the window an icon now ? */
-    short icon_on;		/* is the icon visible */
+
     short mapped;		/* is the window mapped ? */
+    short zoomed;		/* is the window zoomed? */
+    short highlight;		/* should highlight this window */
+    short iconmgr;		/* this is an icon manager window */
+    short icon;			/* is the window an icon now ? */
+
+/* 5/17/96 - djhjr */
+#ifdef ORIGINAL_SHORTS
+    short iconified;		/* has the window ever been iconified? */
+    short icon_on;		/* is the icon visible */
     short auto_raise;		/* should we auto-raise this window ? */
     short forced;		/* has had an icon forced upon it */
     short icon_not_ours;	/* icon pixmap or window supplied to us */
     short icon_moved;		/* user explicitly moved the icon */
-    short highlight;		/* should highlight this window */
     short stackmode;		/* honor stackmode requests */
     short iconify_by_unmapping;	/* unmap window to iconify it */
-    short iconmgr;		/* this is an icon manager window */
     short transient;		/* this is a transient window */
-    Window transientfor;	/* window contained in XA_XM_TRANSIENT_FOR */
     short titlehighlight;	/* should I highlight the title bar */
+    short wShaped;		/* this window has a bounding shape */
+    short nailed;		/* is this window nailed ? */
+    short showindesktopdisplay; /* should i show this in the desktop display ? */
+#else
+	struct
+	{
+		unsigned int iconified					: 1;
+		unsigned int icon_on					: 1;
+		unsigned int auto_raise					: 1;
+		unsigned int forced						: 1;
+		unsigned int icon_not_ours				: 1;
+		unsigned int icon_moved					: 1;
+		unsigned int stackmode					: 1;
+		unsigned int iconify_by_unmapping		: 1;
+		unsigned int transient					: 1;
+		unsigned int titlehighlight				: 1;
+		unsigned int wShaped					: 1;
+		unsigned int nailed						: 1;
+		unsigned int showindesktopdisplay		: 1;
+	} twmflags;
+#define iconified					twmflags.iconified
+#define icon_on						twmflags.icon_on
+#define auto_raise					twmflags.auto_raise
+#define forced						twmflags.forced
+#define icon_not_ours				twmflags.icon_not_ours
+#define icon_moved					twmflags.icon_moved
+#define stackmode					twmflags.stackmode
+#define iconify_by_unmapping		twmflags.iconify_by_unmapping
+#define transient					twmflags.transient
+#define titlehighlight				twmflags.titlehighlight
+#define wShaped						twmflags.wShaped
+#define nailed						twmflags.nailed
+#define showindesktopdisplay		twmflags.showindesktopdisplay
+#endif
+
+    Window transientfor;	/* window contained in XA_XM_TRANSIENT_FOR */
     struct IconMgr *iconmgrp;	/* pointer to it if this is an icon manager */
     int save_frame_x;		/* x position of frame */
     int save_frame_y;		/* y position of frame */
     int save_frame_width;	/* width of frame */
     int save_frame_height;	/* height of frame */
-    short zoomed;		/* is the window zoomed? */
-    short wShaped;		/* this window has a bounding shape */
-    short nailed;		/* is this window nailed ? */
-    short showindesktopdisplay; /* should i show this in the desktop display ? */
     unsigned long protocols;	/* which protocols this window handles */
     Colormaps cmaps;		/* colormaps for this application */
     TBWindow *titlebuttons;
@@ -308,6 +368,13 @@ typedef struct TwmWindow
 #define TBPM_DELETE ":delete"	/* same image as xlogo */
 #define TBPM_MENU ":menu"	/* name of titlebar pixmap for menus */
 #define TBPM_QUESTION ":question"	/* name of unknown titlebar pixmap */
+
+/* djhjr - 4/18/96 */
+#define TBPM_3DDOT ":xpm:dot"		/* name of titlebar pixmap for dot */
+#define TBPM_3DRESIZE ":xpm:resize"	/* name of titlebar pixmap for resize button */
+#define TBPM_3DMENU ":xpm:menu"	/* name of titlebar pixmap for menus */
+#define TBPM_3DZOOM ":xpm:zoom"
+#define TBPM_3DBAR ":xpm:bar"
 
 #include <X11/Xosdefs.h>
 #ifndef X_NOT_STDC_ENV
@@ -361,6 +428,11 @@ extern char **Argv;
 extern char **Environ;
 extern void NewFontCursor();
 extern Pixmap CreateMenuIcon();
+
+/* djhjr - 4/18/96 */
+extern Pixmap Create3DMenuIcon();
+extern Pixmap Create3DIconManagerIcon();
+extern void Draw3DBorder();
 
 extern Bool ErrorOccurred;
 extern XErrorEvent LastErrorEvent;

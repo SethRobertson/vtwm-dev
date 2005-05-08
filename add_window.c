@@ -44,6 +44,10 @@
 #include "util.h"
 #include "resize.h"
 #include "parse.h"
+
+/* djhjr - 4/19/96 */
+#include "gram.h"
+
 #include "list.h"
 #include "events.h"
 #include "menus.h"
@@ -55,6 +59,10 @@
 #define gray_height 2
 static char gray_bits[] = {
    0x02, 0x01};
+
+/* djhjr - 4/19/96 */
+static char black_bits[] = {
+   0xFF, 0xFF};
 
 int AddingX;
 int AddingY;
@@ -106,8 +114,6 @@ GetGravityOffsets (tmp, xp, yp)
 	*yp = gravity_offsets[g].y;
     }
 }
-
-
 
 
 /***********************************************************************
@@ -278,6 +284,19 @@ IconMgr *iconp;
 
     tmp_win->old_bw = tmp_win->attr.border_width;
 
+	/* djhjr - 4/19/96 */
+    tmp_win->frame_bw3D = Scr->ThreeDBorderWidth;
+    if (LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class)) {
+	tmp_win->frame_bw = 0;
+	tmp_win->frame_bw3D = 0;
+    }
+    else
+    if (tmp_win->frame_bw3D != 0) {
+	tmp_win->frame_bw = 0;
+	Scr->ClientBorderWidth = FALSE;
+    }
+    else
+
     if (Scr->ClientBorderWidth) {
     	tmp_win->frame_bw = tmp_win->old_bw;
     } else {
@@ -416,26 +435,51 @@ IconMgr *iconp;
 		    break;
 	    }
 
+/* use initialized size... djhjr - 5/9/96
 	    width = (SIZE_HINDENT + XTextWidth (Scr->SizeFont.font,
 						tmp_win->name, namelen));
 	    height = Scr->SizeFont.height + SIZE_VINDENT * 2;
 
+* djhjr - 4/27/96
 	    XResizeWindow (dpy, Scr->SizeWindow, width + SIZE_HINDENT, height);
+*
+	    XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
+				Scr->SizeStringWidth, height);
+*/
+
 	    XMapRaised(dpy, Scr->SizeWindow);
 	    InstallRootColormap();
 
+/* DisplayPosition overwrites it anyway... djhjr - 5/9/96
 	    FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
 		Scr->SizeFont.font->fid);
 	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
 			      SIZE_HINDENT,
 			      SIZE_VINDENT + Scr->SizeFont.font->ascent,
 			      tmp_win->name, namelen);
+*/
 
+/* djhjr - 4/19/96
 	    AddingW = tmp_win->attr.width + bw2;
 	    AddingH = tmp_win->attr.height + tmp_win->title_height + bw2;
 
 		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
 			    tmp_win->frame_bw, tmp_win->title_height);
+*/
+	    AddingW = tmp_win->attr.width + bw2 + 2 * tmp_win->frame_bw3D;
+	    AddingH = tmp_win->attr.height + tmp_win->title_height +
+				bw2 + 2 * tmp_win->frame_bw3D;
+		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
+			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+
+/* DisplayPosition() overwrites it anyway... djhjr - 5/9/96
+		* djhjr - 4/27/96 *
+	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
+				SIZE_VINDENT + Scr->SizeFont.font->ascent, ": ", 2);
+*/
+
+		/* djhjr - 4/27/96 */
+	    DisplayPosition (tmp_win, AddingX, AddingY);
 
 	    while (TRUE)
 		{
@@ -500,14 +544,22 @@ IconMgr *iconp;
 			AddingY = Scr->MyDisplayHeight - AddingH;
 		}
 
+/* djhjr - 4/19/96
 		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
 			    tmp_win->frame_bw, tmp_win->title_height);
+*/
+		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
+			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+
+		/* djhjr - 4/27/96 */
+		DisplayPosition (tmp_win, AddingX, AddingY);
 
 	    }
 
 	    if (event.xbutton.button == Button2) {
 		int lastx, lasty;
 
+/* AddStartResize() overwrites it anyway... djhjr - 5/9/96
 		Scr->SizeStringOffset = width +
 		  XTextWidth(Scr->SizeFont.font, ": ", 2);
 		XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
@@ -515,12 +567,14 @@ IconMgr *iconp;
 		XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
 				  SIZE_VINDENT + Scr->SizeFont.font->ascent,
 				  ": ", 2);
-#if 0
+*/
+
+/* was #if 0... djhjr - 4/25/96 */
 		if (0/*Scr->AutoRelativeResize*/)
-My R5 vtvwm came with this commented out, always 0.
-Why?
-#endif
-		if (Scr->AutoRelativeResize)
+/* was My R5 vtvwm came with this commented out, always 0. ... djhjr - 4/25/96 */
+/* was Why? ... djhjr - 4/25/96 */
+/* was #endif... djhjr - 4/25/96 */
+/* was if (Scr->AutoRelativeResize)... djhjr - 4/25/96 */
 		{
 		    int dx = (tmp_win->attr.width / 4);
 		    int dy = (tmp_win->attr.height / 4);
@@ -585,7 +639,7 @@ Why?
 		    }
 
 		}
-	    }
+	    } /* if (event.xbutton.button == Button2) */
 	    else if (event.xbutton.button == Button3)
 	    {
 		int maxw = Scr->MyDisplayWidth - AddingX - bw2;
@@ -615,8 +669,14 @@ Why?
 
 	    tmp_win->attr.x = AddingX;
 	    tmp_win->attr.y = AddingY + tmp_win->title_height;
+
+/* djhjr - 4/19/96
 	    tmp_win->attr.width = AddingW - bw2;
 	    tmp_win->attr.height = AddingH - tmp_win->title_height - bw2;
+*/
+	    tmp_win->attr.width = AddingW - bw2 - 2 * tmp_win->frame_bw3D;
+	    tmp_win->attr.height = AddingH - tmp_win->title_height -
+				bw2 - 2 * tmp_win->frame_bw3D;
 
 	    XUngrabServer(dpy);
 	}
@@ -653,7 +713,12 @@ Why?
 #endif
 
     if (!Scr->ClientBorderWidth) {	/* need to adjust for twm borders */
+
+/* djhjr - 4/19/96
 	int delta = tmp_win->attr.border_width - tmp_win->frame_bw;
+*/
+	int delta = tmp_win->attr.border_width - tmp_win->frame_bw - tmp_win->frame_bw3D;
+
 	tmp_win->attr.x += gravx * delta;
 	tmp_win->attr.y += gravy * delta;
     }
@@ -703,7 +768,11 @@ Why?
 
     /* get all the colors for the window */
 
+/* djhjr - 4/25/96
     tmp_win->border = Scr->BorderColor;
+*/
+	tmp_win->border.back = Scr->BorderColor;
+
     tmp_win->icon_border = Scr->IconBorderColor;
     tmp_win->border_tile.fore = Scr->BorderTileC.fore;
     tmp_win->border_tile.back = Scr->BorderTileC.back;
@@ -714,8 +783,13 @@ Why?
     tmp_win->virtual.fore = Scr->VirtualDesktopDisplayC.fore;
     tmp_win->virtual.back = Scr->VirtualDesktopDisplayC.back;
 
+/* djhjr - 4/25/96
     GetColorFromList(Scr->BorderColorL, tmp_win->full_name, &tmp_win->class,
 	&tmp_win->border);
+*/
+    GetColorFromList(Scr->BorderColorL, tmp_win->full_name, &tmp_win->class,
+	&tmp_win->border.back);
+
     GetColorFromList(Scr->IconBorderColorL, tmp_win->full_name, &tmp_win->class,
 	&tmp_win->icon_border);
     GetColorFromList(Scr->BorderTileForegroundL, tmp_win->full_name,
@@ -739,17 +813,35 @@ Why?
 	    GetColorFromList(Scr->TitleForegroundL, tmp_win->full_name,
 			     &tmp_win->class, &tmp_win->virtual.back);
 
+	/* djhjr - 4/19/96 */
+    if (Scr->use3Dtitles  && !Scr->BeNiceToColormap) GetShadeColors (&tmp_win->title);
+    if (Scr->ButtonColorIsFrame || (Scr->use3Dborders && !Scr->BeNiceToColormap)) {
+	GetShadeColors (&tmp_win->border);
+	GetShadeColors (&tmp_win->border_tile);
+    }
 
     /* create windows */
 
+/* djhjr - 4/19/96
     tmp_win->frame_x = tmp_win->attr.x + tmp_win->old_bw - tmp_win->frame_bw;
     tmp_win->frame_y = tmp_win->attr.y - tmp_win->title_height +
 	tmp_win->old_bw - tmp_win->frame_bw;
     tmp_win->frame_width = tmp_win->attr.width;
     tmp_win->frame_height = tmp_win->attr.height + tmp_win->title_height;
+*/
+    tmp_win->frame_x = tmp_win->attr.x + tmp_win->old_bw - tmp_win->frame_bw
+			- tmp_win->frame_bw3D;
+    tmp_win->frame_y = tmp_win->attr.y - tmp_win->title_height +
+	tmp_win->old_bw - tmp_win->frame_bw - tmp_win->frame_bw3D;
+    tmp_win->frame_width = tmp_win->attr.width + 2 * tmp_win->frame_bw3D;
+    tmp_win->frame_height = tmp_win->attr.height + tmp_win->title_height +
+				2 * tmp_win->frame_bw3D;
+    ConstrainSize (tmp_win, &tmp_win->frame_width, &tmp_win->frame_height);
+
     tmp_win->virtual_frame_x = R_TO_V_X(tmp_win->frame_x);
     tmp_win->virtual_frame_y = R_TO_V_Y(tmp_win->frame_y);
 
+/* djhjr - 4/19/96
     valuemask = CWBackPixmap | CWBorderPixel | CWCursor | CWEventMask;
     attributes.background_pixmap = None;
     attributes.border_pixel = tmp_win->border;
@@ -760,6 +852,36 @@ Why?
     if (tmp_win->attr.save_under) {
 	attributes.save_under = True;
 	valuemask |= CWSaveUnder;
+    }
+*/
+/* djhjr - 9/14/96
+    valuemask = CWBackPixmap | CWBorderPixel | CWCursor | CWEventMask | CWBackPixel;
+    attributes.background_pixmap = None;
+*/
+    valuemask = CWBorderPixel | CWCursor | CWEventMask | CWBackPixel;
+
+    attributes.background_pixel	 = tmp_win->border.back;
+    attributes.border_pixel = tmp_win->border.back;
+    attributes.cursor = Scr->FrameCursor;
+    attributes.event_mask = (SubstructureRedirectMask | 
+			     ButtonPressMask | ButtonReleaseMask |
+			     EnterWindowMask | LeaveWindowMask | ExposureMask);
+    if (tmp_win->attr.save_under) {
+	attributes.save_under = True;
+	valuemask |= CWSaveUnder;
+    }
+
+	/* djhjr - 9/17/96 - slows down iconify/delete/destroy too much...
+	if (Scr->BackingStore)
+	{
+		attributes.backing_store = WhenMapped;
+		valuemask |= CWBackingStore;
+	}
+	*/
+
+    if (tmp_win->hints.flags & PWinGravity) {
+	attributes.win_gravity = tmp_win->hints.win_gravity;
+	valuemask |= CWWinGravity;
     }
 
     tmp_win->frame = XCreateWindow (dpy, Scr->Root, tmp_win->frame_x,
@@ -776,11 +898,27 @@ Why?
 	valuemask = (CWEventMask | CWBorderPixel | CWBackPixel);
 	attributes.event_mask = (KeyPressMask | ButtonPressMask |
 				 ButtonReleaseMask | ExposureMask);
+/* djhjr - 4/19/96
 	attributes.border_pixel = tmp_win->border;
+*/
+	attributes.border_pixel = tmp_win->title.back;
 	attributes.background_pixel = tmp_win->title.back;
+
+	/* djhjr - 9/17/96 */
+	if (Scr->BackingStore)
+	{
+		attributes.backing_store = WhenMapped;
+		valuemask |= CWBackingStore;
+	}
+
 	tmp_win->title_w = XCreateWindow (dpy, tmp_win->frame,
+/* djhjr - 4/19/96
 					  -tmp_win->frame_bw,
 					  -tmp_win->frame_bw,
+*/
+					  tmp_win->frame_bw3D - tmp_win->frame_bw,
+					  tmp_win->frame_bw3D - tmp_win->frame_bw,
+
 					  (unsigned int) tmp_win->attr.width,
 					  (unsigned int) Scr->TitleHeight,
 					  (unsigned int) tmp_win->frame_bw,
@@ -796,6 +934,15 @@ Why?
 
     if (tmp_win->highlight)
     {
+
+	/* djhjr - 4/19/96 */
+	if (Scr->use3Dtitles && (Scr->Monochrome != COLOR))
+	    tmp_win->gray = XCreatePixmapFromBitmapData(dpy, Scr->Root, 
+		black_bits, gray_width, gray_height, 
+		tmp_win->border_tile.fore, tmp_win->border_tile.back,
+		Scr->d_depth);
+	else
+
 	tmp_win->gray = XCreatePixmapFromBitmapData(dpy, Scr->Root,
 	    gray_bits, gray_width, gray_height,
 	    tmp_win->border_tile.fore, tmp_win->border_tile.back,
@@ -813,6 +960,12 @@ Why?
 	XMoveWindow (dpy, tmp_win->title_w,
 		     tmp_win->title_x, tmp_win->title_y);
 	XDefineCursor(dpy, tmp_win->title_w, Scr->TitleCursor);
+    }
+
+	/* djhjr - 4/19/96 */
+    else {
+	tmp_win->title_x = tmp_win->frame_bw3D - tmp_win->frame_bw;
+	tmp_win->title_y = tmp_win->frame_bw3D - tmp_win->frame_bw;
     }
 
     valuemask = (CWEventMask | CWDontPropagate);
@@ -844,7 +997,12 @@ Why?
     if (!tmp_win->iconmgr)
 	XAddToSaveSet(dpy, tmp_win->w);
 
+/* djhjr - 4/19/96
     XReparentWindow(dpy, tmp_win->w, tmp_win->frame, 0, tmp_win->title_height);
+*/
+    XReparentWindow(dpy, tmp_win->w, tmp_win->frame, tmp_win->frame_bw3D,
+		tmp_win->title_height + tmp_win->frame_bw3D);
+
     /*
      * Reparenting generates an UnmapNotify event, followed by a MapNotify.
      * Set the map state to FALSE to prevent a transition back to
@@ -1110,9 +1268,15 @@ static Window CreateHighlightWindow (tmp_win)
      * solid line.
      */
     if (!Scr->hilitePm) {
-	Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w,
-					       gray_bits, gray_width,
-					       gray_height);
+
+	/* djhjr - 4/20/96 */
+	if (Scr->use3Dtitles && (Scr->Monochrome != COLOR))
+	    Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w, 
+					black_bits, gray_width, gray_height);
+	else
+	    Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w, 
+					gray_bits, gray_width, gray_height);
+
 	Scr->hilite_pm_width = gray_width;
 	Scr->hilite_pm_height = gray_height;
     }
@@ -1144,6 +1308,20 @@ static Window CreateHighlightWindow (tmp_win)
 	attributes.background_pixel = tmp_win->title.fore;
     }
 
+	/* djhjr - 4/19/96 */
+    if (Scr->use3Dtitles)
+/* djhjr - 4/25/96
+	w = XCreateWindow (dpy, tmp_win->title_w, 0, Scr->FramePadding + 2,
+		       (unsigned int) Scr->TBInfo.width, (unsigned int) (h - 4),
+*/
+	w = XCreateWindow (dpy, tmp_win->title_w, 0, Scr->FramePadding + 3,
+		       (unsigned int) Scr->TBInfo.width, (unsigned int) (h - 6),
+
+		       (unsigned int) 0,
+		       Scr->d_depth, (unsigned int) CopyFromParent,
+		       Scr->d_visual, valuemask, &attributes);
+    else
+
     w = XCreateWindow (dpy, tmp_win->title_w, 0, Scr->FramePadding,
 		       (unsigned int) Scr->TBInfo.width, (unsigned int) h,
 		       (unsigned int) 0,
@@ -1173,20 +1351,42 @@ void ComputeCommonTitleOffsets ()
 
 void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
     TwmWindow *tmp_win;
+	int width;
     Bool squeeze;
 {
     tmp_win->highlightx = (Scr->TBInfo.titlex + tmp_win->name_width);
+
+	/* djhjr - 4/19/96
+    if (Scr->use3Dtitles) tmp_win->highlightx += 6;
+	*/
+
     if (tmp_win->hilite_w || Scr->TBInfo.nright > 0)
       tmp_win->highlightx += Scr->TitlePadding;
+
     tmp_win->rightx = width - Scr->TBInfo.rightoff;
-    if (squeeze && tmp_win->squeeze_info) {
-	int rx = (tmp_win->highlightx +
-		  (tmp_win->hilite_w
-		    ? Scr->TBInfo.width * 2 : 0) +
-		  (Scr->TBInfo.nright > 0 ? Scr->TitlePadding : 0) +
-		  Scr->FramePadding);
-	if (rx < tmp_win->rightx) tmp_win->rightx = rx;
+
+	if (squeeze && tmp_win->squeeze_info)
+	{
+		int rx;
+
+		/* djhjr - 3/13/97 */
+		if (Scr->use3Dtitles)
+		{
+			rx = (tmp_win->highlightx + Scr->TBInfo.width * 2 +
+				(Scr->TBInfo.nright > 0 ? Scr->TitlePadding : 0) +
+				Scr->FramePadding);
+		}
+		else
+		{
+			rx = (tmp_win->highlightx +
+				(tmp_win->hilite_w ? Scr->TBInfo.width * 2 : 0) +
+				(Scr->TBInfo.nright > 0 ? Scr->TitlePadding : 0) +
+				Scr->FramePadding);
+		}
+
+		if (rx < tmp_win->rightx) tmp_win->rightx = rx;
     }
+
     return;
 }
 
@@ -1199,8 +1399,13 @@ void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
 void ComputeTitleLocation (tmp)
     register TwmWindow *tmp;
 {
+
+/* djhjr - 4/19/96
     tmp->title_x = -tmp->frame_bw;
     tmp->title_y = -tmp->frame_bw;
+*/
+    tmp->title_x = tmp->frame_bw3D - tmp->frame_bw;
+    tmp->title_y = tmp->frame_bw3D - tmp->frame_bw;
 
     if (tmp->squeeze_info) {
 	register SqueezeInfo *si = tmp->squeeze_info;
@@ -1242,7 +1447,11 @@ void ComputeTitleLocation (tmp)
 	  basex = maxwidth - tw + 1;
 	if (basex < 0) basex = 0;
 
+/* djhjr - 4/19/96
 	tmp->title_x = basex - tmp->frame_bw;
+*/
+	tmp->title_x = basex - tmp->frame_bw + tmp->frame_bw3D;
+
     }
 }
 
@@ -1272,14 +1481,13 @@ static void CreateWindowTitlebarButtons (tmp_win)
     leftx = y = Scr->TBInfo.leftx;
     rightx = tmp_win->rightx;
 
-    attributes.win_gravity = NorthWestGravity;
     attributes.background_pixel = tmp_win->title.back;
     attributes.border_pixel = tmp_win->title.fore;
     attributes.event_mask = (ButtonPressMask | ButtonReleaseMask |
 			     ExposureMask);
     attributes.cursor = Scr->ButtonCursor;
-    valuemask = (CWWinGravity | CWBackPixel | CWBorderPixel | CWEventMask |
-		 CWCursor);
+
+    valuemask = (CWWinGravity | CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
 
     tmp_win->titlebuttons = NULL;
     nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
@@ -1305,13 +1513,45 @@ static void CreateWindowTitlebarButtons (tmp_win)
 		    leftx += boxwidth;
 		    attributes.win_gravity = NorthWestGravity;
 		}
+
 		tbw->window = XCreateWindow (dpy, tmp_win->title_w, x, y, h, h,
 					     (unsigned int) Scr->TBInfo.border,
 					     0, (unsigned int) CopyFromParent,
 					     (Visual *) CopyFromParent,
 					     valuemask, &attributes);
+
+		/* djhjr - 9/14/96 - moved from InitTitlebarButtons()... */
+		/* djhjr - 9/21/96 */
+		if (!(tb->image = GetImage (tb->name,
+			(Scr->ButtonColorIsFrame) ? tmp_win->border : tmp_win->title)))
+		    if (!(tb->image = GetImage (TBPM_QUESTION,
+				(Scr->ButtonColorIsFrame) ? tmp_win->border : tmp_win->title)))
+				fprintf (stderr, "%s:  unable to add titlebar button \"%s\"\n",
+					ProgramName, tb->name);
+
+		tb->width  = tb->image->width;
+		tb->height = tb->image->height;
+
+		tb->dstx = (h - tb->width + 1) / 2;
+		if (tb->dstx < 0) {		/* clip to minimize copying */
+	    	tb->srcx = -(tb->dstx);
+		    tb->width = h;
+		    tb->dstx = 0;
+		} else {
+		    tb->srcx = 0;
+		}
+		tb->dsty = (h - tb->height + 1) / 2;
+		if (tb->dsty < 0) {
+	    	tb->srcy = -(tb->dsty);
+		    tb->height = h;
+		    tb->dsty = 0;
+		} else {
+		    tb->srcy = 0;
+		}
+		/* ...end of moved */
+
 		tbw->info = tb;
-	    }
+	    } /* end for(...) */
 	}
     }
 
@@ -1319,8 +1559,13 @@ static void CreateWindowTitlebarButtons (tmp_win)
 			 ? CreateHighlightWindow (tmp_win) : None);
 
     XMapSubwindows(dpy, tmp_win->title_w);
+
+/* djhjr - 4/25/96
     if (tmp_win->hilite_w)
       XUnmapWindow(dpy, tmp_win->hilite_w);
+*/
+	PaintTitleHighlight(tmp_win, off);
+
     return;
 }
 
@@ -1586,9 +1831,19 @@ void GetWindowSizeHints (tmp)
 			       NorthEastGravity, NorthWestGravity };
 	int right =  tmp->attr.x + tmp->attr.width + 2 * tmp->old_bw;
 	int bottom = tmp->attr.y + tmp->attr.height + 2 * tmp->old_bw;
+
+/* djhjr - 4/19/96
 	tmp->hints.win_gravity =
 	  gravs[((Scr->MyDisplayHeight - bottom < tmp->title_height) ? 0 : 2) |
 		((Scr->MyDisplayWidth - right   < tmp->title_height) ? 0 : 1)];
+*/
+	tmp->hints.win_gravity = 
+	  gravs[((Scr->MyDisplayHeight - bottom <
+		tmp->title_height + 2 * tmp->frame_bw3D) ? 0 : 2) |
+		((Scr->MyDisplayWidth - right   <
+		tmp->title_height + 2 * tmp->frame_bw3D) ? 0 : 1)];
+
 	tmp->hints.flags |= PWinGravity;
     }
 }
+

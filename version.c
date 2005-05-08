@@ -25,5 +25,17 @@
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
 
+/* djhjr - 4/23/96
 char *Version = "Virtual Desktop TWM (VTWM) - R5 Release (5.3)";
+*/
+/* djhjr - 9/10/96
+char *Version = "Virtual Desktop TWM (VTWM) - R5 Release 5.4";
+*/
+/* djhjr - 3/12/97
+char *Version = "Virtual Desktop TWM (VTWM) - R5 Release 5.4.1";
+*/
+/* djhjr - 11/17/97
+char *Version = "Virtual Desktop TWM (VTWM) - R5 Release 5.4.2";
+*/
+char *Version = "Virtual Desktop TWM (VTWM) - R5 Release 5.4.3";
 

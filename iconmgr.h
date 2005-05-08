@@ -43,6 +43,11 @@ typedef struct WList
     int x, y, width, height;
     int row, col;
     int me;
+
+    /* djhjr - 4/19/96 */
+    ColorPair cp;
+    Pixmap iconifypm;
+
     Pixel fore, back, highlight;
     unsigned top, bottom;
     short active;

@@ -1000,6 +1000,7 @@ RedoIconName()
 	Tmp_win->icon_w_width = XTextWidth(Scr->IconFont.font,
 	Tmp_win->icon_name, strlen(Tmp_win->icon_name));
 
+/* djhjr - 6/11/96
 	Tmp_win->icon_w_width += 6;
 	if (Tmp_win->icon_w_width < Tmp_win->icon_width)
 	{
@@ -1011,16 +1012,32 @@ RedoIconName()
 	{
 	Tmp_win->icon_x = 3;
 	}
+*/
+    Tmp_win->icon_w_width += 8;
+    if (Tmp_win->icon_w_width < Tmp_win->icon_width + 8)
+    {
+		Tmp_win->icon_x = (((Tmp_win->icon_width + 8) - Tmp_win->icon_w_width)/2) + 4;
+		Tmp_win->icon_w_width = Tmp_win->icon_width + 8;
+    }
+    else
+		Tmp_win->icon_x = 4;
 
 	if (Tmp_win->icon_w_width == Tmp_win->icon_width)
 	x = 0;
 	else
 	x = (Tmp_win->icon_w_width - Tmp_win->icon_width)/2;
 
+/* djhjr - 6/11/96
 	y = 0;
+*/
+	y = 4;
 
+/* djhjr - 6/11/96
 	Tmp_win->icon_w_height = Tmp_win->icon_height + Scr->IconFont.height + 4;
 	Tmp_win->icon_y = Tmp_win->icon_height + Scr->IconFont.height;
+*/
+	Tmp_win->icon_w_height = Tmp_win->icon_height + Scr->IconFont.height + 8;
+	Tmp_win->icon_y = Tmp_win->icon_height + Scr->IconFont.height + 2;
 
 	XResizeWindow(dpy, Tmp_win->icon_w, Tmp_win->icon_w_width,
 	Tmp_win->icon_w_height);
@@ -1086,6 +1103,7 @@ HandleExpose()
 {
 	MenuRoot *tmp;
 	TwmDoor *door;
+	int j;
 
 	if (XFindContext(dpy, Event.xany.window, MenuContext, (caddr_t *)&tmp) == 0)
 	{
@@ -1104,15 +1122,19 @@ HandleExpose()
 	    /* find it's twm window to get the current width, etc. */
 	    if (XFindContext(dpy, Event.xany.window, TwmContext,
 			    (caddr_t *)&tmp_win) != XCNOENT) {
-		    int tw;
+		    int tw, bw;
 
-		    /* change the little internal one to fit the
-		     * external */
+		    tw = XTextWidth(Scr->DoorFont.font, door->name,
+				    strlen(door->name));
+
+			/* djhjr - 4/26/96 */
+			bw = (Scr->use3Dborders) ? Scr->ThreeDBorderWidth : 0;
+
+		    /* change the little internal one to fit the external */
 		    XResizeWindow(dpy, door->w,
 				  tmp_win->frame_width,
 				  tmp_win->frame_height);
-		    tw = XTextWidth(Scr->DoorFont.font, door->name,
-				    strlen(door->name));
+
 		    /* draw the text in the right place */
 /* And it IS the right place.
 ** If your font has its characters starting 20 pixels
@@ -1120,9 +1142,17 @@ HandleExpose()
 ** For example grog-9 from ISC's X11R3 distribution.
 */
 		    XDrawString(dpy, door->w, Scr->NormalGC,
+
+/* gets 'SIZE_VINDENT' out of here... djhjr - 5/14/96
 				(tmp_win->frame_width - tw)/2,
 				tmp_win->frame_height - SIZE_VINDENT -
 				(tmp_win->frame_height - Scr->DoorFont.height)/2,
+** ...and NOW it's in the right place! */
+				(tmp_win->frame_width - tw - 2 * bw) / 2,
+				(tmp_win->frame_height - tmp_win->title_height -
+						Scr->DoorFont.height - 2 * bw) / 2 +
+						Scr->DoorFont.font->ascent,
+
 				door->name, strlen(door->name));
 	    } else {
 		    XDrawString(dpy, door->w, Scr->NormalGC,
@@ -1141,30 +1171,64 @@ HandleExpose()
 	int height;
 
 	FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
-	    Scr->DefaultFont.font->fid);
+	    Scr->InfoFont.font->fid);
 
-	height = Scr->DefaultFont.height+2;
+	/* djhjr - 5/10/96 */
+	XGetGeometry (dpy, Scr->InfoWindow, &JunkRoot, &JunkX, &JunkY,
+				&JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
+
+	height = Scr->InfoFont.height+2;
 	for (i = 0; i < InfoLines; i++)
 	{
+		/* djhjr - 5/10/96 */
+		j = strlen(Info[i]);
+
 	    XDrawString(dpy, Scr->InfoWindow, Scr->NormalGC,
-		5, (i*height) + Scr->DefaultFont.y, Info[i], strlen(Info[i]));
+
+/* centers the lines... djhjr - 5/10/96
+		10,
+*/
+		(JunkWidth - XTextWidth(Scr->InfoFont.font, Info[i], j)) / 2,
+		(i*height) + Scr->InfoFont.y + 5, Info[i], j);
 	}
+
+	/* djhjr - 5/9/96 */
+	if (Scr->use3Dborders)
+	    Draw3DBorder(Scr->InfoWindow, 0, 0, JunkWidth, JunkHeight,
+				BW, Scr->DefaultC, off, False, False);
+
 	flush_expose (Event.xany.window);
 	}
 	else if (Tmp_win != NULL)
 	{
+	/* djhjr - 4/20/96 */
+	if (Scr->use3Dborders && (Event.xany.window == Tmp_win->frame)) {
+	    PaintBorders (Tmp_win, ((Tmp_win == Scr->Focus) ? True : False));
+	    flush_expose (Event.xany.window);
+	    return;
+	}
+	else
+
 	if (Event.xany.window == Tmp_win->title_w)
 	{
+/* djhjr - 4/20/96
 	    FBF(Tmp_win->title.fore, Tmp_win->title.back,
 		Scr->TitleBarFont.font->fid);
 
 	    XDrawString (dpy, Tmp_win->title_w, Scr->NormalGC,
 			 Scr->TBInfo.titlex, Scr->TitleBarFont.y,
 			 Tmp_win->name, strlen(Tmp_win->name));
+*/
+		PaintTitle (Tmp_win);
+
+
 	    flush_expose (Event.xany.window);
+		return;
 	}
 	else if (Event.xany.window == Tmp_win->icon_w)
 	{
+
+/* djhjr - 4/21/96
 	    FBF(Tmp_win->iconc.fore, Tmp_win->iconc.back,
 		Scr->IconFont.font->fid);
 
@@ -1172,45 +1236,84 @@ HandleExpose()
 		Scr->NormalGC,
 		Tmp_win->icon_x, Tmp_win->icon_y,
 		Tmp_win->icon_name, strlen(Tmp_win->icon_name));
+*/
+		PaintIcon(Tmp_win);
+
 	    flush_expose (Event.xany.window);
 	    return;
 	} else if (Tmp_win->titlebuttons) {
 	    int i;
 	    Window w = Event.xany.window;
-	    register TBWindow *tbw;
+	    TBWindow *tbw;
 	    int nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
 
 	    for (i = 0, tbw = Tmp_win->titlebuttons; i < nb; i++, tbw++) {
-		if (w == tbw->window) {
-		    register TitleButton *tb = tbw->info;
+			if (w == tbw->window) {
+/* djhjr - 4/19/96
+			    register TitleButton *tb = tbw->info;
 
-		    FB(Tmp_win->title.fore, Tmp_win->title.back);
-		    XCopyPlane (dpy, tb->bitmap, w, Scr->NormalGC,
-				tb->srcx, tb->srcy, tb->width, tb->height,
-				tb->dstx, tb->dsty, 1);
-		    flush_expose (w);
-		    return;
-		}
+			    FB(Tmp_win->title.fore, Tmp_win->title.back);
+			    XCopyPlane (dpy, tb->bitmap, w, Scr->NormalGC,
+					tb->srcx, tb->srcy, tb->width, tb->height,
+					tb->dstx, tb->dsty, 1);
+*/
+				/* djhjr - 11/17/97 */
+				if (Scr->ButtonColorIsFrame && Scr->Focus == Tmp_win)
+					PaintTitleButtonHighlight(Tmp_win, tbw, True);
+				else
+					PaintTitleButton(Tmp_win, tbw);
+
+			    flush_expose (w);
+		    	return;
+			}
 	    }
 	}
 	if (Tmp_win->list) {
 	    if (Event.xany.window == Tmp_win->list->w)
 	    {
+
+/* djhjr - 4/19/96
 		FBF(Tmp_win->list->fore, Tmp_win->list->back,
 		    Scr->IconManagerFont.font->fid);
 		XDrawString (dpy, Event.xany.window, Scr->NormalGC,
 		    iconmgr_textx, Scr->IconManagerFont.y+4,
 		    Tmp_win->icon_name, strlen(Tmp_win->icon_name));
 		DrawIconManagerBorder(Tmp_win->list);
+*/
+		DrawIconManagerBorder(Tmp_win->list, True);
+		FBF(Tmp_win->list->cp.fore, Tmp_win->list->cp.back,
+			Scr->IconManagerFont.font->fid);
+		if (Scr->use3Diconmanagers && (Scr->Monochrome != COLOR))
+		    XDrawImageString (dpy, Event.xany.window, Scr->NormalGC, 
+			iconmgr_textx, Scr->IconManagerFont.y+4,
+			Tmp_win->icon_name, strlen(Tmp_win->icon_name));
+		else
+		    XDrawString (dpy, Event.xany.window, Scr->NormalGC, 
+			iconmgr_textx, Scr->IconManagerFont.y+4,
+			Tmp_win->icon_name, strlen(Tmp_win->icon_name));
+
 		flush_expose (Event.xany.window);
 		return;
 	    }
 	    if (Event.xany.window == Tmp_win->list->icon)
 	    {
+
+/* djhjr - 4/19/96
 		FB(Tmp_win->list->fore, Tmp_win->list->back);
 		XCopyPlane(dpy, Scr->siconifyPm, Tmp_win->list->icon,
 		    Scr->NormalGC,
 		    0,0, iconifybox_width, iconifybox_height, 0, 0, 1);
+*/
+		if (Scr->use3Diconmanagers && Tmp_win->list->iconifypm)
+		    XCopyArea (dpy, Tmp_win->list->iconifypm, Tmp_win->list->icon,
+				Scr->NormalGC, 0, 0,
+				iconifybox_width, iconifybox_height, 0, 0);
+		else {
+		    FB(Tmp_win->list->cp.fore, Tmp_win->list->cp.back);
+		    XCopyPlane(dpy, Scr->siconifyPm, Tmp_win->list->icon, Scr->NormalGC,
+			0,0, iconifybox_width, iconifybox_height, 0, 0, 1);
+		}
+
 		flush_expose (Event.xany.window);
 		return;
 	    }
@@ -1509,8 +1612,13 @@ HandleMapNotify()
 	if (Tmp_win->title_w)
 	XMapSubwindows(dpy, Tmp_win->title_w);
 	XMapSubwindows(dpy, Tmp_win->frame);
+
+/* djhjr - 4/25/96
 	if (Scr->Focus != Tmp_win && Tmp_win->hilite_w)
 	XUnmapWindow(dpy, Tmp_win->hilite_w);
+*/
+	if (Scr->Focus != Tmp_win)
+		PaintTitleHighlight(Tmp_win, off);
 
 	XMapWindow(dpy, Tmp_win->frame);
 	XUngrabServer (dpy);
@@ -1831,7 +1939,12 @@ HandleButtonRelease()
 		if (DownIconManager)
 		{
 			DownIconManager->down = FALSE;
+
+/* djhjr - 4/19/96
 			if (Scr->Highlight) DrawIconManagerBorder(DownIconManager);
+*/
+			if (Scr->Highlight) DrawIconManagerBorder(DownIconManager, False);
+
 			DownIconManager = NULL;
 		}
 		Cancel = FALSE;
@@ -1859,6 +1972,10 @@ static do_menu (menu, w)
 	Window child;
 
 	(void) XTranslateCoordinates (dpy, w, Scr->Root, 0, h, &x, &y, &child);
+
+	/* djhjr - 3/12/97 */
+	y -= Scr->TitleHeight;
+
 	center = False;
 	} else {
 	center = True;
@@ -1948,27 +2065,29 @@ HandleButtonPress()
 		return;
 	}
 
-	if ( Tmp_win
-	&& Tmp_win->title_height
-	&& Tmp_win->titlebuttons )
+	if ( ButtonPressed == Button1 && Tmp_win && Tmp_win->title_height && Tmp_win->titlebuttons )
 	{	/* check the title bar buttons */
 		register int i;
 		register TBWindow *tbw;
 		int nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
 
 		for (i = 0, tbw = Tmp_win->titlebuttons; i < nb; i++, tbw++)
-		{	if (Event.xany.window == tbw->window)
-			{	if (tbw->info->func == F_MENU)
-				{	Context = C_TITLE;
+		{
+			if (Event.xany.window == tbw->window)
+			{
+				if (tbw->info->func == F_MENU)
+				{
+					Context = C_TITLE;
 					ButtonEvent = Event;
 					ButtonWindow = Tmp_win;
 					do_menu (tbw->info->menuroot, tbw->window);
-				} else
+				}
+				else
 				{
 					ExecuteFunction (tbw->info->func, tbw->info->action,
-						Event.xany.window, Tmp_win, &Event,
-						C_TITLE, FALSE);
+						Event.xany.window, Tmp_win, &Event, C_TITLE, FALSE);
 				}
+
 				return;
 			}
 		}
@@ -1978,6 +2097,7 @@ HandleButtonPress()
 	if ( Event.xany.window == Scr->InfoWindow ) Context = C_IDENTIFY;
 	if ( Event.xany.window == Scr->Root ) Context = C_ROOT;
 
+/* djhjr - 9/12/96 - moved to the bottom of this context decision chain...
 	if
 	(	Context == C_NO_CONTEXT
 		&&
@@ -1995,16 +2115,17 @@ HandleButtonPress()
 			(caddr_t *) &tmp_win )
 				!= XCNOENT
 		)
-		{	/* Click in a little window in the panner. */
+		{	* Click in a little window in the panner. *
 			Tmp_win = tmp_win;
 			Context = C_VIRTUAL_WIN;
 		}
 		else
-		{	/* Click in the panner. */
+		{	* Click in the panner. *
 			Tmp_win = Scr->VirtualDesktopDisplayTwin;
 			Context = C_VIRTUAL;
 		}
 	}
+*/
 
 	if (XFindContext(dpy, Event.xany.window,
 		DoorContext, (caddr_t *)&door) != XCNOENT)
@@ -2028,8 +2149,13 @@ HandleButtonPress()
 				Event.xbutton.x, Event.xbutton.y,
 				&JunkX, &JunkY, &JunkChild);
 
+/* djhjr - 4/21/96
 			Event.xbutton.x = JunkX;
 			Event.xbutton.y = JunkY - Tmp_win->title_height;
+*/
+			Event.xbutton.x = JunkX - Tmp_win->frame_bw3D;
+			Event.xbutton.y = JunkY - Tmp_win->title_height - Tmp_win->frame_bw3D;
+
 			Event.xany.window = Tmp_win->w;
 			Context = C_WINDOW;
 		}
@@ -2056,7 +2182,13 @@ HandleButtonPress()
 			*/
 			if (Event.xbutton.subwindow == Tmp_win->w)
 			{	Event.xbutton.window = Tmp_win->w;
+
+/* djhjr - 4/21/96
 				Event.xbutton.y -= Tmp_win->title_height;
+*/
+				Event.xbutton.x -= Tmp_win->frame_bw3D;
+				Event.xbutton.y -= (Tmp_win->title_height + Tmp_win->frame_bw3D);
+
 				/*****
 				Event.xbutton.x -= Tmp_win->frame_bw;
 				*****/
@@ -2074,9 +2206,43 @@ HandleButtonPress()
 		)
 		{
 			Tmp_win->list->down = TRUE;
+
+/* djhjr - 4/19/96
 			if (Scr->Highlight) DrawIconManagerBorder(Tmp_win->list);
+*/
+			if (Scr->Highlight) DrawIconManagerBorder(Tmp_win->list, False);
+
 			DownIconManager = Tmp_win->list;
 			Context = C_ICONMGR;
+		}
+	}
+
+/* djhjr - 9/12/96 - moved from the top of this context decision chain...*/
+	if
+	(	Context == C_NO_CONTEXT
+		&&
+		(	Tmp_win == Scr->VirtualDesktopDisplayTwin
+			||
+			Event.xany.window == Scr->VirtualDesktopDisplayOuter
+			||
+			Event.xany.window == Scr->VirtualDesktopDisplay
+		)
+	)
+	{	TwmWindow *tmp_win;
+
+		if ( Event.xbutton.subwindow
+		&& XFindContext( dpy, Event.xbutton.subwindow, VirtualContext,
+			(caddr_t *) &tmp_win )
+				!= XCNOENT
+		)
+		{	/* Click in a little window in the panner. */
+			Tmp_win = tmp_win;
+			Context = C_VIRTUAL_WIN;
+		}
+		else
+		{	/* Click in the panner. */
+			Tmp_win = Scr->VirtualDesktopDisplayTwin;
+			Context = C_VIRTUAL;
 		}
 	}
 
@@ -2428,9 +2594,13 @@ HandleEnterNotify()
 		    /*
 		     * unhighlight old focus window
 		     */
-		    if (Scr->Focus &&
-			Scr->Focus != Tmp_win && Tmp_win->hilite_w)
+
+/* djhjr - 4/25/96
+		    if (Scr->Focus && Scr->Focus != Tmp_win && Tmp_win->hilite_w)
 		      XUnmapWindow(dpy, Scr->Focus->hilite_w);
+*/
+		    if (Scr->Focus && Scr->Focus != Tmp_win)
+				PaintTitleHighlight(Scr->Focus, off);
 
 		    /*
 		     * If entering the frame or the icon manager, then do
@@ -2439,18 +2609,24 @@ HandleEnterNotify()
 		     *     1.  turn on highlight window (if any)
 		     *     2.  install frame colormap
 		     *     3.  set frame and highlight window (if any) border
+		     *     3a. set titlebutton highlight (if button color is frame)
 		     *     4.  focus on client window to forward typing
 		     *     4a. same as 4 but for icon mgr w/with NoTitlebar on.
 		     *     5.  send WM_TAKE_FOCUS if requested
 		     */
 		    if (ewp->window == Tmp_win->frame ||
 			(Tmp_win->list && ewp->window == Tmp_win->list->w)) {
-			if (Tmp_win->hilite_w)				/* 1 */
+
+/* djhjr - 4/25/96
+			if (Tmp_win->hilite_w)						* 1 *
 			  XMapWindow (dpy, Tmp_win->hilite_w);
+*/
+			PaintTitleHighlight(Tmp_win, on);			/* 1 */
+
 			if (!scanArgs.leaves && !scanArgs.enters)
 			    InstallWindowColormaps (EnterNotify,	/* 2 */
 						    &Scr->TwmRoot);
-			SetBorder (Tmp_win, True);			/* 3 */
+			SetBorder (Tmp_win, True);					/* 3, 3a */
 			if (Tmp_win->title_w && Scr->TitleFocus &&	/* 4 */
 			    Tmp_win->wmhints && Tmp_win->wmhints->input)
 			  SetFocus (Tmp_win, ewp->time);
@@ -2498,19 +2674,42 @@ HandleEnterNotify()
 	if (XFindContext (dpy, ewp->window, MenuContext, (caddr_t *)&mr) != XCSUCCESS) return;
 
 	mr->entered = TRUE;
+/* djhjr - 4/23/96
 	if (ActiveMenu && mr == ActiveMenu->prev && RootFunction == NULL) {
-	if (Scr->Shadow) XUnmapWindow (dpy, ActiveMenu->shadow);
-	XUnmapWindow (dpy, ActiveMenu->w);
-	ActiveMenu->mapped = UNMAPPED;
-	UninstallRootColormap ();
-	if (ActiveItem) {
-		ActiveItem->state = 0;
-		PaintEntry (ActiveMenu, ActiveItem,  False);
+		if (Scr->Shadow) XUnmapWindow (dpy, ActiveMenu->shadow);
+		XUnmapWindow (dpy, ActiveMenu->w);
+		ActiveMenu->mapped = UNMAPPED;
+		UninstallRootColormap ();
+		if (ActiveItem) {
+			ActiveItem->state = 0;
+			PaintEntry (ActiveMenu, ActiveItem,  False);
+		}
+		ActiveItem = NULL;
+		ActiveMenu = mr;
+		MenuDepth--;
 	}
-	ActiveItem = NULL;
-	ActiveMenu = mr;
-	MenuDepth--;
+*/
+    if (RootFunction == 0) {
+		MenuRoot *tmp;
+		for (tmp = ActiveMenu; tmp; tmp = tmp->prev) {
+	    	if (tmp == mr) break;
+		}
+		if (! tmp) return;
+		for (tmp = ActiveMenu; tmp != mr; tmp = tmp->prev) {
+			if (Scr->Shadow) XUnmapWindow (dpy, ActiveMenu->shadow);
+			XUnmapWindow (dpy, ActiveMenu->w);
+			ActiveMenu->mapped = UNMAPPED;
+	    	MenuDepth--;
+		}
+		UninstallRootColormap ();
+		if (ActiveItem) {
+	    	ActiveItem->state = 0;
+	    	PaintEntry (ActiveMenu, ActiveItem,  False);
+		}
+		ActiveItem = NULL;
+		ActiveMenu = mr;
 	}
+
 	return;
 }
 
@@ -2612,8 +2811,13 @@ HandleLeaveNotify()
 		if ((Event.xcrossing.window == Tmp_win->frame &&
 			!scanArgs.matches) || inicon) {
 		    if (Tmp_win->list) NotActiveIconManager(Tmp_win->list);
+
+/* djhjr - 4/25/96
 		    if (Tmp_win->hilite_w)
 		      XUnmapWindow (dpy, Tmp_win->hilite_w);
+*/
+			PaintTitleHighlight(Tmp_win, off);
+
 		    SetBorder (Tmp_win, False);
 		    if (Scr->TitleFocus ||
 			Tmp_win->protocols & DoesWmTakeFocus)
@@ -2740,16 +2944,34 @@ HandleConfigureRequest()
 
 	if (cre->value_mask & CWX) {	/* override even if border change */
 	x = cre->x - bw;
+
+	/* djhjr - 4/21/96 */
+	x -= ((gravx < 0) ? 0 : Tmp_win->frame_bw3D);
+
 	}
 	if (cre->value_mask & CWY) {
 	y = cre->y - ((gravy < 0) ? 0 : Tmp_win->title_height) - bw;
+
+	/* djhjr - 4/21/96 */
+	y -= ((gravy < 0) ? 0 : Tmp_win->frame_bw3D);
+
 	}
 
 	if (cre->value_mask & CWWidth) {
+
+/* djhjr - 4/21/96
 	width = cre->width;
+*/
+	width = cre->width + 2 * Tmp_win->frame_bw3D;
+
 	}
 	if (cre->value_mask & CWHeight) {
+
+/* djhjr - 4/21/96
 	height = cre->height + Tmp_win->title_height;
+*/
+	height = cre->height + Tmp_win->title_height + 2 * Tmp_win->frame_bw3D;
+
 	}
 
 	if (width != Tmp_win->frame_width || height != Tmp_win->frame_height)
@@ -3086,22 +3308,34 @@ int x, y;
 {
 	XEvent client_event;
 
-	    client_event.type = ConfigureNotify;
-	    client_event.xconfigure.display = dpy;
-	    client_event.xconfigure.event = tmp_win->w;
-	    client_event.xconfigure.window = tmp_win->w;
-	    client_event.xconfigure.x = (x + tmp_win->frame_bw - tmp_win->old_bw);
-	    client_event.xconfigure.y = (y + tmp_win->frame_bw +
-				     tmp_win->title_height - tmp_win->old_bw);
-	    client_event.xconfigure.width = tmp_win->frame_width;
-	    client_event.xconfigure.height = tmp_win->frame_height -
-	            tmp_win->title_height;
-	    client_event.xconfigure.border_width = tmp_win->old_bw;
-	    /* Real ConfigureNotify events say we're above title window, so ... */
-	/* what if we don't have a title ????? */
-	    client_event.xconfigure.above = tmp_win->frame;
-	    client_event.xconfigure.override_redirect = False;
-	    XSendEvent(dpy, tmp_win->w, False, StructureNotifyMask, &client_event);
+    client_event.type = ConfigureNotify;
+    client_event.xconfigure.display = dpy;
+    client_event.xconfigure.event = tmp_win->w;
+    client_event.xconfigure.window = tmp_win->w;
+
+/* djhjr - 4/24/96
+    client_event.xconfigure.x = (x + tmp_win->frame_bw - tmp_win->old_bw);
+    client_event.xconfigure.y = (y + tmp_win->frame_bw +
+			     tmp_win->title_height - tmp_win->old_bw);
+    client_event.xconfigure.width = tmp_win->frame_width;
+    client_event.xconfigure.height = tmp_win->frame_height -
+            tmp_win->title_height;
+*/
+    client_event.xconfigure.x = (x + tmp_win->frame_bw - tmp_win->old_bw
+			+ tmp_win->frame_bw3D);
+    client_event.xconfigure.y = (y + tmp_win->frame_bw +
+		     tmp_win->title_height - tmp_win->old_bw
+			+ tmp_win->frame_bw3D);
+    client_event.xconfigure.width = tmp_win->attr.width;
+    client_event.xconfigure.height = tmp_win->attr.height;
+
+    client_event.xconfigure.border_width = tmp_win->old_bw;
+    /* Real ConfigureNotify events say we're above title window, so ... */
+    /* what if we don't have a title ????? */
+    client_event.xconfigure.above = tmp_win->frame;
+    client_event.xconfigure.override_redirect = False;
+
+    XSendEvent(dpy, tmp_win->w, False, StructureNotifyMask, &client_event);
 }
 
 #ifdef TRACE

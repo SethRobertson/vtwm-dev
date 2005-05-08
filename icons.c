@@ -344,6 +344,14 @@ int def_x, def_y;
     int final_x, final_y;
     int x;
 
+	/* djhjr - 4/27/96 */
+    GetColorFromList(Scr->IconBorderColorL, tmp_win->full_name, &tmp_win->class,
+	&tmp_win->icon_border);
+    GetColorFromList(Scr->IconForegroundL, tmp_win->full_name, &tmp_win->class,
+	&tmp_win->iconc.fore);
+    GetColorFromList(Scr->IconBackgroundL, tmp_win->full_name, &tmp_win->class,
+	&tmp_win->iconc.back);
+    if (Scr->use3Diconmanagers && !Scr->BeNiceToColormap) GetShadeColors(&tmp_win->iconc);
 
     FB(tmp_win->iconc.fore, tmp_win->iconc.back);
 
@@ -479,19 +487,40 @@ int def_x, def_y;
     tmp_win->icon_w_width = XTextWidth(Scr->IconFont.font,
 	tmp_win->icon_name, strlen(tmp_win->icon_name));
 
+/* djhjr - 6/11/96
     tmp_win->icon_w_width += 6;
     if (tmp_win->icon_w_width < tmp_win->icon_width)
     {
-	tmp_win->icon_x = (tmp_win->icon_width - tmp_win->icon_w_width)/2;
-	tmp_win->icon_x += 3;
-	tmp_win->icon_w_width = tmp_win->icon_width;
+		tmp_win->icon_x = (tmp_win->icon_width - tmp_win->icon_w_width)/2;
+		tmp_win->icon_x += 3;
+		tmp_win->icon_w_width = tmp_win->icon_width;
     }
     else
+	{
+		tmp_win->icon_x = 3;
+	}
+*/
+    tmp_win->icon_w_width += 8;
+    if (tmp_win->icon_w_width < tmp_win->icon_width + 8)
     {
-	tmp_win->icon_x = 3;
+		tmp_win->icon_x = (((tmp_win->icon_width + 8) - tmp_win->icon_w_width)/2) + 4;
+		tmp_win->icon_w_width = tmp_win->icon_width + 8;
     }
+    else
+		tmp_win->icon_x = 4;
+
+/* djhjr - 6/11/96
     tmp_win->icon_y = tmp_win->icon_height + Scr->IconFont.height;
+*/
+    tmp_win->icon_y = tmp_win->icon_height + Scr->IconFont.height + 2;
+
+/* djhjr - 4/27/96
     tmp_win->icon_w_height = tmp_win->icon_height + Scr->IconFont.height + 4;
+*/
+/* djhjr - 6/11/96
+    tmp_win->icon_w_height = tmp_win->icon_height + Scr->IconFont.height + 6;
+*/
+    tmp_win->icon_w_height = tmp_win->icon_height + Scr->IconFont.height + 8;
 
     event_mask = 0;
     if (tmp_win->wmhints && tmp_win->wmhints->flags & IconWindowHint)
@@ -535,7 +564,11 @@ int def_x, def_y;
     {
 	int y;
 
+/* djhjr - 6/11/96
 	y = 0;
+*/
+	y = 4;
+
 	if (tmp_win->icon_w_width == tmp_win->icon_width)
 	    x = 0;
 	else

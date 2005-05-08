@@ -39,13 +39,46 @@
 #ifndef _UTIL_
 #define _UTIL_
 
+typedef struct _Image {
+    Pixmap pixmap;
+    Pixmap mask;
+    int    width;
+    int    height;
+    struct _Image *next;
+} Image;
+
 extern void	Zoom();
 extern void	MoveOutline();
 extern Pixmap	GetBitmap(), FindBitmap();
 extern void	GetUnknownIcon();
 extern char 	*ExpandFilename();
-extern int	GetColor();
+extern void		GetColor();
 extern Cursor	NoCursor();
+
+/* djhjr - 4/18/96 */
+static Pixmap CreateXLogoPixmap(), CreateResizePixmap();
+static Pixmap CreateQuestionPixmap(), CreateMenuPixmap();
+static Pixmap CreateDotPixmap ();
+static Image  *Create3DMenuImage ();
+static Image  *Create3DDotImage ();
+static Image  *Create3DResizeImage ();
+static Image  *Create3DZoomImage ();
+static Image  *Create3DBarImage ();
+extern Image *GetImage ();
+extern void Draw3DBorder();
+extern void GetShadeColors();
+extern void PaintBorders();
+extern void PaintIcon();
+extern void PaintTitle();
+extern void PaintTitleButton();
+
+/* djhjr - 11/17/97 */
+extern void PaintTitleButtonHighlight();
+
+void Draw3DCorner();
+
+/* djhjr - 4/25/96 */
+void PaintTitleHighlight();
 
 extern int HotX, HotY;
 

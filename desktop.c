@@ -152,7 +152,12 @@ void CreateDesktopDisplay()
 	}
 
 	XSetStandardProperties(dpy, Scr->VirtualDesktopDisplayOuter,
+
+/* djhjr - 4/27/96
 			       "Virtual Desktop", "Virtual Desktop",
+*/
+			       "VTWM Desktop", "VTWM Desktop",
+
 			       None, NULL, 0, NULL);
 
 /* Stig Ostholm moved a few lines away from here */
@@ -934,7 +939,7 @@ void SnapRealScreen()
 void SetRealScreen(x, y)
 int x, y;
 {
-	if (Scr->SnapRealScreen)
+	if (Scr->snapRealScreen)
 		SetRealScreenInternal(x, y, TRUE, NULL, NULL); /* DSE */
 	else
 		SetRealScreenInternal(x, y, FALSE, NULL, NULL); /* DSE */

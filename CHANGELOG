@@ -1,6 +1,116 @@
+
+============================================================
 A COMPLETE LISTING OF CHANGES MADE TO VTWM SINCE VERSION 5.0
 IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 ============================================================
+
+============ vtwm-5.4.tar.gz =============
+hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
+
+	November 17 - 19, 1997
+		[events.c] [menus.c] [util.c] [util.h]
+			Fixed a bug where the wrong resource was being used to
+			highlight the window border that has focus. Fixed an omission
+			where the window buttons would not follow the border color
+			when highlighted and the ButtonColorIsFrame resource is true.
+			Added a hack to trap corrupted/invalid window button names.
+
+	March 12 - 14, 1997
+		[add_window.c] [menus.c] [twm.c] [util.c]
+			Added code to properly paint the window buttons in the same
+			color as their titlebar on a restart operation. Woo-woo!
+			Numerous changes to accomodate added buttons and squeezed
+			titlebars - I had previously overlooked these. Made a few
+			resources un-alterable when 3D appearances are used. Now
+			closes the display before spawning the new WM on a restart
+			operation - free alloc'd memory in the X server?
+
+	September 25 - 26, 1996
+		[menus.c]
+			Changed code to properly scale menus to the fonts used.
+
+	September 14 - 21, 1996
+		[add_window.c] [iconmgr.c] [menus.c] [resize.c] [twm.h] [util.c]
+		[version.h] [*akefil*]
+			Fixed a bug in zooms that I introduced! Applied the backing
+			store and NoBackingStore resources to the Icon Manager and
+			titlebars (defeats effects of RaiseDelay). Made the cursor
+			warp to the titlebar on a zoom operation if WarpCursor is
+			set on. The function f.showdesktopdisplay now deiconifies as
+			required. Working on code to make the window buttons stay the
+			same color as their titlebar on a restart operation (obviously
+			wasn't thought about much before). Added build info to the
+			Version window by having the *makefil*s create a temporary C
+			module.
+
+			Added the following resource:
+				ButtonColorIsFrame
+
+	September 10 - 12, 1996
+		[events.c] [menus.c]
+			Added code preventing the Virtual Desktop window and Door
+			windows from doing harm. Fixed a bug when trying to move the
+			Virtual Desktop window with the pointer; see the notes in
+			djhjr.vtwmrc pertaining to the Virtual Desktop, it's related,
+			and the BUGS file.
+
+	June 26, 1996
+		[screen.h] [parse.c] [twm.c] [util.c]
+			Tweaked the 3D menu icons to look a little more like menus.
+			Made the 3D Icon Manager iconified indicators "shallow" to
+			match the 3D menu icons. Added code for Motif-ish "shallow"
+			relief in 3D titlebars and buttons to matches the others.
+
+			Added the following resource:
+				ShallowReliefWindowButton
+
+	June 11, 1996
+		[icons.c] [events.c]
+			Tweaked the hard-coded geometries for a better 3D appearance
+			on icons (looks best with IconBorderWidth set to 0).
+
+	April 18 - May 19, 1996
+		[add_window.c] [desktop.c] [doors.c] [doors.h] [events.c]
+		[gram.y] [iconmgr.c] [iconmgr.h] [icons.c] [menus.c] [menus.h]
+		[parse.c] [resize.c] [scrren.h] [twm.c] [twm.h] [util.c] [util.h]
+		[version.c]
+			Modifications and/or additions to the above modules for
+			a 3D appearance, menu separators, a position window, info
+			window fonts, resize/position window locations, and other
+			minor tweaks (listed below). All should be initialled and
+			dated. Changed as many as convenient boolean shorts to bits in
+			a Slim-Fast effort (the only executable code changed was due
+			to renaming the variable SnapRealScreen to snapRealScreen; the
+			shorts maybe reinstated with '#define ORIGINAL_SHORTS').
+			Changed "Twm Door" to "VTWM Door", in the name of Consistancy.
+			Changed "Virtual Desktop" to "VTWM Desktop". Ditto. Changed the
+			code to center Door names in their windows. It *is* correct,
+			but only looks more correct. Took liberties with the
+			SunkFocusWindowTitle function. I think it more pleasing. Took
+			liberties with other code too, look for '#ifdef ORIGINAL_'.
+			A couple of changes for a cleaner compile (what were 'int'
+			functions are now 'void', etc.). Rem'd out code no longer
+			valid due to these changes.
+
+			Added the following resources:
+				SunkFocusWindowTitle
+				UseThreeDIconManagers
+				UseThreeDMenus
+				UseThreeDTitles
+				UseThreeDBorders
+				ThreeDBorderWidth n
+				ClearShadowContrast n
+				DarkShadowContrast n
+				InfoFont s
+				ResizeRegion s
+
+			Added the following function:
+				f.separator
+
+			Updated the man page.
+			Included my .vtwmrc (djhjr.vtwmrc) in this distribution.
+
+			See also the files 4.ANNOUNCE, 4.README, and BUGS.
 
 ============ vtwm-5.3.tar.gz =============
 dsembr01@starbase.spd.louisville.edu (Darren S. Embry)

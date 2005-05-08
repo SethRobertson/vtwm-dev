@@ -1,3 +1,4 @@
+twm
 .de EX		\"Begin example
 .ne 5
 .if n .sp 1
@@ -63,8 +64,8 @@ When new windows are created, \fIvtwm\fP will honor any size and location
 information requested by the user (usually through \fI-geometry\fP
 command line argument or resources for the individual applications).
 Otherwise, an outline of the window's default size, its titlebar, and lines
-dividing the
-window into a 3x3 grid that track the pointer are displayed.
+crossing the
+window diagonally that track the pointer are displayed.
 Clicking pointer Button1
 will position the window at the current position and give it the default
 size.  Pressing pointer Button2 (usually the middle pointer button)
@@ -79,7 +80,7 @@ functionality in the form of a virtual desktop.  The virtual desktop is an area
 larger than the physical screen. The real screen is considered to be a
 window onto portions of the virtual desktop showing whatever windows
 are present in that area of the desktop.   To help navigate around the desktop, \fBvtwm\fP
-creates a new window, of the name \(lq\fIVirtual Desktop\fP\(rq, which shows
+creates a new window, of the name \(lq\fIVTWM Desktop\fP\(rq, which shows
 the entire desktop using a small scale.  In the Virtual Desktop window, all
 windows that exist are displayed and various options are provided to recognize
 the identity of the different windows (see \fBDesktopDisplayBackground\fP,
@@ -300,6 +301,15 @@ indented on all sides.  Positive values cause the buttons to be smaller than
 the window text and highlight area so that they stand out.  Setting this
 and the \fBTitleButtonBorderWidth\fP variables to 0 makes titlebuttons be as
 tall and wide as possible.  The default is 1.
+.IP "\fBButtonColorIsFrame\fP"
+This variable specifies that the titlebar buttons will be the same color
+as the window frame.
+.IP "\fBClearShadowContrast\fP \fIcontrast\fP" 8
+Indicates to \fIvtwm\fP how to calculate the clear shadow color for 3D items.
+The value is a comprised between 0 and 100. The formula used is :
+.EX 0
+    clear.{RGB} = (65535 - color.{RGB}) * (contrast / 100).
+.EE
 .IP "\fBClientBorderWidth\fP" 8
 This variable indicates that border width of a window's frame should be set to
 the initial border width of the window, rather than to the value of
@@ -398,6 +408,12 @@ The following example shows the default cursor definitions:
 	Desktop   "dotbox"
 }
 .EE
+.IP "\fBDarkShadowContrast\fP \fIcontrast\fP" 8
+Indicates to \fIvtwm\fP has to calculate the dark shadow color for 3D items.
+The value is a comprised between 0 and 100. The formula used is :
+.EX 0
+    dark.{RGB}  = color.{RGB} * ((100 - contrast) / 100),
+.EE
 .IP "\fBDecorateTransients\fP" 8
 This variable indicates that transient windows (those containing a
 WM_TRANSIENT_FOR property) should have titlebars.  By default, transients
@@ -416,7 +432,7 @@ screen.
 .IP "\fBDesktopDisplayBackground\fP \fIcolor\fP [{ \fIwin-list\fP }]" 8
 This variable sets the backgrounds of the little windows inside the
 Virtual Desktop window,
-AND it sets the backgrounds of menu entries in the "TWM Windows"
+AND it sets the backgrounds of menu entries in the "VTWM Windows"
 menu -- unless you specify OldFashionedTwmWindowsMenu.
 The default \fIcolor\fP is used for the default background of
 windows not named in the list.  The optional
@@ -441,7 +457,7 @@ If both this and the \fBVirtualDesktopFont\fP variable are set,
 then the names of the windows will be
 written in the window representations shown in the desktop.
 This entry also sets foreground colors for entries in the
-"TWM Windows" menu.
+"VTWM Windows" menu.
 The format of this variable is
 the same as that used for \fBDesktopDisplayBackground\fP.
 .IP "\fBDontIconifyByUnmapping\fP { \fIwin-list\fP }" 8
@@ -463,8 +479,8 @@ This variable specifies a list of clients that should not appear in
 the desktop display.  It is useful to define as a minimum the list:
 .EX 0
 	\fBDontShowInDisplay\fP {
-		"VirtualDesktop"
-		"TWM Door"
+		"VTWM Desktop"
+		"VTWM Door"
 	}
 .EE
 .IP "\fBDontSqueezeTitle\fP [{ \fIwin-list\fP }] " 8
@@ -487,7 +503,7 @@ in the door-list has the following format:
 .EE
 Windows with the name \fIwinname\fP appear with geometry and position
 as defined in \fIlocation\fP, and warp the user to \fIjumpTo\fP when
-f.enterdoor is executed inside them.  Doors have a class of `Twm Door'.
+f.enterdoor is executed inside them.  Doors have a class of `VTWM Door'.
 .IP "\fBEnhancedExecResources\fP" 8
 By default, f.exec resources behaved as they always did in \fIvtwm\fP.  You
 would have to append " &" to all of your resources in order to execute them
@@ -664,6 +680,9 @@ would try to use
 the icon bitmap in the file ``xterm.icon''.  If \fBForceIcons\fP is
 specified, this bitmap will be used even if the client has requested its
 own icon pixmap.
+.IP "\fBInfoFont\fP \fIstring\fP" 8
+This variable specifies the font to be used for in the identify window.
+The default is "fixed".
 .IP "\fBInterpolateMenuColors\fP" 8
 This variable indicates that menu entry colors should be interpolated between
 entry specified colors.  In the example below:
@@ -736,9 +755,9 @@ This variable gives a \fIlist\fP of clients that are nailed initially.
 It is usual to provide as a minimum the list:
 .EX 0
 	\fBNailedDown\fP {
-		"Virtual Desktop"
-		"TWM Door"
-		"TWM Icon Manager"
+		"VTWM Desktop"
+		"VTWM Door"
+		"VTWM Icon Manager"
 	}
 .EE
 .IP "\fBNaturalAutopanBehavior\fP" 8
@@ -762,8 +781,8 @@ Setting NaturalAutopanBehavior has the exact same effect as using the resorce
 	AutoPanWarpWithRespectToRealScreen 100
 .EE
 .IP "\fBNoBackingStore\fP" 8
-This variable indicates that \fIvtwm\fP's menus should not request backing
-store to minimize repainting of menus.  This is typically
+This variable indicates that \fIvtwm\fP's windows should not request backing
+store to minimize repainting.  This is typically
 used with servers that can repaint faster than they can handle backing store.
 .IP "\fBNoCaseSensitive\fP" 8
 This variable indicates that case should be ignored when sorting icon names
@@ -856,7 +875,7 @@ If you set this, then ``xterm -geometry +20+20'' specifies a
 position in the current view; otherwise, and by default, it would
 specify a position in the top-left view.
 .IP "\fBOldFashionedTwmWindowsMenu\fP" 8
-By default, the TWM Windows menu will use the same colors
+By default, the VTWM Windows menu will use the same colors
 that you see in the panner. This variable disables that behavior.
 .IP "\fBOpaqueMove\fP" 8
 This variable indicates that the \fBf.move\fP function should actually move
@@ -922,6 +941,10 @@ procedure.
 .IP "\fBResizeFont\fP \fIstring\fP" 8
 This variable specifies the font to be used for in the dimensions window when
 resizing windows.  The default is "fixed".
+.IP "\fBResizeRegion\fP \fIlocation\fP" 8
+This variable specifies the area on the screen to display the resize window.
+The \fIlocation\fP should be one of \fBNorthWest\fP, \fBNorthEast\fP,
+\fBSouthWest\fP, \fBSouthEast\fP, or \fBCentered\fP.
 .IP "\fBRestartPreviousState\fP" 8
 This variable indicates that
 \fIvtwm\fP should attempt to use the WM_STATE property on client windows
@@ -955,6 +978,10 @@ For example:
 .EE
 This would place on the root window 3 pixel values for borders and titlebars,
 as well as the three color strings, all taken from the default colormap.
+.IP "\fBShallowReliefWindowButton\fP" 8
+This indicates to \fIvtwm\fP that 3D window titlebar buttons (and the title
+highlight bar if \fBSunkFocusWindowTitle\fP is used) should be rendered with
+a "flatter" appearance.
 .IP "\fBShowIconManager\fP" 8
 This variable indicates that the icon manager window should be displayed when
 \fIvtwm\fP is started.  It can always be brought up using the
@@ -1019,6 +1046,12 @@ the right button will activate that menu item and dismiss the menu.
 A synonym for NailedDown.
 .IP "\fBStickyAbove\fP" 8
 A synonym for NailedAbove.
+.IP "\fBSunkFocusWindowTitle\fP" 8
+This variable specifies that the title highlight bar of the focus window
+(if exists) should be of a sunken appearance instead of a pixmap.
+Only valid if UseThreeDTitles is set.
+.IP "\fBThreeDBorderWidth\fP  \fIpixels\fP" 8
+The width of the 3D border in pixels, if any.
 .IP "\fBTitleBackground\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies the background color used in titlebars,
 and may only be specified inside of a
@@ -1065,6 +1098,21 @@ older toolkits.
 .IP "\fBUseRealScreenBorder\fP" 8
 This variable lets the RealScreen have a border.
 It may be useful for monochrome systems.
+.IP "\fBUseThreeDBorders\fP" 8
+Tells \fIvtwm\fP to use 3D-looking window borders. The width ot the 3D borders
+is \fBThreeDBorderWidth\fP. The color of the 3D border is \fBBorderTileBackground\fP,
+and if NoHighlight is not selected, the border of the Focus window is
+\fBBorderColor\fP.
+.IP "\fBUseThreeDIconManagers\fP" 8
+Tells \fIvtwm\fP to use 3D-looking IconManagers if any.
+.IP "\fBUseThreeDMenus\fP" 8
+Tells \fIvtwm\fP to use 3D-looking menus.
+.IP "\fBUseThreeDTitles\fP" 8
+Tells \fIvtwm\fP to use 3D-looking windows titles. In which case the default
+values of \fBTitleButtonBorderWidth\fP, \fBFramePadding\fP, \fBTitlePadding\fP
+and \fBButtonIndent\fP are set to 0.
+There are 5 built-in scalable pixmaps for buttons, :xpm:menu, :xpm:dot,
+:xpm:resize, :xpm:zoomand :xpm:bar.
 .IP "\fBVirtualBackground\fP \fIstring\fP
 This is the background color for the panner, a.k.a. the Virtual
 Desktop window.
@@ -1502,6 +1550,10 @@ accept this message are supposed to checkpoint all state associated with the
 window and update the WM_COMMAND property as specified in the ICCCM.  If
 the selected window has not selected for this message, the keyboard bell
 will be rung.
+.IP "\fBf.separator\fP" 8
+Valid only in menus. The effect is to add a line separator between the
+previous and the following entry. The name selector part in the menu is not
+used (but must be present).
 .IP "\fBf.setrealscreen\fP \fIXxY\fP" 8
 This function sets the real screen to the virtual coordinates (\fIX,Y\fP).
 .IP "\fBf.showdesktopdisplay\fP" 8
@@ -1716,17 +1768,20 @@ Tom LaStrange, Solbourne Computer; Jim Fulton, MIT X Consortium;
 Steve Pitschke, Stardent Computer; Keith Packard, MIT X Consortium;
 Dave Payne, Apple Computer; Nick Williams <njw@athena.mit.edu>;
 Dave Edmondson, Santa Cruz Operation, <davided@sco.com>;
-Dana Chee, Bellcore, (R5 conversion) <dana@thumper.bellcore.com>;
-Warren Jessop, University of Washington, whj@cs.washington.edu;
-thoth@reef.cis.ufl.edu (Gilligan);
-tar@math.ksu.edu (Tim Ramsey),
-Ralph Betza, gnohmon@ssiny.com,
-futzi@uni-paderborn.de (Michael Kutzner),
-Stig Ostholm <ostholm@ce.chalmers.se>,
-eyckmans@imec.be (M. Eyckmans),
-Tony Brannigan <tbrann@ox.ac.uk>,
-Alec Wolman <wolman@crl.dec.com>,
-<gdmr@dcs.edinburgh.ac.uk>,
-Marcel Mol (marcel@duteca.et.tudelft.nl),
-Darren S. Embry (dsembr01@starbase.spd.louisville.edu),
-Chris P. Ross (cross@eng.umd.edu), Paul Falstad (pf@z-code.z-code.com)
+Dana Chee, Bellcore (R5 conversion) <dana@thumper.bellcore.com>;
+Warren Jessop, University of Washington <whj@cs.washington.edu>;
+Gilligan <thoth@reef.cis.ufl.edu>;
+Tim Ramsey <tar@math.ksu.edu>;
+Ralph Betza <gnohmon@ssiny.com>;
+Michael Kutzner <futzi@uni-paderborn.de>;
+Stig Ostholm <ostholm@ce.chalmers.se>;
+M. Eyckmans <eyckmans@imec.be>;
+Tony Brannigan <tbrann@ox.ac.uk>;
+Alec Wolman <wolman@crl.dec.com>;
+<gdmr@dcs.edinburgh.ac.uk>;
+Marcel Mol <marcel@duteca.et.tudelft.nl>;
+Darren S. Embry <dsembr01@starbase.spd.louisville.edu>;
+Chris P. Ross <cross@eng.umd.edu>;
+Paul Falstad <pf@z-code.z-code.com>;
+Claude Lecommandeur, SPIL (ctwm code) <lecom@sic.epfl.ch>;
+D. J. Hawkey Jr. (3D port) <hawkeyd@visi.com>

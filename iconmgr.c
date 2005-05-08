@@ -88,12 +88,20 @@ void CreateIconManagers()
 			      (unsigned int *) &p->width, (unsigned int *)&p->height);
 
 	if (mask & XNegative)
+/* djhjr - 4/19/96
 	    JunkX = Scr->MyDisplayWidth - p->width - 
 	      (2 * Scr->BorderWidth) + JunkX;
+*/
+	    JunkX += Scr->MyDisplayWidth - p->width - 
+	      (2 * (Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth));
 
 	if (mask & YNegative)
+/* djhjr - 4/19/96
 	    JunkY = Scr->MyDisplayHeight - p->height -
 	      (2 * Scr->BorderWidth) + JunkY;
+*/
+	    JunkY += Scr->MyDisplayHeight - p->height -
+	      (2 * (Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth));
 
 	background = Scr->IconManagerC.back;
 	GetColorFromList(Scr->IconManagerBL, p->name, (XClassHint *)NULL,
@@ -431,16 +439,34 @@ WList *AddIconManager(tmp_win)
 
     tmp->twm = tmp_win;
 
+/* djhjr - 4/19/96
     tmp->fore = Scr->IconManagerC.fore;
     tmp->back = Scr->IconManagerC.back;
+*/
+    tmp->cp.fore = Scr->IconManagerC.fore;
+    tmp->cp.back = Scr->IconManagerC.back;
+
     tmp->highlight = Scr->IconManagerHighlight;
 
+/* djhjr - 4/19/96
     GetColorFromList(Scr->IconManagerFL, tmp_win->full_name, &tmp_win->class,
 	&tmp->fore);
     GetColorFromList(Scr->IconManagerBL, tmp_win->full_name, &tmp_win->class,
 	&tmp->back);
+*/
+    GetColorFromList(Scr->IconManagerFL, tmp_win->full_name, &tmp_win->class,
+	&tmp->cp.fore);
+    GetColorFromList(Scr->IconManagerBL, tmp_win->full_name, &tmp_win->class,
+	&tmp->cp.back);
+
     GetColorFromList(Scr->IconManagerHighlightL, tmp_win->full_name,
 	&tmp_win->class, &tmp->highlight);
+
+    /* djhjr - 4/19/96 */
+    if (Scr->use3Diconmanagers) {
+	if (!Scr->BeNiceToColormap) GetShadeColors (&tmp->cp);
+	tmp->iconifypm = Create3DIconManagerIcon (tmp->cp);
+    }
 
     h = Scr->IconManagerFont.height + 10;
     if (h < (siconify_height + 4))
@@ -452,12 +478,26 @@ WList *AddIconManager(tmp_win)
     tmp->y = -1;
     
     valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
+
+/* djhjr - 4/19/96
     attributes.background_pixel = tmp->back;
     attributes.border_pixel = tmp->back;
+*/
+    attributes.background_pixel = tmp->cp.back;
+    attributes.border_pixel = tmp->cp.back;
+
     attributes.event_mask = (KeyPressMask | ButtonPressMask |
 			     ButtonReleaseMask | ExposureMask |
 			     EnterWindowMask | LeaveWindowMask);
     attributes.cursor = Scr->IconMgrCursor;
+
+	/* djhjr - 9/17/96 */
+	if (Scr->BackingStore)
+	{
+		attributes.backing_store = WhenMapped;
+		valuemask |= CWBackingStore;
+	}
+
     tmp->w = XCreateWindow (dpy, ip->w, 0, 0, (unsigned int) 1, 
 			    (unsigned int) h, (unsigned int) 0, 
 			    CopyFromParent, (unsigned int) CopyFromParent,
@@ -465,7 +505,12 @@ WList *AddIconManager(tmp_win)
 
 
     valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
+
+/* djhjr - 4/19/96
     attributes.background_pixel = tmp->back;
+*/
+    attributes.background_pixel = tmp->cp.back;
+
     attributes.border_pixel = Scr->Black;
     attributes.event_mask = (ButtonReleaseMask| ButtonPressMask |
 			     ExposureMask);
@@ -621,28 +666,58 @@ void ActiveIconManager(active)
     active->active = TRUE;
     Active = active;
     Active->iconmgr->active = active;
+
+/* djhjr - 4/19/96
     DrawIconManagerBorder(active);
+*/
+    DrawIconManagerBorder(active, False);
 }
 
 void NotActiveIconManager(active)
     WList *active;
 {
     active->active = FALSE;
+
+/* djhjr - 4/19/96
     DrawIconManagerBorder(active);
+*/
+    DrawIconManagerBorder(active, False);
 }
 
+/* djhjr - 4/19/96
 void DrawIconManagerBorder(tmp)
     WList *tmp;
+*/
+void DrawIconManagerBorder(tmp, fill)
+    WList *tmp;
+    int fill;
 {
-    {
+    if (Scr->use3Diconmanagers) {
+	int shadow_width;
+
+	shadow_width = 2;
+	if (tmp->active && Scr->Highlight)
+	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
+				tmp->cp, on, fill, False);
+	else
+	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
+				tmp->cp, off, fill, False);
+    }
+    else {
+/*
 	XSetForeground(dpy, Scr->NormalGC, tmp->fore);
+*/
+	XSetForeground(dpy, Scr->NormalGC, tmp->cp.fore);
 	    XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 2, 2,
 		tmp->width-5, tmp->height-5);
 
 	if (tmp->active && Scr->Highlight)
 	    XSetForeground(dpy, Scr->NormalGC, tmp->highlight);
 	else
+/*
 	    XSetForeground(dpy, Scr->NormalGC, tmp->back);
+*/
+	    XSetForeground(dpy, Scr->NormalGC, tmp->cp.back);
 
 	XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 0, 0,
 	    tmp->width-1, tmp->height-1);
@@ -770,8 +845,16 @@ void PackIconManager(ip)
 
     savewidth = ip->width;
     if (ip->twm_win)
+
+/* djhjr - 4/19/96     
       SetupWindow (ip->twm_win,
 		   ip->twm_win->frame_x, ip->twm_win->frame_y,
 		   newwidth, ip->height + ip->twm_win->title_height, -1);
+*/
+      SetupWindow (ip->twm_win,
+		   ip->twm_win->frame_x, ip->twm_win->frame_y,
+		   newwidth + 2 * ip->twm_win->frame_bw3D,
+		   ip->height + ip->twm_win->title_height + 2 * ip->twm_win->frame_bw3D, -1);
+
     ip->width = savewidth;
 }

@@ -61,7 +61,7 @@ static int overflowlen;
 static char **stringListSource, *currentString;
 static int ParseUsePPosition();
 int RaiseDelay = 0;           /* msec, for AutoRaise *//*RAISEDELAY*/
-extern int yylineno;
+int yylineno;
 extern int mods;
 
 int ConstrainedMoveTime = 400;		/* milliseconds, event times */
@@ -356,6 +356,21 @@ typedef struct _TwmKeyword {
 
 #define kw0_WarpSnug                         46 /* DSE */
 
+/* djhjr - 4/18/96 */
+#define kw0_Use3DMenus			47
+#define kw0_Use3DTitles			48
+#define kw0_Use3DIconManagers	49
+#define kw0_Use3DBorders		50
+
+/* djhjr - 4/25/96 */
+#define kw0_SunkFocusWindowTitle			51
+
+/* djhjr - 6/25/96 */
+#define kw0_ShallowReliefWindowButton		52
+
+/* djhjr - 9/21/96 */
+#define kw0_ButtonColorIsFrame				53
+
 #define kws_UsePPosition		1
 #define kws_IconFont			2
 #define kws_ResizeFont			3
@@ -368,6 +383,12 @@ typedef struct _TwmKeyword {
 #define kws_VirtualFont			10
 #define kws_DoorFont			11
 #define kws_MenuTitleFont       12 /* DSE */
+
+/* djhjr - 5/10/96 */
+#define kws_InfoFont			13
+
+/* djhjr - 5/15/96 */
+#define kws_ResizeRegion		14
 
 #define kwn_ConstrainedMoveTime     1
 #define kwn_MoveDelta               2
@@ -386,6 +407,11 @@ typedef struct _TwmKeyword {
 #define kwn_AutoPanExtraWarp       15 /* DSE */
 #define kwn_RealScreenBorderWidth  16 /* DSE */
 #define kwn_AutoPanWarpWithRespectToRealScreen 17 /* DSE */
+
+/* djhjr - 4/18/96 */
+#define kwn_ThreeDBorderWidth		18
+#define kwn_ClearShadowContrast		19
+#define kwn_DarkShadowContrast		20
 
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
@@ -437,15 +463,27 @@ static TwmKeyword keytable[] = {
     { "bordertileforeground",	CLKEYWORD, kwcl_BorderTileForeground },
     { "borderwidth",		NKEYWORD, kwn_BorderWidth },
     { "button",			BUTTON, 0 },
+
+	/* djhjr - 9/21/96 */
+    { "buttoncolorisframe",	KEYWORD, kw0_ButtonColorIsFrame },
+
     { "buttonindent",		NKEYWORD, kwn_ButtonIndent },
     { "c",			CONTROL, 0 },
     { "center",			JKEYWORD, J_CENTER },
+
+    /* djhjr - 4/19/96 */
+    { "clearshadowcontrast",	NKEYWORD, kwn_ClearShadowContrast },
+
     { "clientborderwidth",	KEYWORD, kw0_ClientBorderWidth },
     { "color",			COLOR, 0 },
     { "constrainedmovetime",	NKEYWORD, kwn_ConstrainedMoveTime },
     { "control",		CONTROL, 0 },
     { "cursors",		CURSORS, 0 },
     { "d",			VIRTUAL_WIN, 0 },
+
+    /* djhjr - 4/19/96 */
+    { "darkshadowcontrast",	NKEYWORD, kwn_DarkShadowContrast },
+
     { "decoratetransients",	KEYWORD, kw0_DecorateTransients },
     { "defaultbackground",	CKEYWORD, kwc_DefaultBackground },
     { "defaultforeground",	CKEYWORD, kwc_DefaultForeground },
@@ -531,6 +569,10 @@ static TwmKeyword keytable[] = {
     { "f.rightzoom",		FKEYWORD, F_RIGHTZOOM },
     { "f.ring",		FKEYWORD, F_RING },
     { "f.saveyourself",		FKEYWORD, F_SAVEYOURSELF },
+
+	/* djhjr - 4/30/96 */
+    { "f.separator",		FKEYWORD, F_SEPARATOR },
+
     { "f.setrealscreen",	FSKEYWORD, F_SETREALSCREEN },
     { "f.showdesktopdisplay",	FKEYWORD, F_SHOWDESKTOP },
     { "f.showiconmgr",		FKEYWORD, F_SHOWLIST },
@@ -591,6 +633,10 @@ static TwmKeyword keytable[] = {
     { "iconmgr",		ICONMGR, 0 },
     { "iconregion",		ICON_REGION, 0 },
     { "icons",			ICONS, 0 },
+
+	/* djhjr - 5/10/96 */
+    { "infofont",		SKEYWORD, kws_InfoFont },
+
     { "interpolatemenucolors",	KEYWORD, kw0_InterpolateMenuColors },
     { "l",			LOCK, 0 },
     { "left",			JKEYWORD, J_LEFT },
@@ -656,6 +702,10 @@ static TwmKeyword keytable[] = {
     { "realscreenpixmap",		REALSCREENMAP, 0 },/*RFB PIXMAP*/
     { "resize",			RESIZE, 0 },
     { "resizefont",		SKEYWORD, kws_ResizeFont },
+
+	/* djhjr - 5/15/96 */
+    { "resizeregion",		SKEYWORD, kws_ResizeRegion },
+
     { "restartpreviousstate",	KEYWORD, kw0_RestartPreviousState },
     { "rhspulldownmenus", KEYWORD, kw0_RightHandSidePulldownMenus }, /* DSE */
     { "right",			JKEYWORD, J_RIGHT },
@@ -665,6 +715,10 @@ static TwmKeyword keytable[] = {
     { "s",			SHIFT, 0 },
     { "savecolor",              SAVECOLOR, 0},
     { "select",			SELECT, 0 },
+
+	/* djhjr - 6/25/96 */
+    { "shallowreliefwindowbutton",	KEYWORD, kw0_ShallowReliefWindowButton },
+
     { "shift",			SHIFT, 0 },
     { "showiconmanager",	KEYWORD, kw0_ShowIconManager },
     { "snaprealscreen",		KEYWORD, kw0_SnapRealScreen },
@@ -676,7 +730,15 @@ static TwmKeyword keytable[] = {
     { "stayupoptionalmenus",	KEYWORD, kw0_StayUpOptionalMenus }, /* PF */
     { "sticky",             NAILEDDOWN, 0 },/*RFB*/
     { "stickyabove",        KEYWORD, kw0_StickyAbove },                /* DSE */
+
+	/* djhjr - 4/25/96 */
+    { "sunkfocuswindowtitle",	KEYWORD, kw0_SunkFocusWindowTitle },
+
     { "t",			TITLE, 0 },
+
+    /* djhjr - 4/18/96 */
+    { "threedborderwidth",	NKEYWORD, kwn_ThreeDBorderWidth },
+
     { "title",			TITLE, 0 },
     { "titlebackground",	CLKEYWORD, kwcl_TitleBackground },
     { "titlebuttonborderwidth",	NKEYWORD, kwn_TitleButtonBorderWidth },
@@ -687,6 +749,13 @@ static TwmKeyword keytable[] = {
     { "unknownicon",		SKEYWORD, kws_UnknownIcon },
     { "usepposition",		SKEYWORD, kws_UsePPosition },
 	{ "userealscreenborder", KEYWORD, kw0_UseRealScreenBorder },/*RFB*/
+
+	/* djhjr - 4/18/96 */
+    { "usethreedborders",	KEYWORD, kw0_Use3DBorders },
+    { "usethreediconmanagers",	KEYWORD, kw0_Use3DIconManagers },
+    { "usethreedmenus",		KEYWORD, kw0_Use3DMenus },
+    { "usethreedtitles",	KEYWORD, kw0_Use3DTitles },
+
     { "v",			VIRTUAL, 0 },
     { "virtual",		VIRTUAL, 0 },
     { "virtualbackground",	CKEYWORD, kwc_VirtualBackground },/*RFB VCOLOR*/
@@ -887,7 +956,7 @@ int do_single_keyword (keyword)
  	return 1;
 
       case kw0_SnapRealScreen:
-	Scr->SnapRealScreen = TRUE;
+	Scr->snapRealScreen = TRUE;
 	return 1;
 
       case kw0_NotVirtualGeometries:
@@ -920,6 +989,35 @@ int do_single_keyword (keyword)
 		return 1;
 	case kw0_WarpSnug: /* DSE */
 		Scr->WarpSnug = TRUE;
+		return 1;
+
+	/* djhjr - 6/25/96 */
+	case kw0_ShallowReliefWindowButton:
+		Scr->ShallowReliefWindowButton = 1;
+		return 1;
+
+	/* djhjr - 4/18/96 */
+	case kw0_Use3DBorders:
+		Scr->use3Dborders = TRUE;
+		return 1;
+	case kw0_Use3DIconManagers:
+		Scr->use3Diconmanagers = TRUE;
+		return 1;
+	case kw0_Use3DMenus:
+		Scr->use3Dmenus = TRUE;
+		return 1;
+	case kw0_Use3DTitles:
+		Scr->use3Dtitles = TRUE;
+		return 1;
+
+	/* djhjr - 4/25/96 */
+	case kw0_SunkFocusWindowTitle:
+		Scr->SunkFocusWindowTitle = TRUE;
+		return 1;
+
+	/* djhjr - 9/21/96 */
+	case kw0_ButtonColorIsFrame:
+		Scr->ButtonColorIsFrame = TRUE;
 		return 1;
 
     }
@@ -970,6 +1068,11 @@ int do_string_keyword (keyword, s)
 	if (!Scr->HaveFonts) Scr->MenuTitleFont.name = s;
 	return 1;
 
+	/* djhjr - 5/10/96 */
+      case kws_InfoFont:
+	if (!Scr->HaveFonts) Scr->InfoFont.name = s;
+	return 1;
+
       case kws_UnknownIcon:
 	if (Scr->FirstTime) GetUnknownIcon (s);
 	return 1;
@@ -1003,7 +1106,42 @@ int do_string_keyword (keyword, s)
       case kws_DoorFont:
 	if (!Scr->HaveFonts) Scr->DoorFont.name = s;
 	return 1;
-    }
+
+	/* djhjr - 5/15/96 */
+	case kws_ResizeRegion:
+		XmuCopyISOLatin1Lowered (s, s);
+		if (strcmp (s, "northwest") == 0)
+		{
+			Scr->ResizeX = R_NORTHWEST;
+			return 1;
+		}
+		else if (strcmp (s, "northeast") == 0)
+		{
+			Scr->ResizeX = R_NORTHEAST;
+			return 1;
+		}
+		if (strcmp (s, "southwest") == 0)
+		{
+			Scr->ResizeX = R_SOUTHWEST;
+			return 1;
+		}
+		else if (strcmp (s, "southeast") == 0)
+		{
+			Scr->ResizeX = R_SOUTHEAST;
+			return 1;
+		}
+		else if (strcmp (s, "centered") == 0)
+		{
+			Scr->ResizeX = R_CENTERED;
+			return 1;
+		}
+		else
+		{
+			twmrc_error_prefix();
+			fprintf (stderr, "Invalid ResizeRegion \"%s\"\n", s);
+			return 0;
+		}
+	}
 
     return 0;
 }
@@ -1087,6 +1225,24 @@ int do_number_keyword (keyword, num)
 	case kwn_AutoPanWarpWithRespectToRealScreen: /* DSE */
 		Scr->AutoPanWarpWithRespectToRealScreen = (num<0)?0:(num>100)?100:num;
 		return 1;
+
+	/* djhjr - 4/18/96 */
+	case kwn_ThreeDBorderWidth:
+		if (Scr->FirstTime) Scr->ThreeDBorderWidth = num;
+		return 1;
+
+	/* djhjr - 4/19/96 */
+	case kwn_ClearShadowContrast:
+		if (Scr->FirstTime) Scr->ClearShadowContrast = num;
+		if (Scr->ClearShadowContrast <   0) Scr->ClearShadowContrast =   0;
+		if (Scr->ClearShadowContrast > 100) Scr->ClearShadowContrast = 100;
+		return 1;
+	case kwn_DarkShadowContrast:
+		if (Scr->FirstTime) Scr->DarkShadowContrast = num;
+		if (Scr->DarkShadowContrast <   0) Scr->DarkShadowContrast =   0;
+		if (Scr->DarkShadowContrast > 100) Scr->DarkShadowContrast = 100;
+		return 1;
+
 
     }
 
@@ -1251,7 +1407,7 @@ put_pixel_on_root(pixel)
 /*
  * do_string_savecolor() save a color from a string in the twmrc file.
  */
-int do_string_savecolor(colormode, s)
+void do_string_savecolor(colormode, s)
      int colormode;
      char *s;
 {
@@ -1266,7 +1422,7 @@ int do_string_savecolor(colormode, s)
 typedef struct _cnode {int i; struct _cnode *next;} Cnode, *Cptr;
 Cptr chead = NULL;
 
-int do_var_savecolor(key)
+void do_var_savecolor(key)
 int key;
 {
   Cptr cptrav, cpnew;

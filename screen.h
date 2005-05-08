@@ -48,7 +48,12 @@ typedef struct _StdCmap {
 } StdCmap;
 
 #define SIZE_HINDENT 10
+
+#ifdef ORIGINAL_SIZEVINDENT
 #define SIZE_VINDENT 2
+#else
+#define SIZE_VINDENT 5
+#endif
 
 typedef struct _TitlebarPixmaps {
     Pixmap xlogo;
@@ -68,6 +73,10 @@ typedef struct ScreenInfo
     int MyDisplayHeight;	/* my copy of DisplayHeight(dpy, screen) */
     int MaxWindowWidth;		/* largest window to allow */
     int MaxWindowHeight;	/* ditto */
+
+	/* djhjr - 5/15/96 */
+	int ResizeX;		/* coordinate of resize/position window */
+	int ResizeY;		/* ditto */
 
     int VirtualDesktopMaxWidth;		/* max width of virtual desktop */
     int VirtualDesktopMaxHeight;	/* max height of virtual desktop */
@@ -100,6 +109,7 @@ typedef struct ScreenInfo
     Window VirtualDesktopDScreen; /* display of the real screen on the vd */
     TwmWindow *VirtualDesktopDisplayTwin; /* twm window for the above */
 
+    name_list *ImageCache;  /* list of pixmaps */
     name_list *Icons;		/* list of icon pixmaps */
     TitlebarPixmaps tbpm;	/* titlebar pixmaps */
     Pixmap UnknownPm;		/* the unknown icon pixmap */
@@ -158,6 +168,10 @@ typedef struct ScreenInfo
     ColorPair IconC;		/* icon colors */
     ColorPair IconManagerC;	/* icon manager colors */
     ColorPair DefaultC;		/* default colors */
+
+    /* djhjr - 4/19/96 */
+    ColorPair BorderColorC;	/* color of window borders */
+
     ColorPair VirtualDesktopDisplayC; /* desktop display color */
     ColorPair DoorC;		/* default door colors */
     ColorPair VirtualC;     /* default virtual colors *//*RFB VCOLOR*/
@@ -167,6 +181,10 @@ typedef struct ScreenInfo
     Pixel MenuShadowColor;	/* menu shadow color */
     Pixel IconBorderColor;	/* icon border color */
     Pixel IconManagerHighlight;	/* icon manager highlight */
+
+    /* djhjr - 4/19/96 */
+    short ClearShadowContrast;  /* The contrast of the clear shadow */
+    short DarkShadowContrast;   /* The contrast of the dark shadow */
 
     Cursor TitleCursor;		/* title bar cursor */
     Cursor FrameCursor;		/* frame cursor */
@@ -195,6 +213,10 @@ typedef struct ScreenInfo
     name_list *IconManagerFL;
     name_list *IconManagerBL;
     name_list *IconMgrs;
+
+	/* djhjr - 4/19/96 */
+    name_list *NoBorder;	/* list of window without borders          */
+
     name_list *NoTitle;		/* list of window names with no title bar */
     name_list *MakeTitle;	/* list of window names with title bar */
     name_list *AutoRaise;	/* list of window names to auto-raise */
@@ -224,6 +246,10 @@ typedef struct ScreenInfo
     GC MenuGC;			/* gc for menus */
     GC DrawGC;			/* GC to draw lines for move and resize */
 
+    /* djhjr - 4/19/96 */
+    GC GreyGC;			/* for shadowing on monochrome displays */
+    GC ShadGC;			/* for shadowing on with patterns */
+
     unsigned long Black;
     unsigned long White;
     unsigned long XORvalue;	/* number to use when drawing xor'ed */
@@ -235,6 +261,7 @@ typedef struct ScreenInfo
     MyFont VirtualFont;		/* virtual display windows */
     MyFont DoorFont;		/* for drawing in doors */
     MyFont MenuTitleFont;   /* DSE -- for menu titles */
+    MyFont InfoFont;        /* for the info window */
     MyFont DefaultFont;
     IconMgr iconmgr;		/* default icon manager */
     struct IconRegion *FirstRegion;	/* pointer to icon regions */
@@ -243,6 +270,10 @@ typedef struct ScreenInfo
     int SizeStringOffset;	/* x offset in size window for drawing */
     int SizeStringWidth;	/* minimum width of size window */
     int BorderWidth;		/* border width of twm windows */
+
+    /* djhjr - 4/18/96 */
+    int ThreeDBorderWidth;	/* 3D border width of twm windows */
+
     int IconBorderWidth;	/* border width of icon windows */
     int UnknownWidth;		/* width of the unknown icon */
     int UnknownHeight;		/* height of the unknown icon */
@@ -254,15 +285,19 @@ typedef struct ScreenInfo
     int TitlePadding;		/* distance between items in titlebar */
     int ButtonIndent;		/* amount to shrink buttons on each side */
     int NumAutoRaises;		/* number of autoraise windows on screen */
-/*  short NoDefaults; */
-	short NoDefaultMouseOrKeyboardBindings; /* DSE */
-		/* do not add default UI mouse and keyboard stuff */
-	short NoDefaultTitleButtons; /* DSE */
-		/* do not add default resize and iconify title buttons */
-		
+
+    short SqueezeTitle;		/* make title as small as possible */
+    short MoveDelta;		/* number of pixels before f.move starts */
+    short ZoomCount;		/* zoom outline count */
+
+/* djhjr - 5/17/96 */
+#ifdef ORIGINAL_SHORTS
+	/* short NoDefaults; - DSE */
+	short NoDefaultMouseOrKeyboardBindings; /* do not add default UI mouse and keyboard stuff - DSE */
+	short NoDefaultTitleButtons; /* do not add default resize and iconify title buttons - DSE */
+    short UsePPosition;		/* what do with PPosition, see values below */
     short OldFashionedTwmWindowsMenu;
 	short UseRealScreenBorder;
-    short UsePPosition;		/* what do with PPosition, see values below */
     short AutoRelativeResize;	/* start resize relative to position in quad */
     short FocusRoot;		/* is the input focus on the root ? */
     short WarpCursor;		/* warp cursor on de-iconify ? */
@@ -288,21 +323,18 @@ typedef struct ScreenInfo
     short Highlight;		/* should we highlight the window borders */
     short StackMode;		/* should we honor stack mode requests */
     short TitleHighlight;	/* should we highlight the titlebar */
-    short MoveDelta;		/* number of pixels before f.move starts */
-    short ZoomCount;		/* zoom outline count */
     short SortIconMgr;		/* sort entries in the icon manager */
     short Shadow;		/* show the menu shadow */
     short InterpolateMenuColors;/* make pretty menus */
     short NoIconManagers;	/* Don't create any icon managers */
     short ClientBorderWidth;	/* respect client window border width */
-    short SqueezeTitle;		/* make title as small as possible */
     short HaveFonts;		/* set if fonts have been loaded */
     short FirstTime;		/* first time we've read .twmrc */
     short CaseSensitive;	/* be case-sensitive when sorting names */
     short WarpUnmapped;		/* allow warping to unmapped windows */
     short DeIconifyToScreen;	/* if deiconified, should this goto the screen ? */
     short WarpWindows;		/* should windows or the screen be warped ? */
-    short SnapRealScreen;       /* should the real screen snap to a pandistance grid ? */
+    short snapRealScreen;       /* should the real screen snap to a pandistance grid ? */
     short GeometriesAreVirtual; /* should geometries be interpreted as virtual or real ? */
     short Virtual;		/* are we virtual ? (like, hey man....) */
     short NamesInVirtualDesktop;/* show names in virtual desktop display ? */
@@ -311,27 +343,175 @@ typedef struct ScreenInfo
 	short StayUpMenus;
     short StayUpOptionalMenus; /* PF */
     short WarpToTransients;    /* PF */
+	short EnhancedExecResources;      /* instead of normal behavior - DSE */
+	short RightHandSidePulldownMenus; /* instead of left-right center - DSE */
+	short LessRandomZoomZoom;         /* makes zoomzoom a better visual bell - DSE */
+	short PrettyZoom;                 /* nicer-looking animation - DSE */
+	short StickyAbove;                /* sticky windows above other windows - DSE */
+	short DontInterpolateTitles;      /* menu titles are excluded from color interpolation - DSE */
+	short FixTransientVirtualGeometries; /* bug workaround - DSE */
+	short WarpSnug;                   /* make sure entire window is on screen when warping - DSE */
+
+	/* djhjr - 6/25/96 */
+	short	ShallowReliefWindowButton;
+
+    /* djhjr - 4/18/96 */
+    short 	use3Dmenus;
+    short 	use3Dtitles;
+    short 	use3Diconmanagers;
+    short 	use3Dborders;
+    short	BeNiceToColormap;
+
+	/* djhjr - 4/25/96 */
+	short SunkFocusWindowTitle;
+
+	/* djhjr - 9/21/96 */
+	short ButtonColorIsFrame;
+#else
+	struct
+	{
+		unsigned int NoDefaultMouseOrKeyboardBindings	: 1;
+		unsigned int NoDefaultTitleButtons				: 1;
+		unsigned int UsePPosition						: 2;
+    	unsigned int OldFashionedTwmWindowsMenu			: 1;
+		unsigned int UseRealScreenBorder				: 1;
+    	unsigned int AutoRelativeResize					: 1;
+    	unsigned int FocusRoot							: 1;
+    	unsigned int WarpCursor							: 1;
+    	unsigned int ForceIcon							: 1;
+    	unsigned int NoGrabServer						: 1;
+    	unsigned int NoRaiseMove						: 1;
+    	unsigned int NoRaiseResize						: 1;
+    	unsigned int NoRaiseDeicon						: 1;
+    	unsigned int NoRaiseWarp						: 1;
+    	unsigned int DontMoveOff						: 1;
+    	unsigned int DoZoom								: 1;
+    	unsigned int TitleFocus							: 1;
+    	unsigned int NoTitlebar							: 1;
+    	unsigned int DecorateTransients					: 1;
+    	unsigned int IconifyByUnmapping					: 1;
+    	unsigned int ShowIconManager					: 1;
+    	unsigned int IconManagerDontShow				: 1;
+    	unsigned int NoIconifyIconManagers				: 1;
+    	unsigned int BackingStore						: 1;
+    	unsigned int SaveUnder							: 1;
+    	unsigned int RandomPlacement					: 1;
+    	unsigned int OpaqueMove							: 1;
+    	unsigned int Highlight							: 1;
+    	unsigned int StackMode							: 1;
+    	unsigned int TitleHighlight						: 1;
+    	unsigned int SortIconMgr						: 1;
+    	unsigned int Shadow								: 1;
+    	unsigned int InterpolateMenuColors				: 1;
+    	unsigned int NoIconManagers						: 1;
+    	unsigned int ClientBorderWidth					: 1;
+    	unsigned int HaveFonts							: 1;
+    	unsigned int FirstTime							: 1;
+    	unsigned int CaseSensitive						: 1;
+    	unsigned int WarpUnmapped						: 1;
+    	unsigned int DeIconifyToScreen					: 1;
+    	unsigned int WarpWindows						: 1;
+    	unsigned int snapRealScreen						: 1;
+    	unsigned int GeometriesAreVirtual				: 1;
+    	unsigned int Virtual							: 1;
+    	unsigned int NamesInVirtualDesktop				: 1;
+    	unsigned int AutoRaiseDefault					: 1;
+		unsigned int UseWindowRing						: 1;
+		unsigned int StayUpMenus						: 1;
+    	unsigned int StayUpOptionalMenus				: 1;
+    	unsigned int WarpToTransients					: 1;
+		unsigned int EnhancedExecResources				: 1;
+		unsigned int RightHandSidePulldownMenus			: 1;
+		unsigned int LessRandomZoomZoom					: 1;
+		unsigned int PrettyZoom							: 1;
+		unsigned int StickyAbove						: 1;
+		unsigned int DontInterpolateTitles				: 1;
+		unsigned int FixTransientVirtualGeometries		: 1;
+		unsigned int WarpSnug							: 1;
+		unsigned int ShallowReliefWindowButton			: 2;
+	    unsigned int use3Dmenus							: 1;
+    	unsigned int use3Dtitles						: 1;
+    	unsigned int use3Diconmanagers					: 1;
+    	unsigned int use3Dborders						: 1;
+    	unsigned int BeNiceToColormap					: 1;
+		unsigned int SunkFocusWindowTitle				: 1;
+		unsigned int ButtonColorIsFrame					: 1;
+	} userflags;
+#define NoDefaultMouseOrKeyboardBindings	userflags.NoDefaultMouseOrKeyboardBindings
+#define NoDefaultTitleButtons				userflags.NoDefaultTitleButtons
+#define UsePPosition						userflags.UsePPosition
+#define OldFashionedTwmWindowsMenu			userflags.OldFashionedTwmWindowsMenu
+#define UseRealScreenBorder					userflags.UseRealScreenBorder
+#define AutoRelativeResize					userflags.AutoRelativeResize
+#define FocusRoot							userflags.FocusRoot
+#define WarpCursor							userflags.WarpCursor
+#define ForceIcon							userflags.ForceIcon
+#define NoGrabServer						userflags.NoGrabServer
+#define NoRaiseMove							userflags.NoRaiseMove
+#define NoRaiseResize						userflags.NoRaiseResize
+#define NoRaiseDeicon						userflags.NoRaiseDeicon
+#define NoRaiseWarp							userflags.NoRaiseWarp
+#define DontMoveOff							userflags.DontMoveOff
+#define DoZoom								userflags.DoZoom
+#define TitleFocus							userflags.TitleFocus
+#define NoTitlebar							userflags.NoTitlebar
+#define DecorateTransients					userflags.DecorateTransients
+#define IconifyByUnmapping					userflags.IconifyByUnmapping
+#define ShowIconManager						userflags.ShowIconManager
+#define IconManagerDontShow					userflags.IconManagerDontShow
+#define NoIconifyIconManagers				userflags.NoIconifyIconManagers
+#define BackingStore						userflags.BackingStore
+#define SaveUnder							userflags.SaveUnder
+#define RandomPlacement						userflags.RandomPlacement
+#define OpaqueMove							userflags.OpaqueMove
+#define Highlight							userflags.Highlight
+#define StackMode							userflags.StackMode
+#define TitleHighlight						userflags.TitleHighlight
+#define SortIconMgr							userflags.SortIconMgr
+#define Shadow								userflags.Shadow
+#define InterpolateMenuColors				userflags.InterpolateMenuColors
+#define NoIconManagers						userflags.NoIconManagers
+#define ClientBorderWidth					userflags.ClientBorderWidth
+#define HaveFonts							userflags.HaveFonts
+#define FirstTime							userflags.FirstTime
+#define CaseSensitive						userflags.CaseSensitive
+#define WarpUnmapped						userflags.WarpUnmapped
+#define DeIconifyToScreen					userflags.DeIconifyToScreen
+#define WarpWindows							userflags.WarpWindows
+#define snapRealScreen						userflags.snapRealScreen
+#define GeometriesAreVirtual				userflags.GeometriesAreVirtual
+#define Virtual								userflags.Virtual
+#define NamesInVirtualDesktop				userflags.NamesInVirtualDesktop
+#define AutoRaiseDefault					userflags.AutoRaiseDefault
+#define UseWindowRing						userflags.UseWindowRing
+#define StayUpMenus							userflags.StayUpMenus
+#define StayUpOptionalMenus					userflags.StayUpOptionalMenus
+#define WarpToTransients					userflags.WarpToTransients
+#define EnhancedExecResources				userflags.EnhancedExecResources
+#define RightHandSidePulldownMenus			userflags.RightHandSidePulldownMenus
+#define LessRandomZoomZoom					userflags.LessRandomZoomZoom
+#define PrettyZoom							userflags.PrettyZoom
+#define StickyAbove							userflags.StickyAbove
+#define DontInterpolateTitles				userflags.DontInterpolateTitles
+#define FixTransientVirtualGeometries		userflags.FixTransientVirtualGeometries
+#define WarpSnug							userflags.WarpSnug
+#define ShallowReliefWindowButton			userflags.ShallowReliefWindowButton
+#define use3Dmenus							userflags.use3Dmenus
+#define use3Dtitles							userflags.use3Dtitles
+#define use3Diconmanagers					userflags.use3Diconmanagers
+#define use3Dborders						userflags.use3Dborders
+#define BeNiceToColormap					userflags.BeNiceToColormap
+#define SunkFocusWindowTitle				userflags.SunkFocusWindowTitle
+#define ButtonColorIsFrame					userflags.ButtonColorIsFrame
+#endif
 
     FuncKey FuncKeyRoot;
     TwmDoor *Doors;		/* a list of doors on this screen */
 
-/*DSE*/ int AutoPanBorderWidth;           /* of autopan windows, really */
-/*DSE*/ int AutoPanExtraWarp;             /* # of extra pixels to warp */
-/*DSE*/ short EnhancedExecResources;      /* instead of normal behavior */
-/*DSE*/ short RightHandSidePulldownMenus; /* instead of left-right center */
-/*DSE*/ int RealScreenBorderWidth;        /* in virtual desktop */
-/*DSE*/ short LessRandomZoomZoom;         /* makes zoomzoom a better 
-                                             visual bell */
-/*DSE*/ short PrettyZoom;                 /* nicer-looking animation */
-/*DSE*/ int AutoPanWarpWithRespectToRealScreen; /* percent */
-/*DSE*/ short StickyAbove;                /* sticky windows (nailed down) above
-                                             other windows. */
-/*DSE*/ short DontInterpolateTitles;      /* menu titles are excluded from
-                                             color interpolation */
-/*DSE*/ short FixTransientVirtualGeometries; /* bug workaround */
-/*DSE*/ short WarpSnug;                   /* make sure entire window is on
-                                             screen when warping */
-    
+	int AutoPanBorderWidth;           /* of autopan windows, really - DSE */
+	int AutoPanExtraWarp;             /* # of extra pixels to warp - DSE */
+	int RealScreenBorderWidth;        /* in virtual desktop - DSE */
+	int AutoPanWarpWithRespectToRealScreen; /* percent - DSE */
 } ScreenInfo;
 
 extern int MultiScreen;

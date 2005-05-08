@@ -178,7 +178,7 @@ VirtualDesktop		"3x2-0-0" 20	# Panner geometry and scale
 Color {
     # TWM Simple Color
     DefaultBackground		"white"		# "maroon" Sizing and information windows
-B    DefaultForeground		"black"		# "gray85"
+    DefaultForeground		"black"		# "gray85"
     MenuBackground		"maroon"
     MenuForeground		"black"		# "gray85"
     MenuShadowColor		"blue"

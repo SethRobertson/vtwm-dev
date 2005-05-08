@@ -1,0 +1,642 @@
+
+#
+# DESCRIPTION FILE FOR vtwm - $(HOME)/.vtwmrc
+# 
+
+#
+# Boolean Variables
+#
+
+RestartPreviousState
+ShowIconManager
+SortIconManager
+IconifyByUnmapping
+DeiconifyToScreen
+NoGrabServer
+#DecorateTransients
+RandomPlacement
+WarpCursor
+WarpWindows
+
+NotVirtualGeometries
+FixTransientVirtualGeometries
+
+ButtonColorIsFrame
+
+#OpaqueMove
+
+UseThreeDIconManagers
+UseThreeDMenus
+UseThreeDBorders
+UseThreeDTitles
+ShallowReliefWindowButton
+SunkFocusWindowTitle
+
+# See 'Functions and Bindings' below...
+#NoDefaultTitleButtons
+#NoDefaultMouseOrKeyboardBindings
+# Covers both of the above...
+NoDefaults
+
+#
+# Parametered Variables
+#
+
+# This spec works when ((count * scale) < phys_size) in each dimension.
+# The window size is then ((phys_size * count) / scale) in each dimension.
+# -- It's best if the window sizes work out to exact whole numbers --
+#
+# Use one of these (LLC or LRC) if you want it titled...
+#VirtualDesktop		"5x1+5-30" 16
+#VirtualDesktop		"5x1+690+685" 16
+# Use one of these (LLC or LRC) if not...
+#VirtualDesktop		"5x1+5-10" 16
+VirtualDesktop		"5x1+690+705" 16
+#
+# The window size is then ((1024 * 5) / 16) x ((768 * 1) / 16) = 320 x 48.
+
+#PanDistanceX		1024
+#PanDistanceY		0
+#AutoPan			100
+
+# Allow for QNXmouse_2emulate3 inaccuracy...
+MoveDelta			3
+
+BorderWidth			2
+ThreeDBorderWidth	5
+IconBorderWidth		0
+
+ClearShadowContrast	40
+DarkShadowContrast	40
+
+# Windows are snappier if 'NoBackingStore' is not used when this is...
+RaiseDelay			200
+
+XorValue			1
+
+#IconRegion			"800x100+200+0" North West 80 80
+#IconRegion			"800x100+200+100" North West 80 80
+ResizeRegion		"NorthEast"
+
+UnknownIcon			"xlogo32"
+
+TitleFont			"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+ResizeFont			"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+MenuFont			"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+MenuTitleFont		"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+IconFont			"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+InfoFont			"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+IconManagerFont		"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+DoorFont			"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+#VirtualDesktopFont	"5x8"
+
+#
+# Lists
+#
+
+Cursors
+{
+	Button		"arrow"
+	IconMgr		"arrow"
+	Menu		"arrow"
+	Title		"arrow"
+}
+
+# These are dependant on the physical and virtual screens...
+#Doors
+#{
+# Use one of these (LLC or LRC) sets if you want them titled...
+#	"1"		"20x15+5-25"		"+0+0"
+#	"2"		"20x15+45-25"		"+1024+0"
+#	"3"		"20x15+85-25"		"+2048+0"
+#	"4"		"20x15+125-25"		"+3072+0"
+#	"5"		"20x15+165-25"		"+4096+0"
+#	"1"		"20x15-165-25"		"+0+0"
+#	"2"		"20x15-125-25"		"+1024+0"
+#	"3"		"20x15-85-25"		"+2048+0"
+#	"4"		"20x15-45-25"		"+3072+0"
+#	"5"		"20x15-5-25"		"+4096+0"
+# Use one of these (LLC or LRC) sets if not...
+#	"1"		"20x15+5-5"			"+0+0"
+#	"2"		"20x15+45-5"		"+1024+0"
+#	"3"		"20x15+85-5"		"+2048+0"
+#	"4"		"20x15+125-5"		"+3072+0"
+#	"5"		"20x15+165-5"		"+4096+0"
+#	"1"		"20x15-165-5"		"+0+0"
+#	"2"		"20x15-125-5"		"+1024+0"
+#	"3"		"20x15-85-5"		"+2048+0"
+#	"4"		"20x15-45-5"		"+3072+0"
+#	"5"		"20x15-5-5"			"+4096+0"
+#}
+
+NailedDown
+{
+	"VTWM Icon Manager"
+	"VTWM Desktop"
+	"VTWM Door"
+	"asclock"
+	"oclock"
+	"xbiff"
+	"xbiff++"
+	"xarclock"
+	"xclock"
+	"xcb"
+	"xdaliclock"
+	"xeyes"
+	"xload"
+}
+
+IconManagerDontShow
+{
+	"VTWM Desktop"
+	"VTWM Door"
+#	"asclock"
+#	"oclock"
+#	"xarclock"
+#	"xbiff"
+#	"xbiff++"
+#	"xclock"
+#	"xcb"
+#	"xdaliclock"
+#	"xeyes"
+#	"xload"
+}
+
+DontShowInDisplay
+{
+	"VTWM Desktop"
+	"VTWM Door"
+	"asclock"
+	"oclock"
+	"asclock"
+	"xarclock"
+	"xbiff"
+	"xbiff++"
+	"xclock"
+	"xcb"
+	"xdaliclock"
+	"xeyes"
+	"xload"
+}
+
+NoTitle
+{
+	"VTWM Icon Manager"
+	"VTWM Desktop"
+	"VTWM Door"
+	"asclock"
+	"oclock"
+	"xarclock"
+	"xbiff"
+	"xbiff++"
+	"xclock"
+	"xcb"
+	"xdaliclock"
+	"xeyes"
+	"xload"
+}
+
+AutoRaise
+{
+	"VTWM Icon Manager"
+	"VTWM Desktop"
+	"VTWM Door"
+	"XTerm"
+	"Xqsh"
+	"asclock"
+	"oclock"
+	"xarclock"
+	"xbiff"
+	"xbiff++"
+	"xclock"
+	"xcb"
+	"xdaliclock"
+	"xeyes"
+	"xload"
+}
+
+# Box-stock Background is, of course, "maroon"
+# Box-stock Foreground and IconBorderColor is "gray85"
+# Box-stock MenuTitleBackground and BorderColor is "gray70"
+Color
+{
+	DefaultBackground			"gray60"
+	DefaultForeground			"gray90"
+	MenuBackground				"gray60"
+	MenuForeground				"gray90"
+	MenuTitleBackground			"gray60"
+	MenuTitleForeground			"gray90"
+	VirtualBackground			"gray60"
+	VirtualForeground			"black"
+	BorderColor					"gray60" {}
+#	BorderColor					"gray70"
+#	{
+#		"VTWM Icon Manager"		"gray60"
+#		"VTWM Desktop"			"gray60"
+#		"VTWM Door"				"gray60"
+#	}
+	BorderTileBackground		"gray60" {}
+	BorderTileForeground		"gray60" {}
+	TitleBackground				"DeepSkyBlue4"
+	{
+		"VTWM Icon Manager"		"gray60"
+		"VTWM Desktop"			"gray60"
+		"VTWM Door"				"gray60"
+		"XTerm"					"MediumSeaGreen"
+		"Xqsh"					"maroon"
+		"asclock"				"gray60"
+		"oclock"				"gray60"
+		"xarclock"				"gray60"
+		"xbiff"					"gray60"
+		"xbiff++"				"gray60"
+		"xclock"				"gray60"
+		"xcb"					"gray60"
+		"xdaliclock"			"gray60"
+		"xload"					"gray60"
+	}
+	TitleForeground				"gray90" {}
+	IconBackground				"DeepSkyBlue4"
+	{
+		"VTWM Icon Manager"		"gray60"
+		"VTWM Desktop"			"gray60"
+		"VTWM Door"				"gray60"
+		"XTerm"					"MediumSeaGreen"
+		"Xqsh"					"maroon"
+		"asclock"				"gray60"
+		"oclock"				"gray60"
+		"xarclock"				"gray60"
+		"xbiff"					"gray60"
+		"xbiff++"				"gray60"
+		"xclock"				"gray60"
+		"xcb"					"gray60"
+		"xdaliclock"			"gray60"
+		"xload"					"gray60"
+	}
+	IconForeground				"gray90" {}
+	IconBorderColor				"DeepSkyBlue4"
+	{
+		"VTWM Icon Manager"		"gray60"
+		"VTWM Desktop"			"gray60"
+		"VTWM Door"				"gray60"
+		"XTerm"					"MediumSeaGreen"
+		"Xqsh"					"maroon"
+		"asclock"				"gray60"
+		"oclock"				"gray60"
+		"xarclock"				"gray60"
+		"xbiff"					"gray60"
+		"xbiff++"				"gray60"
+		"xclock"				"gray60"
+		"xcb"					"gray60"
+		"xdaliclock"			"gray60"
+		"xload"					"gray60"
+	}
+	IconManagerBackground		"DeepSkyBlue4"
+	{
+		"VTWM Desktop"			"gray60"
+		"VTWM Door"				"gray60"
+		"XTerm"					"MediumSeaGreen"
+		"Xqsh"					"maroon"
+		"asclock"				"gray60"
+		"oclock"				"gray60"
+		"xarclock"				"gray60"
+		"xbiff"					"gray60"
+		"xbiff++"				"gray60"
+		"xclock"				"gray60"
+		"xcb"					"gray60"
+		"xdaliclock"			"gray60"
+		"xload"					"gray60"
+	}
+	IconManagerForeground		"gray90" {}
+	DoorBackground				"gray60" {}
+	DoorForeground				"gray90" {}
+	DesktopDisplayBackground	"DeepSkyBlue4"
+	{
+		"VTWM Desktop"			"gray60"
+		"VTWM Door"				"gray60"
+		"XTerm"					"MediumSeaGreen"
+		"Xqsh"					"maroon"
+		"asclock"				"gray60"
+		"oclock"				"gray60"
+		"xarclock"				"gray60"
+		"xbiff"					"gray60"
+		"xbiff++"				"gray60"
+		"xclock"				"gray60"
+		"xcb"					"gray60"
+		"xdaliclock"			"gray60"
+		"xload"					"gray60"
+	}
+}
+
+#
+# Functions and Bindings
+#
+
+# For custom Titlebar Buttons
+#
+# These are nice when using 3D titlebars...
+LeftTitleButton		":xpm:bar" = f.menu "ArrangeMenu"
+RightTitleButton	":xpm:dot" = f.iconify
+RightTitleButton	":xpm:resize" = f.resize
+# These are nice when not...
+#LeftTitleButton	":xlogo" = f.menu "ArrangeMenu"
+#RightTitleButton	":dot" = f.iconify
+#RightTitleButton	":resize" = f.resize
+
+Function "move-or-raise"
+{
+	f.move
+	f.deltastop
+	f.raise
+}
+
+Function "move-or-iconify"
+{
+	f.move
+	f.deltastop
+	f.iconify
+}
+
+Button1 = : root : f.version
+Button3 = : root : f.menu "XWindowsMenu"
+
+Button1 = : title : f.function "move-or-raise"
+Button3 = : title : f.lower
+
+Button1 = : frame : f.function "move-or-raise"
+Button2 = : frame : f.resize
+Button3 = : frame : f.iconify
+
+Button1 = : icon : f.function "move-or-iconify"
+Button3 = : icon : f.menu "ArrangeMenu"
+
+Button1 = : iconmgr : f.iconify
+
+Button1 = : door : f.enterdoor
+
+#
+# Menus
+#
+
+menu "XWindowsMenu"
+{
+	"  X Windows  "		f.title
+	"Shells"			f.menu "ShellsMenu"
+	"Editors"			f.menu "EditorsMenu"
+	""					f.separator
+	"Desktop"			f.menu "DesktopMenu"
+	"Network"			f.menu "NetworkMenu"
+	"Toybox"			f.menu "ToyboxMenu"
+	"Wallpaper"			f.menu "WallpaperMenu"
+	""					f.separator
+	"Arrange"			f.menu "ArrangeMenu"
+	""					f.separator
+	"VTWM"				f.menu "VTWMMenu"
+}
+
+menu "ShellsMenu"
+{
+	"  Shells  "	f.title
+	"ezfm"			f.exec "xqsh -font pc8x14br -fat -T ezfm -n ezfm -e /usr/bin/ezfm &"
+	"mc"			f.exec "startxterm -g 80x43 -title 'mc' -name 'mc' -e mc &"
+	"photon"		f.exec "ph &"
+	"rxvt"			f.exec "startrxvt &"
+	"xqsh"			f.exec "xqsh -font pc8x14br -fat &"
+	"xterm"			f.exec "startxterm &"
+}
+
+menu "EditorsMenu"
+{
+	"  Editors  "	f.title
+	"nedit"			f.exec "nedit &"
+	"tkhtml"		f.exec "tkHTML &"
+	"vedit"			f.exec "xqsh -font pc8x14br -fat -geometry 80x43 -T vedit -n vedit -e /bin/vedit &"
+	"xcoral"		f.exec "xcoral &"
+	""				f.separator
+	"bitmap"		f.exec "bitmap &"
+	"pixmap"		f.exec "pixmap &"
+	"xfig"			f.exec "xfig &"
+	"xpaint"		f.exec "xpaint &"
+	"xv"			f.exec "xv &"
+}
+
+menu "DesktopMenu"
+{
+	"  Desktop  "	f.title
+	"ghostview"		f.exec "ghostview &"
+	"hexcalc"		f.exec "hexcalc &"
+	"meltdown"		f.exec "meltdown -s &"
+	"tkman"			f.exec "tkman &"
+	"xbmbrowser"	f.exec "xbmbrowser &"
+	"xcb"			f.exec "xcb -g -0+136 &"
+	"xcalc"			f.exec "xcalc &"
+	"xcalendar"		f.exec "xcalendar &"
+	"xload"			f.exec "xload -jumpscroll 20 -update 3 -g 96x93-0+528 &"
+	"xmcd"			f.exec "xmcd &"
+	"xplaygizmo"	f.exec "xplaygizmo &"
+	"xpostit"		f.exec "xpostit -g 112x29+741+1 &"
+	""				f.separator
+	"asclock"		f.exec "asclock -led cyan -position +950+20 -exe 'slay -f asclock' &"
+	"oclock"		f.exec "oclock -g 198x93-0+10 -bd MediumSeaGreen -fg MediumSeaGreen -transparent &"
+	"mouseclock"	f.exec "mouseclock -cal -fg yellow -fn -adobe-helvetica-bold-r-normal--*-120-* &"
+	"sunclock"		f.exec "sunclock &"
+	"t3d"			f.exec "t3d -nice 2 &"
+	"xarclock"		f.exec "xarclock -g 97x93-0+0 -arabic -fg white -bg black -fn -adobe-helvetica-medium-r-normal--*-80-*-*-p-*-iso8859-* &"
+	"xclock"		f.exec "xclock -g -0+0 &"
+#	"xdaliclock"	f.exec "xdaliclock -g -0+0 -fg MediumSeaGreen -transparent -fn -adobe-utopia-medium-i-normal-*-*-260-*-*-p-*-iso8859-* &"
+	"xdaliclock"	f.exec "xdaliclock -g -0+0 -fg MediumSeaGreen -transparent -fn -adobe-times-bold-i-normal-*-*-260-*-*-p-*-iso8859-* &"
+}
+
+menu "NetworkMenu"
+{
+	"  Network  "	f.title
+	"chimera"		f.exec "chimera &"
+	"elm"			f.exec "xqsh -font pc8x14br -fat -T elm -n elm -e /usr/local/bin/elm &"
+	"knews"			f.exec "knews &"
+	"mosaic"		f.exec "Mosaic &"
+	"popmail"		f.exec "xqsh -font pc8x14br -fat -T popmail -n popmail -e /usr/ucb/popmail mail.visi.com hawkeyd &"
+	"xarchie"		f.exec "xarchie &"
+	"xbiff++"		f.exec "xbiff++ -update 300 -g 96x93-0+394 &"
+	"xdir"			f.exec "xdir &"
+	"xgopher"		f.exec "xgopher &"
+	""				f.separator
+	"FTP"			f.menu "FTPMenu"
+	"Login"			f.menu "LoginMenu"
+}
+
+menu "FTPMenu"
+{
+	"  FTP  "		f.title
+	"denver"		f.exec "startxterm -title 'ftp:denver' -name 'ftp:denver' -e ftp denver &"
+	"garland"		f.exec "startxterm -title 'ftp:garland' -name 'ftp:garland' -e ftp garland &"
+	"kenosha"		f.exec "startxterm -title 'ftp:kenosha' -name 'ftp:kenosha' -e ftp kenosha &"
+	"moundsview"	f.exec "startxterm -title 'ftp:moundsview' -name 'ftp:moundsview' -e ftp moundsview &"
+	"nashville"		f.exec "startxterm -title 'ftp:nashville' -name 'ftp:nashville' -e ftp nashville &"
+	"orange"		f.exec "startxterm -title 'ftp:orange' -name 'ftp:orange' -e ftp orange &"
+	"phoenix"		f.exec "startxterm -title 'ftp:phoenix' -name 'ftp:phoenix' -e ftp phoenix &"
+	"racine"		f.exec "startxterm -title 'ftp:racine' -name 'ftp:racine' -e ftp racine &"
+	"roanoke"		f.exec "startxterm -title 'ftp:roanoke' -name 'ftp:roanoke' -e ftp roanoke &"
+	"york"			f.exec "startxterm -title 'ftp:york' -name 'ftp:york' -e ftp york &"
+	"york annex"	f.exec "startxterm -title 'ftp:york annex' -name 'ftp:york annex' -e ftp yannex &"
+}
+
+menu "LoginMenu"
+{
+	"  Remote Login  "	f.title
+	"anubis"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:anubis' -n 'rlogin:anubis' -e /usr/ucb/rlogin anubis &"
+	"athena"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:athena' -n 'rlogin:athena' -e /usr/ucb/rlogin athena &"
+	"neptune"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:neptune' -n 'rlogin:neptune' -e /usr/ucb/rlogin neptune &"
+	""					f.separator
+	"denver"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:denver' -n 'rlogin:denver' -e /usr/ucb/rlogin denver &"
+	"garland"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:garland' -n 'rlogin:garland' -e /usr/ucb/rlogin garland &"
+	"kenosha"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:kenosha' -n 'rlogin:kenosha' -e /usr/ucb/rlogin kenosha &"
+	"moundsview"		f.exec "xqsh -font pc8x14br -fat -T 'rlogin:moundsview' -n 'rlogin:moundsview' -e /usr/ucb/rlogin moundsview &"
+	"nashville"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:nashville' -n 'rlogin:nashville' -e /usr/ucb/rlogin nashville &"
+	"orange"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:orange' -n 'rlogin:orange' -e /usr/ucb/rlogin orange &"
+	"phoenix"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:phoenix' -n 'rlogin:phoenix' -e /usr/ucb/rlogin phoenix &"
+	"racine"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:racine' -n 'rlogin:racine' -e /usr/ucb/rlogin racine &"
+	"roanoke"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:roanoke' -n 'rlogin:roanoke' -e /usr/ucb/rlogin roanoke &"
+	"york"				f.exec "xqsh -font pc8x14br -fat -T 'rlogin:york' -n 'rlogin:york' -e /usr/ucb/rlogin york &"
+	"york annex"		f.exec "xqsh -font pc8x14br -fat -T 'rlogin:york annex' -n 'rlogin:york annex' -e /usr/ucb/rlogin yannex &"
+}
+
+menu "ToyboxMenu"
+{
+	"  Toybox  "	f.title
+	"xboing"		f.exec "xboing &"
+	"xeyes"			f.exec "xeyes &"
+	"xmine"			f.exec "xmine &"
+	"xneko"			f.exec "xneko -t 0.07 &"
+	"xoids"			f.exec "xoids &"
+	"xtetris"		f.exec "xtetris &"
+}
+
+menu "WallpaperMenu"
+{
+	"  Wallpaper  "		f.title
+	"ico"				f.exec "stopxroot; nice -2 ico -softdbl -faces -colors green blue yellow red white -delta +10+10 -r &"
+	"pyro"				f.exec "stopxroot; pyro -root &"
+	"xcursor"			f.exec "xcursor &"
+	"xearth"			f.exec "stopxroot; xearth &"
+	"xfishtank"			f.exec "stopxroot; xfishtank -c black -r 0.08 -i 0.04 -b 20 &"
+	"xneko"				f.exec "stopxroot; xneko -t 0.07 -r &"
+	"xroach"			f.exec "stopxroot; xroach -rc grey -speed 8 &"
+	""					f.separator
+	"none"				f.exec "stopxroot &"
+	""					f.separator
+	"Escher"			f.menu "EscherMenu"
+	"Giger"				f.menu "GigerMenu"
+	"Rembrandt"			f.menu "RembrandtMenu"
+	"Sorayama"			f.menu "SorayamaMenu"
+	"Vallejo"			f.menu "VallejoMenu"
+}
+
+menu "EscherMenu"
+{
+	"  Escher  "		f.title
+	"Ascend Descend"	f.exec "xsetbg -grey /usr/local/pxflx/art/MCEscher/AscDes.gif &"
+	"Bond"				f.exec "xsetbg -grey /usr/local/pxflx/art/MCEscher/Bond.gif &"
+	"Double Plantoid"	f.exec "xsetbg -grey /usr/local/pxflx/art/MCEscher/DoublePlanetoid1.gif &"
+	"Hands"				f.exec "xsetbg -grey -clip 34,8,555,467 -zoom 185 -fillscreen /usr/local/pxflx/art/MCEscher/Hands.gif &"
+	"O and C"			f.exec "xsetbg -grey /usr/local/pxflx/art/MCEscher/OandC.gif &"
+	"Relativity"		f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/MCEscher/Relativity.gif &"
+	"Reptiles"			f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/MCEscher/Reptiles.gif &"
+	"Snakes"			f.exec "xsetbg -grey -border black -zoom 140 -fillscreen /usr/local/pxflx/art/MCEscher/SnakesN.jpg &"
+	"Still"				f.exec "xsetbg -grey /usr/local/pxflx/art/MCEscher/Still.gif &"
+}
+
+menu "GigerMenu"
+{
+	"  Giger  "		f.title
+	"Bioland I"		f.exec "xsetbg -grey /usr/local/pxflx/art/HRGiger/BiolandI.jpg &"
+	"Bioland II"	f.exec "xsetbg -grey /usr/local/pxflx/art/HRGiger/BiolandII.jpg &"
+	"Corridor"		f.exec "xsetbg -grey /usr/local/pxflx/art/HRGiger/corridor.jpg &"
+	"Landscape"		f.exec "xsetbg -grey /usr/local/pxflx/art/HRGiger/landscape.jpg &"
+	"NYC XXIII"		f.exec "xsetbg -grey /usr/local/pxflx/art/HRGiger/NYCityXXIII.jpg &"
+	"Wreck"			f.exec "xsetbg -grey /usr/local/pxflx/art/HRGiger/wreck.jpg &"
+}
+
+menu "RembrandtMenu"
+{
+	"  Rembrandt  "		f.title
+	"Nightwatch"		f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/Rembrandt/Nightwatch.gif &"
+	"self portrait"		f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/Rembrandt/rembr026.gif &"
+}
+
+menu "SorayamaMenu"
+{
+	"  Sorayama  "	f.title
+	"Bass"			f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/HajimeSorayama/hajime55.jpg &"
+	"Boy and Dog"	f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/HajimeSorayama/hajime21.jpg &"
+	"Engine"		f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/HajimeSorayama/hajime23.jpg &"
+	"Muskelunge"	f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/HajimeSorayama/hajime56.jpg &"
+	"Porpoise"		f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/HajimeSorayama/hajime54.jpg &"
+	"Shark"			f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/HajimeSorayama/hajime24.jpg &"
+	"Surfer"		f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/HajimeSorayama/hajime60.jpg &"
+}
+
+menu "VallejoMenu"
+{
+	"  Vallejo  "		f.title
+	"Amazon"			f.exec "xsetbg -border black -center /usr/local/pxflx/art/BorisVallejo/AmazonN.jpg &"
+	"Amazons"			f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/BorisVallejo/bv16.jpg &"
+	"Abduction"			f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/BorisVallejo/bv20.jpg &"
+	"Demon Fight"		f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/BorisVallejo/bv15.jpg &"
+	"Dragon Flight"		f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/BorisVallejo/bv17.jpg &"
+	"Faerie"			f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/BorisVallejo/mirage03.jpg &"
+	"Man and Wolves"	f.exec "xsetbg -grey -clip 0,150,580,586 -fillscreen /usr/local/pxflx/art/BorisVallejo/bv08.jpg &"
+	"Sirens"			f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/BorisVallejo/Sirens.jpg &"
+	"Warriors"			f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/BorisVallejo/bv05.jpg &"
+	"Witch"				f.exec "xsetbg -grey -clip 0,0,619,465 -fillscreen /usr/local/pxflx/art/BorisVallejo/bv03.jpg &"
+	"Woman and Beasts"	f.exec "xsetbg -grey -clip 0,50,576,432 -fillscreen /usr/local/pxflx/art/BorisVallejo/bv09.jpg &"
+	"Woman in Pond"		f.exec "xsetbg -grey -clip 0,380,518,388 -fillscreen /usr/local/pxflx/art/BorisVallejo/mirage25.jpg &"
+	"Woman on Beast"	f.exec "xsetbg -grey -clip 0,150,588,591 -fillscreen /usr/local/pxflx/art/BorisVallejo/bv25.jpg &"
+	"Woman on Horse"	f.exec "xsetbg -grey -fillscreen /usr/local/pxflx/art/BorisVallejo/bv19.jpg &"
+	"Woman on Ledge"	f.exec "xsetbg -grey -clip 0,290,568,426 -fillscreen /usr/local/pxflx/art/BorisVallejo/bv23.jpg &"
+}
+
+menu "ArrangeMenu"
+{
+	"  Arrange  "	f.title
+	"Autoraise"		f.autoraise
+	"Raise"			f.raise
+	"Lower"			f.lower
+	"Nail"			f.nail
+# I just never use these...
+#	"RaiseLower"	f.raiselower
+#	""				f.separator
+#	"Focus"			f.focus
+#	"Unfocus"		f.unfocus
+	""				f.separator
+	"Move"			f.move
+	"Size"			f.resize
+	"Iconify"		f.iconify
+	""				f.separator
+	"Fullzoom"		f.fullzoom
+	"Horizoom"		f.horizoom
+	"Vertzoom"		f.zoom
+	""				f.separator
+	"Identify"		f.identify
+	""				f.separator
+	"Delete"		f.delete
+	"Destroy"		f.destroy
+}
+
+menu "VTWMMenu"
+{
+	"  VTWM  "		f.title
+# These are dependant on the physical and virtual screens...
+	"Virtual 1"		f.setrealscreen "+0+0"
+	"Virtual 2"		f.setrealscreen "+1024+0"
+	"Virtual 3"		f.setrealscreen "+2048+0"
+	"Virtual 4"		f.setrealscreen "+3072+0"
+	"Virtual 5"		f.setrealscreen "+4096+0"
+	""				f.separator
+	"Icon Mgr"		f.showiconmgr
+	"Virtual Mgr"	f.showdesktopdisplay
+	""				f.separator
+	"Refresh"		f.refresh
+	"Restart"		f.restart
+	""				f.separator
+	"Exit"			f.exec "stopxroot; slay -f vtwm"
+}
+

@@ -46,9 +46,31 @@
 #include <X11/Xmu/Drawing.h>
 #include <X11/Xmu/CharSet.h>
 
+#include <string.h>
+
+/* djhjr - 4/19/96 */
+typedef struct Colori {
+    Pixel color;
+    Pixmap pix;
+    struct Colori *next;
+};
+
 static Pixmap CreateXLogoPixmap(), CreateResizePixmap();
 static Pixmap CreateQuestionPixmap(), CreateMenuPixmap();
 static Pixmap CreateDotPixmap();
+
+/* djhjr - 4/18/96 */
+static Image  *Create3DMenuImage ();
+static Image  *Create3DDotImage ();
+static Image  *Create3DResizeImage ();
+static Image  *Create3DZoomImage ();
+static Image  *Create3DBarImage ();
+void Draw3DCorner();
+
+/* djhjr - 4/19/96 */
+static GC     rootGC = (GC) 0;
+static int    reportfilenotfound = 1;
+
 int HotX, HotY;
 
 /***********************************************************************
@@ -90,6 +112,7 @@ void MoveOutline(root, x, y, width, height, bw, th)
 
     r = outline;
 
+#ifdef ORIGINAL_DRAWIT
 #define DRAWIT() \
     if (lastWidth || lastHeight)			\
     {							\
@@ -104,6 +127,7 @@ void MoveOutline(root, x, y, width, height, bw, th)
 	xthird = (xinnerr - xinnerl) / 3;		\
 	ythird = (yinnerb - yinnert) / 3;		\
 							\
+	/* frame outline */						\
 	r->x1 = xl;					\
 	r->y1 = yt;					\
 	r->x2 = xr;					\
@@ -128,30 +152,35 @@ void MoveOutline(root, x, y, width, height, bw, th)
 	r->y2 = yb;					\
 	r++;						\
 							\
+	/* left vertical */						\
 	r->x1 = xinnerl + xthird;			\
 	r->y1 = yinnert;				\
 	r->x2 = r->x1;					\
 	r->y2 = yinnerb;				\
 	r++;						\
 							\
+	/* right vertical */						\
 	r->x1 = xinnerl + (2 * xthird);			\
 	r->y1 = yinnert;				\
 	r->x2 = r->x1;					\
 	r->y2 = yinnerb;				\
 	r++;						\
 							\
+	/* top horizontal */						\
 	r->x1 = xinnerl;				\
 	r->y1 = yinnert + ythird;			\
 	r->x2 = xinnerr;				\
 	r->y2 = r->y1;					\
 	r++;						\
 							\
+	/* bottom horizontal */						\
 	r->x1 = xinnerl;				\
 	r->y1 = yinnert + (2 * ythird);			\
 	r->x2 = xinnerr;				\
 	r->y2 = r->y1;					\
 	r++;						\
 							\
+	/* title bar */								\
 	if (lastTH != 0) {				\
 	    r->x1 = xl;					\
 	    r->y1 = yt + lastTH;			\
@@ -173,9 +202,85 @@ void MoveOutline(root, x, y, width, height, bw, th)
 
     /* draw the new one, if any */
     DRAWIT ();
+#else
+#define DRAWIT() \
+    if (lastWidth || lastHeight)			\
+    {							\
+	xl = lastx;					\
+	xr = lastx + lastWidth - 1;			\
+	yt = lasty;					\
+	yb = lasty + lastHeight - 1;			\
+	xinnerl = xl + lastBW;				\
+	xinnerr = xr - lastBW;				\
+	yinnert = yt + lastTH + lastBW;			\
+	yinnerb = yb - lastBW;				\
+	xthird = (xinnerr - xinnerl) / 3;		\
+	ythird = (yinnerb - yinnert) / 3;		\
+							\
+	/* frame outline */						\
+	r->x1 = xl;					\
+	r->y1 = yt;					\
+	r->x2 = xr;					\
+	r->y2 = yt;					\
+	r++;						\
+							\
+	r->x1 = xl;					\
+	r->y1 = yb;					\
+	r->x2 = xr;					\
+	r->y2 = yb;					\
+	r++;						\
+							\
+	r->x1 = xl;					\
+	r->y1 = yt;					\
+	r->x2 = xl;					\
+	r->y2 = yb;					\
+	r++;						\
+							\
+	r->x1 = xr;					\
+	r->y1 = yt;					\
+	r->x2 = xr;					\
+	r->y2 = yb;					\
+	r++;						\
+							\
+	/* top-left to bottom-right */		\
+	r->x1 = xinnerl;			\
+	r->y1 = yinnert;			\
+	r->x2 = xinnerr;			\
+	r->y2 = yinnerb;			\
+	r++;				\
+							\
+	/* bottom-left to top-right */		\
+	r->x1 = xinnerl;			\
+	r->y1 = yinnerb;			\
+	r->x2 = xinnerr;			\
+	r->y2 = yinnert;			\
+	r++;				\
+							\
+	/* title bar */						\
+	if (lastTH != 0) {				\
+	    r->x1 = xl;					\
+	    r->y1 = yt + lastTH;			\
+	    r->x2 = xr;					\
+	    r->y2 = r->y1;				\
+	    r++;					\
+	}						\
+    }
+
+    /* undraw the old one, if any */
+    DRAWIT ();
+
+    lastx = x;
+    lasty = y;
+    lastWidth = width;
+    lastHeight = height;
+    lastBW = bw;
+    lastTH = th;
+
+    /* draw the new one, if any */
+    DRAWIT ();
+#endif
 
 #undef DRAWIT
-
 
     if (r != outline)
     {
@@ -338,7 +443,7 @@ void draw_scaled_rect (display,drawable,gc,x,y,
 		GC gc;
 		int x,y;
 		unsigned int width,height;
-		unsigned long int scale,over;
+		unsigned int scale,over;
 	{
 	XDrawRectangle(dpy,drawable,gc,
 		x + ( over + width * (over - scale) ) / (2 * over),
@@ -437,7 +542,7 @@ Pixmap FindBitmap (name, widthp, heightp)
      */
     if (name[0] == ':') {
 	int i;
-	static struct {
+	struct {
 	    char *name;
 	    Pixmap (*proc)();
 	} pmtab[] = {
@@ -450,7 +555,7 @@ Pixmap FindBitmap (name, widthp, heightp)
 	    { TBPM_QUESTION,	CreateQuestionPixmap },
 	};
 
-	for (i = 0; i < (sizeof pmtab)/(sizeof pmtab[0]); i++) {
+	for (i = 0; i < sizeof (pmtab)/sizeof (pmtab[0]); i++) {
 	    if (XmuCompareISOLatin1 (pmtab[i].name, name) == 0)
 	      return (*pmtab[i].proc) (widthp, heightp);
 	}
@@ -492,10 +597,13 @@ Pixmap FindBitmap (name, widthp, heightp)
 	}
     }
     if (bigname != name) free (bigname);
+
+#ifdef DEBUG
     if (pm == None) {
 	fprintf (stderr, "%s:  unable to find bitmap \"%s\"\n",
 		 ProgramName, name);
     }
+#endif
 
     return pm;
 }
@@ -589,7 +697,7 @@ LocateStandardColormaps()
     return;
 }
 
-GetColor(kind, what, name)
+void GetColor(kind, what, name)
 int kind;
 Pixel *what;
 char *name;
@@ -673,6 +781,37 @@ char *name;
     }
 
     *what = color.pixel;
+}
+
+void GetShadeColors (cp)
+ColorPair *cp;
+{
+    XColor	xcol;
+    Colormap	cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    int		save;
+    float	clearfactor;
+    float	darkfactor;
+    char	clearcol [32], darkcol [32];
+
+    clearfactor = (float) Scr->ClearShadowContrast / 100.0;
+    darkfactor  = (100.0 - (float) Scr->DarkShadowContrast)  / 100.0;
+    xcol.pixel = cp->back;
+    XQueryColor (dpy, cmap, &xcol);
+
+    sprintf (clearcol, "#%04x%04x%04x",
+		xcol.red   + (unsigned short) ((65535 -   xcol.red) * clearfactor),
+		xcol.green + (unsigned short) ((65535 - xcol.green) * clearfactor),
+		xcol.blue  + (unsigned short) ((65535 -  xcol.blue) * clearfactor));
+    sprintf (darkcol,  "#%04x%04x%04x",
+		(unsigned short) (xcol.red   * darkfactor),
+		(unsigned short) (xcol.green * darkfactor),
+		(unsigned short) (xcol.blue  * darkfactor));
+
+    save = Scr->FirstTime;
+    Scr->FirstTime = True;
+    GetColor (Scr->Monochrome, &cp->shadc, clearcol);
+    GetColor (Scr->Monochrome, &cp->shadd,  darkcol);
+    Scr->FirstTime = save;
 }
 
 GetFont(font)
@@ -835,7 +974,7 @@ static Pixmap CreateResizePixmap (widthp, heightp)
     if (Scr->tbpm.resize == None) {
 	XPoint	points[3];
 	GC gc;
-	int w;
+	int wb, ws;
 	int lw;
 
 	/*
@@ -854,21 +993,35 @@ static Pixmap CreateResizePixmap (widthp, heightp)
 	/*
 	 * draw the resize button,
 	 */
-	w = (h * 2) / 3;
-	points[0].x = w;
+	wb = (h * 2) / 3; /* bigger */
+	ws = wb / 2; /* smaller */
+#ifdef ORIGINAL_RESIZEPIXMAP
+	points[0].x = wb;
 	points[0].y = 0;
-	points[1].x = w;
-	points[1].y = w;
+	points[1].x = wb;
+	points[1].y = wb;
 	points[2].x = 0;
-	points[2].y = w;
+	points[2].y = wb;
+#else
+	points[0].x = 0;
+	points[0].y = points[1].y = wb;
+	points[1].x = points[2].x = ws;
+	points[2].y = h;
+#endif
 	XDrawLines (dpy, Scr->tbpm.resize, gc, points, 3, CoordModeOrigin);
-	w = w / 2;
-	points[0].x = w;
+#ifdef ORIGINAL_RESIZEPIXMAP
+	points[0].x = ws;
 	points[0].y = 0;
-	points[1].x = w;
-	points[1].y = w;
+	points[1].x = ws;
+	points[1].y = ws;
 	points[2].x = 0;
-	points[2].y = w;
+	points[2].y = ws;
+#else
+	points[0].x = 0;
+	points[0].y = points[1].y = ws;
+	points[1].x = points[2].x = wb;
+	points[2].y = h;
+#endif
 	XDrawLines (dpy, Scr->tbpm.resize, gc, points, 3, CoordModeOrigin);
 
 	/*
@@ -885,23 +1038,45 @@ static Pixmap CreateDotPixmap (widthp, heightp)
 {
     int h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
 
+#ifdef ORIGINAL_DOTPIXMAP
     h = h * 3 / 4;
     if (h < 1) h = 1;
     if (!(h & 1))
 	h--;
+#else
+    if (h < 1) h = 1;
+#endif
     *widthp = *heightp = (unsigned int) h;
     if (Scr->tbpm.delete == None) {
 	GC  gc;
-	Pixmap pix;
+#ifndef ORIGINAL_DOTPIXMAP
+	XPoint	points[5];
+	int wb, ws;
+	int lw;
+#endif
 
-	pix = Scr->tbpm.delete = XCreatePixmap (dpy, Scr->Root, h, h, 1);
-	gc = XCreateGC (dpy, pix, 0L, NULL);
-	XSetLineAttributes (dpy, gc, h, LineSolid, CapRound, JoinRound);
+	Scr->tbpm.delete = XCreatePixmap (dpy, Scr->Root, h, h, 1);
+	gc = XCreateGC (dpy, Scr->tbpm.delete, 0L, NULL);
 	XSetForeground (dpy, gc, 0L);
-	XFillRectangle (dpy, pix, gc, 0, 0, h, h);
+	XFillRectangle (dpy, Scr->tbpm.delete, gc, 0, 0, h, h);
 	XSetForeground (dpy, gc, 1L);
-	XDrawLine (dpy, pix, gc, h/2, h/2, h/2, h/2);
-	XFreeGC (dpy, gc);
+#ifdef ORIGINAL_DOTPIXMAP
+	XSetLineAttributes (dpy, gc, h, LineSolid, CapRound, JoinRound);
+	XDrawLine (dpy, Scr->tbpm.delete, gc, h/2, h/2, h/2, h/2);
+#else
+	lw = h / 16;
+	if (lw == 1)
+	    lw = 0;
+	XSetLineAttributes (dpy, gc, lw, LineSolid, CapButt, JoinMiter);
+
+	wb = (h * 2) / 3; /* bigger */
+	ws = wb / 2; /* smaller */
+	points[0].x = points[0].y = points[1].y = points[3].x = points[4].x = points[4].y = ws;
+	points[1].x = points[2].x = points[2].y = points[3].y = wb;
+	XDrawLines (dpy, Scr->tbpm.delete, gc, points, 5, CoordModeOrigin);
+#endif
+
+	XFreeGC(dpy, gc);
     }
     return Scr->tbpm.delete;
 }
@@ -1024,3 +1199,785 @@ Cursor NoCursor()
 	}
 	return(blank);
 }
+
+/* djhjr - 4/19/96 */
+static Image *Create3DDotImage (cp)
+ColorPair cp;
+{
+    Image *image;
+    int	  h;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+
+    image = (Image*) malloc (sizeof (struct _Image));
+    if (! image) return (None);
+    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    if (image->pixmap == None) return (None);
+
+    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+    Draw3DBorder (image->pixmap, (h / 2) - 2, (h / 2) - 2, 5, 5, Scr->ShallowReliefWindowButton, cp, off, True, False);
+
+    image->mask   = None;
+    image->width  = h;
+    image->height = h;
+    image->next   = None;
+    return (image);
+}
+
+/* djhjr - 4/19/96 */
+static Image *Create3DBarImage (cp)
+ColorPair cp;
+{
+    Image *image;
+    int	  h;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+
+    image = (Image*) malloc (sizeof (struct _Image));
+    if (! image) return (None);
+    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    if (image->pixmap == None) return (None);
+
+    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+    Draw3DBorder (image->pixmap, 4, (h / 2) - 2, h - 8, 5, Scr->ShallowReliefWindowButton, cp, off, True, False);
+    image->mask   = None;
+    image->width  = h;
+    image->height = h;
+    image->next   = None;
+    return (image);
+}
+
+/* djhjr - 4/19/96 */
+static Image *Create3DMenuImage (cp)
+ColorPair cp;
+{
+    Image *image;
+    int	  h, i;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+
+    image = (Image*) malloc (sizeof (struct _Image));
+    if (! image) return (None);
+    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    if (image->pixmap == None) return (None);
+#ifdef ORIGINAL_MENUPIXMAP
+	/* ...why is this different than what's in Create3DMenuIcon()? */
+    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+    for (i = 4; i < h - 7; i += 5) {
+	Draw3DBorder (image->pixmap, 4, i, h - 8, 4, 1, cp, off, True, False);
+#else
+    Draw3DBorder (image->pixmap, 0, 0, h, h, 1, cp, off, True, False);
+    for (i = 3; i + 3 < h; i += 3) {
+	Draw3DBorder (image->pixmap, 4, i, h - 8, 3, 1, cp, off, True, False);
+#endif
+    }
+    image->mask   = None;
+    image->width  = h;
+    image->height = h;
+    image->next   = None;
+    return (image);
+}
+
+/* djhjr - 4/19/96 */
+static Image *Create3DResizeImage (cp)
+ColorPair cp;
+{
+    Image *image;
+    int	  h;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+
+    image = (Image*) malloc (sizeof (struct _Image));
+    if (! image) return (None);
+    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    if (image->pixmap == None) return (None);
+
+    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+    Draw3DBorder (image->pixmap, 0, h / 4, ((3 * h) / 4) + 1, ((3 * h) / 4) + 1,
+		Scr->ShallowReliefWindowButton, cp, off, True, False);
+    Draw3DBorder (image->pixmap, 0, h / 2, (h / 2) + 1, (h / 2) + 1,
+		Scr->ShallowReliefWindowButton, cp, off, True, False);
+
+	/* djhjr - 6/25/96 ...redraw button edges without fill */
+	if (Scr->ShallowReliefWindowButton == 1)
+		Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, False, False);
+
+    image->mask   = None;
+    image->width  = h;
+    image->height = h;
+    image->next   = None;
+    return (image);
+}
+
+/* djhjr - 4/19/96 */
+static Image *Create3DZoomImage (cp)
+ColorPair cp;
+{
+    Image *image;
+    int		h;
+
+    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    if (!(h & 1)) h--;
+
+    image = (Image*) malloc (sizeof (struct _Image));
+    if (! image) return (None);
+    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    if (image->pixmap == None) return (None);
+
+    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+    Draw3DBorder (image->pixmap, h / 4, h / 4, (h / 2) + 2, (h / 2) + 2,
+		Scr->ShallowReliefWindowButton, cp, off, True, False);
+    image->mask   = None;
+    image->width  = h;
+    image->height = h;
+    image->next   = None;
+    return (image);
+}
+
+/* djhjr - 4/19/96 */
+Pixmap Create3DMenuIcon (height, widthp, heightp, cp)
+unsigned int height, *widthp, *heightp;
+ColorPair cp;
+{
+    unsigned int h, w;
+    int		i;
+    struct Colori *col;
+    static struct Colori *colori = NULL;
+
+    h = height;
+    w = h * 7 / 8;
+    if (h < 1)
+	h = 1;
+    if (w < 1)
+	w = 1;
+    *widthp  = w;
+    *heightp = h;
+
+    for (col = colori; col; col = col->next) {
+	if (col->color == cp.back) break;
+    }
+    if (col != NULL) return (col->pix);
+    col = (struct Colori*) malloc (sizeof (struct Colori));
+    col->color = cp.back;
+    col->pix   = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
+    col->next = colori;
+    colori = col;
+    Draw3DBorder (col->pix, 0, 0, w, h, 1, cp, off, True, False);
+#ifdef ORIGINAL_MENUPIXMAP
+    for (i = 3; i + 5 < h; i += 5) {
+#else
+    for (i = 3; i + 3 < h; i += 3) {
+#endif
+	Draw3DBorder (col->pix, 4, i, w - 8, 3, 1, Scr->MenuC, off, True, False);
+    }
+    return (colori->pix);
+}
+
+/* djhjr - 4/19/96 */
+#include "siconify.bm"
+
+/* djhjr - 4/19/96 */
+Pixmap Create3DIconManagerIcon (cp)
+ColorPair cp;
+{
+    unsigned int w, h;
+    struct Colori *col;
+    static struct Colori *colori = NULL;
+
+    w = (unsigned int) siconify_width;
+    h = (unsigned int) siconify_height;
+
+    for (col = colori; col; col = col->next) {
+	if (col->color == cp.back) break;
+    }
+    if (col != NULL) return (col->pix);
+    col = (struct Colori*) malloc (sizeof (struct Colori));
+    col->color = cp.back;
+    col->pix   = XCreatePixmap (dpy, Scr->Root, w, h, Scr->d_depth);
+#ifdef ORIGINAL_ICONMGRPIXMAP
+    Draw3DBorder (col->pix, 0, 0, w, h, 4, cp, off, True, False);
+#else
+    Draw3DBorder (col->pix, 0, 0, w, h, 1, cp, off, True, False);
+    Draw3DBorder (col->pix, (w / 2) - 1, (h / 2) - 1, 3, 3, 1, cp, off, True, False);
+#endif
+    col->next = colori;
+    colori = col;
+
+    return (colori->pix);
+}
+
+/* djhjr - 4/19/96 */
+void Draw3DBorder (w, x, y, width, height, bw, cp, state, fill, forcebw)
+Window w;
+int    x, y, width, height, bw;
+ColorPair cp;
+int state, fill, forcebw;
+{
+    int		  i;
+    XGCValues	  gcv;
+    unsigned long gcm;
+
+    if ((width < 1) || (height < 1)) return;
+    if (Scr->Monochrome != COLOR) {
+	if (fill) {
+	    gcm = GCFillStyle;
+	    gcv.fill_style = FillOpaqueStippled;
+	    XChangeGC (dpy, Scr->GreyGC, gcm, &gcv);
+	    XFillRectangle (dpy, w, Scr->GreyGC, x, y, width, height);
+	}
+	gcm  = 0;
+	gcm |= GCLineStyle;		
+	gcv.line_style = (state == on) ? LineSolid : LineDoubleDash;
+	gcm |= GCFillStyle;
+	gcv.fill_style = FillSolid;
+	XChangeGC (dpy, Scr->GreyGC, gcm, &gcv);
+	for (i = 0; i < bw; i++) {
+	    XDrawLine (dpy, w, Scr->GreyGC, x,                 y + i,
+					    x + width - i - 1, y + i);
+	    XDrawLine (dpy, w, Scr->GreyGC, x + i,                  y,
+					    x + i, y + height - i - 1);
+	}
+
+	gcm  = 0;
+	gcm |= GCLineStyle;		
+	gcv.line_style = (state == on) ? LineDoubleDash : LineSolid;
+	gcm |= GCFillStyle;
+	gcv.fill_style = FillSolid;
+	XChangeGC (dpy, Scr->GreyGC, gcm, &gcv);
+	for (i = 0; i < bw; i++) {
+	    XDrawLine (dpy, w, Scr->GreyGC, x + width - i - 1,          y + i,
+					    x + width - i - 1, y + height - 1);
+	    XDrawLine (dpy, w, Scr->GreyGC, x + i,         y + height - i - 1,
+					    x + width - 1, y + height - i - 1);
+	}
+	return;
+    }
+
+    if (fill) {
+	FB (cp.back, cp.fore);
+	XFillRectangle (dpy, w, Scr->NormalGC, x, y, width, height);
+    }
+    if (Scr->BeNiceToColormap) {
+	int dashoffset = 0;
+
+	gcm  = 0;
+	gcm |= GCLineStyle;		
+	gcv.line_style = (forcebw) ? LineSolid : LineDoubleDash;
+	gcm |= GCBackground;
+	gcv.background = cp.back;
+	XChangeGC (dpy, Scr->ShadGC, gcm, &gcv);
+	    
+	if (state == on)
+	    XSetForeground (dpy, Scr->ShadGC, Scr->Black);
+	else
+	    XSetForeground (dpy, Scr->ShadGC, Scr->White);
+	for (i = 0; i < bw; i++) {
+	    XDrawLine (dpy, w, Scr->ShadGC, x + i,     y + dashoffset,
+					    x + i, y + height - i - 1);
+	    XDrawLine (dpy, w, Scr->ShadGC, x + dashoffset,    y + i,
+					    x + width - i - 1, y + i);
+	    dashoffset = 1 - dashoffset;
+	}
+	if (state == on)
+	    XSetForeground (dpy, Scr->ShadGC, Scr->White);
+	else
+	    XSetForeground (dpy, Scr->ShadGC, Scr->Black);
+	for (i = 0; i < bw; i++) {
+	    XDrawLine (dpy, w, Scr->ShadGC, x + i,         y + height - i - 1,
+					    x + width - 1, y + height - i - 1);
+	    XDrawLine (dpy, w, Scr->ShadGC, x + width - i - 1,          y + i,
+					    x + width - i - 1, y + height - 1);
+	}
+	return;
+    }
+
+    if (state == on) {
+	FB (cp.shadd, cp.shadc);
+    }
+    else {
+	FB (cp.shadc, cp.shadd);
+    }
+    for (i = 0; i < bw; i++) {
+	XDrawLine (dpy, w, Scr->NormalGC, x,                 y + i,
+					  x + width - i - 1, y + i);
+	XDrawLine (dpy, w, Scr->NormalGC, x + i,                  y,
+					  x + i, y + height - i - 1);
+    }
+
+    if (state == on) {
+	FB (cp.shadc, cp.shadd);
+    }
+    else {
+	FB (cp.shadd, cp.shadc);
+    }
+    for (i = 0; i < bw; i++) {
+	XDrawLine (dpy, w, Scr->NormalGC, x + width - i - 1,          y + i,
+					  x + width - i - 1, y + height - 1);
+	XDrawLine (dpy, w, Scr->NormalGC, x + i,         y + height - i - 1,
+					  x + width - 1, y + height - i - 1);
+    }
+    return;
+}
+
+/* djhjr - 4/19/96 */
+void Draw3DCorner (w, x, y, width, height, thick, bw, cp, type)
+Window		w;
+int		x, y, width, height, thick, bw;
+ColorPair	cp;
+int		type;
+{
+    Draw3DBorder (w, x, y, width, height, bw, cp, off, True, False);
+    switch (type) {
+	case 0 :
+	    Draw3DBorder (w, x + thick - bw, y + thick - bw,
+			width - thick + 2 * bw, height - thick + 2 * bw,
+			bw, cp, on, True, False);
+	    break;
+	case 1 :
+	    Draw3DBorder (w, x - bw, y + thick - bw,
+			width - thick + 2 * bw, height - thick + 2 * bw,
+			bw, cp, on, True, False);
+	    break;
+	case 2 :
+	    Draw3DBorder (w, x - bw, y - bw,
+			width - thick + 2 * bw, height - thick + 2 * bw,
+			bw, cp, on, True, False);
+	    break;
+	case 3 :
+	    Draw3DBorder (w, x + thick - bw, y - bw,
+			width - thick + 2 * bw, height - thick + 2 * bw,
+			bw, cp, on, True, False);
+	    break;
+    }
+    return;
+}
+
+/* djhjr - 4/19/96 */
+static Image *LoadBitmapImage (name, cp)
+char  *name;
+ColorPair cp;
+{
+    Image	*image;
+    Pixmap	bm;
+    int		width, height;
+    XGCValues	gcvalues;
+
+    if (rootGC == (GC) 0) rootGC = XCreateGC (dpy, Scr->Root, 0, &gcvalues);
+    bm = FindBitmap (name, (unsigned int *) &width, (unsigned int *) &height);
+    if (bm == None) return (None);
+
+    image = (Image*) malloc (sizeof (struct _Image));
+    image->pixmap = XCreatePixmap (dpy, Scr->Root, width, height, Scr->d_depth);
+    gcvalues.background = cp.back;
+    gcvalues.foreground = cp.fore;
+    XChangeGC   (dpy, rootGC, GCForeground | GCBackground, &gcvalues);
+    XCopyPlane  (dpy, bm, image->pixmap, rootGC, 0, 0, width, height, 0, 0, (unsigned long) 1);
+    XFreePixmap (dpy, bm);
+    image->mask   = None;
+    image->width  = width;
+    image->height = height;
+    image->next   = None;
+    return (image);
+}
+
+/* djhjr - 4/19/96 */
+static Image *GetBitmapImage (name, cp)
+char  *name;
+ColorPair cp;
+{
+    Image	*image, *r, *s;
+    int		width, height;
+    char	path [128], pref [128];
+    char	*perc;
+    int		i;
+
+    if (! strchr (name, '%')) return (LoadBitmapImage (name, cp));
+    s = image = None;
+    strcpy (pref, name);
+    perc  = strchr (pref, '%');
+    *perc = '\0';
+    reportfilenotfound = 0;
+    for (i = 1;; i++) {
+	sprintf (path, "%s%d%s", pref, i, perc + 1);
+	r = LoadBitmapImage (path, cp);
+	if (r == None) break;
+	r->next = None;
+	if (image == None) s = image = r;
+	else {
+	    s->next = r;
+	    s = r;
+	}
+    }
+    reportfilenotfound = 1;
+    if (s != None) s->next = image;
+    if (image == None) {
+	fprintf (stderr, "Cannot open any %s bitmap file\n", name);
+    }
+    return (image);
+}
+
+/* djhjr - 4/19/96 */
+Image *GetImage (name, cp)
+char      *name;
+ColorPair cp;
+{
+    name_list **list;
+    char fullname [256];
+    int   startn;
+    Image *image;
+
+    if (name == NULL) return (None);
+    image = None;
+
+    list = &Scr->ImageCache;
+
+    if (strncmp (name, ":xpm:", 5) == 0) {
+		int    i;
+		struct {
+	    	char *name;
+	    	Image* (*proc)();
+		} pmtab[] = {
+	    	{ TBPM_3DDOT,	Create3DDotImage },
+	    	{ TBPM_3DRESIZE,	Create3DResizeImage },
+	    	{ TBPM_3DMENU,	Create3DMenuImage },
+	    	{ TBPM_3DZOOM,	Create3DZoomImage },
+	    	{ TBPM_3DBAR,	Create3DBarImage },
+		};
+	
+		sprintf (fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
+		if ((image = (Image*) LookInNameList (*list, fullname)) == None) {
+	    	for (i = 0; i < sizeof (pmtab) / sizeof (pmtab[0]); i++) {
+				if (XmuCompareISOLatin1 (pmtab[i].name, name) == 0) {
+		    		image = (*pmtab[i].proc) (cp);
+		    		break;
+				}
+	    	}
+
+		    if (image == None) {
+				fprintf (stderr, "%s:  no such built-in pixmap \"%s\"\n",
+					ProgramName, name);
+				return (None);
+	    	}
+
+		    AddToList (list, fullname, (char*) image);
+		}
+    }
+    else
+    if (name [0] == ':') {
+		int       width, height;
+		Pixmap    pm;
+		XGCValues gcvalues;
+
+		sprintf (fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
+		if ((image = (Image*) LookInNameList (*list, fullname)) == None) {
+    		pm = FindBitmap (name, (unsigned int *) &width, (unsigned int *) &height);
+		    if (pm == None) {
+				fprintf (stderr, "%s:  no such built-in bitmap \"%s\"\n",
+					ProgramName, name);
+				return (None);
+	    	}
+
+		    image = (Image*) malloc (sizeof (struct _Image));
+		    image->pixmap = XCreatePixmap (dpy, Scr->Root, width, height, Scr->d_depth);
+
+		    if (rootGC == (GC) 0)
+				rootGC = XCreateGC (dpy, Scr->Root, 0, &gcvalues);
+
+		    gcvalues.background = cp.back;
+		    gcvalues.foreground = cp.fore;
+
+	    	XChangeGC   (dpy, rootGC, GCForeground | GCBackground, &gcvalues);
+		    XCopyPlane  (dpy, pm, image->pixmap, rootGC, 0, 0, width, height,
+				0, 0, (unsigned long) 1);
+
+		    image->mask   = None;
+		    image->width  = width;
+		    image->height = height;
+		    image->next   = None;
+
+		    AddToList (list, fullname, (char*) image);
+		}
+    }
+    else {
+		sprintf (fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
+		if ((image = (Image*) LookInNameList (*list, fullname)) == None)
+		    if ((image = GetBitmapImage (name, cp)) != None)
+				AddToList (list, fullname, (char*) image);
+    }
+
+    return (image);
+}
+
+/* djhjr - 4/21/96 */
+void PaintBorders (tmp_win, focus)
+TwmWindow *tmp_win;
+Bool focus;
+{
+    ColorPair cp;
+
+    cp = (focus && tmp_win->highlight) ? tmp_win->border : tmp_win->border_tile;
+    if (tmp_win->title_height == 0) {
+	Draw3DBorder (tmp_win->frame,
+	    0,
+	    0,
+	    tmp_win->frame_width,
+	    tmp_win->frame_height,
+	    2, cp, off, True, False);
+	Draw3DBorder (tmp_win->frame,
+	    tmp_win->frame_bw3D - 2,
+	    tmp_win->frame_bw3D - 2,
+	    tmp_win->frame_width  - 2 * tmp_win->frame_bw3D + 4,
+	    tmp_win->frame_height - 2 * tmp_win->frame_bw3D + 4,
+	    2, cp, on, True, False);
+	return;
+    }
+
+#ifdef WHEN_I_FIGURE_OUT_WHY_THIS_BORDER_DOESNT_APPEAR
+	if (tmp_win->squeeze_info)
+	    Draw3DBorder (tmp_win->frame,
+			0,
+			Scr->TitleHeight,
+			tmp_win->frame_width,
+			tmp_win->frame_bw3D,
+			2, cp, off, True, False);
+#endif
+    Draw3DBorder (tmp_win->frame,
+		tmp_win->title_x + Scr->TitleHeight,
+		0,
+		tmp_win->title_width - 2 * Scr->TitleHeight,
+		tmp_win->frame_bw3D,
+		2, cp, off, True, False);
+    Draw3DBorder (tmp_win->frame,
+		tmp_win->frame_bw3D + Scr->TitleHeight,
+		tmp_win->frame_height - tmp_win->frame_bw3D,
+		tmp_win->frame_width - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
+		tmp_win->frame_bw3D,
+		2, cp, off, True, False);
+    Draw3DBorder (tmp_win->frame,
+		0,
+		Scr->TitleHeight + tmp_win->frame_bw3D,
+		tmp_win->frame_bw3D,
+		tmp_win->frame_height - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
+		2, cp, off, True, False);
+    Draw3DBorder (tmp_win->frame,
+		tmp_win->frame_width  - tmp_win->frame_bw3D,
+		Scr->TitleHeight + tmp_win->frame_bw3D,
+		tmp_win->frame_bw3D,
+		tmp_win->frame_height - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
+		2, cp, off, True, False);
+    Draw3DCorner (tmp_win->frame,
+		tmp_win->title_x - tmp_win->frame_bw3D,
+		0,
+		Scr->TitleHeight + tmp_win->frame_bw3D,
+		Scr->TitleHeight + tmp_win->frame_bw3D,
+		tmp_win->frame_bw3D, 2, cp, 0);
+    Draw3DCorner (tmp_win->frame,
+		tmp_win->title_x + tmp_win->title_width - Scr->TitleHeight,
+		0,
+		Scr->TitleHeight + tmp_win->frame_bw3D,
+		Scr->TitleHeight + tmp_win->frame_bw3D,
+		tmp_win->frame_bw3D, 2, cp, 1);
+    Draw3DCorner (tmp_win->frame,
+		tmp_win->frame_width  - (Scr->TitleHeight + tmp_win->frame_bw3D),
+		tmp_win->frame_height - (Scr->TitleHeight + tmp_win->frame_bw3D),
+		Scr->TitleHeight + tmp_win->frame_bw3D,
+		Scr->TitleHeight + tmp_win->frame_bw3D,
+		tmp_win->frame_bw3D, 2, cp, 2);
+    Draw3DCorner (tmp_win->frame,
+		0,
+		tmp_win->frame_height - (Scr->TitleHeight + tmp_win->frame_bw3D),
+		Scr->TitleHeight + tmp_win->frame_bw3D,
+		Scr->TitleHeight + tmp_win->frame_bw3D,
+		tmp_win->frame_bw3D, 2, cp, 3);
+}
+
+/* djhjr - 4/21/96 */
+void PaintIcon (tmp_win)
+TwmWindow *tmp_win;
+{
+    if (Scr->use3Diconmanagers) {
+/*
+	Draw3DBorder (tmp_win->icon_w, 0, tmp_win->icon_height,
+		tmp_win->icon_w_width, Scr->IconFont.height + 6,
+		2, tmp_win->iconc, off, False, False);
+*/
+	Draw3DBorder (tmp_win->icon_w, 0, 0,
+		tmp_win->icon_w_width, tmp_win->icon_w_height,
+		2, tmp_win->iconc, off, False, False);
+    }
+
+    FBF(tmp_win->iconc.fore, tmp_win->iconc.back,
+	Scr->IconFont.font->fid);
+
+	XDrawString (dpy, tmp_win->icon_w, Scr->NormalGC,
+		tmp_win->icon_x, tmp_win->icon_y, 
+		tmp_win->icon_name, strlen(tmp_win->icon_name));
+}
+
+/* djhjr - 4/20/96 */
+void PaintTitle (tmp_win)
+TwmWindow *tmp_win;
+{
+	int bwidth = Scr->TBInfo.width + Scr->TBInfo.pad;
+	int left = Scr->TBInfo.nleft * bwidth;
+	int right = Scr->TBInfo.nright * bwidth;
+
+	int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
+
+    if (Scr->use3Dtitles)
+/*
+	    Draw3DBorder (tmp_win->title_w, Scr->TBInfo.titlex, 0,
+		tmp_win->title_width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff,
+		Scr->TitleHeight, 2, tmp_win->title, off, True, False);
+*/
+/* djhjr - 3/12/97
+	    Draw3DBorder (tmp_win->title_w, Scr->TBInfo.rightoff, Scr->FramePadding,
+		tmp_win->title_width - 2 * Scr->TBInfo.rightoff,
+		Scr->TitleHeight - 2 * Scr->FramePadding, 2, tmp_win->title, off, True, False);
+*/
+	    Draw3DBorder (tmp_win->title_w, Scr->TBInfo.leftx + left,
+		Scr->FramePadding, tmp_win->title_width - (left + right),
+		Scr->TitleHeight - 2 * Scr->FramePadding, 2, tmp_win->title, off, True, False);
+
+    FBF(tmp_win->title.fore, tmp_win->title.back,
+	Scr->TitleBarFont.font->fid);
+
+    if (Scr->use3Dtitles)
+	{
+	    XDrawString (dpy, tmp_win->title_w, Scr->NormalGC,
+		 Scr->TBInfo.titlex + en, Scr->TitleBarFont.y + 2, 
+		 tmp_win->name, strlen(tmp_win->name));
+
+		/*
+		** Ok, it's a kludge. The above code erases the
+		** sunken titlebar highlight, and I don't know how
+		** else to deal with it.
+		*/
+		PaintTitleHighlight(tmp_win, (Scr->Focus == tmp_win) ? on : off);
+	}
+    else
+        XDrawString (dpy, tmp_win->title_w, Scr->NormalGC,
+		 Scr->TBInfo.titlex, Scr->TitleBarFont.y, 
+		 tmp_win->name, strlen(tmp_win->name));
+}
+
+/* djhjr - 4/19/96 */
+void PaintTitleButton (tmp_win, tbw)
+TwmWindow *tmp_win;
+TBWindow  *tbw;
+{
+    TitleButton *tb = tbw->info;
+	/* djhjr - 11/19/97 */
+	Image *image;
+
+	/* djhjr - 3/12/97 */
+	/* djhjr - 11/17/97
+	if ((tb->image = GetImage(tb->name, (Scr->ButtonColorIsFrame) ? tmp_win->border : tmp_win->title)))
+	*/
+	if ((image = GetImage(tb->name, (Scr->ButtonColorIsFrame) ? tmp_win->border_tile : tmp_win->title)))
+	{
+		tb->image = image;
+
+		/* djhjr - 9/14/96 */
+	    XCopyArea (dpy, tb->image->pixmap, tbw->window, Scr->NormalGC,
+			tb->srcx, tb->srcy, tb->width, tb->height,
+			tb->dstx, tb->dsty);
+	}
+#ifdef DEBUG
+	else
+		fprintf(stderr, "%s:  invalid button name \"%s\" in PaintTitleButton()\n",
+			ProgramName, tb->name);
+#endif
+
+    return;
+}
+
+/* djhjr - 11/17/97 */
+void PaintTitleButtonHighlight(tmp_win, tbw, onoroff)
+TwmWindow *tmp_win;
+TBWindow  *tbw;
+Bool onoroff;
+{
+    TitleButton *tb = tbw->info;
+	/* djhjr - 11/19/97 */
+	Image *image;
+
+	if ((image = GetImage(tb->name, (onoroff) ? tmp_win->border : tmp_win->border_tile)))
+	{
+		tb->image = image;
+
+		XCopyArea (dpy, tb->image->pixmap, tbw->window, Scr->NormalGC,
+			tb->srcx, tb->srcy, tb->width, tb->height,
+			tb->dstx, tb->dsty);
+	}
+#ifdef DEBUG
+	else
+		fprintf(stderr, "%s:  invalid button name \"%s\" in PaintTitleButtonHighlight()\n",
+			ProgramName, tb->name);
+#endif
+
+	return;
+}
+
+/* djhjr - 4/19/96 */
+void PaintTitleHighlight(tmp_win, onoroff)
+TwmWindow *tmp_win;
+Bool onoroff;
+{
+	ColorPair cp;
+
+    int h = (Scr->TitleHeight - 2 * Scr->FramePadding);
+	int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
+	int w = Scr->TBInfo.titlex + tmp_win->name_width + en;
+	int fp = Scr->FramePadding + 3;
+	int ht = (Scr->TitleHeight - 2 * Scr->FramePadding) - 6;
+
+	int bwidth = Scr->TBInfo.width + Scr->TBInfo.pad;
+	int left = Scr->TBInfo.nleft * bwidth;
+	int right = Scr->TBInfo.nright * bwidth;
+
+	/* djhjr - 6/25/96 */
+	if (Scr->ShallowReliefWindowButton == 1)
+	{
+		fp++;
+		ht -= 2;
+	}
+
+	if (onoroff == on)
+	{
+		if (Scr->use3Dtitles && Scr->SunkFocusWindowTitle &&
+			    tmp_win->title_height != 0) {
+			Draw3DBorder (tmp_win->title_w,
+			w + en, fp,
+/* djhjr - 3/12/97
+			tmp_win->title_width - Scr->TBInfo.width - (w + 2 * en), ht,
+*/
+			tmp_win->title_width - (left + right) - tmp_win->name_width - 3 * en, ht,
+			Scr->ShallowReliefWindowButton, tmp_win->title, on, True, False);
+		} else if (tmp_win->hilite_w) {
+			XMapWindow (dpy, tmp_win->hilite_w);
+		}
+	}
+	else
+	{
+		if (Scr->use3Dtitles && Scr->SunkFocusWindowTitle &&
+			    tmp_win->title_height != 0) {
+			cp = tmp_win->title;
+			cp.shadc = cp.shadd = tmp_win->title.back;
+		    Draw3DBorder (tmp_win->title_w,
+		    w + en, fp,
+/* djhjr - 3/12/97
+		    tmp_win->title_width - Scr->TBInfo.width - (w + 2 * en), ht,
+*/
+			tmp_win->title_width - (left + right) - tmp_win->name_width - 3 * en, ht,
+			Scr->ShallowReliefWindowButton, cp, on, True, False);
+		} else if (tmp_win->hilite_w) {
+			XUnmapWindow (dpy, tmp_win->hilite_w);
+		}
+	}
+}
+
