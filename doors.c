@@ -24,7 +24,7 @@
 #include "desktop.h"
 #include "add_window.h"
 
-#if (defined ibm || defined ultrix)
+#define strdup Strdup /* avoid conflict with system header files */
 char *strdup(s1)
 char * s1;
 {
@@ -33,9 +33,10 @@ char * s1;
 	s2 = malloc((unsigned) strlen(s1)+1);
 	return (s2 == NULL ? NULL : strcpy(s2,s1));
 }
-#endif /* ibm */
 
+extern void SetMapStateProp();
 extern TwmDoor *door_add_internal();
+extern void twmrc_error_prefix();
 
 TwmDoor *door_add(name, position, destination)
 char *name, *position, *destination;
@@ -233,7 +234,6 @@ TwmDoor *tmp_door;
 void door_open_all()
 {
 	TwmDoor *tmp_door;
-	Window w;
 
 	for (tmp_door = Scr->Doors; tmp_door; tmp_door = tmp_door->next)
 		door_open(tmp_door);
@@ -302,8 +302,6 @@ void door_new()
 {
 	TwmDoor *d;
 	char name[256];
-	XSizeHints *hints;
-	long ret;
 
 	sprintf(name, "+%d+%d", Scr->VirtualDesktopX, Scr->VirtualDesktopY);
 

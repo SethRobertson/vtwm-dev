@@ -176,5 +176,23 @@ extern int ExecuteFunction();
 extern int DeferExecution();
 extern void Execute();
 extern void FocusOnRoot();
+extern void SetBorder();
+extern void ReGrab();
+extern void WarpToWindow();
+extern void PaintEntry();
+extern void DeIconify();
+extern void SetMapStateProp();
+extern void Iconify();
+extern void PopDownMenu();
+extern void UpdateMenu();
+extern void SendTakeFocusMessage();
+extern void PaintEntry();
+extern void SetBorder();
+extern int CreateTitleButton();
+extern void MakeMenus();
+extern void PaintMenu();
+ 
+/* djhjr - 4/27/96 */
+extern void DisplayPosition ();
 
 #endif /* _MENUS_ */

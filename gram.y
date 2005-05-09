@@ -56,6 +56,9 @@ static char *Name = "";
 static MenuRoot	*root, *pull = NULL;
 
 static MenuRoot *GetRoot();
+void RemoveDQuote();
+void twmrc_error_prefix();
+
 
 /* djhjr - 4/30/96 */
 static MenuItem *lastmenuitem = (MenuItem*) 0;
@@ -70,11 +73,23 @@ static int color;
 int mods = 0;
 unsigned int mods_used = (ShiftMask | ControlMask | Mod1Mask);
 
+extern void SetHighlightPixmap();
+extern void SetVirtualPixmap(), SetVirtualDesktop(), SetRealScreenPixmap();
+extern void NewBitmapCursor();
+extern void AddIconRegion();
 extern int do_single_keyword(), do_string_keyword(), do_number_keyword();
 extern name_list **do_colorlist_keyword();
 extern int do_color_keyword();
-extern void do_string_savecolor();
+extern void do_string_savecolor(), do_var_savecolor(), do_squeeze_entry();
+
+/*
+ * this used to be the definition - now making the assumption it's
+ * defined in lex's skeleton file (submitted by Nelson H. F. Beebe)
+ *
+ * djhjr - 1/16/98
+ */
 extern int yylineno;
+
 %}
 
 %union
@@ -88,7 +103,7 @@ extern int yylineno;
 %token <num> ICONMGR_SHOW ICONMGR WINDOW_FUNCTION ZOOM ICONMGRS
 %token <num> ICONMGR_GEOMETRY ICONMGR_NOSHOW MAKE_TITLE
 %token <num> ICONIFY_BY_UNMAPPING DONT_ICONIFY_BY_UNMAPPING
-%token <num> NO_TITLE AUTO_RAISE NO_HILITE ICON_REGION
+%token <num> NO_TITLE AUTO_RAISE NO_HILITE NO_ICONMGR_HILITE ICON_REGION
 %token <num> META SHIFT LOCK CONTROL WINDOW TITLE ICON ROOT FRAME VIRTUAL VIRTUAL_WIN
 %token <num> COLON EQUALS SQUEEZE_TITLE DONT_SQUEEZE_TITLE
 %token <num> START_ICONIFIED NO_TITLE_HILITE TITLE_HILITE
@@ -188,6 +203,7 @@ stmt		: error
 		  win_list
 		| NO_TITLE_HILITE	{ if (Scr->FirstTime)
 						Scr->TitleHighlight = FALSE; }
+		| NO_ICONMGR_HILITE		{ Scr->IconMgrHighlight = FALSE; }
 		| NO_HILITE		{ list = &Scr->NoHighlight; }
 		  win_list
 		| NO_HILITE		{ if (Scr->FirstTime)
@@ -514,7 +530,7 @@ squeeze		: SQUEEZE_TITLE {
 		;
 
 win_sqz_entries	: /* Empty */
-		| win_sqz_entries string JKEYWORD signed_number number	{
+		| win_sqz_entries string JKEYWORD signed_number signed_number	{
 				if (Scr->FirstTime) {
 				   do_squeeze_entry (list, $2, $3, $4, $5);
 				}
@@ -709,12 +725,13 @@ yyerror(s) char *s;
     fprintf (stderr, "error in input file:  %s\n", s ? s : "");
     ParseError = 1;
 }
-RemoveDQuote(str)
+
+void RemoveDQuote(str)
 char *str;
 {
     register char *i, *o;
-    register n;
-    register count;
+    register int n;
+    register int count;
 
     for (i=str+1, o=str; *i && *i != '\"'; o++)
     {
@@ -936,7 +953,7 @@ static Bool CheckColormapArg (s)
 }
 
 
-twmrc_error_prefix ()
+void twmrc_error_prefix ()
 {
     fprintf (stderr, "%s:  line %d:  ", ProgramName, yylineno);
 }

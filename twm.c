@@ -51,8 +51,10 @@
 #include "screen.h"
 #include "iconmgr.h"
 #include "desktop.h"
+#include <X11/Xresource.h>
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
+#include <X11/Xmu/Error.h>
 
 Display *dpy;			/* which display are we talking to */
 Window ResizeWindow;		/* the window we are resizing */
@@ -69,6 +71,9 @@ Bool PrintErrorMessages = False;	/* controls error messages */
 static int RedirectError;	/* TRUE ==> another window manager running */
 static int CatchRedirectError();	/* for settting RedirectError */
 static int TwmErrorHandler();	/* for everything else */
+void InitVariables();
+void InternUsefulAtoms();
+
 char Info[INFO_LINES][INFO_SIZE];		/* info strings to print */
 int InfoLines;
 char *InitFile = NULL;
@@ -135,8 +140,6 @@ main(argc, argv, environ)
     int numManaged, firstscrn, lastscrn, scrnum;
     extern ColormapWindow *CreateColormapWindow();
     
-    MenuRoot *mroot; /* DSE */
-
     ProgramName = argv[0];
     Argc = argc;
     Argv = argv;
@@ -669,7 +672,7 @@ main(argc, argv, environ)
  ***********************************************************************
  */
 
-InitVariables()
+void InitVariables()
 {
     FreeList(&Scr->BorderColorL);
     FreeList(&Scr->IconBorderColorL);
@@ -801,6 +804,10 @@ InitVariables()
     Scr->RandomPlacement = FALSE;
     Scr->OpaqueMove = FALSE;
     Scr->Highlight = TRUE;
+
+	/* djhjr - 1/27/98 */
+    Scr->IconMgrHighlight = TRUE;
+
     Scr->StackMode = TRUE;
     Scr->TitleHighlight = TRUE;
     Scr->MoveDelta = 1;		/* so that f.deltastop will work */
@@ -916,12 +923,16 @@ InitVariables()
 	Scr->PrettyZoom = FALSE;                       /* DSE */
 	Scr->StickyAbove = FALSE;                      /* DSE */
 	Scr->DontInterpolateTitles = FALSE;            /* DSE */
+
+	/* djhjr - 1/6/98 */
+	Scr->FixManagedVirtualGeometries = FALSE;
+
 	Scr->FixTransientVirtualGeometries = FALSE;    /* DSE */
 	Scr->WarpSnug = FALSE;                         /* DSE */
 }
 
 
-CreateFonts ()
+void CreateFonts ()
 {
     GetFont(&Scr->TitleBarFont);
     GetFont(&Scr->MenuFont);
@@ -940,7 +951,7 @@ CreateFonts ()
 }
 
 
-RestoreWithdrawnLocation (tmp)
+void RestoreWithdrawnLocation (tmp)
     TwmWindow *tmp;
 {
     int gravx, gravy;
@@ -1093,7 +1104,7 @@ Atom _XA_WM_TAKE_FOCUS;
 Atom _XA_WM_SAVE_YOURSELF;
 Atom _XA_WM_DELETE_WINDOW;
 
-InternUsefulAtoms ()
+void InternUsefulAtoms ()
 {
     /*
      * Create priority colors if necessary.

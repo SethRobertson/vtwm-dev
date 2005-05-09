@@ -1,55 +1,82 @@
 
-#
-# Here is a makefile for vtwm.  It depends on having TWMDIR defined.
+# Here is a makefile for VTWM.
 #
 # It's a hand-tweaked version of the makefile made with xmkmf,
 # it may prove useful as a template for those who don't have xmkmf.
 #
-# This makefile guarantees that the build info is absolutely current
+# This makefile guarantees that the build info is absolutely current.
 #
 # djhjr
-#
 
-# To omit platform and build info on the Version window
+# =============== Start of common editables =====================
+
+# To omit XPM image support for icons, uncomment this (version
+# 3.4h of the XPM library is the earliest supported I know of)
+# #define NO_XPM_SUPPORT
+
+# To omit platform and build info in the version window, uncomment this
 # #define NO_BUILD_INFO
 
-# #define DEBUG
+# For those systems that have TWM installed in locations other than
+# the "default" for the $(LIBDIR) macro, change this to match
+VTWMDIR = $(LIBDIR)/twm
 
-MV = mv
-CP = cp
-RM = rm -f
-AR = wlib -b -c -p=128
-CC = cc
-LEX =                  lex
-YACC = yacc
-
-YFLAGS = -d
-
-LIBDIR = 	/usr/lib/X11
-USRLIBDIR = /usr/lib/X11
-
-TWMDIR = $(LIBDIR)/twm
-
-DEPXMULIB = $(USRLIBDIR)/Xmu3r.lib
-DEPXTOOLLIB =
-DEPEXTENSIONLIB = $(USRLIBDIR)/Xext3r.lib
-DEPXLIB = $(DEPEXTENSIONLIB) $(USRLIBDIR)/X11_s3r.lib
-DEPLIBS = $(DEPXMULIB) $(DEPXTOOLLIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
-
-XMULIB = 			 -lXmu
-XTOOLLIB =
-EXTENSIONLIB = 			 -lXext
-XLIB = $(EXTENSIONLIB) 			 -lX11_s
-
-LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB) $(XLIB)
-EXTRA_LIBRARIES = -lXqnx -lsocket
-LDLIBS = $(LOCAL_LIBRARIES) $(EXTRA_LIBRARIES)
+# If you don't have putenv()
+# #define NO_PUTENV
 
 DEBUG_DEFS =
 STD_DEFINES = -D__QNX__ -DMetroLink -DSTRINGS_ALIGNED -DNO_REGEX -DBOGUS_MB_MAX
 EXTRA_DEFINES =
 PROTO_DEFINES =
 DEFINES = $(DEBUG_DEFS)
+
+CDEBUGFLAGS =
+CCOPTIONS = -Otx -zp1 -mf -b -j -Wc,-s -N32k -w4
+
+# ================ End of common editables ======================
+
+# ============= Start of less common editables ==================
+
+# #define DEBUG
+
+MV = mv
+RM = rm -f
+CC = cc
+LEX = lex
+YACC = yacc
+
+YFLAGS = -d
+
+LIBDIR = /usr/lib/X11
+USRLIBDIR = /usr/lib/X11
+
+# Handy for developers to check man page editions
+# (see the end of this file)
+DEROFF = deroff
+DW = dw
+SPELL = spell
+
+# Required to generate HTML or Postscript versions of the man page
+# (see the end of this file)
+MAN2HTML = man2html
+MAN2PS = man2ps
+
+# ============== End of less common editables ===================
+
+# ========= Editing below here should not be necessary ==========
+
+XMULIB = -lXmu
+XTOOLLIB =
+EXTENSIONLIB = -lXext
+XLIB = $(EXTENSIONLIB) -lX11_s
+
+LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB) $(XLIB)
+EXTRA_LIBRARIES = -lXqnx -lsocket
+LDLIBS = $(LOCAL_LIBRARIES) $(EXTRA_LIBRARIES) $(SYS_LIBRARIES)
+
+#ifndef NO_XPM_SUPPORT
+SYS_LIBRARIES = -lXpm
+#endif
 
 INCLUDES =
 EXTRA_INCLUDES = 
@@ -58,27 +85,21 @@ STD_INCLUDES =
 ALLINCLUDES = $(INCLUDES) $(EXTRA_INCLUDES) $(STD_INCLUDES)
 ALLDEFINES = $(ALLINCLUDES) $(STD_DEFINES) $(EXTRA_DEFINES) $(PROTO_DEFINES) $(DEFINES)
 
-CDEBUGFLAGS =
-CCOPTIONS = -Otx -zp1 -mf -b -j -Wc,-s -N32k
 CFLAGS = $(CDEBUGFLAGS) $(CCOPTIONS) $(ALLDEFINES) -L$(USRLIBDIR)
 
 SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c twm.c \
- 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
- 		cursor.c icons.c desktop.c doors.c lastmake.c
+	parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
+	cursor.c icons.c desktop.c doors.c lastmake.c
 
 OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o twm.o \
- 		parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
- 		cursor.o icons.o desktop.o doors.o lastmake.o
+	parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
+	cursor.o icons.o desktop.o doors.o lastmake.o
 
 all: vtwm
 
 parse.o: parse.c
 	$(RM) $@
-	$(CC) -c $(CFLAGS) '-DSYSTEM_INIT_FILE="'$(DESTDIR)$(TWMDIR)'/system.vtwmrc"' parse.c
-
-util.o: util.c
-	$(RM) $@
-	$(CC) -c $(CFLAGS) -DNOPUTENV util.c
+	$(CC) -c $(CFLAGS) '-DSYSTEM_VTWMRC="'$(VTWMDIR)'/system.vtwmrc"' '-DSYSTEM_TWMRC="'$(VTWMDIR)'/system.twmrc"' parse.c
 
 depend: lex.c gram.c deftwmrc.c lastmake.c
 
@@ -86,7 +107,7 @@ PROGRAM = vtwm
 
 all: vtwm
 
-vtwm: $(OBJS) $(DEPLIBS) version.c
+vtwm: $(OBJS) version.c
 	$(RM) $@
 	$(CC) -o $@ $(OBJS) $(CFLAGS) $(LDLIBS)
 	$(RM) lastmake.*
@@ -104,17 +125,17 @@ clean:
 	$(RM) $(PROGRAM) *.o *.b *.err y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c lastmake.c
 
 deftwmrc.o: deftwmrc.c
-	$(CC) -c $(CFLAGS) '-DSYSTEM_INIT_FILE="'$(DESTDIR)$(TWMDIR)'/system.vtwmrc"' deftwmrc.c
+	$(CC) -c $(CFLAGS) deftwmrc.c
 
 deftwmrc.c:  system.vtwmrc
 	$(RM) $@
 	echo '/* ' >>$@
 	echo ' * This file is generated automatically from the default' >>$@
-	echo ' * vtwm bindings file system.vtwmrc by the vtwm Imakefile.' >>$@
+	echo ' * VTWM bindings file system.vtwmrc by the VTWM Imakefile.' >>$@
 	echo ' */' >>$@
 	echo '' >>$@
 	echo 'char *defTwmrc[] = {' >>deftwmrc.c
-	sed -e '/^#/d' -e 's/"/\\"/g' -e 's/^/    "/' -e 's/$$/",/' 		system.vtwmrc >>$@
+	sed -e '/^#/d' -e 's/"/\\"/g' -e 's/^/    "/' -e 's/$$/",/' system.vtwmrc >>$@
 	echo '    (char *) 0 };' >>$@
 
 lastmake.o: lastmake.c
@@ -123,11 +144,33 @@ lastmake.o: lastmake.c
 lastmake.c:
 	$(RM) $@
 	echo '/* ' >>$@
-	echo ' * This file is generated automatically by the vtwm Imakefile.' >>$@
+	echo ' * This file is generated automatically by the VTWM Imakefile.' >>$@
 	echo ' */' >>$@
 	echo '' >>$@
 	echo 'char *lastmake[] = {' >>lastmake.c
-	echo '\t"Platform:  '`uname -s`' Version '`uname -v`' Release '`uname -r`'",' >>$@
-	echo '\t"Build:  '`date`'",' >>$@
-	echo '};\n' >>$@
+	echo '    "Platform:  '`uname -s`' Version '`uname -v`' Release '`uname -r`'",' >>$@
+	echo '    "Build:  '`date`'",' >>$@
+	echo '};' >>$@
 
+# Handy for developers to check the man page
+dw vtwm.dw: vtwm.man
+	$(DEROFF) vtwm.man | $(DW) >vtwm.dw
+	@if test -s vtwm.dw ; \
+	then \
+	    echo Doubled words in vtwm.man ... ; \
+	    cat vtwm.dw ; \
+	fi
+spell vtwm.ser: vtwm.man vtwm.sok
+	$(DEROFF) vtwm.man | $(SPELL) +vtwm.sok >vtwm.ser
+	@if test -s vtwm.ser ; \
+	then \
+	    echo Spelling exceptions in vtwm.man ... ; \
+	    cat vtwm.ser ; \
+	fi
+
+# If you wish to generate HTML or Postscript versions of the man page,
+# enter 'make vtwm.html' or 'make vtwm.ps'
+vtwm.html: vtwm.man
+	$(MAN2HTML) vtwm.man
+vtwm.ps: vtwm.man
+	$(MAN2PS) < $< >$@

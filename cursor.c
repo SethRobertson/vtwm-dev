@@ -35,6 +35,8 @@
 #include "screen.h"
 #include "util.h"
 
+void NewBitmapCursor();
+
 static struct _CursorName {
     char		*name;
     unsigned int	shape;
@@ -141,7 +143,7 @@ void NewFontCursor (cp, str)
 	     ProgramName, str);
 }
 
-NewBitmapCursor(cp, source, mask)
+void NewBitmapCursor(cp, source, mask)
 Cursor *cp;
 char *source, *mask;
 {

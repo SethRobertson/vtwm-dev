@@ -61,7 +61,7 @@ static char gray_bits[] = {
    0x02, 0x01};
 
 /* djhjr - 4/19/96 */
-static char black_bits[] = {
+static unsigned char black_bits[] = {
    0xFF, 0xFF};
 
 int AddingX;
@@ -72,6 +72,7 @@ int AddingH;
 static int PlaceX = 50;
 static int PlaceY = 50;
 static void CreateWindowTitlebarButtons();
+void SetHighlightPixmap();
 
 char NoName[] = "Untitled"; /* name if no name is specified */
 
@@ -85,7 +86,7 @@ char NoName[] = "Untitled"; /* name if no name is specified */
  ************************************************************************
  */
 
-GetGravityOffsets (tmp, xp, yp)
+void GetGravityOffsets (tmp, xp, yp)
     TwmWindow *tmp;			/* window from which to get gravity */
     int *xp, *yp;			/* return values */
 {
@@ -143,7 +144,7 @@ IconMgr *iconp;
     XEvent event;
     unsigned long valuemask;		/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
-    int width, height;			/* tmp variable */
+    XTextProperty text_property;
     Atom actual_type;
     int actual_format;
     unsigned long nitems, bytesafter;
@@ -172,7 +173,17 @@ IconMgr *iconp;
 
     XSelectInput(dpy, tmp_win->w, PropertyChangeMask);
     XGetWindowAttributes(dpy, tmp_win->w, &tmp_win->attr);
-    XFetchName(dpy, tmp_win->w, &tmp_win->name);
+
+	/*
+	 * Ask the window manager for a name with "newer" R4 function -
+	 * it was 'XFetchName()', which apparently failed more often.
+	 * Submitted by Nicholas Jacobs
+	 */
+	if (XGetWMName(dpy, tmp_win->w, &text_property) != 0)
+		tmp_win->name = (char *)text_property.value;
+	else
+		tmp_win->name = NoName;
+
     tmp_win->class = NoClass;
     XGetClassHint(dpy, tmp_win->w, &tmp_win->class);
     FetchWmProtocols (tmp_win);
@@ -199,8 +210,6 @@ IconMgr *iconp;
 
     tmp_win->transient = Transient(tmp_win->w, &tmp_win->transientfor);
 
-    if (tmp_win->name == NULL)
-	tmp_win->name = NoName;
     if (tmp_win->class.res_name == NULL)
     	tmp_win->class.res_name = NoName;
     if (tmp_win->class.res_class == NULL)
@@ -569,12 +578,12 @@ IconMgr *iconp;
 				  ": ", 2);
 */
 
-/* was #if 0... djhjr - 4/25/96 */
+#if 0
 		if (0/*Scr->AutoRelativeResize*/)
-/* was My R5 vtvwm came with this commented out, always 0. ... djhjr - 4/25/96 */
-/* was Why? ... djhjr - 4/25/96 */
-/* was #endif... djhjr - 4/25/96 */
-/* was if (Scr->AutoRelativeResize)... djhjr - 4/25/96 */
+My R5 vtvwm came with this commented out, always 0.
+Why?
+#endif
+		if (Scr->AutoRelativeResize)
 		{
 		    int dx = (tmp_win->attr.width / 4);
 		    int dy = (tmp_win->attr.height / 4);
@@ -686,9 +695,13 @@ IconMgr *iconp;
 #if 0
 	    if (Scr->GeometriesAreVirtual)
 #endif
-		if (Scr->GeometriesAreVirtual || ( !Scr->GeometriesAreVirtual &&
-		      (tmp_win->nailed||(Scr->FixTransientVirtualGeometries
-		                         &&tmp_win->transient))))
+/* added 'FixManagedVirtualGeometries' - djhjr - 1/6/98 */
+		if (Scr->GeometriesAreVirtual ||
+			(!Scr->GeometriesAreVirtual &&
+				(tmp_win->nailed ||
+				(Scr->FixManagedVirtualGeometries && !tmp_win->transient ||
+				(Scr->FixTransientVirtualGeometries && tmp_win->transient))
+		)))
 
 		/* if NotVirtualGeometries is set, should also do this if it's
 		   a sticky or (it's a transient window and
@@ -938,7 +951,7 @@ IconMgr *iconp;
 	/* djhjr - 4/19/96 */
 	if (Scr->use3Dtitles && (Scr->Monochrome != COLOR))
 	    tmp_win->gray = XCreatePixmapFromBitmapData(dpy, Scr->Root, 
-		black_bits, gray_width, gray_height, 
+		(char *)black_bits, gray_width, gray_height, 
 		tmp_win->border_tile.fore, tmp_win->border_tile.back,
 		Scr->d_depth);
 	else
@@ -1113,7 +1126,7 @@ static void do_add_binding (button, context, modifier, func)
     mb->item = NULL;
 }
 
-AddDefaultBindings ()
+void AddDefaultBindings ()
 {
     /*
      * The bindings are stored in Scr->Mouse, indexed by
@@ -1272,7 +1285,7 @@ static Window CreateHighlightWindow (tmp_win)
 	/* djhjr - 4/20/96 */
 	if (Scr->use3Dtitles && (Scr->Monochrome != COLOR))
 	    Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w, 
-					black_bits, gray_width, gray_height);
+					(char *)black_bits, gray_width, gray_height);
 	else
 	    Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w, 
 					gray_bits, gray_width, gray_height);
@@ -1392,67 +1405,48 @@ void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
 
 
 /*
- * ComputeTitleLocation - calculate the position of the title window; we need
- * to take the frame_bw into account since we want (0,0) of the title window
- * to line up with (0,0) of the frame window.
+ * ComputeTitleLocation - calculate the position of the title window.
+ *
+ * substantially re-written - djhjr - 1/8/98
  */
 void ComputeTitleLocation (tmp)
-    register TwmWindow *tmp;
+    TwmWindow *tmp;
 {
+	tmp->title_x = tmp->frame_bw3D - tmp->frame_bw;
+	tmp->title_y = tmp->frame_bw3D - tmp->frame_bw;
 
-/* djhjr - 4/19/96
-    tmp->title_x = -tmp->frame_bw;
-    tmp->title_y = -tmp->frame_bw;
-*/
-    tmp->title_x = tmp->frame_bw3D - tmp->frame_bw;
-    tmp->title_y = tmp->frame_bw3D - tmp->frame_bw;
+	if (tmp->squeeze_info)
+	{
+		SqueezeInfo *si = tmp->squeeze_info;
+		int basex;
+		int fw = tmp->frame_bw + tmp->frame_bw3D;
 
-    if (tmp->squeeze_info) {
-	register SqueezeInfo *si = tmp->squeeze_info;
-	int basex;
-	int maxwidth = tmp->frame_width;
-	int tw = tmp->title_width;
+		if (si->denom != 0 && si->num != 0)
+			basex = ((tmp->frame_width - tmp->title_width) / si->denom) * si->num + fw;
+		else
+			if (si->denom == 0 && si->num != 0)
+				basex = si->num + fw;
+			else
+				switch (si->justify)
+				{
+					case J_LEFT:
+						basex = tmp->title_x + fw;
+						break;
+					case J_CENTER:
+						basex = tmp->frame_width / 2 - (tmp->title_width / 2 - fw);
+						break;
+					case J_RIGHT:
+						basex = tmp->frame_width - tmp->title_width;
+						break;
+				}
 
-	/*
-	 * figure label base from squeeze info (justification fraction)
-	 */
-	if (si->denom == 0) {	/* num is pixel based */
-	    if ((basex = si->num) == 0) {  /* look for special cases */
-		switch (si->justify) {
-		  case J_RIGHT:
-		    basex = maxwidth;
-		    break;
-		  case J_CENTER:
-		    basex = maxwidth / 2;
-		break;
-		}
-	    }
-	} else {			/* num/denom is fraction */
-	    basex = ((si->num * maxwidth) / si->denom);
-	    if (si->num < 0) basex += maxwidth;
+		if (basex > tmp->frame_width - tmp->title_width)
+			basex = tmp->frame_width - tmp->title_width;
+		if (basex < 0)
+			basex = tmp->title_x + fw;
+
+		tmp->title_x = basex - fw;
 	}
-
-	/*
-	 * adjust for left (nop), center, right justify and clip
-	 */
-	switch (si->justify) {
-	  case J_CENTER:
-	    basex -= tw / 2;
-	    break;
-	  case J_RIGHT:
-	    basex -= tw - 1;
-	    break;
-	}
-	if (basex > maxwidth - tw + 1)
-	  basex = maxwidth - tw + 1;
-	if (basex < 0) basex = 0;
-
-/* djhjr - 4/19/96
-	tmp->title_x = basex - tmp->frame_bw;
-*/
-	tmp->title_x = basex - tmp->frame_bw + tmp->frame_bw3D;
-
-    }
 }
 
 
@@ -1570,7 +1564,7 @@ static void CreateWindowTitlebarButtons (tmp_win)
 }
 
 
-SetHighlightPixmap (filename)
+void SetHighlightPixmap (filename)
     char *filename;
 {
     Pixmap pm = GetBitmap (filename);
@@ -1586,7 +1580,7 @@ SetHighlightPixmap (filename)
 }
 
 
-FetchWmProtocols (tmp)
+void FetchWmProtocols (tmp)
     TwmWindow *tmp;
 {
     unsigned long flags = 0L;
@@ -1683,7 +1677,7 @@ CreateColormapWindow(w, creating_parent, property_window)
     return (cwin);
 }
 
-FetchWmColormapWindows (tmp)
+void FetchWmColormapWindows (tmp)
     TwmWindow *tmp;
 {
     register int i, j;

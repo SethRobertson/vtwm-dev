@@ -17,13 +17,14 @@ NoGrabServer
 RandomPlacement
 WarpCursor
 WarpWindows
+WarpUnmapped
+SnapRealScreen
+NaturalAutoPanBehavior
+NoHighlight
 
 NotVirtualGeometries
+FixManagedVirtualGeometries
 FixTransientVirtualGeometries
-
-ButtonColorIsFrame
-
-#OpaqueMove
 
 UseThreeDIconManagers
 UseThreeDMenus
@@ -31,6 +32,7 @@ UseThreeDBorders
 UseThreeDTitles
 ShallowReliefWindowButton
 SunkFocusWindowTitle
+ButtonColorIsFrame
 
 # See 'Functions and Bindings' below...
 #NoDefaultTitleButtons
@@ -55,9 +57,11 @@ VirtualDesktop		"5x1+690+705" 16
 #
 # The window size is then ((1024 * 5) / 16) x ((768 * 1) / 16) = 320 x 48.
 
-#PanDistanceX		1024
-#PanDistanceY		0
-#AutoPan			100
+PanDistanceX		100
+PanDistanceY		100
+AutoPan				100
+# Nice if 'NaturalAutoPanBehavior' is not used...
+#AutoPanExtraWarp	30
 
 # Allow for QNXmouse_2emulate3 inaccuracy...
 MoveDelta			3
@@ -70,7 +74,7 @@ ClearShadowContrast	40
 DarkShadowContrast	40
 
 # Windows are snappier if 'NoBackingStore' is not used when this is...
-RaiseDelay			200
+RaiseDelay			80
 
 XorValue			1
 
@@ -91,8 +95,81 @@ DoorFont			"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
 #VirtualDesktopFont	"5x8"
 
 #
+# Functions and Bindings
+#
+
+# These are nice when using 3D titlebars...
+LeftTitleButton		":xpm:bar" = f.menu "ArrangeMenu"
+RightTitleButton	":xpm:dot" = f.iconify
+RightTitleButton	":xpm:resize" = f.resize
+# These are nice when not...
+#LeftTitleButton	":xlogo" = f.menu "ArrangeMenu"
+#RightTitleButton	":dot" = f.iconify
+#RightTitleButton	":resize" = f.resize
+
+Function "VTWM Profile"
+{
+	f.function "decorate-virtual"
+}
+
+Function "decorate-virtual"
+{
+	f.exec "nexpm -vtwm -in .vtwmpm &"
+}
+
+Function "clear-virtual"
+{
+	f.exec "nexpm -vtwm -solid gray60 &"
+}
+
+Function "move-or-raise"
+{
+	f.move
+	f.deltastop
+	f.raise
+}
+
+Function "move-or-iconify"
+{
+	f.move
+	f.deltastop
+	f.iconify
+}
+
+Button1 = : root : f.version
+Button3 = : root : f.menu "XWindowsMenu"
+
+Button1 = : title : f.function "move-or-raise"
+Button3 = : title : f.lower
+
+Button1 = : frame : f.function "move-or-raise"
+Button2 = : frame : f.resize
+Button3 = : frame : f.iconify
+
+Button1 = : icon : f.function "move-or-iconify"
+Button3 = : icon : f.menu "ArrangeMenu"
+
+Button1 = : iconmgr : f.iconify
+Button3 = : iconmgr : f.warp
+
+Button1 = : door : f.enterdoor
+
+Button1 = : virtual | desktop : f.movescreen
+Button2 = : virtual | desktop : f.function "decorate-virtual"
+Button3 = : virtual | desktop : f.function "clear-virtual"
+
+#"Up" = : root | virtual | desktop : f.panup "100"
+#"Down" = : root | virtual | desktop : f.pandown "100"
+#"Left" = : root | virtual | desktop : f.panleft "100"
+#"Right" = : root | virtual | desktop : f.panright "100"
+
+#
 # Lists
 #
+
+SqueezeTitle {}
+
+DontSqueezeTitle {}
 
 Cursors
 {
@@ -229,12 +306,6 @@ Color
 	VirtualBackground			"gray60"
 	VirtualForeground			"black"
 	BorderColor					"gray60" {}
-#	BorderColor					"gray70"
-#	{
-#		"VTWM Icon Manager"		"gray60"
-#		"VTWM Desktop"			"gray60"
-#		"VTWM Door"				"gray60"
-#	}
 	BorderTileBackground		"gray60" {}
 	BorderTileForeground		"gray60" {}
 	TitleBackground				"DeepSkyBlue4"
@@ -242,7 +313,7 @@ Color
 		"VTWM Icon Manager"		"gray60"
 		"VTWM Desktop"			"gray60"
 		"VTWM Door"				"gray60"
-		"XTerm"					"MediumSeaGreen"
+		"XTerm"					"SeaGreen"
 		"Xqsh"					"maroon"
 		"asclock"				"gray60"
 		"oclock"				"gray60"
@@ -260,7 +331,7 @@ Color
 		"VTWM Icon Manager"		"gray60"
 		"VTWM Desktop"			"gray60"
 		"VTWM Door"				"gray60"
-		"XTerm"					"MediumSeaGreen"
+		"XTerm"					"SeaGreen"
 		"Xqsh"					"maroon"
 		"asclock"				"gray60"
 		"oclock"				"gray60"
@@ -278,7 +349,7 @@ Color
 		"VTWM Icon Manager"		"gray60"
 		"VTWM Desktop"			"gray60"
 		"VTWM Door"				"gray60"
-		"XTerm"					"MediumSeaGreen"
+		"XTerm"					"SeaGreen"
 		"Xqsh"					"maroon"
 		"asclock"				"gray60"
 		"oclock"				"gray60"
@@ -294,7 +365,7 @@ Color
 	{
 		"VTWM Desktop"			"gray60"
 		"VTWM Door"				"gray60"
-		"XTerm"					"MediumSeaGreen"
+		"XTerm"					"SeaGreen"
 		"Xqsh"					"maroon"
 		"asclock"				"gray60"
 		"oclock"				"gray60"
@@ -307,13 +378,14 @@ Color
 		"xload"					"gray60"
 	}
 	IconManagerForeground		"gray90" {}
+	IconManagerHighlight		"gray90" {}
 	DoorBackground				"gray60" {}
 	DoorForeground				"gray90" {}
 	DesktopDisplayBackground	"DeepSkyBlue4"
 	{
 		"VTWM Desktop"			"gray60"
 		"VTWM Door"				"gray60"
-		"XTerm"					"MediumSeaGreen"
+		"XTerm"					"SeaGreen"
 		"Xqsh"					"maroon"
 		"asclock"				"gray60"
 		"oclock"				"gray60"
@@ -326,52 +398,6 @@ Color
 		"xload"					"gray60"
 	}
 }
-
-#
-# Functions and Bindings
-#
-
-# For custom Titlebar Buttons
-#
-# These are nice when using 3D titlebars...
-LeftTitleButton		":xpm:bar" = f.menu "ArrangeMenu"
-RightTitleButton	":xpm:dot" = f.iconify
-RightTitleButton	":xpm:resize" = f.resize
-# These are nice when not...
-#LeftTitleButton	":xlogo" = f.menu "ArrangeMenu"
-#RightTitleButton	":dot" = f.iconify
-#RightTitleButton	":resize" = f.resize
-
-Function "move-or-raise"
-{
-	f.move
-	f.deltastop
-	f.raise
-}
-
-Function "move-or-iconify"
-{
-	f.move
-	f.deltastop
-	f.iconify
-}
-
-Button1 = : root : f.version
-Button3 = : root : f.menu "XWindowsMenu"
-
-Button1 = : title : f.function "move-or-raise"
-Button3 = : title : f.lower
-
-Button1 = : frame : f.function "move-or-raise"
-Button2 = : frame : f.resize
-Button3 = : frame : f.iconify
-
-Button1 = : icon : f.function "move-or-iconify"
-Button3 = : icon : f.menu "ArrangeMenu"
-
-Button1 = : iconmgr : f.iconify
-
-Button1 = : door : f.enterdoor
 
 #
 # Menus
@@ -436,31 +462,35 @@ menu "DesktopMenu"
 	"xpostit"		f.exec "xpostit -g 112x29+741+1 &"
 	""				f.separator
 	"asclock"		f.exec "asclock -led cyan -position +950+20 -exe 'slay -f asclock' &"
-	"oclock"		f.exec "oclock -g 198x93-0+10 -bd MediumSeaGreen -fg MediumSeaGreen -transparent &"
+	"oclock"		f.exec "oclock -g 198x93-0+10 -bd SeaGreen -fg SeaGreen -transparent &"
 	"mouseclock"	f.exec "mouseclock -cal -fg yellow -fn -adobe-helvetica-bold-r-normal--*-120-* &"
 	"sunclock"		f.exec "sunclock &"
 	"t3d"			f.exec "t3d -nice 2 &"
 	"xarclock"		f.exec "xarclock -g 97x93-0+0 -arabic -fg white -bg black -fn -adobe-helvetica-medium-r-normal--*-80-*-*-p-*-iso8859-* &"
 	"xclock"		f.exec "xclock -g -0+0 &"
-#	"xdaliclock"	f.exec "xdaliclock -g -0+0 -fg MediumSeaGreen -transparent -fn -adobe-utopia-medium-i-normal-*-*-260-*-*-p-*-iso8859-* &"
-	"xdaliclock"	f.exec "xdaliclock -g -0+0 -fg MediumSeaGreen -transparent -fn -adobe-times-bold-i-normal-*-*-260-*-*-p-*-iso8859-* &"
+#	"xdaliclock"	f.exec "xdaliclock -g -0+0 -fg SeaGreen -transparent -fn -adobe-utopia-medium-i-normal-*-*-260-*-*-p-*-iso8859-* &"
+	"xdaliclock"	f.exec "xdaliclock -g -0+0 -fg SeaGreen -transparent -fn -adobe-times-bold-i-normal-*-*-260-*-*-p-*-iso8859-* &"
 }
 
 menu "NetworkMenu"
 {
-	"  Network  "	f.title
-	"chimera"		f.exec "chimera &"
-	"elm"			f.exec "xqsh -font pc8x14br -fat -T elm -n elm -e /usr/local/bin/elm &"
-	"knews"			f.exec "knews &"
-	"mosaic"		f.exec "Mosaic &"
-	"popmail"		f.exec "xqsh -font pc8x14br -fat -T popmail -n popmail -e /usr/ucb/popmail mail.visi.com hawkeyd &"
-	"xarchie"		f.exec "xarchie &"
-	"xbiff++"		f.exec "xbiff++ -update 300 -g 96x93-0+394 &"
-	"xdir"			f.exec "xdir &"
-	"xgopher"		f.exec "xgopher &"
-	""				f.separator
-	"FTP"			f.menu "FTPMenu"
-	"Login"			f.menu "LoginMenu"
+	"  Network  "			f.title
+	"chimera"				f.exec "chimera &"
+	"elm"					f.exec "xqsh -font pc8x14br -fat -T elm -n elm -e /usr/local/bin/elm &"
+	"knews"					f.exec "knews &"
+	"mosaic"				f.exec "Mosaic &"
+	"popmail (ccmail)"		f.exec "xqsh -font pc8x14br -fat -T 'popmail:ccmail' -n 'popmail:ccmail' -e /usr/ucb/popmail ccmail.ctcdist.com hawkeyd &"
+	"popmail (ctcdist)"		f.exec "xqsh -font pc8x14br -fat -T 'popmail:ctcdist' -n 'popmail:ctcdist' -e /usr/ucb/popmail mail.ctcdist.com hawkeyd &"
+	"popmail (visi)"		f.exec "xqsh -font pc8x14br -fat -T 'popmail:visi' -n 'popmail:visi' -e /usr/ucb/popmail mail.visi.com hawkeyd &"
+	"popmail (wavefront)"	f.exec "xqsh -font pc8x14br -fat -T 'popmail:wavefront' -n 'popmail:wavefront' -e /usr/ucb/popmail mail.wavefront.com hawkeyd &"
+	"xarchie"				f.exec "xarchie &"
+	"xbiff++"				f.exec "xbiff++ -update 300 -g 96x93-0+394 &"
+	"xdir"					f.exec "xdir &"
+	"xgopher"				f.exec "xgopher &"
+	""						f.separator
+	"FTP"					f.menu "FTPMenu"
+	"Login"					f.menu "LoginMenu"
+	"Telnet"				f.menu "TelnetMenu"
 }
 
 menu "FTPMenu"
@@ -476,7 +506,12 @@ menu "FTPMenu"
 	"racine"		f.exec "startxterm -title 'ftp:racine' -name 'ftp:racine' -e ftp racine &"
 	"roanoke"		f.exec "startxterm -title 'ftp:roanoke' -name 'ftp:roanoke' -e ftp roanoke &"
 	"york"			f.exec "startxterm -title 'ftp:york' -name 'ftp:york' -e ftp york &"
-	"york annex"	f.exec "startxterm -title 'ftp:york annex' -name 'ftp:york annex' -e ftp yannex &"
+	"york annex"	f.exec "startxterm -title 'ftp:yorkannex' -name 'ftp:yorkannex' -e ftp yannex &"
+	""				f.separator
+	"pchelwig2"		f.exec "startxterm -title 'ftp:pchelwig2' -name 'ftp:pchelwig2' -e ftp pchelwig2.mathematik.tu-muenchen.de &"
+	"bambi"			f.exec "startxterm -title 'ftp:bambi' -name 'ftp:bambi' -e ftp bambi.visi.com &"
+	"thumper"		f.exec "startxterm -title 'ftp:thumper' -name 'ftp:thumper' -e ftp thumper.visi.com &"
+	"qnx"			f.exec "startxterm -title 'ftp:qnx' -name 'ftp:qnx' -e ftp qnx.com &"
 }
 
 menu "LoginMenu"
@@ -497,6 +532,18 @@ menu "LoginMenu"
 	"roanoke"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:roanoke' -n 'rlogin:roanoke' -e /usr/ucb/rlogin roanoke &"
 	"york"				f.exec "xqsh -font pc8x14br -fat -T 'rlogin:york' -n 'rlogin:york' -e /usr/ucb/rlogin york &"
 	"york annex"		f.exec "xqsh -font pc8x14br -fat -T 'rlogin:york annex' -n 'rlogin:york annex' -e /usr/ucb/rlogin yannex &"
+	""					f.separator
+	"pchelwig2"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:pchelwig2' -n 'rlogin:pchelwig2' -e /usr/ucb/rlogin pchelwig2.mathematik.tu-muenchen.de &"
+	"bambi"				f.exec "xqsh -font pc8x14br -fat -T 'rlogin:bambi' -n 'rlogin:bambi' -e /usr/ucb/rlogin bambi.visi.com &"
+	"thumper"			f.exec "xqsh -font pc8x14br -fat -T 'rlogin:thumper' -n 'rlogin:thumper' -e /usr/ucb/rlogin thumper.visi.com &"
+}
+
+menu "TelnetMenu"
+{
+	"  Telnet  "	f.title
+	"bambi"			f.exec "startxterm -tn $TELTERM -title 'telnet:bambi' -name 'telnet:bambi' -e telnet bambi.visi.com &"
+	"thumper"		f.exec "startxterm -tn $TELTERM -title 'telnet:thumper' -name 'telnet:thumper' -e telnet thumper.visi.com &"
+	"qnx"			f.exec "xqsh -font pc8x14br -fat -T 'telnet:qnx' -n 'telnet:qnx' -e /usr/ucb/telnet -8 qnx.com &"
 }
 
 menu "ToyboxMenu"
@@ -630,6 +677,9 @@ menu "VTWMMenu"
 	"Virtual 3"		f.setrealscreen "+2048+0"
 	"Virtual 4"		f.setrealscreen "+3072+0"
 	"Virtual 5"		f.setrealscreen "+4096+0"
+	""				f.separator
+	"Autopan"		f.autopan
+	"Snapscreen"	f.snaprealscreen
 	""				f.separator
 	"Icon Mgr"		f.showiconmgr
 	"Virtual Mgr"	f.showdesktopdisplay

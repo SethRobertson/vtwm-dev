@@ -28,6 +28,11 @@
 extern void SetRealScreenInternal();
 extern void SetRealScreen();
 extern void SnapRealScreen();
+extern void SetMapStateProp();
+extern void twmrc_error_prefix();
+
+void SetVirtualPixmap();
+void SetRealScreenPixmap();
 
 static void GetDesktopWindowCoordinates(tmp_win, x, y, w, h)
 TwmWindow *tmp_win;
@@ -127,7 +132,6 @@ void CreateDesktopDisplay()
 	    Pixmap pm = None;
 	    GC gc;
 	    XGCValues gcv;
-	    unsigned long valuemask;
 
 		pm = XCreatePixmap( dpy, Scr->VirtualDesktopDisplay,
 				    Scr->virtual_pm_width, Scr->virtual_pm_height,
@@ -186,7 +190,6 @@ void CreateDesktopDisplay()
 	    Pixmap pm = None;
 	    GC gc;
 	    XGCValues gcv;
-	    unsigned long valuemask;
 
 		pm = XCreatePixmap( dpy, Scr->VirtualDesktopDScreen,
 				    Scr->RealScreen_pm_width, Scr->RealScreen_pm_height,
@@ -299,7 +302,7 @@ void CreateDesktopDisplay()
 	} /* end if Scr->AutoPan */
 }
 
-SetVirtualPixmap (filename)
+void SetVirtualPixmap (filename)
 char *filename;
 {/*RFB PIXMAP*/
     Pixmap pm = GetBitmap (filename);
@@ -313,7 +316,8 @@ char *filename;
 	Scr->virtual_pm_height = JunkHeight;
     }
 }
-SetRealScreenPixmap (filename)
+
+void SetRealScreenPixmap (filename)
 char *filename;
 {/*RFB PIXMAP*/
     Pixmap pm = GetBitmap (filename);
@@ -553,8 +557,8 @@ void DisplayScreenOnDesktop()
 	XMoveWindow(dpy, Scr->VirtualDesktopDScreen,
 		Scr->VirtualDesktopX / Scr->VirtualDesktopDScale - border,
 		Scr->VirtualDesktopY / Scr->VirtualDesktopDScale - border
-		    /* SCALE_D(Scr->VirtualDesktopX), /* - RFB changed 3 to 1 */
-		    /* SCALE_D(Scr->VirtualDesktopY) /* - RFB changed 3 to 1 */
+		    /* SCALE_D(Scr->VirtualDesktopX), */ /* - RFB changed 3 to 1 */
+		    /* SCALE_D(Scr->VirtualDesktopY) */ /* - RFB changed 3 to 1 */
 			);
 /* 4/92 RFB -- simply use SCALE_D; well, no...
 ** the problem is that SCALE_D adds 1 if the result is 0, but
@@ -1048,7 +1052,10 @@ int *dx, *dy; /* DSE */
 {
 	/* panning the screen can never mean that you need to snap */
 	SetRealScreenInternal(Scr->VirtualDesktopX + xoff, Scr->VirtualDesktopY + yoff,
+/* why not? - djhjr - 1/24/98
 			      FALSE, dx, dy);
+*/
+			      Scr->snapRealScreen, dx, dy);
 			             /* DSE */
 }
 

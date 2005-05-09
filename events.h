@@ -68,6 +68,10 @@ extern void HandleColormapNotify();
 extern void HandleVisibilityNotify();
 extern void HandleUnknown();
 extern void SendConfigureNotify();
+extern void InstallRootColormap();
+extern int Transient();
+extern void UninstallRootColormap();
+extern void InstallWindowColormaps();
 
 extern event_proc EventHandler[];
 extern Window DragWindow;

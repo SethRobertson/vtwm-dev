@@ -35,6 +35,9 @@
  *
  ***********************************************************************/
 
+#ifndef NO_PUTENV
+#include <stdlib.h>
+#endif
 #include <stdio.h>
 #include <signal.h>
 #include <X11/Xos.h>
@@ -48,12 +51,19 @@
 #include "parse.h"
 #include "gram.h"
 #include "screen.h"
+#include "doors.h"
 #include "desktop.h"
+#include "add_window.h"
 #include <X11/Xmu/CharSet.h>
-#include <X11/bitmaps/menu12>
 #include "version.h"
 
-extern XEvent Event;
+extern void IconUp(), IconDown(), CreateIconWindow();
+
+extern char *Action;
+extern int Context;
+extern TwmWindow *ButtonWindow, *Tmp_win;
+extern XEvent Event, ButtonEvent;
+extern char *InitFile;
 
 int RootFunction = NULL;
 MenuRoot *ActiveMenu = NULL;		/* the active menu */
@@ -62,8 +72,14 @@ int MoveFunction;			/* either F_MOVE or F_FORCEMOVE */
 int WindowMoved = FALSE;
 int menuFromFrameOrWindowOrTitlebar = FALSE;
 
-/* djhjr - 4/27/96 */
-void DisplayPosition ();
+void BumpWindowColormap();
+void DestroyMenu();
+void HideIconManager();
+void MakeMenu();
+void SendDeleteWindowMessage();
+void SendSaveYourselfMessage();
+void WarpClass();
+void WarpToScreen();
 
 int ConstMove = FALSE;		/* constrained move variables */
 int ConstMoveDir;
@@ -86,17 +102,13 @@ static struct {
 } MenuOrigins[MAXMENUDEPTH];
 static Cursor LastCursor;
 
-void WarpAlongRing(), WarpToWindow();
+void WarpAlongRing();
 
 /* djhjr - 4/18/96 */
 void Paint3DEntry();
 
-extern char *Action;
-extern int Context;
-extern TwmWindow *ButtonWindow, *Tmp_win;
-extern XEvent Event, ButtonEvent;
-extern char *InitFile;
 static void Identify();
+void PaintNormalEntry();
 
 #define MAX(x,y) ((x)>(y)?(x):(y))
 /* DSE */
@@ -225,7 +237,6 @@ int CreateTitleButton (name, func, action, menuroot, rightside, append)
     Bool rightside;
     Bool append;
 {
-	int i;
     TitleButton *tb = (TitleButton *) malloc (sizeof(TitleButton));
 
     if (!tb) {
@@ -301,7 +312,6 @@ int CreateTitleButton (name, func, action, menuroot, rightside, append)
  */
 void InitTitlebarButtons ()
 {
-    TitleButton *tb;
     int h;
 
     /*
@@ -361,6 +371,8 @@ void InitTitlebarButtons ()
     *
     * load in images and do appropriate centering
     *
+    {
+    TitleButton *tb;
 
     for (tb = Scr->TBInfo.head; tb; tb = tb->next) {
 
@@ -403,11 +415,26 @@ void InitTitlebarButtons ()
 	    tb->srcy = 0;
 	}
     } * for(...) *
+    }
 ... end of moved */
 
 }
 
 
+
+void PaintEntry(mr, mi, exposure)
+MenuRoot *mr;
+MenuItem *mi;
+int exposure;
+{
+    if (Scr->use3Dmenus)
+	Paint3DEntry (mr, mi, exposure);
+
+	/* djhjr - 4/22/96 */
+	else
+
+    PaintNormalEntry (mr, mi, exposure);
+}
 
 void Paint3DEntry(mr, mi, exposure)
 MenuRoot *mr;
@@ -471,14 +498,18 @@ int exposure;
 
 			if (mi->separated)
 			{
-				FB (Scr->MenuC.shadd, Scr->MenuC.shadc);
+				/* this 'if (...)' - djhjr - 1/19/98 */
+				if (!Scr->BeNiceToColormap)
+				{
+					FB (Scr->MenuC.shadd, Scr->MenuC.shadc);
 
 /* djhjr - 9/25/96
-				XDrawLine (dpy, mr->w, Scr->NormalGC, 1, y_offset + Scr->MenuFont.y + 5,
-					mr->width - 2, y_offset + Scr->MenuFont.y + 5);
+					XDrawLine (dpy, mr->w, Scr->NormalGC, 1, y_offset + Scr->MenuFont.y + 5,
+						mr->width - 2, y_offset + Scr->MenuFont.y + 5);
 */
-				XDrawLine (dpy, mr->w, Scr->NormalGC, 1, y_offset + Scr->EntryHeight - 1,
-					mr->width - 2, y_offset + Scr->EntryHeight - 1);
+					XDrawLine (dpy, mr->w, Scr->NormalGC, 1, y_offset + Scr->EntryHeight - 1,
+						mr->width - 2, y_offset + Scr->EntryHeight - 1);
+				}
 
 				FB (Scr->MenuC.shadc, Scr->MenuC.shadd);
 
@@ -647,21 +678,7 @@ int exposure;
 	}
 }
 
-void PaintEntry(mr, mi, exposure)
-MenuRoot *mr;
-MenuItem *mi;
-int exposure;
-{
-    if (Scr->use3Dmenus)
-	Paint3DEntry (mr, mi, exposure);
-
-	/* djhjr - 4/22/96 */
-	else
-
-    PaintNormalEntry (mr, mi, exposure);
-}
-
-PaintMenu(mr, e)
+void PaintMenu(mr, e)
 MenuRoot *mr;
 XEvent *e;
 {
@@ -695,7 +712,7 @@ extern int GlobalFirstTime; /* for StayUpMenus -- PF */
 
 #ifdef USE_VTWM53 /* start of vtwm-5.3 */
 
-UpdateMenu()
+void UpdateMenu()
 {
 	MenuItem *mi;
     int i, x, y, x_root, y_root, entry;
@@ -863,7 +880,7 @@ UpdateMenu()
 
 #else /* end of vtwm-5.3, start of ctwm-3.1 */
 
-UpdateMenu()
+void UpdateMenu()
 {
     MenuItem *mi;
     int i, x, y, x_root, y_root, entry;
@@ -896,7 +913,7 @@ UpdateMenu()
 	if ((! ActiveMenu) || Cancel) {
 	  menuFromFrameOrWindowOrTitlebar = FALSE;
 	  fromMenu = FALSE;
-	  return (0);
+	  return;
 	}
 
 	if (Event.type != MotionNotify)
@@ -1176,7 +1193,7 @@ AddToMenu(menu, item, action, sub, func, fore, back)
 
 
 
-MakeMenus()
+void MakeMenus()
 {
 	MenuRoot *mr;
 
@@ -1191,7 +1208,7 @@ MakeMenus()
 
 
 
-MakeMenu(mr)
+void MakeMenu(mr)
 MenuRoot *mr;
 {
 	MenuItem *start, *end, *cur, *tmp;
@@ -1543,7 +1560,7 @@ Bool PopUpMenu (menu, x, y, center)
 	menu->items = 0;
 	menu->width = 0;
 	menu->mapped = NEVER_MAPPED;
-  	AddToMenu(menu, "TWM Windows", NULLSTR, NULL, F_TITLE,NULLSTR,NULLSTR);
+  	AddToMenu(menu, "TWM Windows", NULLSTR, (MenuRoot *)NULL, F_TITLE,NULLSTR,NULLSTR);
 
 		WindowNameOffset=(char *)Scr->TwmRoot.next->name -
 							   (char *)Scr->TwmRoot.next;
@@ -1573,7 +1590,7 @@ Bool PopUpMenu (menu, x, y, center)
 		for (i=0; i<WindowNameCount; i++)
 		{
 			AddToMenu(menu, WindowNames[i]->name, (char *)WindowNames[i],
-					  NULL, F_POPUP,NULL,NULL);
+					  (MenuRoot *)NULL, F_POPUP,NULL,NULL);
 			if (!Scr->OldFashionedTwmWindowsMenu
 			&& Scr->Monochrome == COLOR)/*RFBCOLOR*/
 			{/*RFBCOLOR*/
@@ -1678,7 +1695,7 @@ Bool PopUpMenu (menu, x, y, center)
  ***********************************************************************
  */
 
-PopDownMenu()
+void PopDownMenu()
 {
 	MenuRoot *tmp;
 
@@ -1787,9 +1804,7 @@ void resizeFromCenter(w, tmp_win)
 {
   int lastx, lasty, width, height, bw2;
   int namelen;
-  int stat;
   XEvent event;
-  Window junk;
 
   namelen = strlen (tmp_win->name);
   bw2 = tmp_win->frame_bw * 2;
@@ -2638,9 +2653,18 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	if (tmp_win->icon)
 	{
 	    DeIconify(tmp_win);
+
+		/*
+		 * now HERE's a fine bit of kludge! it's to mask a hole in the
+		 * code I can't find that messes up when trying to warp to the
+		 * de-iconified window not in the real screen when WarpWindows
+		 * isn't used. see also the change in DeIconify().
+		 * djhjr - 1/24/98
+		 */
+		if (!Scr->WarpWindows && Scr->WarpCursor) goto do_F_WARP;
 	}
-        else if (func == F_ICONIFY &&
-            (tmp_win->list || !Scr->NoIconifyIconManagers)) /* PF */
+	else if (func == F_ICONIFY &&
+		(tmp_win->list || !Scr->NoIconifyIconManagers)) /* PF */
 	{
 	    Iconify (tmp_win, eventp->xbutton.x_root - EDGE_OFFSET, /* DSE */
 		     eventp->xbutton.y_root - EDGE_OFFSET); /* DSE */
@@ -2893,6 +2917,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
                                                                 
     case F_WARP:                                                /* PF */
 	{                                                           /* PF */
+do_F_WARP:
 	    if (tmp_win) {                                          /* PF */
 		if (Scr->WarpUnmapped || tmp_win->mapped) {             /* PF */
 		    if (!tmp_win->mapped) DeIconify (tmp_win);          /* PF */
@@ -3370,7 +3395,7 @@ Cursor cursor;
  ***********************************************************************
  */
 
-ReGrab()
+void ReGrab()
 {
     XGrabPointer(dpy, Scr->Root, True,
 	ButtonPressMask | ButtonReleaseMask,
@@ -3528,7 +3553,7 @@ FocusOnRoot()
     Scr->FocusRoot = TRUE;
 }
 
-DeIconify(tmp_win)
+void DeIconify(tmp_win)
 TwmWindow *tmp_win;
 {
     TwmWindow *t;
@@ -3573,10 +3598,17 @@ TwmWindow *tmp_win;
     }
     if (tmp_win->list)
 	XUnmapWindow(dpy, tmp_win->list->icon);
-    if ((Scr->WarpCursor ||
-	 LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)) &&
-	tmp_win->icon)
-      WarpToWindow (tmp_win);
+
+	/*
+	 * added '&& Scr->WarpWindows'.
+	 * see the kludge in ExecuteFunction(F_ICONIFY, ...).
+	 * djhjr - 1/24/98
+	 */
+	if (((Scr->WarpCursor ||
+			LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)) &&
+			tmp_win->icon) && Scr->WarpWindows)
+		WarpToWindow (tmp_win);
+
     tmp_win->icon = FALSE;
     tmp_win->icon_on = FALSE;
     UpdateDesktop(tmp_win);
@@ -3622,7 +3654,7 @@ TwmWindow *tmp_win;
 
 
 
-Iconify(tmp_win, def_x, def_y)
+void Iconify(tmp_win, def_x, def_y)
 TwmWindow *tmp_win;
 int def_x, def_y;
 {
@@ -3840,7 +3872,7 @@ TwmWindow *t;
 
 
 
-SetMapStateProp(tmp_win, state)
+void SetMapStateProp(tmp_win, state)
 TwmWindow *tmp_win;
 int state;
 {
@@ -3884,7 +3916,7 @@ Bool GetWMState (w, statep, iwp)
 
 
 
-WarpToScreen (n, inc)
+void WarpToScreen (n, inc)
     int n, inc;
 {
     Window dumwin;
@@ -3929,7 +3961,7 @@ WarpToScreen (n, inc)
  * BumpWindowColormap - rotate our internal copy of WM_COLORMAP_WINDOWS
  */
 
-BumpWindowColormap (tmp, inc)
+void BumpWindowColormap (tmp, inc)
     TwmWindow *tmp;
     int inc;
 {
@@ -3975,7 +4007,7 @@ BumpWindowColormap (tmp, inc)
 
 
 
-HideIconManager ()
+void HideIconManager ()
 {
     SetMapStateProp (Scr->iconmgr.twm_win, WithdrawnState);
     XUnmapWindow(dpy, Scr->iconmgr.twm_win->frame);
@@ -4001,7 +4033,7 @@ char *class;
     return NULL;
 }
 
-WarpClass (next, t, class)
+void WarpClass (next, t, class)
     int next;
     TwmWindow *t;
     char *class;
@@ -4011,7 +4043,7 @@ WarpClass (next, t, class)
     if (!strncmp(class, t->class.res_class, len))
 	t = next_by_class(t, class);
     else
-	t = next_by_class(NULL, class);
+	t = next_by_class((TwmWindow *)NULL, class);
     if (t) {
 	if (Scr->WarpUnmapped || t->mapped) {
 	    if (!t->mapped) DeIconify (t);
@@ -4031,51 +4063,60 @@ WarpClass (next, t, class)
 
 
 
-SetBorder (tmp, onoroff)
-    TwmWindow *tmp;
-    Bool onoroff;
+void SetBorder (tmp, onoroff)
+TwmWindow	*tmp;
+Bool		onoroff;
 {
-    if (tmp->highlight) {
-
-	/* djhjr - 4/22/96 */
-	if (Scr->use3Dborders) PaintBorders (tmp, onoroff);
-
-	if (onoroff) {
+	if (tmp->highlight)
+	{
+		/* djhjr - 4/22/96 */
+		if (Scr->use3Dborders)
+			PaintBorders (tmp, onoroff);
+		else
+		{
+			if (onoroff)
+			{
 /* djhjr - 4/24/96
-	    XSetWindowBorder (dpy, tmp->frame, tmp->border);
+				XSetWindowBorder (dpy, tmp->frame, tmp->border);
 */
 /* djhjr - 11/17/97
-	    XSetWindowBorder (dpy, tmp->frame, tmp->border_tile.back);
+				XSetWindowBorder (dpy, tmp->frame, tmp->border_tile.back);
 */
-	    XSetWindowBorder (dpy, tmp->frame, tmp->border.back);
-	    if (tmp->title_w)
+				XSetWindowBorder (dpy, tmp->frame, tmp->border.back);
+
+				if (tmp->title_w)
 /* djhjr - 4/24/96
-	      XSetWindowBorder (dpy, tmp->title_w, tmp->border);
+					XSetWindowBorder (dpy, tmp->title_w, tmp->border);
 */
 /* djhjr - 11/17/97
-	      XSetWindowBorder (dpy, tmp->title_w, tmp->border_tile.back);
+					XSetWindowBorder (dpy, tmp->title_w, tmp->border_tile.back);
 */
-	      XSetWindowBorder (dpy, tmp->title_w, tmp->border.back);
-	} else {
-	    XSetWindowBorderPixmap (dpy, tmp->frame, tmp->gray);
-	    if (tmp->title_w)
-	      XSetWindowBorderPixmap (dpy, tmp->title_w, tmp->gray);
-	}
+					XSetWindowBorder (dpy, tmp->title_w, tmp->border.back);
+			}
+			else
+			{
+				XSetWindowBorderPixmap (dpy, tmp->frame, tmp->gray);
 
-	/* djhjr - 11/17/97 */
-	if (Scr->ButtonColorIsFrame && tmp->titlebuttons) {
-		int i, nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
-		TBWindow *tbw;
+				if (tmp->title_w)
+					XSetWindowBorderPixmap (dpy, tmp->title_w, tmp->gray);
+			}
+		}
 
-		for (i = 0, tbw = tmp->titlebuttons; i < nb; i++, tbw++)
-			PaintTitleButtonHighlight(tmp, tbw, onoroff);
+		/* djhjr - 11/17/97 */
+		if (Scr->ButtonColorIsFrame && tmp->titlebuttons)
+		{
+			int i, nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
+			TBWindow *tbw;
+
+			for (i = 0, tbw = tmp->titlebuttons; i < nb; i++, tbw++)
+				PaintTitleButtonHighlight(tmp, tbw, onoroff);
+		}
 	}
-    }
 }
 
 
 
-DestroyMenu (menu)
+void DestroyMenu (menu)
     MenuRoot *menu;
 {
     MenuItem *item;
@@ -4274,14 +4315,14 @@ static void send_clientmessage (w, a, timestamp)
     XSendEvent (dpy, w, False, 0L, (XEvent *) &ev);
 }
 
-SendDeleteWindowMessage (tmp, timestamp)
+void SendDeleteWindowMessage (tmp, timestamp)
     TwmWindow *tmp;
     Time timestamp;
 {
     send_clientmessage (tmp->w, _XA_WM_DELETE_WINDOW, timestamp);
 }
 
-SendSaveYourselfMessage (tmp, timestamp)
+void SendSaveYourselfMessage (tmp, timestamp)
     TwmWindow *tmp;
     Time timestamp;
 {
@@ -4289,7 +4330,7 @@ SendSaveYourselfMessage (tmp, timestamp)
 }
 
 
-SendTakeFocusMessage (tmp, timestamp)
+void SendTakeFocusMessage (tmp, timestamp)
     TwmWindow *tmp;
     Time timestamp;
 {

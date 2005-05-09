@@ -321,6 +321,10 @@ typedef struct ScreenInfo
     short RandomPlacement;	/* randomly place windows that no give hints */
     short OpaqueMove;		/* move the window rather than outline */
     short Highlight;		/* should we highlight the window borders */
+
+    /* djhjr - 1/27/98 */
+    short IconMgrHighlight;	/* should we highlight icon manager entries */
+
     short StackMode;		/* should we honor stack mode requests */
     short TitleHighlight;	/* should we highlight the titlebar */
     short SortIconMgr;		/* sort entries in the icon manager */
@@ -349,6 +353,10 @@ typedef struct ScreenInfo
 	short PrettyZoom;                 /* nicer-looking animation - DSE */
 	short StickyAbove;                /* sticky windows above other windows - DSE */
 	short DontInterpolateTitles;      /* menu titles are excluded from color interpolation - DSE */
+
+	/* djhjr - 1/6/98 */
+	short FixManagedVirtualGeometries; /* bug workaround */
+
 	short FixTransientVirtualGeometries; /* bug workaround - DSE */
 	short WarpSnug;                   /* make sure entire window is on screen when warping - DSE */
 
@@ -398,6 +406,10 @@ typedef struct ScreenInfo
     	unsigned int RandomPlacement					: 1;
     	unsigned int OpaqueMove							: 1;
     	unsigned int Highlight							: 1;
+
+    	/* djhjr - 1/27/98 */
+    	unsigned int IconMgrHighlight					: 1;
+
     	unsigned int StackMode							: 1;
     	unsigned int TitleHighlight						: 1;
     	unsigned int SortIconMgr						: 1;
@@ -426,6 +438,10 @@ typedef struct ScreenInfo
 		unsigned int PrettyZoom							: 1;
 		unsigned int StickyAbove						: 1;
 		unsigned int DontInterpolateTitles				: 1;
+
+		/* djhjr - 1/6/98 */
+		unsigned int FixManagedVirtualGeometries		: 1;
+
 		unsigned int FixTransientVirtualGeometries		: 1;
 		unsigned int WarpSnug							: 1;
 		unsigned int ShallowReliefWindowButton			: 2;
@@ -465,6 +481,10 @@ typedef struct ScreenInfo
 #define RandomPlacement						userflags.RandomPlacement
 #define OpaqueMove							userflags.OpaqueMove
 #define Highlight							userflags.Highlight
+
+/* djhjr - 1/27/98 */
+#define IconMgrHighlight					userflags.IconMgrHighlight
+
 #define StackMode							userflags.StackMode
 #define TitleHighlight						userflags.TitleHighlight
 #define SortIconMgr							userflags.SortIconMgr
@@ -493,6 +513,10 @@ typedef struct ScreenInfo
 #define PrettyZoom							userflags.PrettyZoom
 #define StickyAbove							userflags.StickyAbove
 #define DontInterpolateTitles				userflags.DontInterpolateTitles
+
+/* djhjr - 1/6/98 */
+#define FixManagedVirtualGeometries			userflags.FixManagedVirtualGeometries
+
 #define FixTransientVirtualGeometries		userflags.FixTransientVirtualGeometries
 #define WarpSnug							userflags.WarpSnug
 #define ShallowReliefWindowButton			userflags.ShallowReliefWindowButton

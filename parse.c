@@ -47,9 +47,8 @@
 #include "parse.h"
 #include <X11/Xatom.h>
 
-#ifndef SYSTEM_INIT_FILE
-#define SYSTEM_INIT_FILE "/usr/lib/X11/twm/system.twmrc"
-#endif
+extern void twmrc_error_prefix();
+
 #define BUF_LEN 300
 
 static FILE *twmrc;
@@ -60,8 +59,10 @@ static char overflowbuff[20];		/* really only need one */
 static int overflowlen;
 static char **stringListSource, *currentString;
 static int ParseUsePPosition();
+void put_pixel_on_root();
+
 int RaiseDelay = 0;           /* msec, for AutoRaise *//*RAISEDELAY*/
-int yylineno;
+extern int yylineno;
 extern int mods;
 
 int ConstrainedMoveTime = 400;		/* milliseconds, event times */
@@ -120,10 +121,19 @@ int ParseTwmrc (filename)
 
     /*
      * If filename given, try it, else try ~/.vtwmrc.#, else try ~/.vtwmrc,
-     * else try ~/.twmrc.#, else ~/.twmrc, else system.twmrc; finally using
-     * built-in defaults.
+     * else try system.vtwmrc, else try ~/.twmrc.#, else ~/.twmrc, else
+     * system.twmrc; finally using built-in defaults.
+     *
+     * This choice allows user, then system, versions of .vtwmrc, followed
+     * by user, then system, versions of .twmrc.
+     * Thus, sites that have both twm and vtwm can allow users without
+     * private .vtwmrc or .twmrc files to fall back to system-wide
+     * defaults (very important when there are many users), yet the
+     * presence of a private .twmrc file for twm will not prevent
+     * features of a system-wide .vtwmrc file from exploiting the mew
+     * features of vtwm. Submitted by Nelson H. F. Beebe
      */
-    for (twmrc = NULL, i = 0; !twmrc && i < 6; i++) {
+    for (twmrc = NULL, i = 0; !twmrc && i <= 6; i++) {
 	switch (i) {
 	  case 0:			/* -f filename */
 	    cp = filename;
@@ -148,7 +158,11 @@ int ParseTwmrc (filename)
 	    }
 	    break;
 
-	  case 3:			/* ~/.twmrc.screennum */
+ 	  case 3:			/* system.vtwmrc */
+ 	    cp = SYSTEM_VTWMRC;
+ 	    break;
+ 
+ 	  case 4:			/* ~/.twmrc.screennum */
 	    if (!filename) {
 		home = getenv ("HOME");
 		if (home) {
@@ -161,14 +175,14 @@ int ParseTwmrc (filename)
 	    }
 	    continue;
 
-	  case 4:			/* ~/.twmrc */
+	  case 5:			/* ~/.twmrc */
 	    if (home) {
 		tmpfilename[homelen + 7] = '\0';
 	    }
 	    break;
 
-	  case 5:			/* system.twmrc */
-	    cp = SYSTEM_INIT_FILE;
+	  case 6:			/* system.twmrc */
+	    cp = SYSTEM_TWMRC;
 	    break;
 	}
 
@@ -371,6 +385,12 @@ typedef struct _TwmKeyword {
 /* djhjr - 9/21/96 */
 #define kw0_ButtonColorIsFrame				53
 
+/* djhjr - 1/6/98 */
+#define kw0_FixManagedVirtualGeometries		54
+
+/* djhjr - 1/19/98 */
+#define kw0_BeNiceToColormap				55
+
 #define kws_UsePPosition		1
 #define kws_IconFont			2
 #define kws_ResizeFont			3
@@ -458,6 +478,10 @@ static TwmKeyword keytable[] = {
     { "autoraise",		AUTO_RAISE, 0 },
 	{ "autoraisedelay",       NKEYWORD, kwn_RaiseDelay },/*RAISEDELAY*/
     { "autorelativeresize",	KEYWORD, kw0_AutoRelativeResize },
+
+	/* djhjr - 1/19/98 */
+    { "benicetocolormap",	KEYWORD, kw0_BeNiceToColormap },
+
     { "bordercolor",		CLKEYWORD, kwcl_BorderColor },
     { "bordertilebackground",	CLKEYWORD, kwcl_BorderTileBackground },
     { "bordertileforeground",	CLKEYWORD, kwcl_BorderTileForeground },
@@ -607,6 +631,10 @@ static TwmKeyword keytable[] = {
     { "f.winrefresh",		FKEYWORD, F_WINREFRESH },
     { "f.zoom",			FKEYWORD, F_ZOOM },
     { "f.zoomzoom",			FKEYWORD, F_ZOOMZOOM },
+
+    /* djhjr - 1/6/98 */
+    { "fixmanagedvirtualgeometries", KEYWORD, kw0_FixManagedVirtualGeometries },
+
     { "fixtransientvirtualgeometries", KEYWORD, 
         kw0_FixTransientVirtualGeometries },                          /* DSE */
     { "forceicons",		KEYWORD, kw0_ForceIcons },
@@ -672,6 +700,10 @@ static TwmKeyword keytable[] = {
     { "nograbserver",		KEYWORD, kw0_NoGrabServer },
     { "nohighlight",		NO_HILITE, 0 },
     { "noiconifyiconmanagers",	KEYWORD, kw0_NoIconifyIconManagers }, /* PF */
+
+    /* djhjr - 1/27/98 */
+    { "noiconmanagerhighlight",		NO_ICONMGR_HILITE, 0 },
+
     { "noiconmanagers",		KEYWORD, kw0_NoIconManagers },
     { "nomenushadows",		KEYWORD, kw0_NoMenuShadows },
     { "noraiseondeiconify",	KEYWORD, kw0_NoRaiseOnDeiconify },
@@ -984,6 +1016,12 @@ int do_single_keyword (keyword)
 	case kw0_DontInterpolateTitles: /* DSE */
 		Scr->DontInterpolateTitles = TRUE;
 		return 1;
+
+	/* djhjr - 1/6/98 */
+	case kw0_FixManagedVirtualGeometries:
+		Scr->FixManagedVirtualGeometries = TRUE;
+		return 1;
+
 	case kw0_FixTransientVirtualGeometries: /* DSE */
 		Scr->FixTransientVirtualGeometries = TRUE;
 		return 1;
@@ -1018,6 +1056,11 @@ int do_single_keyword (keyword)
 	/* djhjr - 9/21/96 */
 	case kw0_ButtonColorIsFrame:
 		Scr->ButtonColorIsFrame = TRUE;
+		return 1;
+
+	/* djhjr - 1/19/98 */
+	case kw0_BeNiceToColormap:
+		Scr->BeNiceToColormap = TRUE;
 		return 1;
 
     }
@@ -1201,13 +1244,21 @@ int do_number_keyword (keyword, num)
 	return 1;
 
       case kwn_PanDistanceX:
- 	if (Scr->FirstTime)
- 		Scr->VirtualDesktopPanDistanceX = (num * Scr->MyDisplayWidth) / 100;
- 	return 1;
+	if (Scr->FirstTime)
+	{
+		Scr->VirtualDesktopPanDistanceX = (num * Scr->MyDisplayWidth) / 100;
+		/* added this - djhjr - 1/4/98 */
+		if (Scr->VirtualDesktopPanDistanceX <= 0) Scr->VirtualDesktopPanDistanceX = 1;
+	}
+	return 1;
 
       case kwn_PanDistanceY:
- 	if (Scr->FirstTime)
- 		Scr->VirtualDesktopPanDistanceY = (num * Scr->MyDisplayHeight) / 100;
+	if (Scr->FirstTime)
+	{
+		Scr->VirtualDesktopPanDistanceY = (num * Scr->MyDisplayHeight) / 100;
+		/* added this - djhjr - 1/4/98 */
+		if (Scr->VirtualDesktopPanDistanceY <= 0) Scr->VirtualDesktopPanDistanceY = 1;
+	}
  	return 1;
 
 	case kwn_RaiseDelay: RaiseDelay = num; return 1;/*RAISEDELAY*/
@@ -1381,7 +1432,7 @@ int do_color_keyword (keyword, colormode, s)
 /*
  * put_pixel_on_root() Save a pixel value in twm root window color property.
  */
-put_pixel_on_root(pixel)
+void put_pixel_on_root(pixel)
     Pixel pixel;
 {
   int           i, addPixel = 1;
@@ -1507,21 +1558,25 @@ static int ParseUsePPosition (s)
 }
 
 
-do_squeeze_entry (list, name, justify, num, denom)
+void do_squeeze_entry (list, name, justify, num, denom)
     name_list **list;			/* squeeze or dont-squeeze list */
     char *name;				/* window name */
     int justify;			/* left, center, right */
-    int num;				/* signed num */
-    int denom;				/* 0 or indicates fraction denom */
+    int num;				/* signed pixel count or fraction num */
+    int denom;				/* signed 0 or indicates fraction denom */
 {
     int absnum = (num < 0 ? -num : num);
+    int absdenom = (denom < 0 ? -denom : denom);
 
+    if (num < 0) {
+	twmrc_error_prefix();
+	fprintf (stderr, "SqueezeTitle numerator %d made positive\n", num);
+    }
     if (denom < 0) {
 	twmrc_error_prefix();
-	fprintf (stderr, "negative SqueezeTitle denominator %d\n", denom);
-	return;
+	fprintf (stderr, "SqueezeTitle denominator %d made positive\n", denom);
     }
-    if (absnum > denom && denom != 0) {
+    if (absnum > absdenom && denom != 0) {
 	twmrc_error_prefix();
 	fprintf (stderr, "SqueezeTitle fraction %d/%d outside window\n",
 		 num, denom);
@@ -1529,10 +1584,10 @@ do_squeeze_entry (list, name, justify, num, denom)
     }
     if (denom == 1) {
 	twmrc_error_prefix();
-	fprintf (stderr, "useless SqueezeTitle faction %d/%d, assuming 0/0\n",
+	fprintf (stderr, "useless SqueezeTitle fraction %d/%d, assuming 0/0\n",
 		 num, denom);
-	num = 0;
-	denom = 0;
+	absnum = 0;
+	absdenom = 0;
     }
 
     if (HasShape) {
@@ -1546,8 +1601,8 @@ do_squeeze_entry (list, name, justify, num, denom)
 	    return;
 	}
 	sinfo->justify = justify;
-	sinfo->num = num;
-	sinfo->denom = denom;
+	sinfo->num = absnum;
+	sinfo->denom = absdenom;
 	AddToList (list, name, (char *) sinfo);
     }
 }

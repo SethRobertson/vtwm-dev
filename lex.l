@@ -39,8 +39,11 @@
 /* #include <stdio.h> */		/* lex already includes stdio.h */
 #include "gram.h"
 #include "parse.h"
-extern char *ProgramName;
 
+extern int parse_keyword();
+extern void twmrc_error_prefix();
+
+extern char *ProgramName;
 extern int ParseError;
 
 #ifdef FLEX_SCANNER

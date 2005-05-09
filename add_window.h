@@ -48,6 +48,11 @@ extern void GrabKeys();
 extern void UngrabButtons();
 extern void UngrabKeys();
 extern void GetWindowSizeHints();
+extern void FetchWmProtocols();
+extern void FetchWmColormapWindows();
+extern void GetGravityOffsets();
+extern void AddDefaultBindings();
+
 extern int AddingX;	
 extern int AddingY;
 extern int AddingW;

@@ -42,14 +42,18 @@
 #include "screen.h"
 #include <X11/Xos.h>
 #include <X11/Xatom.h>
-#include <stdio.h>
 #include <X11/Xmu/Drawing.h>
 #include <X11/Xmu/CharSet.h>
+#ifndef NO_XPM_SUPPORT
+#include <X11/xpm.h>
+#endif
 
+#include <stdio.h>
 #include <string.h>
 
 /* djhjr - 4/19/96 */
-typedef struct Colori {
+/* was 'typedef' - djhjr - 1/15/98 */
+struct Colori {
     Pixel color;
     Pixmap pix;
     struct Colori *next;
@@ -65,7 +69,15 @@ static Image  *Create3DDotImage ();
 static Image  *Create3DResizeImage ();
 static Image  *Create3DZoomImage ();
 static Image  *Create3DBarImage ();
+
+/* djhjr - 1/13/98 */
+void setBorderGC();
+#ifdef USE_ORIGINAL_CORNERS
 void Draw3DCorner();
+#else
+GC setBevelGC();
+void Draw3DBevel();
+#endif
 
 /* djhjr - 4/19/96 */
 static GC     rootGC = (GC) 0;
@@ -614,8 +626,70 @@ Pixmap GetBitmap (name)
     return FindBitmap (name, &JunkWidth, &JunkHeight);
 }
 
+#ifndef NO_XPM_SUPPORT
+/*
+ * Submitted by Jason Gloudon
+ */
+Image *FindImage (name)
+    char *name;
+{
+    char *bigname;
+    Pixmap pixmap,mask;
+    Image *newimage;
+    XpmAttributes attributes;
+    int ErrorStatus;
+    
+    /*
+     * Generate a full pathname if any special prefix characters (such as ~)
+     * are used.  If the bigname is different from name, bigname will need to
+     * be freed.
+     */
+    bigname = ExpandFilename (name);
+    if (!bigname) return None;
 
-InsertRGBColormap (a, maps, nmaps, replace)
+    attributes.valuemask = XpmReturnAllocPixels;
+    if( (ErrorStatus = XpmReadFileToPixmap(dpy, Scr->Root, bigname, &pixmap,
+					   &mask, &attributes)) != XpmSuccess){
+      pixmap = None;
+    }
+
+    if (pixmap == None && Scr->IconDirectory && bigname[0] != '/') {
+      if (bigname != name) free (bigname);
+      /*
+       * Attempt to find icon pixmap in old IconDirectory (now obsolete)
+       */
+      bigname = (char *) malloc (strlen(name) + strlen(Scr->IconDirectory) + 2);
+      if (!bigname) {
+	fprintf (stderr,
+		 "%s:  unable to allocate memory for \"%s/%s\"\n",
+		 ProgramName, Scr->IconDirectory, name);
+	return None;
+      }
+      (void) sprintf (bigname, "%s/%s", Scr->IconDirectory, name);
+
+      attributes.valuemask = XpmReturnAllocPixels;
+      ErrorStatus = XpmReadFileToPixmap(dpy, Scr->Root, bigname, &pixmap,
+					&mask, &attributes);
+    }
+
+    if(ErrorStatus == XpmSuccess){
+      newimage = malloc(sizeof(Image));
+      newimage->pixmap = pixmap;
+      newimage->mask = mask;
+      newimage->height = attributes.height;
+      newimage->width = attributes.width;
+    }
+    else {
+      fprintf (stderr, "%s:  unable to find pixmap \"%s\"\n",
+	       ProgramName, name);
+    }
+
+    if (bigname != name) free (bigname);
+    return newimage;
+}
+#endif /* NO_XPM_SUPPORT */
+
+void InsertRGBColormap (a, maps, nmaps, replace)
     Atom a;
     XStandardColormap *maps;
     int nmaps;
@@ -657,7 +731,7 @@ InsertRGBColormap (a, maps, nmaps, replace)
     return;
 }
 
-RemoveRGBColormap (a)
+void RemoveRGBColormap (a)
     Atom a;
 {
     StdCmap *sc, *prev;
@@ -677,7 +751,7 @@ RemoveRGBColormap (a)
     return;
 }
 
-LocateStandardColormaps()
+void LocateStandardColormaps()
 {
     Atom *atoms;
     int natoms;
@@ -814,7 +888,7 @@ ColorPair *cp;
     Scr->FirstTime = save;
 }
 
-GetFont(font)
+void GetFont(font)
 MyFont *font;
 {
     char *deffontname = "fixed";
@@ -844,7 +918,7 @@ MyFont *font;
  * SetFocus - separate routine to set focus to make things more understandable
  * and easier to debug
  */
-SetFocus (tmp_win, time)
+void SetFocus (tmp_win, time)
     TwmWindow *tmp_win;
     Time	time;
 {
@@ -863,7 +937,7 @@ SetFocus (tmp_win, time)
 }
 
 
-#ifdef NOPUTENV
+#ifdef NO_PUTENV
 /*
  * define our own putenv() if the system doesn't have one.
  * putenv(s): place s (a string of the form "NAME=value") in
@@ -926,7 +1000,7 @@ putenv(s)
 
     return 0;
 }
-#endif /* NOPUTENV */
+#endif /* NO_PUTENV */
 
 
 static Pixmap CreateXLogoPixmap (widthp, heightp)
@@ -1410,151 +1484,330 @@ ColorPair cp;
     return (colori->pix);
 }
 
-/* djhjr - 4/19/96 */
-void Draw3DBorder (w, x, y, width, height, bw, cp, state, fill, forcebw)
-Window w;
-int    x, y, width, height, bw;
-ColorPair cp;
-int state, fill, forcebw;
+/* djhjr - 1/13/98 */
+void setBorderGC(type, gc, cp, state, forcebw)
+int			type, state, forcebw;
+GC			gc;
+ColorPair	cp;
 {
-    int		  i;
-    XGCValues	  gcv;
-    unsigned long gcm;
+	XGCValues		gcv;
+	unsigned long	gcm;
 
-    if ((width < 1) || (height < 1)) return;
-    if (Scr->Monochrome != COLOR) {
-	if (fill) {
-	    gcm = GCFillStyle;
-	    gcv.fill_style = FillOpaqueStippled;
-	    XChangeGC (dpy, Scr->GreyGC, gcm, &gcv);
-	    XFillRectangle (dpy, w, Scr->GreyGC, x, y, width, height);
+	switch (type)
+	{
+		case 0: /* Monochrome main */
+			gcm = GCFillStyle;
+			gcv.fill_style = FillOpaqueStippled;
+			break;
+		case 1: /* Monochrome highlight */
+			gcm  = 0;
+			gcm |= GCLineStyle;		
+			gcv.line_style = (state == on) ? LineSolid : LineDoubleDash;
+			gcm |= GCFillStyle;
+			gcv.fill_style = FillSolid;
+			break;
+		case 2: /* Monochrome shadow */
+			gcm  = 0;
+			gcm |= GCLineStyle;		
+			gcv.line_style = (state == on) ? LineDoubleDash : LineSolid;
+			gcm |= GCFillStyle;
+			gcv.fill_style = FillSolid;
+			break;
+		case 3: /* BeNiceToColormap */
+			gcm  = 0;
+			gcm |= GCLineStyle;		
+			gcv.line_style = (forcebw) ? LineSolid : LineDoubleDash;
+			gcm |= GCBackground;
+			gcv.background = cp.back;
+			break;
+		default:
+			return;
 	}
-	gcm  = 0;
-	gcm |= GCLineStyle;		
-	gcv.line_style = (state == on) ? LineSolid : LineDoubleDash;
-	gcm |= GCFillStyle;
-	gcv.fill_style = FillSolid;
-	XChangeGC (dpy, Scr->GreyGC, gcm, &gcv);
-	for (i = 0; i < bw; i++) {
-	    XDrawLine (dpy, w, Scr->GreyGC, x,                 y + i,
-					    x + width - i - 1, y + i);
-	    XDrawLine (dpy, w, Scr->GreyGC, x + i,                  y,
-					    x + i, y + height - i - 1);
-	}
 
-	gcm  = 0;
-	gcm |= GCLineStyle;		
-	gcv.line_style = (state == on) ? LineDoubleDash : LineSolid;
-	gcm |= GCFillStyle;
-	gcv.fill_style = FillSolid;
-	XChangeGC (dpy, Scr->GreyGC, gcm, &gcv);
-	for (i = 0; i < bw; i++) {
-	    XDrawLine (dpy, w, Scr->GreyGC, x + width - i - 1,          y + i,
-					    x + width - i - 1, y + height - 1);
-	    XDrawLine (dpy, w, Scr->GreyGC, x + i,         y + height - i - 1,
-					    x + width - 1, y + height - i - 1);
-	}
-	return;
-    }
-
-    if (fill) {
-	FB (cp.back, cp.fore);
-	XFillRectangle (dpy, w, Scr->NormalGC, x, y, width, height);
-    }
-    if (Scr->BeNiceToColormap) {
-	int dashoffset = 0;
-
-	gcm  = 0;
-	gcm |= GCLineStyle;		
-	gcv.line_style = (forcebw) ? LineSolid : LineDoubleDash;
-	gcm |= GCBackground;
-	gcv.background = cp.back;
-	XChangeGC (dpy, Scr->ShadGC, gcm, &gcv);
-	    
-	if (state == on)
-	    XSetForeground (dpy, Scr->ShadGC, Scr->Black);
-	else
-	    XSetForeground (dpy, Scr->ShadGC, Scr->White);
-	for (i = 0; i < bw; i++) {
-	    XDrawLine (dpy, w, Scr->ShadGC, x + i,     y + dashoffset,
-					    x + i, y + height - i - 1);
-	    XDrawLine (dpy, w, Scr->ShadGC, x + dashoffset,    y + i,
-					    x + width - i - 1, y + i);
-	    dashoffset = 1 - dashoffset;
-	}
-	if (state == on)
-	    XSetForeground (dpy, Scr->ShadGC, Scr->White);
-	else
-	    XSetForeground (dpy, Scr->ShadGC, Scr->Black);
-	for (i = 0; i < bw; i++) {
-	    XDrawLine (dpy, w, Scr->ShadGC, x + i,         y + height - i - 1,
-					    x + width - 1, y + height - i - 1);
-	    XDrawLine (dpy, w, Scr->ShadGC, x + width - i - 1,          y + i,
-					    x + width - i - 1, y + height - 1);
-	}
-	return;
-    }
-
-    if (state == on) {
-	FB (cp.shadd, cp.shadc);
-    }
-    else {
-	FB (cp.shadc, cp.shadd);
-    }
-    for (i = 0; i < bw; i++) {
-	XDrawLine (dpy, w, Scr->NormalGC, x,                 y + i,
-					  x + width - i - 1, y + i);
-	XDrawLine (dpy, w, Scr->NormalGC, x + i,                  y,
-					  x + i, y + height - i - 1);
-    }
-
-    if (state == on) {
-	FB (cp.shadc, cp.shadd);
-    }
-    else {
-	FB (cp.shadd, cp.shadc);
-    }
-    for (i = 0; i < bw; i++) {
-	XDrawLine (dpy, w, Scr->NormalGC, x + width - i - 1,          y + i,
-					  x + width - i - 1, y + height - 1);
-	XDrawLine (dpy, w, Scr->NormalGC, x + i,         y + height - i - 1,
-					  x + width - 1, y + height - i - 1);
-    }
-    return;
+	XChangeGC (dpy, gc, gcm, &gcv);
 }
 
+/* djhjr - 4/19/96 */
+void Draw3DBorder (w, x, y, width, height, bw, cp, state, fill, forcebw)
+Window		w;
+int			x, y, width, height, bw;
+ColorPair	cp;
+int			state, fill, forcebw;
+{
+	int				i;
+
+	if (width < 1 || height < 1) return;
+
+	if (Scr->Monochrome != COLOR)
+	{
+		/* set main color */
+		if (fill)
+		{
+			setBorderGC(0, Scr->GreyGC, cp, state, forcebw);
+			XFillRectangle (dpy, w, Scr->GreyGC, x, y, width, height);
+		}
+
+		/* draw highlights */
+		setBorderGC(1, Scr->GreyGC, cp, state, forcebw);
+		for (i = 0; i < bw; i++)
+		{
+			XDrawLine (dpy, w, Scr->GreyGC, x, y + i,
+				x + width - i - 1, y + i);
+			XDrawLine (dpy, w, Scr->GreyGC, x + i, y,
+				x + i, y + height - i - 1);
+		}
+
+		/* draw shadows */
+		setBorderGC(2, Scr->GreyGC, cp, state, forcebw);
+		for (i = 0; i < bw; i++)
+		{
+			XDrawLine (dpy, w, Scr->GreyGC, x + width - i - 1, y + i,
+				x + width - i - 1, y + height - 1);
+			XDrawLine (dpy, w, Scr->GreyGC, x + i, y + height - i - 1,
+				x + width - 1, y + height - i - 1);
+		}
+
+		return;
+    }
+
+	/* set main color */
+	if (fill)
+	{
+		FB (cp.back, cp.fore);
+		XFillRectangle (dpy, w, Scr->NormalGC, x, y, width, height);
+	}
+
+	if (Scr->BeNiceToColormap)
+	{
+		int dashoffset = 0;
+
+		setBorderGC(3, Scr->ShadGC, cp, state, forcebw);
+	    
+		/* draw highlights */
+		if (state == on)
+			XSetForeground (dpy, Scr->ShadGC, Scr->Black);
+		else
+			XSetForeground (dpy, Scr->ShadGC, Scr->White);
+		for (i = 0; i < bw; i++)
+		{
+			XDrawLine (dpy, w, Scr->ShadGC, x + i, y + dashoffset,
+				x + i, y + height - i - 1);
+			XDrawLine (dpy, w, Scr->ShadGC, x + dashoffset, y + i,
+				x + width - i - 1, y + i);
+			dashoffset = 1 - dashoffset;
+		}
+
+		/* draw shadows */
+		if (state == on)
+			XSetForeground (dpy, Scr->ShadGC, Scr->White);
+		else
+			XSetForeground (dpy, Scr->ShadGC, Scr->Black);
+		for (i = 0; i < bw; i++)
+		{
+			XDrawLine (dpy, w, Scr->ShadGC, x + i, y + height - i - 1,
+				x + width - 1, y + height - i - 1);
+			XDrawLine (dpy, w, Scr->ShadGC, x + width - i - 1, y + i,
+				x + width - i - 1, y + height - 1);
+		}
+
+		return;
+	}
+
+	/* draw highlights */
+	if (state == on)
+		{ FB (cp.shadd, cp.shadc); }
+	else
+		{ FB (cp.shadc, cp.shadd); }
+	for (i = 0; i < bw; i++)
+	{
+		XDrawLine (dpy, w, Scr->NormalGC, x, y + i,
+			x + width - i - 1, y + i);
+		XDrawLine (dpy, w, Scr->NormalGC, x + i, y,
+			x + i, y + height - i - 1);
+	}
+
+	/* draw shadows */
+	if (state == on)
+		{ FB (cp.shadc, cp.shadd); }
+	else
+		{ FB (cp.shadd, cp.shadc); }
+	for (i = 0; i < bw; i++)
+	{
+		XDrawLine (dpy, w, Scr->NormalGC, x + width - i - 1, y + i,
+			x + width - i - 1, y + height - 1);
+		XDrawLine (dpy, w, Scr->NormalGC, x + i, y + height - i - 1,
+			x + width - 1, y + height - i - 1);
+	}
+}
+
+#ifdef USE_ORIGINAL_CORNERS
 /* djhjr - 4/19/96 */
 void Draw3DCorner (w, x, y, width, height, thick, bw, cp, type)
 Window		w;
-int		x, y, width, height, thick, bw;
+int			x, y, width, height, thick, bw;
 ColorPair	cp;
-int		type;
+int			type;
 {
-    Draw3DBorder (w, x, y, width, height, bw, cp, off, True, False);
-    switch (type) {
-	case 0 :
-	    Draw3DBorder (w, x + thick - bw, y + thick - bw,
-			width - thick + 2 * bw, height - thick + 2 * bw,
-			bw, cp, on, True, False);
-	    break;
-	case 1 :
-	    Draw3DBorder (w, x - bw, y + thick - bw,
-			width - thick + 2 * bw, height - thick + 2 * bw,
-			bw, cp, on, True, False);
-	    break;
-	case 2 :
-	    Draw3DBorder (w, x - bw, y - bw,
-			width - thick + 2 * bw, height - thick + 2 * bw,
-			bw, cp, on, True, False);
-	    break;
-	case 3 :
-	    Draw3DBorder (w, x + thick - bw, y - bw,
-			width - thick + 2 * bw, height - thick + 2 * bw,
-			bw, cp, on, True, False);
-	    break;
-    }
-    return;
+	Draw3DBorder (w, x, y, width, height, bw, cp, off, True, False);
+
+	switch (type)
+	{
+		/* upper left */
+		case 0 :
+			Draw3DBorder (w, x + thick - bw, y + thick - bw,
+				width - thick + 2 * bw, height - thick + 2 * bw,
+				bw, cp, on, True, False);
+			break;
+		/* upper right */
+		case 1 :
+			Draw3DBorder (w, x - bw, y + thick - bw,
+				width - thick + 2 * bw, height - thick + 2 * bw,
+				bw, cp, on, True, False);
+			break;
+		/* lower right */
+		case 2 :
+			Draw3DBorder (w, x - bw, y - bw,
+				width - thick + 2 * bw, height - thick + 2 * bw,
+				bw, cp, on, True, False);
+			break;
+		/* lower left */
+		case 3 :
+			Draw3DBorder (w, x + thick - bw, y - bw,
+				width - thick + 2 * bw, height - thick + 2 * bw,
+				bw, cp, on, True, False);
+			break;
+	}
 }
+#else /* USE_ORIGINAL_CORNERS */
+/* djhjr - 1/14/98 */
+GC setBevelGC(type, state, cp)
+int			type, state;
+ColorPair	cp;
+{
+	GC		gc;
+
+	if (Scr->Monochrome != COLOR)
+	{
+		gc = Scr->GreyGC;
+		setBorderGC(type, gc, cp, state, False);
+	}
+	else if (Scr->BeNiceToColormap)
+	{
+		gc = Scr->ShadGC;
+		setBorderGC(3, gc, cp, state, False);
+		if (state == on)
+			XSetForeground (dpy, gc, Scr->Black);
+		else
+			XSetForeground (dpy, gc, Scr->White);
+	}
+	else
+	{
+		gc = Scr->NormalGC;
+		if (state == on)
+			{ FB (cp.shadc, cp.shadd); }
+		else
+			{ FB (cp.shadd, cp.shadc); }
+	}
+
+	return (gc);
+}
+
+/* djhjr - 1/12/98 */
+void Draw3DBevel (w, x, y, bw, cp, state, type)
+Window		w;
+int			x, y, bw;
+ColorPair	cp;
+int			state, type;
+{
+	int		i;
+	GC		gc;
+
+	switch (type)
+	{
+		/* vertical */
+		case 1 :
+		case 11 :
+			gc = setBevelGC(1, state, cp);
+			for (i = 0; i < 2; i++)
+				XDrawLine (dpy, w, gc, x - i - 1, y + i,
+					x - i - 1, y + bw - 2 * i);
+			if (type == 11) break;
+		case 111 :
+			gc = setBevelGC(2, !state, cp);
+			for (i = 0; i < 2; i++)
+				XDrawLine (dpy, w, gc, x + i, y + i,
+					x + i, y + bw - 2 * i);
+			break;
+		/* horizontal */
+		case 2 :
+		case 22 :
+			gc = setBevelGC(1, state, cp);
+			for (i = 0; i < 2; i++)
+				XDrawLine (dpy, w, gc, x + i, y - i - 1,
+					x + bw - 2 * i, y - i - 1);
+			if (type == 22) break;
+		case 222 :
+			gc = setBevelGC(2, !state, cp);
+			for (i = 0; i < 2; i++)
+				XDrawLine (dpy, w, gc, x + i, y + i,
+					x + bw - 2 * i, y + i);
+			break;
+		/* ulc to lrc */
+		case 3 :
+			if (Scr->Monochrome != COLOR)
+			{
+				gc = Scr->GreyGC;
+				setBorderGC(0, gc, cp, state, False);
+			}
+			else
+			{
+				gc = Scr->NormalGC;
+				FB (cp.back, cp.fore);
+			}
+			XFillRectangle (dpy, w, gc, x, y, bw, bw);
+			gc = setBevelGC(1, (Scr->BeNiceToColormap) ? state : !state, cp);
+			for (i = 0; i < 2; i++)
+				XDrawLine (dpy, w, gc, x + i, y,
+					x + i, y + 1);
+			gc = setBevelGC(2, (Scr->BeNiceToColormap) ? !state : state, cp);
+			for (i = 0; i < 2; i++)
+				XDrawLine (dpy, w, gc, x, y + bw - i - 1,
+					x + bw - 1, y + bw - i - 1);
+			for (i = 0; i < 2; i++)
+				XDrawLine (dpy, w, gc, x + bw - i - 1, y,
+					x + bw - i - 1, y + bw - 1);
+			break;
+		/* urc to llc */
+		case 4 :
+			if (Scr->Monochrome != COLOR)
+			{
+				gc = Scr->GreyGC;
+				setBorderGC(0, gc, cp, state, False);
+			}
+			else
+			{
+				gc = Scr->NormalGC;
+				FB (cp.back, cp.fore);
+			}
+			XFillRectangle (dpy, w, gc, x, y, bw, bw);
+			gc = setBevelGC(1, (Scr->BeNiceToColormap) ? state : !state, cp);
+			for (i = 0; i < 2; i++)
+				XDrawLine (dpy, w, gc, x + i, y,
+					x + i, y + bw - i - 2);
+			XDrawLine (dpy, w, gc, x + bw - 1, y,
+				x + bw - 2, y + 1);
+			XDrawLine (dpy, w, gc, x + bw - 1, y + 1,
+				x + bw - 1, y + 1);
+			gc = setBevelGC(2, (Scr->BeNiceToColormap) ? !state : state, cp);
+			for (i = 0; i < 2; i++)
+				XDrawLine (dpy, w, gc, x + i, y + bw - i - 1,
+					x + bw - i, y + bw - i - 1);
+			XDrawLine (dpy, w, gc, x + bw - 2, y,
+				x + bw - 2, y);
+			break;
+	}
+}
+#endif /* USE_ORIGINAL_CORNERS */
 
 /* djhjr - 4/19/96 */
 static Image *LoadBitmapImage (name, cp)
@@ -1590,7 +1843,6 @@ char  *name;
 ColorPair cp;
 {
     Image	*image, *r, *s;
-    int		width, height;
     char	path [128], pref [128];
     char	*perc;
     int		i;
@@ -1627,7 +1879,6 @@ ColorPair cp;
 {
     name_list **list;
     char fullname [256];
-    int   startn;
     Image *image;
 
     if (name == NULL) return (None);
@@ -1713,86 +1964,255 @@ ColorPair cp;
 }
 
 /* djhjr - 4/21/96 */
+/* djhjr - 1/12/98 */
 void PaintBorders (tmp_win, focus)
-TwmWindow *tmp_win;
-Bool focus;
+TwmWindow	*tmp_win;
+Bool		focus;
 {
-    ColorPair cp;
+	GC			gc;
+	ColorPair	cp;
+	int			i, cw, ch, cwbw, chbw;
+#ifdef USE_ORIGINAL_CORNERS
+	int			THbw, fhbwchbw, fhTHchbw;
+#endif
 
-    cp = (focus && tmp_win->highlight) ? tmp_win->border : tmp_win->border_tile;
-    if (tmp_win->title_height == 0) {
-	Draw3DBorder (tmp_win->frame,
-	    0,
-	    0,
-	    tmp_win->frame_width,
-	    tmp_win->frame_height,
-	    2, cp, off, True, False);
-	Draw3DBorder (tmp_win->frame,
-	    tmp_win->frame_bw3D - 2,
-	    tmp_win->frame_bw3D - 2,
-	    tmp_win->frame_width  - 2 * tmp_win->frame_bw3D + 4,
-	    tmp_win->frame_height - 2 * tmp_win->frame_bw3D + 4,
-	    2, cp, on, True, False);
-	return;
-    }
+	cp = (focus && tmp_win->highlight) ? tmp_win->border : tmp_win->border_tile;
 
-#ifdef WHEN_I_FIGURE_OUT_WHY_THIS_BORDER_DOESNT_APPEAR
-	if (tmp_win->squeeze_info)
-	    Draw3DBorder (tmp_win->frame,
+	/* no titlebar, no corners */
+	if (tmp_win->title_height == 0)
+	{
+		Draw3DBorder (tmp_win->frame,
+			0,
+			0,
+			tmp_win->frame_width,
+			tmp_win->frame_height,
+			2, cp, off, True, False);
+		Draw3DBorder (tmp_win->frame,
+			tmp_win->frame_bw3D - 2,
+			tmp_win->frame_bw3D - 2,
+			tmp_win->frame_width  - 2 * tmp_win->frame_bw3D + 4,
+			tmp_win->frame_height - 2 * tmp_win->frame_bw3D + 4,
+			2, cp, on, True, False);
+
+		return;
+	}
+
+	cw = ch = Scr->TitleHeight;
+	if (cw * 2 > tmp_win->attr.width) cw = tmp_win->attr.width / 2;
+	if (ch * 2 > tmp_win->attr.height) ch = tmp_win->attr.height / 2;
+	cwbw = cw + tmp_win->frame_bw3D;
+	chbw = ch + tmp_win->frame_bw3D;
+
+#ifdef USE_ORIGINAL_CORNERS
+	THbw = Scr->TitleHeight + tmp_win->frame_bw3D;
+	fhbwchbw = tmp_win->frame_height + tmp_win->frame_bw3D - 3 * chbw;
+	fhTHchbw = tmp_win->frame_height - (Scr->TitleHeight + ch + 2 * tmp_win->frame_bw3D);
+
+	/* client upper left corner */
+	if (tmp_win->squeeze_info && tmp_win->title_x > tmp_win->frame_bw3D)
+		Draw3DCorner (tmp_win->frame,
 			0,
 			Scr->TitleHeight,
-			tmp_win->frame_width,
+			cwbw,
+			chbw,
+			tmp_win->frame_bw3D, 2, cp, 0);
+	/* client top bar */
+	if (tmp_win->squeeze_info)
+		Draw3DBorder (tmp_win->frame,
+			THbw,
+			tmp_win->title_height,
+			tmp_win->frame_width - 2 * cwbw,
 			tmp_win->frame_bw3D,
 			2, cp, off, True, False);
-#endif
-    Draw3DBorder (tmp_win->frame,
-		tmp_win->title_x + Scr->TitleHeight,
+	/* client upper right corner */
+	if (tmp_win->squeeze_info && tmp_win->title_x + tmp_win->title_width + tmp_win->frame_bw3D < tmp_win->frame_width)
+		Draw3DCorner (tmp_win->frame,
+			tmp_win->frame_width  - cwbw,
+			Scr->TitleHeight,
+			cwbw,
+			chbw,
+			tmp_win->frame_bw3D, 2, cp, 1);
+	/* client left bar */
+	if (tmp_win->squeeze_info && tmp_win->title_x > tmp_win->frame_bw3D)
+		Draw3DBorder (tmp_win->frame,
+			0,
+			THbw + ch,
+			tmp_win->frame_bw3D,
+			fhbwchbw,
+			2, cp, off, True, False);
+	else
+		Draw3DBorder (tmp_win->frame,
+			0,
+			THbw,
+			tmp_win->frame_bw3D,
+			fhTHchbw,
+			2, cp, off, True, False);
+	/* client right bar */
+	if (tmp_win->squeeze_info && tmp_win->title_x + tmp_win->title_width + tmp_win->frame_bw3D < tmp_win->frame_width)
+		Draw3DBorder (tmp_win->frame,
+			tmp_win->frame_width  - tmp_win->frame_bw3D,
+			THbw + ch,
+			tmp_win->frame_bw3D,
+			fhbwchbw,
+			2, cp, off, True, False);
+	else
+		Draw3DBorder (tmp_win->frame,
+			tmp_win->frame_width  - tmp_win->frame_bw3D,
+			THbw,
+			tmp_win->frame_bw3D,
+			fhTHchbw,
+			2, cp, off, True, False);
+	/* client lower left corner */
+	Draw3DCorner (tmp_win->frame,
 		0,
-		tmp_win->title_width - 2 * Scr->TitleHeight,
-		tmp_win->frame_bw3D,
-		2, cp, off, True, False);
-    Draw3DBorder (tmp_win->frame,
-		tmp_win->frame_bw3D + Scr->TitleHeight,
+		tmp_win->frame_height - chbw,
+		cwbw,
+		chbw,
+		tmp_win->frame_bw3D, 2, cp, 3);
+	/* client bottom bar */
+	Draw3DBorder (tmp_win->frame,
+		THbw,
 		tmp_win->frame_height - tmp_win->frame_bw3D,
-		tmp_win->frame_width - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
+		tmp_win->frame_width - 2 * cwbw,
 		tmp_win->frame_bw3D,
 		2, cp, off, True, False);
-    Draw3DBorder (tmp_win->frame,
-		0,
-		Scr->TitleHeight + tmp_win->frame_bw3D,
-		tmp_win->frame_bw3D,
-		tmp_win->frame_height - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
-		2, cp, off, True, False);
-    Draw3DBorder (tmp_win->frame,
-		tmp_win->frame_width  - tmp_win->frame_bw3D,
-		Scr->TitleHeight + tmp_win->frame_bw3D,
-		tmp_win->frame_bw3D,
-		tmp_win->frame_height - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
-		2, cp, off, True, False);
-    Draw3DCorner (tmp_win->frame,
+	/* client lower right corner */
+	Draw3DCorner (tmp_win->frame,
+		tmp_win->frame_width  - cwbw,
+		tmp_win->frame_height - chbw,
+		cwbw,
+		chbw,
+		tmp_win->frame_bw3D, 2, cp, 2);
+
+	/* titlebar upper left corner */
+	Draw3DCorner (tmp_win->frame,
 		tmp_win->title_x - tmp_win->frame_bw3D,
 		0,
-		Scr->TitleHeight + tmp_win->frame_bw3D,
-		Scr->TitleHeight + tmp_win->frame_bw3D,
+		cwbw,
+		THbw,
 		tmp_win->frame_bw3D, 2, cp, 0);
-    Draw3DCorner (tmp_win->frame,
-		tmp_win->title_x + tmp_win->title_width - Scr->TitleHeight,
+	/* titlebar top bar */
+	Draw3DBorder (tmp_win->frame,
+		tmp_win->title_x + cw,
 		0,
-		Scr->TitleHeight + tmp_win->frame_bw3D,
-		Scr->TitleHeight + tmp_win->frame_bw3D,
+		tmp_win->title_width - 2 * cw,
+		tmp_win->frame_bw3D,
+		2, cp, off, True, False);
+	/* titlebar upper right corner */
+	Draw3DCorner (tmp_win->frame,
+		(tmp_win->title_width > 2 * Scr->TitleHeight)
+			? tmp_win->title_x + tmp_win->title_width - Scr->TitleHeight
+			: tmp_win->frame_width - cwbw,
+		0,
+		cwbw,
+		THbw,
 		tmp_win->frame_bw3D, 2, cp, 1);
-    Draw3DCorner (tmp_win->frame,
-		tmp_win->frame_width  - (Scr->TitleHeight + tmp_win->frame_bw3D),
-		tmp_win->frame_height - (Scr->TitleHeight + tmp_win->frame_bw3D),
-		Scr->TitleHeight + tmp_win->frame_bw3D,
-		Scr->TitleHeight + tmp_win->frame_bw3D,
-		tmp_win->frame_bw3D, 2, cp, 2);
-    Draw3DCorner (tmp_win->frame,
+#else /* USE_ORIGINAL_CORNERS */
+	/* client */
+	Draw3DBorder (tmp_win->frame,
 		0,
-		tmp_win->frame_height - (Scr->TitleHeight + tmp_win->frame_bw3D),
+		Scr->TitleHeight,
+		tmp_win->frame_width,
+		tmp_win->frame_height - Scr->TitleHeight,
+		2, cp, off, True, False);
+	Draw3DBorder (tmp_win->frame,
+		tmp_win->frame_bw3D - 2,
+		Scr->TitleHeight + tmp_win->frame_bw3D - 2,
+		tmp_win->frame_width  - 2 * tmp_win->frame_bw3D + 4,
+		tmp_win->frame_height - 2 * tmp_win->frame_bw3D + 4 - Scr->TitleHeight,
+		2, cp, on, True, False);
+	/* upper left corner */
+	if (tmp_win->title_x == tmp_win->frame_bw3D)
+		Draw3DBevel (tmp_win->frame,
+			0, Scr->TitleHeight + tmp_win->frame_bw3D,
+			tmp_win->frame_bw3D, cp, off, 222);
+	else
+	{
+		if (tmp_win->title_x > tmp_win->frame_bw3D + cwbw)
+			Draw3DBevel (tmp_win->frame,
+				cwbw, Scr->TitleHeight,
+				tmp_win->frame_bw3D, cp, off, 1);
+		Draw3DBevel (tmp_win->frame,
+			0, Scr->TitleHeight + chbw,
+			tmp_win->frame_bw3D, cp, off, 2);
+	}
+	/* upper right corner */
+	if ((i = tmp_win->title_x + tmp_win->title_width + tmp_win->frame_bw3D) == tmp_win->frame_width)
+		Draw3DBevel (tmp_win->frame,
+			tmp_win->frame_width - tmp_win->frame_bw3D, Scr->TitleHeight + tmp_win->frame_bw3D,
+			tmp_win->frame_bw3D, cp, off, 222);
+	else
+	{
+		if (i < tmp_win->frame_width - cwbw)
+			Draw3DBevel (tmp_win->frame,
+				tmp_win->frame_width - cwbw, Scr->TitleHeight,
+				tmp_win->frame_bw3D, cp, off, 1);
+		Draw3DBevel (tmp_win->frame,
+			tmp_win->frame_width - tmp_win->frame_bw3D, Scr->TitleHeight + chbw,
+			tmp_win->frame_bw3D, cp, off, 2);
+	}
+	/* lower left corner */
+	Draw3DBevel (tmp_win->frame,
+		cwbw, tmp_win->frame_height - tmp_win->frame_bw3D,
+		tmp_win->frame_bw3D, cp, off, 1);
+	Draw3DBevel (tmp_win->frame,
+		0, tmp_win->frame_height - chbw,
+		tmp_win->frame_bw3D, cp, off, 2);
+	/* lower right corner */
+	Draw3DBevel (tmp_win->frame,
+		tmp_win->frame_width - cwbw, tmp_win->frame_height - tmp_win->frame_bw3D,
+		tmp_win->frame_bw3D, cp, off, 1);
+	Draw3DBevel (tmp_win->frame,
+		tmp_win->frame_width - tmp_win->frame_bw3D, tmp_win->frame_height - chbw,
+		tmp_win->frame_bw3D, cp, off, 2);
+
+	/* title */
+	Draw3DBorder (tmp_win->frame,
+		tmp_win->title_x - tmp_win->frame_bw3D,
+		tmp_win->title_y - tmp_win->frame_bw3D,
+		tmp_win->title_width + 2 * tmp_win->frame_bw3D,
 		Scr->TitleHeight + tmp_win->frame_bw3D,
-		Scr->TitleHeight + tmp_win->frame_bw3D,
-		tmp_win->frame_bw3D, 2, cp, 3);
+		2, cp, off, True, False);
+	Draw3DBorder (tmp_win->frame,
+		tmp_win->title_x - 2,
+		tmp_win->title_y - 2,
+		tmp_win->title_width + 2 * (tmp_win->frame_bw3D - 2) - 2,
+		Scr->TitleHeight,
+		2, cp, on, True, False);
+	/* upper left corner */
+	if (tmp_win->title_x == tmp_win->frame_bw3D)
+	{
+		gc = setBevelGC(2, (Scr->BeNiceToColormap) ? on : off, cp);
+		XDrawLine (dpy, tmp_win->frame, gc,
+			tmp_win->title_x - 2, Scr->TitleHeight + tmp_win->frame_bw3D - 4,
+			tmp_win->title_x - 2, Scr->TitleHeight + tmp_win->frame_bw3D - 1);
+		XDrawLine (dpy, tmp_win->frame, gc,
+			tmp_win->title_x - 1, Scr->TitleHeight + tmp_win->frame_bw3D - 4,
+			tmp_win->title_x - 1, Scr->TitleHeight + tmp_win->frame_bw3D - 1);
+		Draw3DBevel (tmp_win->frame,
+			tmp_win->title_x + cw, 0,
+			tmp_win->frame_bw3D, cp, off, 1);
+	}
+	else
+		Draw3DBevel (tmp_win->frame,
+			tmp_win->title_x - tmp_win->frame_bw3D, Scr->TitleHeight,
+			tmp_win->frame_bw3D, cp, off, 3);
+	/* upper right corner */
+	if (i == tmp_win->frame_width)
+	{
+		Draw3DBevel (tmp_win->frame,
+			tmp_win->title_x + tmp_win->title_width - cw, 0,
+			tmp_win->frame_bw3D, cp, off, 1);
+		gc = setBevelGC(1, on, cp);
+		XDrawLine (dpy, tmp_win->frame, gc,
+			tmp_win->title_x + tmp_win->title_width, Scr->TitleHeight + tmp_win->frame_bw3D - 2,
+			tmp_win->title_x + tmp_win->title_width, Scr->TitleHeight + tmp_win->frame_bw3D - 2);
+	}
+	else
+		Draw3DBevel (tmp_win->frame,
+			tmp_win->title_x + tmp_win->title_width, Scr->TitleHeight,
+			tmp_win->frame_bw3D, cp, off, 4);
+#endif /* USE_ORIGINAL_CORNERS */
 }
 
 /* djhjr - 4/21/96 */
@@ -1910,6 +2330,8 @@ Bool onoroff;
 	{
 		tb->image = image;
 
+		/* added this 'if ()' - djhjr - 1/3/97 */
+		if (tbw->window)
 		XCopyArea (dpy, tb->image->pixmap, tbw->window, Scr->NormalGC,
 			tb->srcx, tb->srcy, tb->width, tb->height,
 			tb->dstx, tb->dsty);
@@ -1930,7 +2352,6 @@ Bool onoroff;
 {
 	ColorPair cp;
 
-    int h = (Scr->TitleHeight - 2 * Scr->FramePadding);
 	int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
 	int w = Scr->TBInfo.titlex + tmp_win->name_width + en;
 	int fp = Scr->FramePadding + 3;

@@ -48,6 +48,11 @@
 #include "screen.h"
 #include "gram.h"
 
+extern void twmrc_error_prefix();
+
+#define strdup Strdup /* avoid conflict with system header files */
+extern char *strdup(char *);
+
 /***********************************************************************
  *
  *  Procedure:
@@ -145,7 +150,7 @@ LookInNameList(list_head, name)
 name_list *list_head;
 char *name;
 {
-    return (LookInList(list_head, name, NULL));
+    return (LookInList(list_head, name, (XClassHint *)NULL));
 }
 
 char *
@@ -178,7 +183,7 @@ LookPatternInNameList (list_head, name)
 name_list *list_head;
 char *name;
 {
-    return (LookPatternInList(list_head, name, NULL));
+    return (LookPatternInList(list_head, name, (XClassHint *)NULL));
 }
 
 /***********************************************************************
@@ -364,7 +369,7 @@ int regex_match_after_star (p, t)
 char *p, *t;
 {
     register int match;
-    register nextp;
+    register int nextp;
 
     while ((*p == '?') || (*p == '*')) {
 	if (*p == '?') {

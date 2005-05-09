@@ -54,5 +54,6 @@ extern void door_open();
 extern void door_open_all();
 extern void door_enter();
 extern void door_new();
+extern void door_delete();
 
 #endif /* DOORS_H_INCLUDED */

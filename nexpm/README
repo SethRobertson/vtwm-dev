@@ -32,11 +32,6 @@ My version of xpm is, from README, "3.0     (91/10/03)";
 older xpm libraries will not understand the built-in default
 "plaid" pixmap.
 
-SAMPLE
-
-monet1.uue can be uudecoded and used as a sample.
-My panner is 320x240, so it fits perfectly...
-
 OTHER USES
 
 The same hack could be applied to xmartin, xv, xloadimage, xneko, or
@@ -46,9 +41,7 @@ displaying in other windows.
 FILES
 
 Imakefile
-Makefile
 README
-monet1.uue              sample picture
 nexpm.c                 this is what it's all about
 patchlevel.h            required
 xpm.COPYRIGHT           came with sxpm...

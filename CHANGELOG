@@ -4,123 +4,201 @@ A COMPLETE LISTING OF CHANGES MADE TO VTWM SINCE VERSION 5.0
 IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 ============================================================
 
-============ vtwm-5.4.tar.gz =============
+============ vtwm-5.4.N.tar.gz =============
 hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
 
-	November 17 - 19, 1997
-		[events.c] [menus.c] [util.c] [util.h]
-			Fixed a bug where the wrong resource was being used to
-			highlight the window border that has focus. Fixed an omission
-			where the window buttons would not follow the border color
-			when highlighted and the ButtonColorIsFrame resource is true.
-			Added a hack to trap corrupted/invalid window button names.
+    February 2, 1998
+        VTWM 5.4.4 released for public consumption.
 
-	March 12 - 14, 1997
-		[add_window.c] [menus.c] [twm.c] [util.c]
-			Added code to properly paint the window buttons in the same
-			color as their titlebar on a restart operation. Woo-woo!
-			Numerous changes to accomodate added buttons and squeezed
-			titlebars - I had previously overlooked these. Made a few
-			resources un-alterable when 3D appearances are used. Now
-			closes the display before spawning the new WM on a restart
-			operation - free alloc'd memory in the X server?
+    January 27, 1998
+        [add_window.c] [iconmgr.c] [parse.c] [twm.c] [screen.h] [gram.y]
+            Added a resource to tell the icon manager whether or not to
+            highlight its entries as an indication of pointer location,
+            regardless of the NoHighlight resource.
 
-	September 25 - 26, 1996
-		[menus.c]
-			Changed code to properly scale menus to the fonts used.
+            Added the following resource:
+                NoIconManagerHighlight
 
-	September 14 - 21, 1996
-		[add_window.c] [iconmgr.c] [menus.c] [resize.c] [twm.h] [util.c]
-		[version.h] [*akefil*]
-			Fixed a bug in zooms that I introduced! Applied the backing
-			store and NoBackingStore resources to the Icon Manager and
-			titlebars (defeats effects of RaiseDelay). Made the cursor
-			warp to the titlebar on a zoom operation if WarpCursor is
-			set on. The function f.showdesktopdisplay now deiconifies as
-			required. Working on code to make the window buttons stay the
-			same color as their titlebar on a restart operation (obviously
-			wasn't thought about much before). Added build info to the
-			Version window by having the *makefil*s create a temporary C
-			module.
+            From Nicholas Jacobs (nicholas_jacobs@hotmail.com):
+                A better effort at getting a name for the window.
 
-			Added the following resource:
-				ButtonColorIsFrame
+    January 24, 1998
+        [desktop.c] [menus.c]
+            Allow screen warps to honor the SnapRealScreen resource.
+            Added a kludge to "fix" screen warps to de-iconifying windows
+            not on the real screen (high degree of confidence it's not the
+            source of the problem).
 
-	September 10 - 12, 1996
-		[events.c] [menus.c]
-			Added code preventing the Virtual Desktop window and Door
-			windows from doing harm. Fixed a bug when trying to move the
-			Virtual Desktop window with the pointer; see the notes in
-			djhjr.vtwmrc pertaining to the Virtual Desktop, it's related,
-			and the BUGS file.
+    January 21, 1998
+        Added the HINTS file to the distribution. Moved and added many
+        function declarations into header files (quieter builds!). Other
+        miscellaneous tweaks.
 
-	June 26, 1996
-		[screen.h] [parse.c] [twm.c] [util.c]
-			Tweaked the 3D menu icons to look a little more like menus.
-			Made the 3D Icon Manager iconified indicators "shallow" to
-			match the 3D menu icons. Added code for Motif-ish "shallow"
-			relief in 3D titlebars and buttons to matches the others.
+    December 28, 1997, January 1 - 19, 1998
+        [nexpm/nexpm.c]
+            Changed the window name sought by `nexpm -vtwm ...` to match
+            the virtual desktop's name. It's a wonder nobody's noticed!
 
-			Added the following resource:
-				ShallowReliefWindowButton
+        [*akefile*] [add_window.c] [cursor.c] [desktop.c] [doors.c]
+        [events.c] [gc.c] [icons.c] [list.c] [menus.c] [parse.c] [resize.c]
+        [twm.c] [util.c] [util.h] [screen.h] [gram.y]
+            Rewrote most of the 3D border code, adding, among other things,
+            drawing the top border segment when 3D borders are used with
+            squeezed titles! Simplified the meaning of the SqueezeTitle
+            resource list parameters. Fixed a bug causing SIGFPEs when pan
+            distances are set to zero. Added a bug workaround to try to
+            make managed windows used as transients behave, a la the
+            FixTransientVirtualGeometries resource (seldom needed, just as
+            bad, but mostly works). Fixed an oversight of mine, not
+            initializing monochrome GCs! Enabled a resource to go easy on
+            the colormap (doesn't render perfectly yet). Use the system
+            Imake.tmpl macro for yacc and removed all escaped characters
+            from the lastmake.c rule in the *akefile*s. Clarified the pan
+            distance resource descriptions in the man page.
 
-	June 11, 1996
-		[icons.c] [events.c]
-			Tweaked the hard-coded geometries for a better 3D appearance
-			on icons (looks best with IconBorderWidth set to 0).
+            Added the following resources:
+                BeNiceToColormap
+                FixManagedVirtualGeometries
 
-	April 18 - May 19, 1996
-		[add_window.c] [desktop.c] [doors.c] [doors.h] [events.c]
-		[gram.y] [iconmgr.c] [iconmgr.h] [icons.c] [menus.c] [menus.h]
-		[parse.c] [resize.c] [scrren.h] [twm.c] [twm.h] [util.c] [util.h]
-		[version.c]
-			Modifications and/or additions to the above modules for
-			a 3D appearance, menu separators, a position window, info
-			window fonts, resize/position window locations, and other
-			minor tweaks (listed below). All should be initialled and
-			dated. Changed as many as convenient boolean shorts to bits in
-			a Slim-Fast effort (the only executable code changed was due
-			to renaming the variable SnapRealScreen to snapRealScreen; the
-			shorts maybe reinstated with '#define ORIGINAL_SHORTS').
-			Changed "Twm Door" to "VTWM Door", in the name of Consistancy.
-			Changed "Virtual Desktop" to "VTWM Desktop". Ditto. Changed the
-			code to center Door names in their windows. It *is* correct,
-			but only looks more correct. Took liberties with the
-			SunkFocusWindowTitle function. I think it more pleasing. Took
-			liberties with other code too, look for '#ifdef ORIGINAL_'.
-			A couple of changes for a cleaner compile (what were 'int'
-			functions are now 'void', etc.). Rem'd out code no longer
-			valid due to these changes.
+            From Nelson H. F. Beebe (beebe@math.utah.edu):
+                On startup, VTWM now searches for user and system .vtwmrc
+                files, then user and system .twmrc files, in this order.
+                Fixed and added many declarations and definitions. Updated
+                the man page. Support for HTML and Postscript versions of
+                the man page added to the *akefile*s. 
 
-			Added the following resources:
-				SunkFocusWindowTitle
-				UseThreeDIconManagers
-				UseThreeDMenus
-				UseThreeDTitles
-				UseThreeDBorders
-				ThreeDBorderWidth n
-				ClearShadowContrast n
-				DarkShadowContrast n
-				InfoFont s
-				ResizeRegion s
+            From Jason Gloudon (jgloudon@bbn.com):
+                Color image (XPM) support for icons.
 
-			Added the following function:
-				f.separator
+        Added a pixmap (djhjr.vtwmpm) referenced in my resource file
+        (djhjr.vtwmrc) for an example of the nexpm utility.
 
-			Updated the man page.
-			Included my .vtwmrc (djhjr.vtwmrc) in this distribution.
+        Pruned the R4 Imakefile from the tree.
 
-			See also the files 4.ANNOUNCE, 4.README, and BUGS.
+        Pruned the vtwmrc/ directory from the distribution tree. No offense
+        to Mr. Betza, but it made little sense (to me), was five years old,
+        was very esoteric, and anyone who wants it probably already has it.
+
+    November 17, 1997
+        VTWM 5.4.3 released for public consumption.
+
+    November 17 - 19, 1997
+        [events.c] [menus.c] [util.c] [util.h]
+            Fixed a bug where the wrong resource was being used to
+            highlight the window border that has focus. Fixed an omission
+            where the window buttons would not follow the border color
+            when highlighted and the ButtonColorIsFrame resource is true.
+            Added a hack to trap corrupted/invalid window button names.
+
+    October 27, 1997
+        VTWM 5.4.2 released for public consumption.
+
+    March 12 - 14, 1997
+        [add_window.c] [menus.c] [twm.c] [util.c]
+            Added code to properly paint the window buttons in the same
+            color as their titlebar on a restart operation. Woo-woo!
+            Numerous changes to accomodate added buttons and squeezed
+            titlebars - I had previously overlooked these. Made a few
+            resources un-alterable when 3D appearances are used. Now
+            closes the display before spawning the new WM on a restart
+            operation - free alloc'd memory in the X server?
+
+    September 25 - 26, 1996
+        [menus.c]
+            Changed code to properly scale menus to the fonts used.
+
+    September 14 - 21, 1996
+        [add_window.c] [iconmgr.c] [menus.c] [resize.c] [twm.h] [util.c]
+        [version.h] [*akefil*] [vtwm.man]
+            Fixed a bug in zooms that I introduced! Applied the backing
+            store and NoBackingStore resources to the Icon Manager and
+            titlebars (defeats effects of RaiseDelay). Made the cursor
+            warp to the titlebar on a zoom operation if WarpCursor is
+            set on. The function f.showdesktopdisplay now deiconifies as
+            required. Working on code to make the window buttons stay the
+            same color as their titlebar on a restart operation (obviously
+            wasn't thought about much before). Added build info to the
+            Version window by having the *makefil*s create a temporary C
+            module.
+
+            Added the following resource:
+                ButtonColorIsFrame
+
+    September 10 - 12, 1996
+        [events.c] [menus.c]
+            Added code preventing the virtual desktop window and Door
+            windows from doing harm. Fixed a bug when trying to move the
+            virtual desktop window with the pointer; see the notes in
+            djhjr.vtwmrc pertaining to the virtual desktop, it's related,
+            and the BUGS file.
+
+    June 26, 1996
+        [screen.h] [parse.c] [twm.c] [util.c] [vtwm.man]
+            Tweaked the 3D menu icons to look a little more like menus.
+            Made the 3D Icon Manager iconified indicators "shallow" to
+            match the 3D menu icons. Added code for Motif-ish "shallow"
+            relief in 3D titlebars and buttons to matches the others.
+
+            Added the following resource:
+                ShallowReliefWindowButton
+
+    June 11, 1996
+        [icons.c] [events.c]
+            Tweaked the hard-coded geometries for a better 3D appearance
+            on icons (looks best with IconBorderWidth set to 0).
+
+    April 18 - May 19, 1996
+        [add_window.c] [desktop.c] [doors.c] [doors.h] [events.c]
+        [gram.y] [iconmgr.c] [iconmgr.h] [icons.c] [menus.c] [menus.h]
+        [parse.c] [resize.c] [screen.h] [twm.c] [twm.h] [util.c] [util.h]
+        [version.c]
+            Modifications and/or additions to the above modules for
+            a 3D appearance, menu separators, a position window, info
+            window fonts, resize/position window locations, and other
+            minor tweaks (listed below). All should be initialled and
+            dated. Changed as many as convenient boolean shorts to bits in
+            a Slim-Fast effort (the only executable code changed was due
+            to renaming the variable SnapRealScreen to snapRealScreen; the
+            shorts maybe reinstated with '#define ORIGINAL_SHORTS').
+            Changed "Twm Door" to "VTWM Door", in the name of Consistancy.
+            Changed "Virtual Desktop" to "VTWM Desktop". Ditto. Changed the
+            code to center Door names in their windows. It *is* correct,
+            but only looks more correct. Took liberties with the
+            SunkFocusWindowTitle function. I think it more pleasing. Took
+            liberties with other code too, look for '#ifdef ORIGINAL_'.
+            A couple of changes for a cleaner compile (what were 'int'
+            functions are now 'void', etc.). Rem'd out code no longer
+            valid due to these changes.
+
+            Added the following resources:
+                SunkFocusWindowTitle
+                UseThreeDIconManagers
+                UseThreeDMenus
+                UseThreeDTitles
+                UseThreeDBorders
+                ThreeDBorderWidth n
+                ClearShadowContrast n
+                DarkShadowContrast n
+                InfoFont s
+                ResizeRegion s
+
+            Added the following function:
+                f.separator
+
+        Updated the man page.
+        Included my .vtwmrc (djhjr.vtwmrc) in this distribution.
+
+        See also the files 4.ANNOUNCE, 4.README, and BUGS.
 
 ============ vtwm-5.3.tar.gz =============
 dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
 
-	Tuesday, 1994 January 4, 16:43:32 EST 
-		[menus.c] `autopan windows' are now raised when Autopan is
+        Tuesday, 1994 January 4, 16:43:32 EST 
+                [menus.c] Autopanned windows are now raised when Autopan is
                 turned back on via f.autopan.
 
-	Monday, 1994 January 3, 20:49:22 EST
-		f.stickyabove (or f.nailedabove)
+        Monday, 1994 January 3, 20:49:22 EST
+                f.stickyabove (or f.nailedabove)
 
         Monday, 1994 January 3, 19:29:07 EST / dsembr01
                 [twm.c] The "VTWM Profile" function is now executed after
@@ -130,15 +208,15 @@ dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
                 [vtwm.man] Some previously undocumented functions have now
                 been documented.  Please use them at your own risk:
 
-                        f.cut
-                        f.cutfile
-                        f.file
-                        f.movescreen
-                        f.twmrc [same as f.restart anyway]
-                        f.version
+                f.cut
+                f.cutfile
+                f.file
+                f.movescreen
+                f.twmrc [same as f.restart anyway]
+                f.version
 
         Saturday, 1993 November 6, 19:03:28 EST / dsembr01
-                [desktop.c] small bug fix regarding representations of
+                [desktop.c] Small bug fix regarding representations of
                 nailed windows on the virtual desktop; it was obvious and
                 obviously unintentional.
 
@@ -163,12 +241,12 @@ dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
 
         Mon Oct 25 19:48:33 EDT 1993 dsembr01
                 FixTransientVirtualGeometries, a BUG WORKAROUND!!
-                  (Any better ideas, folks? -- DSE)
+                (Any better ideas, folks? -- DSE)
 
         Mon Oct 25 17:13:00 EDT 1993 dsembr01 
                 DontInterpolateTitles, from tvtwm -- thanks to
-                  cross@eng.umd.edu (Chris P. Ross) for letting me use his
-                  code.
+                cross@eng.umd.edu (Chris P. Ross) for letting me use his
+                code.
 
         Sun Oct 24 16:16:52 EDT 1993 dsembr01
                 f.lower now won't lower the window if it is nailed down and
@@ -176,7 +254,7 @@ dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
 
         Tue Oct 19 18:03:35 EDT 1993 dsembr01
                 StickyAbove (I didn't take any of the code for this from
-                  tvtwm; just the idea.)
+                tvtwm; just the idea.)
 
         Mon Oct 18 21:14:04 EDT 1993 dsembr01
                 Fixed autopanning bug that would *sometimes* not allow
@@ -189,15 +267,15 @@ dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
                 the real screen is.
 
         Wed Oct 13 12:21:54 EDT 1993 dsembr01
-                aliased "f.stick" to "f.nail", for greater compatibility
+                Aliased "f.stick" to "f.nail", for greater compatibility
                 (or less incompatibility) between .vtwmrc and .tvtwmrc,
                 just for the hell of it.
 
         Mon Oct 11 21:06:09 EDT 1993 dsembr01
                 Fixed a bug that would make the window manager mess up if
-                ``AutoPan 100'' and ``AutoPanWarpWithRespectToRealScreen
-                100'' (a.k.a.  ``NaturalAutoPanBehavior'') were set.  I
-                wanted to set my window manager to behave like fvwm (in the
+                "AutoPan 100" and "AutoPanWarpWithRespectToRealScreen 100"
+                (a.k.a. "NaturalAutoPanBehavior") were set.  I wanted to
+                set my window manager to behave like fvwm (in the
                 autopanning sense of the word) when I discovered this.
 
         Mon Oct 11 09:14:58 PDT 1993 leisner@eso.mc.xerox.com (Marty Leisner)
@@ -205,16 +283,16 @@ dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
 
         Mon Oct 11 17:04:35 EDT 1993 dsembr01
                 NoDefaultTitleButtons
-                NoDefaultMouseAndKeyboardBidings
-                  so someone could use either the default title or 
-                  keyboard bindings, but not necessarily both.
+                NoDefaultMouseAndKeyboardBindings
+                so someone could use either the default title or 
+                keyboard bindings, but not necessarily both.
 
 ============ vtwm-5.2.2.tar.gz =============
 
         dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
-                used another bug workaround to support negative door
+                Used another bug workaround to support negative door
                 geometries; the old one I did messed up with positive door
-                geometries, especially `+0+0'.
+                geometries, especially "+0+0".
 
 ============ vtwm-5.2.1.tar.gz =============
 
@@ -229,7 +307,7 @@ dsembr01@starbase.spd.louisville.edu (Darren S. Embry)
                 RealScreenBorderWidth
                 RightHandSidePulldownMenus
 
-                support for negative and `0,0' door geometries.
+                Support for negative and "0,0" door geometries.
 
 ============ vtwm-5.2.tar.Z =============
 
@@ -242,15 +320,15 @@ Various contributions:
                 UseRealScreenBorder
                 f.snaprealscreen
 
-                improved window movement in the panner
-                restored the ability to rescale the desktop
+                Improved window movement in the panner
+                Restored the ability to rescale the desktop
 
         futzi@uni-paderborn.de (Michael Kutzner)
                 Class-name was compared twice in menus.c
                 (applies also to vtwm-5.0)
 
         Stig Ostholm <ostholm%ce.chalmers.se@uunet>
-                problem when windows are resized without vtwm interaction
+                Problem when windows are resized without vtwm interaction
                 cleaning up of the desktop code to minimize vtwm - server
                 interaction.
                 Imakefile patch allows vtwm to be installed in another
@@ -264,7 +342,7 @@ Various contributions:
                 AutoPanX, AutoPanY
 
         dana@thumper.bellcore.com (Dana A. Chee)
-                added fix which allows key presses to move a window (menus.c,
+                Added fix which allows key presses to move a window (menus.c,
                 events.c)
 
         Alec Wolman <wolman@crl.dec.com>
@@ -275,25 +353,25 @@ Various contributions:
 
 Tue Jul 20 15:22:49 EDT 1993
         Thu Oct  1 17:47:37 1992  Dana A. Chee  (dana@dino)
-        * added fix which allows key presses to move a window (menus.c,
-                events.c)
+        * Added fix which allows key presses to move a window (menus.c,
+          events.c)
         Fri May 29 14:20:53 1992  Dana A. Chee  (dana@dino)
-        * fixed bug in do_single_keyword (break should be return), sent in
-                by George Ross <gdmr@dcs.edinburgh.ac.uk> (parse.c)
+        * Fixed bug in do_single_keyword (break should be return), sent in
+          by George Ross <gdmr@dcs.edinburgh.ac.uk> (parse.c)
 [Editor's note: a very popular bug to send in the fix for!]
         * Autoraise can now specify "all windows" by leaving off the
+          Window List, sent in by Alec Wolman <wolman@crl.dec.com>
 [Editor's note: this was previously done by the RaiseDelay patch]
-                 Window List, sent in by Alec Wolman <wolman@crl.dec.com>
         * WindowRing can now specify "all windows" by leaving off the
-                Window List, sent in by Alec Wolman <wolman@crl.dec.com>
-                (add_window.c, gram.y, screen.h, twm.c, vtwm.man)
-        * Initial Placement of Virtual Desktop fixed, sent in by Alec Wolman
+          Window List, sent in by Alec Wolman <wolman@crl.dec.com>
+          (add_window.c, gram.y, screen.h, twm.c, vtwm.man)
+        * Initial Placement of virtual desktop fixed, sent in by Alec Wolman
 [Editor's note: this was previously done]
         * Can specify x or y = 0 in door location now, sent in by Alec
-                Wolman <wolman@crl.dec.com> (doors.c)
-        * update man page to mention NoVirtualGeometries variable
-                (vtwm.man)
-        * updated patchlevel (patchlevel.h)
+          Wolman <wolman@crl.dec.com> (doors.c)
+        * Update man page to mention NoVirtualGeometries variable
+          (vtwm.man)
+        * Updated patchlevel (patchlevel.h)
 [Editor's note: we don't have one! ]
         Thu Mar 26 12:31:09 1992  Dana A. Chee  (dana@dino)
         * F_LOWER now lowers the window in the virtual desktop as well
@@ -302,11 +380,11 @@ Thu Jul 15 14:03:01 DST 1993 Marcel Mol (marcel@duteca.et.tudelft.nl)
         * Includes F_WARPTO patch from futzi@uni-paderborn.de (Michael Kutzner)
           Patched this patch to check for name, class and classname in a
           single for loop.
-        * Changed syntax ov 'VirtualDesktop' variable. Now can set desktop
+        * Changed syntax of 'VirtualDesktop' variable. Now can set desktop
           as number of screens, as size of virtual desktop window or as
-          size of whoel desktop.
-        * Fixed unharmfull bug when NotVirtualGeometries was set.
-          (vtwm comlains about `unknown singleton keyword')
+          size of whole desktop.
+        * Fixed unharmful bug when NotVirtualGeometries was set.
+          (vtwm comlains about "unknown singleton keyword")
         * Added f.virtualgeometries function to toggle virtual geometries
           settings.
         * Added f.deletedoor function to delete a door. Don't know if I
@@ -318,19 +396,19 @@ Thu Jul 15 14:03:01 DST 1993 Marcel Mol (marcel@duteca.et.tudelft.nl)
 Thu Jun 24 15:24:36 EDT 1993 Ralph Betza (gnohmon@ssiny.com)
 
         * Includes RaiseDelay patch from
-                Warren Jessop, University of Washington, whj@cs.washington.edu
+          Warren Jessop, University of Washington, whj@cs.washington.edu
 
         * Includes snug patch from thoth@reef.cis.ufl.edu (Gilligan)
 
-        * includes patch vtwm.5.1.ptch from tar@math.ksu.edu (Tim Ramsey)
+        * Includes patch vtwm.5.1.ptch from tar@math.ksu.edu (Tim Ramsey)
 
         * Includes panner background pixmap, panner foreground color,
-                dynamic warpring, dynamic squeezetitle, TWM-Window menu
-                colors, RealScreen foreground, background, and colors,
-                corrections to placement of the little windows in the
-                panner, additional cursors, and maybe a few other things I
-                forgot to mention, from me,
-                Ralph Betza (gnohmon@ssiny.com)
+          dynamic warpring, dynamic squeezetitle, TWM-Window menu
+          colors, RealScreen foreground, background, and colors,
+          corrections to placement of the little windows in the
+          panner, additional cursors, and maybe a few other things I
+          forgot to mention, from me,
+          Ralph Betza (gnohmon@ssiny.com)
 
 Tue Mar 24 13:15:11 1992  Dana A. Chee  (dana@dino)
 
@@ -342,7 +420,7 @@ Wed Feb 19 13:37:57 1992  Dana A. Chee  (dana at dino)
 
         * Converted vtwm to use the source of twm from R5 (my base was
           vtwm 4.0 gamma).  Released it to export.lcs.mit.edu
-        * cut and paste missed resize grabs, added them back in
-        * botched ask_user stuff in add_window, fixed that up.
-        * removed broken copy from export.
+        * Cut and paste missed resize grabs, added them back in
+        * Botched ask_user stuff in add_window, fixed that up.
+        * Removed broken copy from export.
 

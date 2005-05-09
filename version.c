@@ -37,5 +37,8 @@ char *Version = "Virtual Desktop TWM (VTWM) - R5 Release 5.4.1";
 /* djhjr - 11/17/97
 char *Version = "Virtual Desktop TWM (VTWM) - R5 Release 5.4.2";
 */
+/* djhjr - 1/1/98
 char *Version = "Virtual Desktop TWM (VTWM) - R5 Release 5.4.3";
+*/
+char *Version = "Virtual Desktop TWM (VTWM) - X11R4-6 Release 5.4.4";
 

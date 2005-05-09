@@ -163,7 +163,7 @@ main(argc, argv)
 	}
 	if ( ! strcmp( argv[ n ], "-vtwm" ))
 	{	sDoByName = 1;
-		pTargetWindowName = "Virtual Desktop";
+		pTargetWindowName = "VTWM Desktop";
 		continue;
 	}
 	if ( ! strcmp( argv[ n ], "-id" ))

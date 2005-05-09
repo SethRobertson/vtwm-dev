@@ -44,6 +44,8 @@
 #include "add_window.h"
 #include "screen.h"
 #include "desktop.h"
+#include "events.h"
+#include "menus.h"
 
 #define MINHEIGHT 0     /* had been 32 */
 #define MINWIDTH 0      /* had been 60 */
@@ -209,8 +211,6 @@ MenuStartResize(tmp_win, x, y, w, h)
 TwmWindow *tmp_win;
 int x, y, w, h;
 {
-  Window junkRoot;
-  unsigned int junkbw, junkDepth;
     XGrabServer(dpy);
     XGrabPointer(dpy, Scr->Root, True,
         ButtonPressMask | ButtonMotionMask | PointerMotionMask,
@@ -754,7 +754,7 @@ TwmWindow *tmp_win;
  *
  ***********************************************************************/
 
-ConstrainSize (tmp_win, widthp, heightp)
+void ConstrainSize (tmp_win, widthp, heightp)
     TwmWindow *tmp_win;
     int *widthp, *heightp;
 {
@@ -945,9 +945,6 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     int x, y, w, h, bw;
     Bool sendEvent;			/* whether or not to force a send */
 {
-    /* djhjr - 4/24/96 */
-	XEvent client_event;
-
     XWindowChanges frame_wc, xwc;
     unsigned long frame_mask, xwcm;
     int title_width, title_height;
@@ -1227,7 +1224,7 @@ int flag;
 	XUngrabServer (dpy);
 }
 
-SetFrameShape (tmp)
+void SetFrameShape (tmp)
     TwmWindow *tmp;
 {
     /*
@@ -1268,13 +1265,8 @@ SetFrameShape (tmp)
 	 * can optimize rectangular contents window
 	 */
 	if (tmp->squeeze_info) {
-#ifdef WHEN_I_FIGURE_OUT_WHY_THIS_BORDER_DOESNT_APPEAR
 	    XRectangle  newBounding[3];
 	    XRectangle  newClip[3];
-#else
-	    XRectangle  newBounding[2];
-	    XRectangle  newClip[2];
-#endif
 	    int fbw2 = 2 * tmp->frame_bw;
 
 	    /*
@@ -1303,21 +1295,20 @@ SetFrameShape (tmp)
 	    newBounding[1].width = tmp->attr.width + fbw2 + 2 * tmp->frame_bw3D;
 	    newBounding[1].height = tmp->attr.height + fbw2 + tmp->frame_bw3D;
 
-#ifdef WHEN_I_FIGURE_OUT_WHY_THIS_BORDER_DOESNT_APPEAR
 		if (tmp->squeeze_info && Scr->use3Dborders)
 		{
-		    newBounding[2].x = 0;
+		    newBounding[2].x = -tmp->frame_bw3D;
 		    newBounding[2].y = tmp->title_height;
-	    	newBounding[2].width = tmp->attr.width + tmp->frame_bw3D;
+	    	newBounding[2].width = tmp->attr.width + 3 * tmp->frame_bw3D;
 	    	newBounding[2].height = tmp->frame_bw3D;
 
 	    	XShapeCombineRectangles (dpy, tmp->frame, ShapeBounding, 0, 0,
-				     newBounding, 3, ShapeSet, YXBanded);
+				     newBounding, 3, ShapeSet, Unsorted);
 		}
 		else
-#endif
-	    XShapeCombineRectangles (dpy, tmp->frame, ShapeBounding, 0, 0,
-				     newBounding, 2, ShapeSet, YXBanded);
+		    XShapeCombineRectangles (dpy, tmp->frame, ShapeBounding, 0, 0,
+					     newBounding, 2, ShapeSet, YXBanded);
+
 	    /* insides */
 	    newClip[0].y = 0;
 	    newClip[1].x = 0;
@@ -1336,21 +1327,19 @@ SetFrameShape (tmp)
 	    newClip[1].width = tmp->attr.width + 2 * tmp->frame_bw3D;
 	    newClip[1].height = tmp->attr.height + tmp->frame_bw3D;
 
-#ifdef WHEN_I_FIGURE_OUT_WHY_THIS_BORDER_DOESNT_APPEAR
 		if (tmp->squeeze_info && Scr->use3Dborders)
 		{
-		    newClip[2].x = 0;
+		    newClip[2].x = -tmp->frame_bw3D;
 		    newClip[2].y = tmp->title_height;
-	    	newClip[2].width = tmp->attr.width + tmp->frame_bw3D;
+	    	newClip[2].width = tmp->attr.width + 3 * tmp->frame_bw3D;
 		    newClip[2].height = tmp->frame_bw3D;
 
 		    XShapeCombineRectangles (dpy, tmp->frame, ShapeClip, 0, 0,
-				     newClip, 3, ShapeSet, YXBanded);
+				     newClip, 3, ShapeSet, Unsorted);
 		}
 		else
-#endif
-	    XShapeCombineRectangles (dpy, tmp->frame, ShapeClip, 0, 0,
-				     newClip, 2, ShapeSet, YXBanded);
+		    XShapeCombineRectangles (dpy, tmp->frame, ShapeClip, 0, 0,
+					     newClip, 2, ShapeSet, YXBanded);
 	} else {
 	    (void) XShapeCombineMask (dpy, tmp->frame, ShapeBounding, 0, 0,
  				      None, ShapeSet);

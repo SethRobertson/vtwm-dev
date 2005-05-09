@@ -50,20 +50,14 @@ typedef struct _Image {
 extern void	Zoom();
 extern void	MoveOutline();
 extern Pixmap	GetBitmap(), FindBitmap();
+#ifndef NO_XPM_SUPPORT
+extern Image *FindImage();
+#endif
 extern void	GetUnknownIcon();
 extern char 	*ExpandFilename();
 extern void		GetColor();
 extern Cursor	NoCursor();
 
-/* djhjr - 4/18/96 */
-static Pixmap CreateXLogoPixmap(), CreateResizePixmap();
-static Pixmap CreateQuestionPixmap(), CreateMenuPixmap();
-static Pixmap CreateDotPixmap ();
-static Image  *Create3DMenuImage ();
-static Image  *Create3DDotImage ();
-static Image  *Create3DResizeImage ();
-static Image  *Create3DZoomImage ();
-static Image  *Create3DBarImage ();
 extern Image *GetImage ();
 extern void Draw3DBorder();
 extern void GetShadeColors();
@@ -71,11 +65,23 @@ extern void PaintBorders();
 extern void PaintIcon();
 extern void PaintTitle();
 extern void PaintTitleButton();
+extern void InsertRGBColormap();
+extern void RemoveRGBColormap();
+extern void SetFocus();
+extern void LocateStandardColormaps();
+extern void GetFont();
 
 /* djhjr - 11/17/97 */
 extern void PaintTitleButtonHighlight();
 
+/* djhjr - 1/13/98 */
+void setBorderGC();
+#ifdef USE_ORIGINAL_CORNERS
 void Draw3DCorner();
+#else
+GC setBevelGC();
+void Draw3DBevel();
+#endif
 
 /* djhjr - 4/25/96 */
 void PaintTitleHighlight();

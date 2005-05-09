@@ -47,7 +47,12 @@ extern void EndResize();
 extern void AddEndResize();
 extern void SetupWindow();
 extern void SetupFrame();
-
-#endif /* _RESIZE_ */
+extern void SetFrameShape();
+extern void ConstrainSize();
+extern void MenuDoResize();
+extern void MenuStartResize();
+extern void MenuEndResize();
 
 extern void fullzoom();
+
+#endif /* _RESIZE_ */

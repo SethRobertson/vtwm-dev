@@ -51,6 +51,12 @@
 #include "version.h"
 #include "desktop.h"
 #include <sys/time.h>/*RAISEDELAY*/
+#include <sys/select.h>/*RAISEDELAY*/
+
+extern void IconDown();
+
+static void do_menu ();
+void RedoIconName();
 
 extern int iconifybox_width, iconifybox_height;
 extern unsigned int mods_used;
@@ -973,7 +979,7 @@ HandlePropertyNotify()
  ***********************************************************************
  */
 
-RedoIconName()
+void RedoIconName()
 {
 	int x, y;
 
@@ -1953,13 +1959,13 @@ HandleButtonRelease()
 
 
 
-static do_menu (menu, w)
+static void do_menu (menu, wnd)
 	MenuRoot *menu;			/* menu to pop up */
-	Window w;				/* invoking window or None */
+	Window wnd;				/* invoking window or None */
 {
 	int x = Event.xbutton.x_root;
 	int y = Event.xbutton.y_root;
-	Bool center;
+	Bool center = True;
 
 	if (Scr->StayUpMenus)
 	{	GlobalMenuButton = True;
@@ -1967,18 +1973,29 @@ static do_menu (menu, w)
 
 	if (!Scr->NoGrabServer)
 	XGrabServer(dpy);
-	if (w) {
-	int h = Scr->TBInfo.width - Scr->TBInfo.border;
+	if (wnd) {
 	Window child;
+	/* djhjr - 1/20/98 */
+	int w = Scr->TBInfo.width / 2;
+/* djhjr - 1/20/98
+	int h = Scr->TBInfo.width - Scr->TBInfo.border;
+*/
+	int h = Scr->TBInfo.width;
 
+/* djhjr - 1/20/98
 	(void) XTranslateCoordinates (dpy, w, Scr->Root, 0, h, &x, &y, &child);
+*/
+	(void) XTranslateCoordinates (dpy, wnd, Scr->Root, w, h, &x, &y, &child);
 
-	/* djhjr - 3/12/97 */
+/* djhjr - 1/20/98
+	* djhjr - 3/12/97 *
 	y -= Scr->TitleHeight;
+*/
+	y -= Scr->TitleHeight / 2;
 
+/* djhjr - 1/20/98
 	center = False;
-	} else {
-	center = True;
+*/
 	}
 	if (PopUpMenu (menu, x, y, center)) {
 	UpdateMenu();
@@ -3121,7 +3138,7 @@ static void flush_expose (w)
  ***********************************************************************
  */
 
-InstallWindowColormaps (type, tmp)
+void InstallWindowColormaps (type, tmp)
 	int type;
 	TwmWindow *tmp;
 {
@@ -3241,7 +3258,7 @@ InstallWindowColormaps (type, tmp)
  ***********************************************************************
  */
 
-InstallRootColormap()
+void InstallRootColormap()
 {
 	TwmWindow *tmp;
 	if (Scr->cmapInfo.root_pushes == 0) {
@@ -3280,7 +3297,7 @@ UninstallRootColormapQScanner(dpy, ev, args)
 
 
 
-UninstallRootColormap()
+void UninstallRootColormap()
 {
 	char args;
 	XEvent dummy;

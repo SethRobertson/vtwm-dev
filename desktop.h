@@ -26,6 +26,7 @@ extern void MoveResizeDesktop();
 extern void NailDesktop();
 
 extern void DisplayScreenOnDesktop();
+extern void StartMoveWindowInDesktop();
 extern void StartMoveWindowOnDesktop();
 extern void EndMoveWindowOnDesktop();
 extern void DoMoveWindowOnDesktop();

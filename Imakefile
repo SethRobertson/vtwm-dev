@@ -1,17 +1,55 @@
+#ifndef XCOMM
+#define XCOMM #
+#endif
+
 XCOMM $XConsortium: Imakefile,v 1.33 91/07/17 00:48:06 gildea Exp $
 XCOMM
-XCOMM Here is an Imakefile for vtwm.  It depends on having TWMDIR defined
-XCOMM in Imake.tmpl.  I like to use Imakefiles for everything, and I am sure
-XCOMM other people do also, so perhaps you could do us all a favor and
+XCOMM Here is an Imakefile for VTWM.
+XCOMM I like to use Imakefiles for everything, and I am sure other
+XCOMM people do also, so perhaps you could do us all a favor and
 XCOMM distribute this one.
-XCOMM
+
+XCOMM =============== Start of common editables =====================
+
+XCOMM To omit XPM image support for icons, uncomment this (version
+XCOMM 3.4h of the XPM library is the earliest supported I know of)
+XCOMM #define NO_XPM_SUPPORT
+
+XCOMM To omit platform and build info in the version window, uncomment this
+XCOMM #define NO_BUILD_INFO
+
+XCOMM For those systems that have TWM installed in locations other than
+XCOMM the "default" for the $(LIBDIR) macro, change this to match
+        VTWMDIR = $(LIBDIR)/twm
+
+XCOMM ================ End of common editables ======================
+
+XCOMM ============= Start of less common editables ==================
+
+XCOMM Handy for developers to check man page editions
+XCOMM (see the end of this file)
+         DEROFF = deroff
+             DW = dw
+          SPELL = spell
+
+XCOMM Required to generate HTML or Postscript versions of the man page
+XCOMM (see the end of this file)
+       MAN2HTML = man2html
+         MAN2PS = man2ps
+
+XCOMM ============== End of less common editables ===================
+
+XCOMM ========= Editing below here should not be necessary ==========
 
          YFLAGS = -d
         DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
 LOCAL_LIBRARIES = $(XMULIB) $(EXTENSIONLIB) $(XLIB)
        LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
         DEFINES = $(SIGNAL_DEFINES)
-        VTWMDIR = $(LIBDIR)/vtwm
+
+#ifndef NO_XPM_SUPPORT
+  SYS_LIBRARIES = -lXpm
+#endif
 
            SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c twm.c \
 		parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
@@ -23,12 +61,22 @@ LOCAL_LIBRARIES = $(XMULIB) $(EXTENSIONLIB) $(XLIB)
 
 AllTarget(vtwm)
 
-# To omit platform and build info on the Version window
-# SpecialObjectRule(menus.o,menus.c,'-DNO_BUILD_INFO')
+#ifdef NO_XPM_SUPPORT
+SpecialObjectRule(icons.o,icons.c,'-DNO_XPM_SUPPORT')
+SpecialObjectRule(util.o,util.c,'-DNO_XPM_SUPPORT')
+#endif
 
-SpecialObjectRule(parse.o,parse.c,'-DSYSTEM_INIT_FILE="'$(VTWMDIR)'/system.vtwmrc"')
+#ifdef NO_BUILD_INFO
+XCOMM SpecialObjectRule(menus.o,menus.c,'-DNO_BUILD_INFO')
+#endif
+
+SpecialObjectRule(parse.o,parse.c,\
+ '-DSYSTEM_VTWMRC="'$(VTWMDIR)'/system.vtwmrc"' \
+ '-DSYSTEM_TWMRC="'$(VTWMDIR)'/system.twmrc"')
+
 #if !HasPutenv
-SpecialObjectRule(util.o,NullParameter,-DNOPUTENV)
+SpecialObjectRule(util.o,util.c,'-DNO_PUTENV')
+SpecialObjectRule(menus.o,menus.c,'-DNO_PUTENV')
 #endif
 
 depend:: lex.c gram.c deftwmrc.c lastmake.c
@@ -37,33 +85,54 @@ ComplexProgramTarget(vtwm)
 InstallNonExecFile(system.vtwmrc,$(VTWMDIR))
 
 gram.h gram.c: gram.y
-	yacc $(YFLAGS) gram.y
+	$(YACC) $(YFLAGS) gram.y
 	$(MV) y.tab.c gram.c
 	$(MV) y.tab.h gram.h
 
 clean::
 	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c lastmake.c
 
-deftwmrc.c:  system.vtwmrc
+deftwmrc.c: system.vtwmrc
 	$(RM) $@
 	echo '/* ' >>$@
 	echo ' * This file is generated automatically from the default' >>$@
-	echo ' * vtwm bindings file system.vtwmrc by the vtwm Imakefile.' >>$@
+	echo ' * VTWM bindings file system.vtwmrc by the VTWM Imakefile.' >>$@
 	echo ' */' >>$@
 	echo '' >>$@
 	echo 'char *defTwmrc[] = {' >>deftwmrc.c
-	sed -e '/^#/d' -e 's/"/\\"/g' -e 's/^/    "/' -e 's/$$/",/' \
-		system.vtwmrc >>$@
+	sed -e '/^#/d' -e 's/"/\\"/g' -e 's/^/    "/' -e 's/$$/",/' system.vtwmrc >>$@
 	echo '    (char *) 0 };' >>$@
 
 lastmake.c:
 	$(RM) $@
 	echo '/* ' >>$@
-	echo ' * This file is generated automatically by the vtwm Imakefile.' >>$@
+	echo ' * This file is generated automatically by the VTWM Imakefile.' >>$@
 	echo ' */' >>$@
 	echo '' >>$@
 	echo 'char *lastmake[] = {' >>lastmake.c
-	echo '\t"Platform:  '`uname -s`' Version '`uname -v`' Release '`uname -r`'",' >>$@
-	echo '\t"Build:  '`date`'",' >>$@
-	echo '};\n' >>$@
+	echo '    "Platform:  '`uname -s`' Version '`uname -v`' Release '`uname -r`'",' >>$@
+	echo '    "Build:  '`date`'",' >>$@
+	echo '};' >>$@
 
+XCOMM Handy for developers to check the man page
+dw vtwm.dw: vtwm.man
+	$(DEROFF) vtwm.man | $(DW) >vtwm.dw
+	@if test -s vtwm.dw ; \
+	then \
+	    echo Doubled words in vtwm.man ... ; \
+	    cat vtwm.dw ; \
+	fi
+spell vtwm.ser: vtwm.man vtwm.sok
+	$(DEROFF) vtwm.man | $(SPELL) +vtwm.sok >vtwm.ser
+	@if test -s vtwm.ser ; \
+	then \
+	    echo Spelling exceptions in vtwm.man ... ; \
+	    cat vtwm.ser ; \
+	fi
+
+XCOMM If you wish to generate HTML or Postscript versions of the man page,
+XCOMM enter 'make vtwm.html' or 'make vtwm.ps'
+vtwm.html: vtwm.man
+	$(MAN2HTML) vtwm.man
+vtwm.ps: vtwm.man
+	$(MAN2PS) < $< >$@

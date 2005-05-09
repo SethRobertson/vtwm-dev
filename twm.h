@@ -426,8 +426,11 @@ extern char Info[][INFO_SIZE];
 extern int Argc;
 extern char **Argv;
 extern char **Environ;
+
 extern void NewFontCursor();
 extern Pixmap CreateMenuIcon();
+extern void RestoreWithdrawnLocation();
+extern void CreateFonts();
 
 /* djhjr - 4/18/96 */
 extern Pixmap Create3DMenuIcon();

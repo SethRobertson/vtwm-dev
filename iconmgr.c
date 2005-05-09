@@ -32,6 +32,8 @@
 #include <stdio.h>
 #include "twm.h"
 #include "util.h"
+#include "menus.h"
+#include "desktop.h"
 #include "parse.h"
 #include "screen.h"
 #include "resize.h"
@@ -696,7 +698,10 @@ void DrawIconManagerBorder(tmp, fill)
 	int shadow_width;
 
 	shadow_width = 2;
+/* djhjr - 1/27/98
 	if (tmp->active && Scr->Highlight)
+*/
+	if (tmp->active && Scr->IconMgrHighlight)
 	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
 				tmp->cp, on, fill, False);
 	else
@@ -711,7 +716,10 @@ void DrawIconManagerBorder(tmp, fill)
 	    XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 2, 2,
 		tmp->width-5, tmp->height-5);
 
+/* djhjr - 1/27/98
 	if (tmp->active && Scr->Highlight)
+*/
+	if (tmp->active && Scr->IconMgrHighlight)
 	    XSetForeground(dpy, Scr->NormalGC, tmp->highlight);
 	else
 /*
