@@ -7,6 +7,52 @@ IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 ============ vtwm-5.4.N.tar.gz =============
 hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
 
+    September 1, 2001
+        VTWM 5.4.6a released for public consumption.
+        vtwm-5.4.6-to-5.4.6a.udiff patch file released.
+
+    August 25, 2002
+        [add_window.c]
+            Better random placement of large windows.
+
+            From Seth Robertson <seth@baka.org>:
+                Patch for the above.
+
+    August 23, 2002
+        [add_window.c] [applets.c] [gram.y] [parse.c] [twm.c] [screen.h]
+            Support for borderless windows.
+
+            From Tim Wiess <tim@zetaflops.net>:
+                Patches for the above.
+
+            Added the following variable:
+                NoBorder l
+
+    April 28, 2002
+        Improved the list parser in contrib/support/sysrc_add_apps.sh.
+
+    April 9, 2002
+        [events.c]
+            Fixed a focus problem with transient windows.
+
+    December 2, 2001
+        [menus.c] [twm.c]
+            Added "-p" command line switch for a runtime PID file,
+            $HOME/vtwm.pid.
+
+    November 20, 2001
+        [add_window.c]
+            MakeTitle now overrides NoTitle like it's supposed to.
+
+    November 15, 2001
+        [add_window.c] [doors.c] [menus.c]
+            Doors are drawn during opaque interactive creation now.
+
+    November 8, 2001
+        [events.c] [menus.c] [version.c]
+            Fixed bugs I introduced regarding icon managers and warp
+            rings. This should end f.warpring problems.
+
     November 3, 2001
         VTWM 5.4.6 released for public consumption.
 

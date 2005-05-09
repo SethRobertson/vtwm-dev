@@ -13,7 +13,7 @@
 .\" .if t .sp .5
 .\" ..
 .\" .ta .3i .6i .9i 1.2i 1.5i 1.8i
-.TH VTWM 1 "Release 5.4.6" "X11R4-6"
+.TH VTWM 1 "Release 5.4.6b" "X11R4-6"
 .\"*********************************************************************
 .\" Important note: At the time 5.4.4 was released, this manual page
 .\" conformed to Sun's guidelines for manual page markup, passed
@@ -29,7 +29,7 @@ vtwm - Virtual Tab Window Manager for the X Window System
 .\"=====================================================================
 .SH SYNTAX
 .PP
-\&\fBvtwm \fP[-d \fIdisplay\fP] [-f \fIinitfile\fP] [-m [\fIoptions\fP]] [-s] [-v]
+\&\fBvtwm \fP[-d \fIdisplay\fP] [-f \fIinitfile\fP] [-m [\fIoptions\fP]] [-p] [-s] [-v]
 .PP
 .\"=====================================================================
 .SH DESCRIPTION
@@ -137,6 +137,13 @@ This option causes \fBvtwm\fP to preprocess the startup file using the
 \fBm4\fP along with those symbols that \fBvtwm\fP declares.  Note that
 \fIoptions\fP itself should be quoted, to prevent unwanted processing that
 may occur by the shell, etc.
+.TP 15
+.B \-p
+This option indicates that \fBvtwm\fP should attempt to write it's PID to
+\&\fI$HOME/vtwm.pid\fP on startup, and delete that file on shutdown.
+This file may be useful as a lock file, or for determining the correct
+\fBvtwm\fP process for a particular user.  If the file cannot be written
+on startup, a bell will sound, but \fBvtwm\fP will continue.
 .TP 15
 .B \-s
 This option indicates that only the default screen (as specified by the
@@ -1099,6 +1106,9 @@ Setting \fBNaturalAutopanBehavior\fP has the exact same effect as using the vari
 This variable indicates that \fBvtwm\fP's windows should not request backing
 store to minimize repainting.  This is typically
 used with servers that can repaint faster than they can handle backing store.
+.IP "\fBNoBorder\fP [{ \fIwin-list\fP }] " 8
+This variable indicates that windows should not have borders.  If the
+optional \fIwin-list\fP is given, only those windows will not have borders.
 .IP "\fBNoCaseSensitive\fP" 8
 This variable indicates that case should be ignored when sorting icon names
 in an icon manager.  This option is typically used with applications that
@@ -2291,7 +2301,8 @@ these reserved characters to be used literally.
 \&\fBvtwm\fP can support a richer method of character substitution, called
 \fIregular expressions\fP, or \fI"RE"\fPs. If \fBvtwm\fP is built with REs,
 many more "wildcard" rules are added. A description of REs is beyond the
-scope of this document; see the \fBregex\fP(7) man page.
+scope of this document; see the \fBre_format\fP(7) or \fBegrep\fP(1) man
+pages.
 .PP
 \&\fBvtwm\fP distinguishes REs from strings by enclosing them in forward
 slashes ('/'). The two may be freely mixed; changing the example in the
@@ -2316,7 +2327,8 @@ and as such doesn't demonstrate or leverage their capabilities.
 .SH SIGNALS
 It is possible to issue a \fBf.restart\fP via a UNIX signal, to ease
 debugging of \fBvtwm\fP resource files.  To do this, send a SIGUSR1 to the
-\fBvtwm\fP process ID.  See \fBkill\fP(1) or \fBslay\fP(1).
+\fBvtwm\fP process ID (written to \fI$HOME/vtwm.pid\fP).
+See \fBkill\fP(1) or \fBslay\fP(1).
 .\"=====================================================================
 .SH BUGS
 There are precious few safeguards against binding functions to objects
@@ -2344,6 +2356,10 @@ See the \fIBUGS\fP file in the distribution for others.
 .fi
 .PP
 These are searched for in the order shown.
+.PP
+.nf
+\%\fI$HOME/vtwm.pid\fP
+.fi
 .\"=====================================================================
 .SH "ENVIRONMENT VARIABLES"
 .IP "\fBDISPLAY\fP" 8
@@ -2359,7 +2375,7 @@ for locating the \fBvtwm\fP startup file.
 \fBm4\fP(1),
 \fBmwm\fP(1),
 \fBpixmap\fP(5),
-\fBregex\fP(7),
+\fBre_format\fP(7) or \fBegrep\fP(1),
 \fBrplayd\fP(8),
 \fBtvtwm\fP(1),
 \fBtwm\fP(1),
@@ -2374,7 +2390,9 @@ for locating the \fBvtwm\fP startup file.
 .SH COPYRIGHT
 Portions copyright 1988 Evans & Sutherland Computer Corporation; portions
 copyright 1989 Hewlett-Packard Company and the Massachusetts Institute of
-Technology,  See \fBX\fP(1) for a full statement of rights and permissions.
+Technology; portions copyright 2001 D. J. Hawkey Jr..
+.PP
+See \fBX\fP(1) for a full statement of rights and permissions.
 .\"=====================================================================
 .SH AUTHORS AND CONTRIBUTORS
 Tom LaStrange, Solbourne Computer; Jim Fulton, MIT X Consortium;
@@ -2403,6 +2421,7 @@ Ugen Antsilevitch <ugen@xonix.com>,
 Nelson H. F. Beebe <beebe@math.utah.edu>,
 Michael Dales <michael@dcs.gla.ac.uk>,
 Michel Eyckmans <mce@ping.be>,
+Callum Gibson <callum.gibson@db.com>,
 Jason Gloudon <jdg@world.std.com>,
 Nicholas Jacobs <nicholas_jacobs@hotmail.com>,
 Caveh Frank Jalali <caveh@eng.sun.com>
@@ -2410,7 +2429,9 @@ Takeharu Kato <magician@maekawa.is.uec.ac.jp>,
 Goran Larsson <hoh@lorelei.approve.se>,
 Rolf Neugebauer <neugebar@dcs.gla.ac.uk>,
 Steve Ratcliffe <sterat@dial.pipex.com>,
+Seth Robertson <seth@baka.org>,
 Mehul N. Sanghvi <mehul@kirsun.ne.mediaone.net>,
+Tim Wiess <tim@zetaflops.net>,
 acknowledging
 Claude Lecommandeur, (ctwm), <lecom@sic.epfl.ch>
 .\"==============================[The End]==============================

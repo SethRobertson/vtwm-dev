@@ -74,6 +74,9 @@ extern void IconUp(), IconDown(), CreateIconWindow();
 /* djhjr - 4/26/99 */
 extern void AppletDown();
 
+/* djhjr - 12/2/01 */
+extern void delete_pidfile();
+
 extern char *Action;
 extern int Context;
 extern TwmWindow *ButtonWindow, *Tmp_win;
@@ -4209,6 +4212,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	}
 
      case F_NEWDOOR:
+	PopDownMenu();
  	door_new();
 	break;
 
@@ -5457,37 +5461,51 @@ void WarpAlongRing (ev, forward)
 {
     TwmWindow *r, *head;
 
-    if (Scr->RingLeader)
-      head = Scr->RingLeader;
-    else if (!(head = Scr->Ring))
-      return;
+    /*
+     * Re-vamped much of this to properly handle icon managers, and
+     * clean up dumb code I added some time back - djhjr - 11/8/01
+     */
 
-	/* djhjr - 5/28/00 */
-	while (1)
-	{
+    r = NULL;
+    head = (Scr->RingLeader) ? Scr->RingLeader : Scr->Ring;
 
+    while (head)
+    {
 	/* added this 'if () ... else' - djhjr - 5/11/98 */
-	if ((head->mapped || Scr->WarpUnmapped) && Scr->Focus == NULL && Scr->FocusRoot == TRUE)
+	if ((head->mapped || Scr->WarpUnmapped) &&
+			Scr->Focus == NULL && Scr->FocusRoot == TRUE)
 		r = head;
+	else if (forward)
+		for (r = head->ring.next; r != head; r = r->ring.next)
+		{
+			/* added '|| Scr->WarpUnmapped' - djhjr - 5/13/98 */
+			if (!r || (r->mapped || Scr->WarpUnmapped)) break;
+		}
 	else
-    if (forward) {
-	for (r = head->ring.next; r != head; r = r->ring.next) {
-		/* added '|| Scr->WarpUnmapped' - djhjr - 5/13/98 */
-	    if (!r || (r->mapped || Scr->WarpUnmapped)) break;
+		for (r = head->ring.prev; r != head; r = r->ring.prev)
+		{
+			/* added '|| Scr->WarpUnmapped' - djhjr - 5/13/98 */
+			if (!r || (r->mapped || Scr->WarpUnmapped)) break;
+		}
+
+	/* skip empty icon managers - 11/8/01 */
+	if (r && (r->iconmgr && r->iconmgrp->count == 0))
+	{
+		if (head == r)
+			head = (forward) ? r->ring.next : r->ring.prev;
+		else
+			head = r;
 	}
-    } else {
-	for (r = head->ring.prev; r != head; r = r->ring.prev) {
-		/* added '|| Scr->WarpUnmapped' - djhjr - 5/13/98 */
-	    if (!r || (r->mapped || Scr->WarpUnmapped)) break;
-	}
+	else
+		break;
     }
 
-/* djhjr - 5/15/98
-    if (r && r != head) {
-*/
-	/* added the second argument - djhjr - 5/28/00 */
-	if (r && warp_if_warpunmapped(r, F_WARPRING)) {
-
+    /* added '&& warp_if_warpunmapped()' - djhjr - 5/15/98 */
+    /* added second argument to 'warp_if_warpunmapped()' - djhjr - 5/28/00 */
+    /* added test for Root focus - djhjr - 11/8/01 */
+    if (r && (r != head || (Scr->Focus == NULL && Scr->FocusRoot == TRUE)) &&
+    		warp_if_warpunmapped(r, F_WARPRING))
+    {
 #ifdef ORIGINAL_WARPRINGCOORDINATES /* djhjr - 5/11/98 */
 	TwmWindow *p = Scr->RingLeader, *t;
 #endif
@@ -5502,31 +5520,25 @@ void WarpAlongRing (ev, forward)
 #ifdef ORIGINAL_WARPRINGCOORDINATES /* djhjr - 5/11/98 */
 	if (p && p->mapped &&
 	    XFindContext (dpy, ev->window, TwmContext, (caddr_t *)&t) == XCSUCCESS &&
-	    p == t) {
+	    p == t)
+	{
 	    p->ring.cursor_valid = True;
 	    p->ring.curs_x = ev->x_root - t->frame_x;
 	    p->ring.curs_y = ev->y_root - t->frame_y;
 	    if (p->ring.curs_x < -p->frame_bw ||
 		p->ring.curs_x >= p->frame_width + p->frame_bw ||
 		p->ring.curs_y < -p->frame_bw ||
-		p->ring.curs_y >= p->frame_height + p->frame_bw) {
+		p->ring.curs_y >= p->frame_height + p->frame_bw)
+	    {
 		/* somehow out of window */
 		p->ring.curs_x = p->frame_width / 2;
 		p->ring.curs_y = p->frame_height / 2;
 	    }
 	}
 #endif
-
-	/* djhjr - 5/28/00 */
-	break;
     }
-/* djhjr - 5/28/00
-	* djhjr - 5/13/98 *
-	else
-		XBell(dpy, 0);
-*/
-	head = r;
-	} /* while (1) */
+    else
+	DoAudible(); /* was 'XBell()' - djhjr - 6/22/01 */
 }
 
 
@@ -5610,6 +5622,7 @@ TwmWindow *t;
 			x += (Scr->IconMgrBevelWidth > 0) ? Scr->IconMgrBevelWidth : Scr->BorderWidth;
 			y = t->iconmgrp->y + Scr->BorderWidth + t->iconmgrp->first->height / 2;
 			y += (Scr->IconMgrBevelWidth > 0) ? Scr->IconMgrBevelWidth : Scr->BorderWidth;
+			y += t->iconmgrp->twm_win->title_height;
 		}
 	}
 	else
@@ -5794,6 +5807,7 @@ int func;
 
 /*
  * Two functions to handle a restart from a SIGUSR1 signal
+ * (see also twm.c:Done() and twm.c:QueueRestartVtwm())
  *
  * adapted from TVTWM-pl11 - djhjr - 7/31/98
  */
@@ -5813,6 +5827,9 @@ static void setup_restart(time)
 
 	/* djhjr - 3/13/97 */
 	XCloseDisplay(dpy);
+
+	/* djhjr - 12/2/01 */
+	delete_pidfile();
 }
 
 void RestartVtwm(time)

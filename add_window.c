@@ -60,6 +60,10 @@
 #include "iconmgr.h"
 #include "desktop.h"
 
+/* random placement coordinates */
+#define PLACEMENT_START		50
+#define PLACEMENT_INCR		30
+
 /* 4/26/99 - djhjr */
 extern int PlaceApplet();
 
@@ -76,9 +80,6 @@ int AddingX;
 int AddingY;
 int AddingW;
 int AddingH;
-
-static int PlaceX = 50;
-static int PlaceY = 50;
 
 static void CreateWindowTitlebarButtons();
 void SetHighlightPixmap();
@@ -337,8 +338,9 @@ IconMgr *iconp;
 	/* was 'Scr->ThreeDBorderWidth' - djhjr - 8/11/98 */
     tmp_win->frame_bw3D = Scr->BorderWidth;
 #endif
-    if (LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
-	{
+    /* added 'Scr->NoBorders' test - djhjr - 8/23/02 */
+    if (Scr->NoBorders || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
+    {
 		tmp_win->frame_bw = 0;
 		tmp_win->frame_bw3D = 0;
     }
@@ -377,13 +379,14 @@ IconMgr *iconp;
 #endif
     bw2 = tmp_win->frame_bw * 2;
 
+    /* moved MakeTitle under NoTitle - djhjr - 10/20/01 */
     tmp_win->title_height = Scr->TitleHeight + tmp_win->frame_bw;
     if (Scr->NoTitlebar)
         tmp_win->title_height = 0;
-    if (LookInList(Scr->MakeTitle, tmp_win->full_name, &tmp_win->class))
-        tmp_win->title_height = Scr->TitleHeight + tmp_win->frame_bw;
     if (LookInList(Scr->NoTitle, tmp_win->full_name, &tmp_win->class))
         tmp_win->title_height = 0;
+    if (LookInList(Scr->MakeTitle, tmp_win->full_name, &tmp_win->class))
+        tmp_win->title_height = Scr->TitleHeight + tmp_win->frame_bw;
 
 	/* djhjr - 4/7/98 */
 	if (LookInList(Scr->OpaqueMoveL, tmp_win->full_name, &tmp_win->class))
@@ -909,29 +912,54 @@ AddMoveAndResize(tmp_win, ask_user)
 TwmWindow *tmp_win;
 int ask_user;
 {
+    static int PlaceX = PLACEMENT_START;
+    static int PlaceY = PLACEMENT_START;
     XEvent event;
     int stat, gravx, gravy;
     int bw2 = tmp_win->frame_bw * 2;
+    int wd = tmp_win->attr.width + bw2;
+    int ht = tmp_win->attr.height + tmp_win->title_height + bw2;
 
     /*
      * do any prompting for position
      */
     if (HandlingEvents && ask_user) {
       if (Scr->RandomPlacement) {	/* just stick it somewhere */
-	if ((PlaceX + tmp_win->attr.width) > Scr->MyDisplayWidth)
-	    PlaceX = 50;
-	if ((PlaceY + tmp_win->attr.height) > Scr->MyDisplayHeight)
-	    PlaceY = 50;
+	if (PlaceX + wd > Scr->MyDisplayWidth) {
+	  /* submitted by Seth Robertson <seth@baka.org> - 8/25/02 */
+	  if (PLACEMENT_START + wd < Scr->MyDisplayWidth)
+	    PlaceX = PLACEMENT_START;
+	  else {
+	    PlaceX = tmp_win->frame_bw;
+	    if (wd < Scr->MyDisplayWidth)
+	      PlaceX += (Scr->MyDisplayWidth - wd) / 2;
+	  }
+	}
+	if (PlaceY + ht > Scr->MyDisplayHeight) {
+	  /* submitted by Seth Robertson <seth@baka.org> - 8/25/02 */
+	  if (PLACEMENT_START + ht < Scr->MyDisplayHeight)
+	    PlaceY = PLACEMENT_START;
+	  else {
+	    PlaceY = tmp_win->title_height + tmp_win->frame_bw;
+	    if (ht < Scr->MyDisplayHeight)
+	      PlaceY += (Scr->MyDisplayHeight - ht) / 2;
+	  }
+	}
 
 	tmp_win->attr.x = PlaceX;
 	tmp_win->attr.y = PlaceY;
-	PlaceX += 30;
-	PlaceY += 30;
+	PlaceX += PLACEMENT_INCR;
+	PlaceY += PLACEMENT_INCR;
       } else {				/* else prompt */
 	if (!(tmp_win->wmhints && tmp_win->wmhints->flags & StateHint &&
 	      tmp_win->wmhints->initial_state == IconicState))
 	{
 	    Bool firsttime = True;
+
+	    /* djhjr - 11/15/01 */
+	    Bool doorismapped = False;
+	    TwmDoor *door = NULL;
+	    XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *)&door);
 
 	    /* better wait until all the mouse buttons have been
 	     * released.
@@ -1025,7 +1053,17 @@ int ask_user;
 
 		/* added this 'if ... else' - djhjr - 4/14/98 */
 		if (tmp_win->opaque_move)
+		{
 			AddPaintRealWindows(tmp_win, AddingX, AddingY);
+
+			/* djhjr - 11/15/01 */
+			if (door && !doorismapped)
+			{
+				XMapWindow(dpy, door->w);    
+				RedoDoorName(tmp_win, door);
+				doorismapped = True;
+			}
+		}
 		else
 			MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
 			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
@@ -1164,6 +1202,14 @@ int ask_user;
 		    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
 
 			AddPaintRealWindows(tmp_win, AddingX, AddingY);
+
+			/* djhjr - 11/15/01 */
+			if (door && !doorismapped)
+			{
+				XMapWindow(dpy, door->w);    
+				RedoDoorName(tmp_win, door);
+				doorismapped = True;
+			}
 		}
 
 #if 0
@@ -1217,6 +1263,10 @@ Why?
 			if (tmp_win->opaque_move && !tmp_win->opaque_resize)
 				SetupWindow(tmp_win, AddingX, AddingY, AddingW, AddingH, -1);
 
+			/* djhjr - 11/15/01 */
+			if (!tmp_win->opaque_resize && door && doorismapped)
+				RedoDoorName(tmp_win, door);
+
 			break;
 		    }
 
@@ -1261,6 +1311,11 @@ Why?
 
 		/* don't need to send a configure notify event - djhjr - 4/15/98 */
 		SetupWindow(tmp_win, AddingX, AddingY, AddingW, AddingH, -1);
+
+		/* djhjr - 11/15/01 */
+		if (!tmp_win->opaque_resize && door && doorismapped)
+			RedoDoorName(tmp_win, door);
+
 	    }
 	    else
 	    {

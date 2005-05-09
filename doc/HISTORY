@@ -2,6 +2,22 @@
 VERSION HISTORY OF VTWM 5.4
 ===========================
 
+VTWM 5.4.6b (bugfix release)
+
+    Fixed a bug causing sporadic restarts when realizing unmanaged
+    windows.
+
+VTWM 5.4.6a
+          
+    Support for borderless windows (added the NoBorder variable).
+    Better random placement of large windows.
+    Fixed bugs regarding icon managers and warp rings.
+    Doors are drawn during opaque interactive creation now.
+    MakeTitle now overrides NoTitle like it's supposed to.
+    Added creating and deleting a pid file.
+    Fixed a focus problem with transient windows.
+    Improved the list parser in contrib/support/sysrc_add_apps.sh.
+          
 VTWM 5.4.6
 
     New Features

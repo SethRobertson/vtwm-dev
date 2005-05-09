@@ -153,7 +153,7 @@ lastmake.c:
 	echo ' */' >>$@
 	echo '' >>$@
 	echo 'char *lastmake[] = {' >>lastmake.c
-	echo '    "Platform:  '`uname -s`' Version '`uname -v`' Release '`uname -r`'",' >>$@
+	echo '    "Platform:  '`uname -r -s`'",' >>$@
 	echo '    "Build:  '`date`'",' >>$@
 	echo '    "" };' >>$@
 

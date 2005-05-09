@@ -48,8 +48,25 @@ extern void mergeRegionEntries();
 extern void downRegionEntry();
 extern RootRegion *AddRegion();
 
-#define appletWidth(w)	(Scr->BorderWidth * 2 + w->attr.width)
-#define appletHeight(w)	(Scr->BorderWidth * 2 + w->attr.height)
+int appletWidth(tmp_win)
+TwmWindow *tmp_win;
+{
+	/* submitted by Tim Wiess - 8/23/02 */
+	if (Scr->NoBorders || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
+		return tmp_win->attr.width;
+	else
+		return Scr->BorderWidth * 2 + tmp_win->attr.width;
+}
+
+int appletHeight(tmp_win)
+TwmWindow *tmp_win;
+{
+	/* submitted by Tim Wiess - 8/23/02 */
+	if (Scr->NoBorders || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
+		return tmp_win->attr.height;
+	else
+		return Scr->BorderWidth * 2 + tmp_win->attr.height;
+}
 
 int PlaceApplet(tmp_win, def_x, def_y, final_x, final_y)
 TwmWindow *tmp_win;

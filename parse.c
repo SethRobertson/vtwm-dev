@@ -910,6 +910,10 @@ static TwmKeyword keytable[] = {
     { "naturalautopanbehavior", KEYWORD, 
     	kw0_NaturalAutopanBehavior },                                /* DSE */
     { "nobackingstore",		KEYWORD, kw0_NoBackingStore },
+
+    /* submitted by Tim Wiess - 8/23/02 */
+    { "noborder",		NO_BORDER, 0 },
+
     { "nocasesensitive",	KEYWORD, kw0_NoCaseSensitive },
     { "nodefaultmouseorkeyboardbindings", KEYWORD,
     	kw0_NoDefaultMouseOrKeyboardBindings },                      /* DSE */

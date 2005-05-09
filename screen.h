@@ -395,6 +395,9 @@ typedef struct ScreenInfo
     /* djhjr - 10/2/01 */
     short StrictIconManager;	/* show only the iconified */
 
+    /* djhjr - 8/23/02 */
+    short NoBorders;		/* put borders on windows */
+
     short NoTitlebar;		/* put title bars on windows */
     short DecorateTransients;	/* put title bars on transients */
     short IconifyByUnmapping;	/* simply unmap windows when iconifying */
@@ -522,6 +525,9 @@ typedef struct ScreenInfo
 	/* djhjr - 10/2/01 */
 	unsigned int StrictIconManager					: 1;
 
+	/* djhjr - 8/23/02 */
+    	unsigned int NoBorders						: 1;
+
     	unsigned int NoTitlebar							: 1;
     	unsigned int DecorateTransients					: 1;
     	unsigned int IconifyByUnmapping					: 1;
@@ -638,6 +644,9 @@ typedef struct ScreenInfo
 
 /* djhjr - 10/2/01 */
 #define StrictIconManager					userflags.StrictIconManager
+
+/* djhjr - 8/23/02 */
+#define NoBorders						userflags.NoBorders
 
 #define NoTitlebar							userflags.NoTitlebar
 #define DecorateTransients					userflags.DecorateTransients

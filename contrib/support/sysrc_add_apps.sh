@@ -1,7 +1,6 @@
 #!/bin/sh
 #
 # Adds installed applications to the box-stock system.vtwmrc file.
-# Deficiencies: Cannot handle command-line switches.
 
 syntax ()
 {
@@ -15,8 +14,11 @@ syntax ()
 	echo "Default menu_decl: $DEF_MENU_DECL"
 	echo "Default app_list: $DEF_LIST"
 	echo
-	echo "app_file is a list, containing one application (or the keywords \"SEPARATOR\""
-	echo "and \"TITLE:string\") per line."
+	echo "app_file is a list, each line containing one application specification"
+	echo "(or the keywords \"SEPARATOR\" or \"TITLE::string\"). The specification is"
+	echo "of the form \"name::string\", where \"name\" is the menu entry and \"string\""
+	echo "is the command to execute. Whitespace in either part is indicated with"
+	echo "a single colon."
 	echo
 
 	exit
@@ -88,15 +90,17 @@ check_proceed ()
 check_app ()
 {
 	if [ "$1" = "SEPARATOR" ]; then
-		echo "\"\" f.separator" >>$2
+		printf "\t\"\"\t\tf.separator\n" >>$2
 	else
-		PART=${1%%:*}
-		APP=${1##*:}
-		if [ "$PART" = "TITLE" ]; then
-			echo "\"  $APP  \" f.title" >>$2
+		CMD=${1%%::*}
+		STR=${1##*::}
+
+		if [ "$CMD" = "TITLE" ]; then
+			printf "\t\"  %s  \"\t\tf.title\n" $STR \
+			    |sed -e 's/:/ /g' >>$2
 		else
-			[ -z "`which $APP 2>/dev/null`" ] && return
-			printf "\"%s\" f.exec \"%s &\"\n" $APP $1 \
+			[ -z "`which $CMD 2>/dev/null`" ] && return
+			printf "\t\"%s\"\t\tf.exec \"%s &\"\n" $CMD $STR \
 			    |sed -e 's/:/ /g' >>$2
 		fi
 	fi
@@ -105,23 +109,25 @@ check_app ()
 DEF_INPUT=./system.vtwmrc
 DEF_OUTPUT=./custom.vtwmrc
 
-DEF_LIST="TITLE:Shells emu eterm mxterm rxvt xterm xvt"
-DEF_LIST="$DEF_LIST xterm:-e:mc xterm:-e:top"
-DEF_LIST="$DEF_LIST TITLE:Editors nedit xcoral xvile"
-DEF_LIST="$DEF_LIST xterm:-e:vi xterm:-e:vile xterm:-e:vim"
+DEF_LIST="TITLE::Shells emu eterm mxterm rxvt xterm xvt"
+DEF_LIST="$DEF_LIST midc::xterm:-e:midc top::xterm:-e:top"
+DEF_LIST="$DEF_LIST TITLE::Editors nedit xcoral xvile"
+DEF_LIST="$DEF_LIST vi::xterm:-e:vi vile::xterm:-e:vile vim::xterm:-e:vim"
 DEF_LIST="$DEF_LIST SEPARATOR gimp xbmbrowser xfig xpaint xv bitmap pixmap"
-DEF_LIST="$DEF_LIST TITLE:Desktop applix soffice abiword lyx gnumeric"
+DEF_LIST="$DEF_LIST TITLE::Desktop applix soffice abiword lyx gnumeric"
 DEF_LIST="$DEF_LIST ghostview xcal xcalendar"
 DEF_LIST="$DEF_LIST SEPARATOR tkman xman"
-DEF_LIST="$DEF_LIST SEPARATOR xine xmcd xmmix xmms"
+DEF_LIST="$DEF_LIST SEPARATOR mplayer::mplayer:-gui xine xmcd xmmix xmms"
 DEF_LIST="$DEF_LIST SEPARATOR hexcalc xcalc editres"
 DEF_LIST="$DEF_LIST xbiff xcb xev xeyes xload xmag"
 DEF_LIST="$DEF_LIST SEPARATOR moonclock mouseclock oclock"
 DEF_LIST="$DEF_LIST rclock sunclock t3d xarclock xclock xdaliclock"
-DEF_LIST="$DEF_LIST TITLE:Network chimera ie mozilla netscape opera"
-DEF_LIST="$DEF_LIST xterm:-e:links xterm:-e:lynx"
-DEF_LIST="$DEF_LIST exmh knews xdir xterm:-e:ftp xterm:-e:telnet"
-DEF_LIST="$DEF_LIST xterm:-e:elm xterm:-e:mutt xterm:-e:pine xterm:-e:tin"
+DEF_LIST="$DEF_LIST TITLE::Network chimera ie mozilla netscape opera"
+DEF_LIST="$DEF_LIST links::xterm:-e:links lynx::xterm:-e:lynx"
+DEF_LIST="$DEF_LIST SEPARATOR exmh knews xdir"
+DEF_LIST="$DEF_LIST ftp::xterm:-e:ftp telnet::xterm:-e:telnet"
+DEF_LIST="$DEF_LIST elm::xterm:-e:elm mutt::xterm:-e:mutt"
+DEF_LIST="$DEF_LIST pine::xterm:-e:pine tin::xterm:-e:tin"
 
 DEF_MENU_DECL="menu \"apps\""
 

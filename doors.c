@@ -273,6 +273,13 @@ TwmDoor *tmp_door;
 	XDefineCursor( dpy, w, Scr->FrameCursor );/*RFB*/
 	XDefineCursor( dpy, tmp_door->w, Scr->DoorCursor );/*RFBCURSOR*/
 
+	/* moved these 'cuz AddWindow() will need 'em - djhjr - 11/15/01 */
+	/* store the address of the door on the window */
+	XSaveContext(dpy,
+		     tmp_door->w, DoorContext, (caddr_t) tmp_door);
+	XSaveContext(dpy,
+		     w, DoorContext, (caddr_t) tmp_door);
+
 	/* give to twm */
 	tmp_door->twin = AddWindow(w, FALSE, NULL);
 
@@ -284,12 +291,8 @@ TwmDoor *tmp_door;
 
 	/* store the address of the door on the window */
 	XSaveContext(dpy,
-		     tmp_door->w, DoorContext, (caddr_t) tmp_door);
-	XSaveContext(dpy,
 		     tmp_door->w,
 		     TwmContext, (caddr_t) tmp_door->twin);
-	XSaveContext(dpy,
-		     w, DoorContext, (caddr_t) tmp_door);
 
 	/* map it */
 	XMapWindow(dpy, tmp_door->w);

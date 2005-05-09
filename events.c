@@ -3184,32 +3184,37 @@ HandleEnterNotify()
 			(Tmp_win->list && ewp->window == Tmp_win->list->w)) {
 
 /* djhjr - 4/25/96
-			if (Tmp_win->hilite_w)							* 1 *
+			if (Tmp_win->hilite_w)				* 1 *
 			  XMapWindow (dpy, Tmp_win->hilite_w);
 */
-			PaintTitleHighlight(Tmp_win, on);				/* 1 */
+			PaintTitleHighlight(Tmp_win, on);		/* 1 */
 
-			if (!scanArgs.leaves && !scanArgs.enters)		/* 2 */
+			if (!scanArgs.leaves && !scanArgs.enters)	/* 2 */
 			    InstallWindowColormaps (EnterNotify,
 						    &Scr->TwmRoot);
-			SetBorder (Tmp_win, True);						/* 3, 3a */
+			SetBorder (Tmp_win, True);			/* 3, 3a */
 
 			/* added this 'if()' - djhjr - 5/27/98 */
 			/* added hack for StrictIconManager - djhjr - 10/2/01 */
+			/* added test for transients - djhjr - 4/9/02 */
 			if (Scr->IconManagerFocus ||
 					(Scr->FocusRoot &&
 					Scr->StrictIconManager &&
 					!Tmp_win->list) ||
 					(Tmp_win->list && Tmp_win->list->w &&
-					Tmp_win->list->w != ewp->window))
+					Tmp_win->list->w != ewp->window) ||
+					Tmp_win->transient)
 			{
-			if ((Tmp_win->title_w || Scr->NoTitlebar) &&	/* 4, 4a */
-					Scr->TitleFocus &&
-					Tmp_win->wmhints && Tmp_win->wmhints->input)
+			/* added test for transients - djhjr - 4/9/02 */
+			if ((((Tmp_win->title_w || Scr->NoTitlebar) &&	/* 4, 4a */
+					Scr->TitleFocus) ||
+					Tmp_win->transient) &&
+					Tmp_win->wmhints &&
+					Tmp_win->wmhints->input)
 				SetFocus (Tmp_win, ewp->time);
 			}
 
-			if (Tmp_win->protocols & DoesWmTakeFocus)		/* 5 */
+			if (Tmp_win->protocols & DoesWmTakeFocus)	/* 5 */
 			  SendTakeFocusMessage (Tmp_win, ewp->time);
 			Scr->Focus = Tmp_win;
 		    } else if (ewp->window == Tmp_win->w) {
@@ -3238,7 +3243,16 @@ HandleEnterNotify()
 		 * set ring leader
 		 */
 		if (Tmp_win->ring.next && (!enter_flag || raise_win == enter_win))
-		  Scr->RingLeader = Tmp_win;
+		{
+			/*
+			 * If this window is an icon manager window, make
+			 * the ring leader the icon manager - djhjr - 11/8/01
+			 */
+			if (Tmp_win->list && ewp->window == Tmp_win->list->w)
+				Scr->RingLeader = Tmp_win->list->iconmgr->twm_win;
+			else
+				Scr->RingLeader = Tmp_win;
+		}
 		XSync (dpy, 0);
 		return;
 	}				/* end if Tmp_win */

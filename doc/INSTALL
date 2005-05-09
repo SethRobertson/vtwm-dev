@@ -30,9 +30,9 @@ BUILDING VTWM 5.4
   - Determine if you have the m4 macro processor installed:
       - Issuing 'whence m4' or 'which m4' ought to do it.
 
-  - Look over the Imakefile, and edit to taste. If you run FreeBSD or
-    Linux, you may want to make a change as described further down in
-    this file.
+  - Look over the Imakefile, and edit to taste. If you use a VNC
+    client, or Cygwin under MS-Windows, you may want to make changes
+    as described further down in this file.
 
   - Issue 'xmkmf'. If that doesn't work (you'll know it), you'll have
     to copy Makefile.QNX to Makefile, and edit the latter to taste.
@@ -117,22 +117,10 @@ BUILD HINTS
     or VTWM doesn't fall back on system resource files on startup, read
     the comments in Imakefile and/or Makefile.QNX.
 
-  - FreeBSD users: For a more sensible root Identify window, you may want
-    to change a line in Imakefile, for the lastmake.c target, from:
-      echo '    "Platform:  '`uname -s`' Version '`uname -v`' Release '\
-      `uname -r`'",' >>$@
-    to:
-      echo '    "Platform:  '`uname -s`' Version '`uname -v | cut -f 2 \
-      -d ' ' | cut -f 1 -d '-'`' Release '`uname -v | cut -f 2 -d '#' \
-      | cut -f 1 -d ':'`'",' >>$@
-
-  - Linux users: For a more sensible root Identify window, you may want
-    to change a line in Imakefile, for the lastmake.c target, from:
-      echo '    "Platform:  '`uname -s`' Version '`uname -v`' Release '\
-      `uname -r`'",' >>$@
-    to:
-      echo '    "Platform:  '`uname -s`' Version '`uname -v | cut -f 2 \
-      -d '#' | cut -f 1 -d ' '`' Release '`uname -r`'",' >>$@
+  - VNC users: If you regularly use a remote X desktop, you may want to
+    add "EXTRA_DEFINES=-DORIGINAL_DRAWIT" to the make command. It seems
+    that VTWM's diagonal resize/move lines are more expensive than TWM's
+    horizontal and vertical lines. YMMV.
 
   - Windows users: VTWM builds and runs with Cygwin (DLL version 1.3.2),
     but the Makefile must have the line "vtwm:" after the "all:: vtwm"

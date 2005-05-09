@@ -51,8 +51,6 @@ facet of VTWM. --- djhjr
 This is a list of bugs encountered and not fixed while addressing a
 particular facet of VTWM. There are likely many more than this. --- djhjr
 
-  * Doors are not drawn properly during interactive creation. --- djhjr
-
   * The region resources don't like 0 or 1 for a horizontal grid space.
     A kludge is in that fixes it (I think). --- djhjr
 

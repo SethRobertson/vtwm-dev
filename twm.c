@@ -36,6 +36,7 @@
  * 10-Oct-90 David M. Sternlicht        Storing saved colors on root
  ***********************************************************************/
 
+#include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h> /* for sleep() */
@@ -73,6 +74,7 @@ ScreenInfo **ScreenList;	/* structures for each screen */
 ScreenInfo *Scr = NULL;		/* the cur and prev screens */
 int PreviousScreen;		/* last screen that we were on */
 int FirstScreen;		/* TRUE ==> first screen of display */
+Bool PrintPID = False;		/* controls PID file - djhjr - 12/2/01 */
 Bool PrintErrorMessages = False;	/* controls error messages */
 static int RedirectError;	/* TRUE ==> another window manager running */
 static int CatchRedirectError();	/* for settting RedirectError */
@@ -113,7 +115,7 @@ int JunkX;			/* junk variable */
 int JunkY;			/* junk variable */
 unsigned int JunkWidth, JunkHeight, JunkBW, JunkDepth, JunkMask;
 
-char *ProgramName;
+char *ProgramName, *PidName = "vtwm.pid"; /* PID file - djhjr - 12/2/01 */
 int Argc;
 char **Argv;
 char **Environ;
@@ -187,10 +189,13 @@ main(argc, argv, environ)
 		/* this isn't really right, but hey... - djhjr - 2/20/98 */
 		if (i + 1 < argc &&
 				(argv[i + 1][0] != '-' ||
-				(argv[i + 1][0] == '-' && !strchr("dfsv", argv[i + 1][1]))))
+				(argv[i + 1][0] == '-' && !strchr("dfmpsv", argv[i + 1][1]))))
 			m4_option = argv[++i];
 		continue;
 #endif
+	      case 'p':				/* -pidfile - djhjr - 12/2/01 */
+		PrintPID = True;
+		continue;
 	      case 's':				/* -single */
 		MultiScreen = FALSE;
 		continue;
@@ -207,9 +212,9 @@ main(argc, argv, environ)
       usage:
 	fprintf (stderr,
 #ifndef NO_M4_SUPPORT
-		 "usage:  %s [-d display] [-f initfile] [-m [options]] [-s] [-v]\n",
+		 "usage:  %s [-d display] [-f initfile] [-m [options]] [-p] [-s] [-v]\n",
 #else
-		 "usage:  %s [-d display] [-f initfile] [-s] [-v]\n",
+		 "usage:  %s [-d display] [-f initfile] [-p] [-s] [-v]\n",
 #endif
 		 ProgramName);
 	exit (1);
@@ -217,18 +222,28 @@ main(argc, argv, environ)
 
 /* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
-#define newhandler(sig) \
+#define sounddonehandler(sig) \
     if (signal (sig, SIG_IGN) != SIG_IGN) (void) signal (sig, PlaySoundDone)
 #else
-#define newhandler(sig) \
+#define sounddonehandler(sig) \
     if (signal (sig, SIG_IGN) != SIG_IGN) (void) signal (sig, Done)
 #endif
+#define donehandler(sig) \
+    if (signal (sig, SIG_IGN) != SIG_IGN) (void) signal (sig, Done)
 
-    newhandler (SIGINT);
-    newhandler (SIGHUP);
-    newhandler (SIGQUIT);
-    newhandler (SIGTERM);
-#undef newhandler
+    sounddonehandler (SIGINT);
+    sounddonehandler (SIGHUP);
+    sounddonehandler (SIGQUIT);
+    sounddonehandler (SIGTERM);
+
+    /* djhjr - 12/2/01 */
+    donehandler (SIGABRT);
+    donehandler (SIGFPE);
+    donehandler (SIGSEGV);
+    donehandler (SIGTSTP);
+    donehandler (SIGPIPE);
+#undef sounddonehandler
+#undef donehandler
 
     /* djhjr - 7/31/98 */
     signal (SIGUSR1, QueueRestartVtwm);
@@ -822,6 +837,32 @@ main(argc, argv, environ)
 	if (sound_state == 1) ToggleSounds();
 #endif
 
+    
+    /* write out a PID file - djhjr - 12/2/01 */
+    if (PrintPID)
+    {
+	int fd, err = 0;
+	char buf[10], *fn = malloc(HomeLen + strlen(PidName) + 2);
+
+	sprintf(fn, "%s/%s", Home, PidName);
+	if ((fd = open(fn,
+		O_WRONLY|O_EXCL|O_CREAT|O_TRUNC,
+		S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) != -1)
+	{
+	    sprintf(buf, "%d\n", getpid());
+	    err = write(fd, buf, strlen(buf));
+	    close(fd);
+	}
+
+	if (fd == -1 || err == -1)
+	{
+	    fprintf(stderr, "%s: cannot write to %s\n", ProgramName, fn);
+	    DoAudible();
+	}
+
+	free(fn);
+    }
+
     HandleEvents();
 
 	return (0);
@@ -997,6 +1038,9 @@ void InitVariables()
 
     /* djhjr - 10/2/01 */
     Scr->StrictIconManager = FALSE;
+
+    /* djhjr - 8/23/02 */
+    Scr->NoBorders = FALSE;
 
     Scr->NoTitlebar = FALSE;
     Scr->DecorateTransients = FALSE;
@@ -1297,6 +1341,20 @@ Time time;
     SetFocus ((TwmWindow*)NULL, time);
 }
 
+/* delete the PID file - djhjr - 12/2/01 */
+void delete_pidfile()
+{
+    char *fn;
+
+    if (PrintPID)
+    {    
+	fn = malloc(HomeLen + strlen(PidName) + 2);
+	sprintf(fn, "%s/%s", Home, PidName);
+	unlink(fn);
+	free(fn);
+    }
+}
+
 
 /*
  * Exit handlers. Clean up and exit VTWM.
@@ -1327,6 +1385,9 @@ void Done()
     SetRealScreen(0,0);
     Reborder (CurrentTime);
     XCloseDisplay(dpy);
+    
+    delete_pidfile(); /* djhjr - 12/2/01 */
+
     exit(0);
 }
 #else
@@ -1335,6 +1396,9 @@ SIGNAL_T Done()
     SetRealScreen(0,0);
     Reborder (CurrentTime);
     XCloseDisplay(dpy);
+    
+    delete_pidfile(); /* djhjr - 12/2/01 */
+
     exit(0);
     SIGNAL_RETURN;
 }
@@ -1345,6 +1409,8 @@ SIGNAL_T
 QueueRestartVtwm()
 {
     XClientMessageEvent ev;
+
+    delete_pidfile(); /* djhjr - 12/2/01 */
 
     ev.type = ClientMessage;
     ev.window = Scr->Root;

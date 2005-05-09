@@ -127,6 +127,8 @@ extern int yylineno;
 %token <num> ICONMGR_GEOMETRY ICONMGR_NOSHOW MAKE_TITLE
 %token <num> ICONIFY_BY_UNMAPPING DONT_ICONIFY_BY_UNMAPPING
 %token <num> NO_TITLE AUTO_RAISE NO_HILITE NO_ICONMGR_HILITE ICON_REGION
+/* submitted by Tim Wiess - 8/23/02 */
+%token <num> NO_BORDER
 /* djhjr - 4/26/99 */
 %token <num> APPLET_REGION
 %token <num> META SHIFT LOCK CONTROL WINDOW TITLE ICON ROOT FRAME VIRTUAL VIRTUAL_WIN
@@ -272,6 +274,10 @@ stmt		: error
 		  win_list
 		| NO_TITLE		{ if (Scr->FirstTime)
 						Scr->NoTitlebar = TRUE; }
+		| NO_BORDER		{ list = &Scr->NoBorder; }
+		  win_list
+		| NO_BORDER		{ if (Scr->FirstTime)
+						Scr->NoBorders = TRUE; }
 		| MAKE_TITLE		{ list = &Scr->MakeTitle; }
 		  win_list
 		| START_ICONIFIED	{ list = &Scr->StartIconified; }
