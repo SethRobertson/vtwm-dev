@@ -7,6 +7,18 @@ IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 ============ vtwm-5.4.N.tar.gz =============
 hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
 
+    October 1, 2004
+        VTWM 5.4.6b (bugfix release) released for public consumption.
+        vtwm-5.4.6a-to-5.4.6b.udiff patch file released.
+
+        [events.c]
+            Fixed a bug causing sporadic restarts when realizing
+            unmanaged windows.
+
+            From Seth Robertson <seth@baka.org> and Callum Gibson
+            <callum.gibson@db.com>:
+                Patch for the above.
+
     September 1, 2001
         VTWM 5.4.6a released for public consumption.
         vtwm-5.4.6-to-5.4.6a.udiff patch file released.

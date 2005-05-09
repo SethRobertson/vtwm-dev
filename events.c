@@ -1478,7 +1478,7 @@ HandleClientMessage()
 		}
     }
 	/* djhjr - 7/31/98 */
-	else if (Event.xclient.message_type = _XA_TWM_RESTART)
+	else if (Event.xclient.message_type == _XA_TWM_RESTART)
 		RestartVtwm(CurrentTime);
 }
 
