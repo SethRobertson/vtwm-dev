@@ -13,7 +13,7 @@
 .\" .if t .sp .5
 .\" ..
 .\" .ta .3i .6i .9i 1.2i 1.5i 1.8i
-.TH VTWM 1 "Release 5.4.4" "X11R4-6"
+.TH VTWM 1 "Release 5.4.4a" "X11R4-6"
 .\"*********************************************************************
 .\" Important note: At the time 5.4.4 was released, this manual page
 .\" conformed to Sun's guidelines for manual page markup, passed
@@ -2017,6 +2017,7 @@ Paul Falstad <pf@z-code.z-code.com>;
 Claude Lecommandeur, SPIL (ctwm code) <lecom@sic.epfl.ch>;
 Nelson H. F. Beebe (portability) <beebe@math.utah.edu>;
 Jason Gloudon (XPM icons) <jgloudon@bbn.com>;
-Nicholas Jacobs (nicholas_jacobs@hotmail.com);
+Nicholas Jacobs <nicholas_jacobs@hotmail.com>;
+Takeharu Kato <magician@maekawa.is.uec.ac.jp>;
 D. J. Hawkey Jr. (3D; maint) <hawkeyd@visi.com>
 .\"==============================[The End]==============================

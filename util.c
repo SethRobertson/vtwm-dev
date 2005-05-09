@@ -647,7 +647,8 @@ Image *FindImage (name)
     bigname = ExpandFilename (name);
     if (!bigname) return None;
 
-    attributes.valuemask = XpmReturnAllocPixels;
+    /* was 'XpmReturnAllocPixels' - Submitted by Takeharu Kato */
+    attributes.valuemask = XpmReturnPixels;
     if( (ErrorStatus = XpmReadFileToPixmap(dpy, Scr->Root, bigname, &pixmap,
 					   &mask, &attributes)) != XpmSuccess){
       pixmap = None;
@@ -667,7 +668,8 @@ Image *FindImage (name)
       }
       (void) sprintf (bigname, "%s/%s", Scr->IconDirectory, name);
 
-      attributes.valuemask = XpmReturnAllocPixels;
+      /* was 'XpmReturnAllocPixels' - Submitted by Takeharu Kato */
+      attributes.valuemask = XpmReturnPixels;
       ErrorStatus = XpmReadFileToPixmap(dpy, Scr->Root, bigname, &pixmap,
 					&mask, &attributes);
     }

@@ -50,8 +50,13 @@
 #include "iconmgr.h"
 #include "version.h"
 #include "desktop.h"
-#include <sys/time.h>/*RAISEDELAY*/
-#include <sys/select.h>/*RAISEDELAY*/
+/* Submitted by Takeharu Kato */
+#ifdef HAVE_SELECT_H
+#include <sys/select.h>	/* RAISEDELAY */
+#else
+#include <sys/time.h>	/* RAISEDELAY */
+#include <sys/types.h>	/* RAISEDELAY */
+#endif
 
 extern void IconDown();
 

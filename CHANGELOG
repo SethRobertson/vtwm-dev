@@ -7,6 +7,16 @@ IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 ============ vtwm-5.4.N.tar.gz =============
 hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
 
+    February 5, 1998
+        [*akefile*] [events.c] [menus.c] [util.c] [version.c]
+            Applied patches submitted by Takeharu Kato
+            (magician@maekawa.is.uec.ac.jp) to fix a fault causing a
+            SIGSEGV in the info window, and the use of a depreciated
+            constant in the XPM library. Tweaks to accomodate these
+            made to the *akefile*s.
+
+        vtwm-5.4.4-to-5.4.4a.txt patch file released.
+
     February 2, 1998
         VTWM 5.4.4 released for public consumption.
 
@@ -41,7 +51,7 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
 
         [*akefile*] [add_window.c] [cursor.c] [desktop.c] [doors.c]
         [events.c] [gc.c] [icons.c] [list.c] [menus.c] [parse.c] [resize.c]
-        [twm.c] [util.c] [util.h] [screen.h] [gram.y]
+        [twm.c] [util.c] [util.h] [version.c] [screen.h] [gram.y]
             Rewrote most of the 3D border code, adding, among other things,
             drawing the top border segment when 3D borders are used with
             squeezed titles! Simplified the meaning of the SqueezeTitle

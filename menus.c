@@ -40,6 +40,11 @@
 #endif
 #include <stdio.h>
 #include <signal.h>
+#ifdef HAVE_PROCESS_H
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
 #include <X11/Xos.h>
 #include <ctype.h> /* DSE */
 #include "twm.h"
@@ -3777,7 +3782,7 @@ int def_x, def_y;
 static void Identify (t)
 TwmWindow *t;
 {
-    int i, j, n, twidth, width, height;
+    int i, n, twidth, width, height;
     int x, y;
     unsigned int wwidth, wheight, bw, depth;
     Window junk;
@@ -3813,16 +3818,20 @@ TwmWindow *t;
 
     Info[n++][0] = '\0';
     }
-
 /* djhjr - 9/19/96 */
 #ifndef NO_BUILD_INFO
 	else
 	{
 		i = 0;
-		do {
-			j = sprintf(Info[n++], "%s", lastmake[i++]);
-		} while (j);
-    	Info[n][0] = '\0';
+
+		/*
+		 * Was a 'do ... while()' that accessed unallocated memory.
+		 * This and the change to Imakefile submitted by Takeharu Kato
+		 */
+		while (lastmake[i][0] != '\0')
+			(void) sprintf(Info[n++], "%s", lastmake[i++]);
+
+    	Info[n++][0] = '\0';
 	}
 #endif
 
