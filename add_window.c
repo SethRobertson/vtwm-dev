@@ -1544,6 +1544,14 @@ static void CreateWindowTitlebarButtons (tmp_win)
 		}
 		/* ...end of moved */
 
+#ifndef NO_XPM_SUPPORT
+		/* djhjr - 3/21/98 */
+		if (tb->image != NULL)
+			if (tb->image->mask != None)
+				XShapeCombineMask(dpy, tbw->window, ShapeBounding, 0, 0,
+						tb->image->mask, ShapeSet);
+#endif
+
 		tbw->info = tb;
 	    } /* end for(...) */
 	}

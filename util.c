@@ -635,7 +635,7 @@ Image *FindImage (name)
 {
     char *bigname;
     Pixmap pixmap,mask;
-    Image *newimage;
+    Image *newimage = None; /* added intialization - djhjr - 3/21/98 */
     XpmAttributes attributes;
     int ErrorStatus;
     
@@ -1874,6 +1874,42 @@ ColorPair cp;
     return (image);
 }
 
+#ifndef NO_XPM_SUPPORT
+/* djhjr - 3/20/98 */
+static Image *GetPixmapImage(name)
+char  *name;
+{
+    Image	*image, *r, *s;
+    char	path [128], pref [128];
+    char	*perc;
+    int		i;
+
+    if (! strchr (name, '%')) return (FindImage(name));
+    s = image = None;
+    strcpy (pref, name);
+    perc  = strchr (pref, '%');
+    *perc = '\0';
+    reportfilenotfound = 0;
+    for (i = 1;; i++) {
+	sprintf (path, "%s%d%s", pref, i, perc + 1);
+	r = FindImage(path);
+	if (r == None) break;
+	r->next = None;
+	if (image == None) s = image = r;
+	else {
+	    s->next = r;
+	    s = r;
+	}
+    }
+    reportfilenotfound = 1;
+    if (s != None) s->next = image;
+    if (image == None) {
+	fprintf (stderr, "Cannot open any %s pixmap file\n", name);
+    }
+    return (image);
+}
+#endif
+
 /* djhjr - 4/19/96 */
 Image *GetImage (name, cp)
 char      *name;
@@ -1960,6 +1996,11 @@ ColorPair cp;
 		if ((image = (Image*) LookInNameList (*list, fullname)) == None)
 		    if ((image = GetBitmapImage (name, cp)) != None)
 				AddToList (list, fullname, (char*) image);
+#ifndef NO_XPM_SUPPORT
+			/* djhjr - 3/20/98 */
+			else if ((image = GetPixmapImage (name)) != None)
+				AddToList (list, fullname, (char*) image);
+#endif
     }
 
     return (image);

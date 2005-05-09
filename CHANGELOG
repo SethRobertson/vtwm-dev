@@ -7,6 +7,15 @@ IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 ============ vtwm-5.4.N.tar.gz =============
 hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
 
+    March 20 - 22, 1998
+        [add_window.c] [util.c] [version.c]
+            Added color image (XPM) support for window buttons. Jason's
+            code for color icon images made it a breeze, but you'll be
+            managing everything (see BUGS).
+
+        VTWM 5.4.4c released for public consumption.
+        vtwm-5.4.4b-to-5.4.4c.txt patch file released.
+
     March 14 - 15, 1998
         [events.c] [menus.c] [version.c]
             Fixed a bug where the window buttons would get painted with

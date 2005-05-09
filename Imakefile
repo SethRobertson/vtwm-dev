@@ -11,8 +11,8 @@ XCOMM distribute this one.
 
 XCOMM =============== Start of common editables =====================
 
-XCOMM To omit XPM image support for icons, uncomment this (version
-XCOMM 3.4h of the XPM library is the earliest supported I know of)
+XCOMM To omit XPM image support for icons and buttons, uncomment this
+XCOMM (version 3.4h of the XPM library is the earliest supported I know of)
 XCOMM #define NO_XPM_SUPPORT
 
 XCOMM To omit platform and build info in the version window, uncomment this

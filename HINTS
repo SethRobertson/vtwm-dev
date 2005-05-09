@@ -25,6 +25,6 @@ A LISTING OF RUNTIME HINTS
 ==========================
 
   * If you use a SqueezeTitle list for versions prior to 5.4.4, you may
-    want to check the man page to see if 5.4.4's enterpretation of the
+    want to check the man page to see if the enterpretation of the
     resource's list parameters fouls your setup. --- djhjr
 

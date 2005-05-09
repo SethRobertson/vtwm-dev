@@ -46,3 +46,8 @@ A LISTING OF BUGS
     not: The screen warp to de-iconifying windows not on the real screen
     is unpredictable at best. A kludge is in to "fix" it. --- djhjr
 
+  * External image support for titlebar buttons is quite primitive:
+    They're not scaled to the size of the buttons, transparent areas of
+    pixmaps are always the titlebar color, and only the opaque areas of
+    those receive pointer events. --- djhjr
+

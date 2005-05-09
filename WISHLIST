@@ -20,7 +20,7 @@ WISHES FOR THE FUTURE OF VTWM
     * Added m4 pre-processing of the *twmrc file. courtesy of Dave Edmondson.
     * Added :random color specification, which generates colors on the fly.
     * Color XPM support for icons. DONE - Jason Gloudon
-    * Color XPM support for buttons. DONE (internal images only) - djhjr
+    * Color XPM support for buttons. DONE - djhjr
     * 3D appearance on menus, titles, icons. DONE - djhjr
     * Moving in and out of desktop.
     * Opaque resizing available.

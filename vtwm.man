@@ -13,7 +13,7 @@
 .\" .if t .sp .5
 .\" ..
 .\" .ta .3i .6i .9i 1.2i 1.5i 1.8i
-.TH VTWM 1 "Release 5.4.4a" "X11R4-6"
+.TH VTWM 1 "Release 5.4.4c" "X11R4-6"
 .\"*********************************************************************
 .\" Important note: At the time 5.4.4 was released, this manual page
 .\" conformed to Sun's guidelines for manual page markup, passed
@@ -258,14 +258,16 @@ example would enable autoraise on windows named "emacs" as well as any
 String arguments that are interpreted as filenames (see the \fBPixmaps\fP,
 \&\fBCursors\fP, and \fBIconDirectory\fP variables below) will
 prepend the user's directory
-(specified by the \fIHOME\fP environment variable) if the first character is a
-tilde (~).  If, instead, the first character is a colon (:), the name is
+(specified by the \fIHOME\fP environment variable) if the first character is
+a tilde (~).  If, instead, the first character is a colon (:), the name is
 assumed to refer to one of the internal bitmaps that are used to
-create the default titlebars symbols:  \fB:xlogo\fP
-or \fB:iconify\fP (both refer to the
-X used for the iconify button), \fB:resize\fP (the nested squares used by the
-resize button), and \fB:question\fP (the question mark used for non-existent
-bitmap files).
+create the default 2D titlebar buttons:  \fB:xlogo\fP and \fB:delete\fP,
+\fB:iconify\fP and \fB:dot\fP, \fB:resize\fP, \fB:menu\fP, and
+\fB:question\fP (used for non-existent bitmap files).  Finally, if the first
+five characters are ":xpm:", the name is assumed to refer to one of the
+internal pixmaps that are used to create the default 3D titlebar buttons:
+\fB:xpm:dot\fP, \fB:xpm:resize\fP, \fB:xpm:menu\fP, \fB:xpm:zoom\fP, and
+\fB:xpm:bar\fP.
 .PP
 The following variables may be specified at the top of a \fBvtwm\fP startup
 file.  Lists of Window name prefix strings are indicated by \fIwin-list\fP.
@@ -1257,8 +1259,6 @@ Tells \fBvtwm\fP to use 3D-looking menus.
 Tells \fBvtwm\fP to use 3D-looking windows titles. In which case the default
 values of \fBTitleButtonBorderWidth\fP, \fBFramePadding\fP, \fBTitlePadding\fP
 and \fBButtonIndent\fP are set to 0.
-There are 5 built-in scalable pixmaps for buttons: \fI:xpm:menu\fP, \fI:xpm:dot\fP,
-\fI:xpm:resize\fP, \fI:xpm:zoom\fP and \fI:xpm:bar\fP.
 .IP "\fBVirtualBackground\fP \fIstring\fP
 This is the background color for the panner, a.k.a. the Virtual
 Desktop window.
@@ -1944,6 +1944,10 @@ The resource manager should have been used instead of all of the window
 lists.
 .PP
 The \fBIconRegion\fP variable should take a list.
+.PP
+Many resource names referring to X bitmaps should be named such, rather
+than using the word \fI"Pixmap"\fP, as X pixmaps are now supported in other
+resources.
 .PP
 Double clicking very fast to get the constrained move function will sometimes
 cause the window to move, even though the pointer is not moved.
