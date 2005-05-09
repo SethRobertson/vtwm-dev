@@ -7,6 +7,16 @@ IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 ============ vtwm-5.4.N.tar.gz =============
 hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
 
+    March 14 - 15, 1998
+        [events.c] [menus.c] [version.c]
+            Fixed a bug where the window buttons would get painted with
+            the border color when the background color should have been
+            used. Applied a patch by Steve Ratcliffe (steve@root.co.uk)
+            to accomodate warping to a titlebar that isn't flush left.
+
+        VTWM 5.4.4b released for public consumption.
+        vtwm-5.4.4a-to-5.4.4b.txt patch file released.
+
     February 5, 1998
         [*akefile*] [events.c] [menus.c] [util.c] [version.c]
             Applied patches submitted by Takeharu Kato
@@ -15,6 +25,7 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
             constant in the XPM library. Tweaks to accomodate these
             made to the *akefile*s.
 
+        VTWM 5.4.4a released for public consumption.
         vtwm-5.4.4-to-5.4.4a.txt patch file released.
 
     February 2, 1998

@@ -4289,7 +4289,11 @@ TwmWindow *t;
 		x = t->frame_width / 2;
 		y = t->frame_height / 2;
 #else
-		x = t->title_width / 2 + ((Scr->use3Dborders) ? t->frame_bw3D : t->frame_bw);
+		/*
+		 * Added 't->title_x + ' to handle titlebars that aren't flush left
+		 * Submitted by Steve Ratcliffe
+		 */
+		x = t->title_x + t->title_width / 2 + ((Scr->use3Dborders) ? t->frame_bw3D : t->frame_bw);
 		y = t->title_height / 2 + ((Scr->use3Dborders) ? t->frame_bw3D : t->frame_bw);
 #endif
 		}

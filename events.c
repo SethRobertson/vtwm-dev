@@ -1269,7 +1269,8 @@ HandleExpose()
 					tb->dstx, tb->dsty, 1);
 */
 				/* djhjr - 11/17/97 */
-				if (Scr->ButtonColorIsFrame && Scr->Focus == Tmp_win)
+				/* added the test for window highlighting - djhjr - 3/14/97 */
+				if (Scr->ButtonColorIsFrame && Scr->Focus == Tmp_win && Tmp_win->highlight)
 					PaintTitleButtonHighlight(Tmp_win, tbw, True);
 				else
 					PaintTitleButton(Tmp_win, tbw);
