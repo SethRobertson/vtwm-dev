@@ -98,9 +98,13 @@ typedef struct MenuRoot
     short height;		/* height of the menu */
     short width;		/* width of the menu */
     short items;		/* number of items in the menu */
-    short pull;			/* is there a pull right entry ? */
+    short pull;			/* is there a pull right entry? */
     short entered;		/* EnterNotify following pop up */
     short real_menu;		/* this is a real menu */
+
+    /* djhjr - 5/22/00 */
+    short too_tall;		/* menu taller than display? */
+    short top;			/* first item displayed */
 } MenuRoot;
 
 #define NEVER_MAPPED	0	/* constants for mapped field of MenuRoot */
@@ -169,7 +173,7 @@ extern int MenuDepth;
 #define COLORMAP_PREV "prev"
 #define COLORMAP_DEFAULT "default"
 
-extern void InitTitlebarButtons();
+extern int InitTitlebarButtons();
 extern void InitMenus();
 extern MenuRoot *NewMenuRoot();
 extern MenuItem *AddToMenu();
@@ -198,5 +202,12 @@ extern void PaintMenu();
  
 /* djhjr - 4/27/96 */
 extern void DisplayPosition ();
+
+/* djhjr - 5/30/00 */
+extern void WarpWindowOrScreen();
+extern void WarpInIconMgr();
+
+/* djhjr - 6/22/01 */
+extern void DoAudible();
 
 #endif /* _MENUS_ */

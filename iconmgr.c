@@ -79,6 +79,7 @@ int iconifybox_height = siconify_height;
 
 void CreateIconManagers()
 {
+	XClassHint *class; /* djhjr - 2/28/99 */
     IconMgr *p;
     int mask;
     char str[100];
@@ -99,6 +100,9 @@ void CreateIconManagers()
     {
 	mask = XParseGeometry(p->geometry, &JunkX, &JunkY,
 			      (unsigned int *) &p->width, (unsigned int *)&p->height);
+
+	/* djhjr - 3/1/99 */
+	if (p->width > Scr->MyDisplayWidth) p->width = Scr->MyDisplayWidth;
 
 	if (mask & XNegative)
 /* djhjr - 4/19/96
@@ -133,7 +137,10 @@ void CreateIconManagers()
 			 &background);
 
 	p->w = XCreateSimpleWindow(dpy, Scr->Root,
-	    JunkX, JunkY, p->width, p->height, 1,
+	    JunkX, JunkY, p->width, p->height,
+	    
+	    0,  /* was '1' - submitted by Rolf Neugebauer */
+
 	    Scr->Black, background);
 
 	sprintf(str, "%s Icon Manager", p->name);
@@ -143,14 +150,16 @@ void CreateIconManagers()
 	else
 	    icon_name = str1;
 
+	/* djhjr - 5/19/98 */
+	/* was setting for the TwmWindow after AddWindow() - djhjr - 2/28/99 */
+	class = XAllocClassHint();
+	class->res_name = strdup(str);
+	class->res_class = strdup(VTWM_ICONMGR_CLASS);
+	XSetClassHint(dpy, p->w, class);
+
 	XSetStandardProperties(dpy, p->w, str, icon_name, None, NULL, 0, NULL);
 
 	p->twm_win = AddWindow(p->w, TRUE, p);
-
-	/* djhjr - 5/19/98 */
-	p->twm_win->class.res_name = strdup(str);
-	p->twm_win->class.res_class = strdup(VTWM_ICONMGR_CLASS);
-	XSetClassHint(dpy, p->w, &p->twm_win->class);
 
 	SetMapStateProp (p->twm_win, WithdrawnState);
     }
@@ -333,11 +342,15 @@ void MoveIconManager(dir)
     if (ip->twm_win->mapped) {
 	XRaiseWindow(dpy, ip->twm_win->frame);
 
+/* djhjr - 5/30/00
 	RaiseStickyAbove();
 	RaiseAutoPan();
 
 	XWarpPointer(dpy, None, tmp->icon, 0,0,0,0, 5, 5);
+*/
+	WarpInIconMgr(tmp, ip->twm_win);
     } else {
+/* djhjr - 5/30/00
 	if (tmp->twm->title_height) {
 	    int tbx = Scr->TBInfo.titlex;
 	    int x = tmp->twm->highlightx;
@@ -347,6 +360,11 @@ void MoveIconManager(dir)
 	} else {
 	    XWarpPointer (dpy, None, tmp->twm->w, 0, 0, 0, 0, 5, 5);
 	}
+*/
+	RaiseStickyAbove(); /* DSE */
+	RaiseAutoPan();
+
+	WarpToWindow(tmp->twm);
     }
 }
 
@@ -410,20 +428,33 @@ void JumpIconManager(dir)
 #undef TEST
 
     if (!got_it) {
-	XBell (dpy, 0);
+	DoAudible(); /* was 'XBell()' - djhjr - 6/22/01 */
 	return;
     }
 
     /* raise the frame so it is visible */
     XRaiseWindow(dpy, tmp_ip->twm_win->frame);
     
-    RaiseStickyAbove(); /* DSE */
+/* djhjr - 5/30/00
+    RaiseStickyAbove(); * DSE *
     RaiseAutoPan();
+*/
 
     if (tmp_ip->active)
+/* djhjr - 5/30/00
 	XWarpPointer(dpy, None, tmp_ip->active->icon, 0,0,0,0, 5, 5);
+*/
+	WarpInIconMgr(tmp_ip->active, tmp_ip->twm_win);
     else
+/* djhjr - 5/30/00
 	XWarpPointer(dpy, None, tmp_ip->w, 0,0,0,0, 5, 5);
+*/
+    {
+	RaiseStickyAbove(); /* DSE */
+	RaiseAutoPan();
+
+	WarpToWindow(tmp_ip->twm_win);
+    }
 }
 
 /***********************************************************************
@@ -447,6 +478,18 @@ WList *AddIconManager(tmp_win)
     IconMgr *ip;
 
     tmp_win->list = NULL;
+
+    /* djhjr - 10/2/01 */
+    if (Scr->StrictIconManager)
+    {
+	if (tmp_win->icon || (!tmp_win->iconified &&
+		(tmp_win->wmhints &&
+		(tmp_win->wmhints->flags & StateHint) &&
+		tmp_win->wmhints->initial_state == IconicState)))
+	    ;
+	else
+	    return NULL;
+    }
 
     if (tmp_win->iconmgr || tmp_win->transient || Scr->NoIconManagers)
 	return NULL;
@@ -584,6 +627,10 @@ WList *AddIconManager(tmp_win)
 	XMapWindow(dpy, ip->twm_win->frame);
     }
 
+	/* djhjr - 9/21/99 */
+	else
+		XMapWindow(dpy, ip->twm_win->icon_w);
+
     return (tmp);
 }
 
@@ -718,6 +765,11 @@ void RemoveIconManager(tmp_win)
 
     if (ip->count == 0)
     {
+	/* djhjr - 9/21/99 */
+	if (ip->twm_win->icon)
+		XUnmapWindow(dpy, ip->twm_win->icon_w);
+	else
+
 	XUnmapWindow(dpy, ip->twm_win->frame);
     }
 
@@ -918,6 +970,14 @@ void PackIconManager(ip)
 
     savewidth = ip->width;
     if (ip->twm_win)
+    {
+
+      /* limit the min and max sizes of an icon manager - djhjr - 3/1/99 */
+      ip->twm_win->hints.flags |= (PMinSize | PMaxSize);
+      ip->twm_win->hints.min_width = maxcol * (2 * iconmgr_iconx + siconify_width);
+      ip->twm_win->hints.min_height = ip->height;
+      ip->twm_win->hints.max_width = Scr->MyDisplayWidth;
+      ip->twm_win->hints.max_height = ip->height;
 
 /* djhjr - 4/19/96     
       SetupWindow (ip->twm_win,
@@ -925,9 +985,10 @@ void PackIconManager(ip)
 		   newwidth, ip->height + ip->twm_win->title_height, -1);
 */
       SetupWindow (ip->twm_win,
-		   ip->twm_win->frame_x, ip->twm_win->frame_y,
-		   newwidth + 2 * ip->twm_win->frame_bw3D,
-		   ip->height + ip->twm_win->title_height + 2 * ip->twm_win->frame_bw3D, -1);
+            ip->twm_win->frame_x, ip->twm_win->frame_y,
+            newwidth + 2 * ip->twm_win->frame_bw3D,
+            ip->height + ip->twm_win->title_height + 2 * ip->twm_win->frame_bw3D, -1);
+    }
 
     ip->width = savewidth;
 }

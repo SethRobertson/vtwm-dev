@@ -44,10 +44,19 @@
 #include "twm.h"
 #include "screen.h"
 #include "menus.h"
+#include "list.h"
 #include "util.h"
 #include "gram.h"
 #include "parse.h"
 #include <X11/Xatom.h>
+
+/* Submitted by Jason Gloudon */
+#ifndef NO_M4_SUPPORT
+#include <sys/wait.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <X11/Xmu/SysUtil.h>
+#endif
 
 extern void twmrc_error_prefix();
 
@@ -75,6 +84,19 @@ int (*twmInputFunc)();
 
 extern char *defTwmrc[];		/* default bindings */
 
+/* Submitted by Jason Gloudon */
+#ifndef NO_M4_SUPPORT
+#define Resolution(pixels, mm) ((((pixels) * 100000 / (mm)) + 50) / 100)
+#define M4_MAXDIGITS 21 /* greater than the number of digits in a long int */
+extern PrintErrorMessages;
+char *make_m4_cmdline();
+#endif
+
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+extern void SetSoundHost();
+extern void SetSoundVolume();
+#endif
 
 /***********************************************************************
  *
@@ -111,15 +133,26 @@ static int doparse (ifunc, srctypename, srcname)
     return (ParseError ? 0 : 1);
 }
 
-
+/* Changes for m4 pre-processing submitted by Jason Gloudon */
+/* added support for user-defined parameters - djhjr - 2/20/99 */
+#ifndef NO_M4_SUPPORT
+int ParseTwmrc (filename, display_name, m4_preprocess, m4_option)
+    char *filename;
+    char *display_name;
+    int m4_preprocess;
+    char *m4_option; /* djhjr - 2/20/99 */
+#else
 int ParseTwmrc (filename)
     char *filename;
+#endif
 {
     int i;
-    char *home = NULL;
-    int homelen = 0;
     char *cp = NULL;
     char tmpfilename[257];
+#ifndef NO_M4_SUPPORT
+    char *m4_cmdline;
+    int m4_status;
+#endif
 
     /*
      * If filename given, try it, else try ~/.vtwmrc.#, else try ~/.vtwmrc,
@@ -143,20 +176,16 @@ int ParseTwmrc (filename)
 
 	  case 1:			/* ~/.vtwmrc.screennum */
 	    if (!filename) {
-		home = getenv ("HOME");
-		if (home) {
-		    homelen = strlen (home);
-		    cp = tmpfilename;
-		    (void) sprintf (tmpfilename, "%s/.vtwmrc.%d",
-				    home, Scr->screen);
-		    break;
-		}
+	      cp = tmpfilename;
+	      (void) sprintf (tmpfilename, "%s/.vtwmrc.%d",
+			      Home, Scr->screen);
+	      break;
 	    }
 	    continue;
 
 	  case 2:			/* ~/.vtwmrc */
-	    if (home) {
-		tmpfilename[homelen + 8] = '\0';
+	    if (!filename) {
+	      tmpfilename[HomeLen + 8] = '\0';
 	    }
 	    break;
 
@@ -166,20 +195,16 @@ int ParseTwmrc (filename)
  
  	  case 4:			/* ~/.twmrc.screennum */
 	    if (!filename) {
-		home = getenv ("HOME");
-		if (home) {
-		    homelen = strlen (home);
-		    cp = tmpfilename;
-		    (void) sprintf (tmpfilename, "%s/.twmrc.%d",
-				    home, Scr->screen);
-		    break;
-		}
+	      cp = tmpfilename;
+	      (void) sprintf (tmpfilename, "%s/.twmrc.%d",
+			      Home, Scr->screen);
+	      break;
 	    }
 	    continue;
 
 	  case 5:			/* ~/.twmrc */
-	    if (home) {
-		tmpfilename[homelen + 7] = '\0';
+	    if(!filename){
+	      tmpfilename[HomeLen + 7] = '\0';
 	    }
 	    break;
 
@@ -188,7 +213,25 @@ int ParseTwmrc (filename)
 	    break;
 	}
 
+#ifndef NO_M4_SUPPORT
+	if (cp) { 
+	    if (m4_preprocess && (access(cp, R_OK) == 0) ) {
+		    if ((m4_cmdline = make_m4_cmdline(display_name, cp, m4_option)) != NULL) {
+			    twmrc = popen(m4_cmdline, "r");
+			    free(m4_cmdline);
+		    }
+		    else {
+			    m4_preprocess = 0; 
+			    twmrc = fopen (cp, "r");
+		    }
+	    }
+	    else {
+		    twmrc = fopen (cp, "r");
+	    }
+	}
+#else
 	if (cp) twmrc = fopen (cp, "r");
+#endif
     }
 
     if (twmrc) {
@@ -200,7 +243,25 @@ int ParseTwmrc (filename)
 		     ProgramName, filename, cp);
 	}
 	status = doparse (twmFileInput, "file", cp);
+
+#ifndef NO_M4_SUPPORT
+	if(m4_preprocess){
+	    m4_status = pclose (twmrc);
+	    if(!WIFEXITED(m4_status) ||
+	       (WIFEXITED(m4_status) && WEXITSTATUS(m4_status)) ){
+		fprintf(stderr,
+			"%s: m4 returned %d\n",
+			ProgramName, WEXITSTATUS(m4_status));
+	   	exit(-1); 
+	    }
+	}
+	else {
+	    fclose (twmrc);
+	}
+#else
 	fclose (twmrc);
+#endif
+
 	return status;
     } else {
 	if (filename) {
@@ -351,7 +412,11 @@ typedef struct _TwmKeyword {
 #define kw0_SnapRealScreen		28
 #define kw0_NotVirtualGeometries	29
 #define kw0_OldFashionedTwmWindowsMenu 30 /* RFB */
-#define kw0_UseRealScreenBorder        31 /* RFB */
+
+/* djhjr - 2/15/99
+#define kw0_UseRealScreenBorder        31 * RFB *
+*/
+
 #define kw0_StayUpMenus                32
 #define kw0_NaturalAutopanBehavior     33 /* DSE */
 #define kw0_EnhancedExecResources      34 /* DSE */
@@ -405,7 +470,25 @@ typedef struct _TwmKeyword {
 */
 
 /* djhjr - 5/27/98 */
-#define kw0_NoIconManagerFocus		59
+#define kw0_NoIconManagerFocus			59
+
+/* djhjr - 12/14/98 */
+#define kw0_StaticIconPositions			60
+
+/* for rader - djhjr - 2/9/99 */
+#define kw0_NoPrettyTitles				61
+
+/* djhjr - 6/22/99 */
+#define kw0_DontDeiconifyTransients		62
+
+/* submitted by Ugen Antsilevitch - 5/28/00 */
+#define kw0_WarpVisible			63
+
+/* djhjr - 10/2/01 */
+#define kw0_StrictIconManager		64
+
+/* djhjr - 10/11/01 */
+#define kw0_ZoomZoom			65
 
 #define kws_UsePPosition		1
 #define kws_IconFont			2
@@ -425,6 +508,11 @@ typedef struct _TwmKeyword {
 
 /* djhjr - 5/15/96 */
 #define kws_ResizeRegion		14
+
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+#define kws_SoundHost			15
+#endif
 
 #define kwn_ConstrainedMoveTime     1
 #define kwn_MoveDelta               2
@@ -464,8 +552,23 @@ typedef struct _TwmKeyword {
 #define kwn_IconBevelWidth			26
 #define kwn_ButtonBevelWidth		27
 
+/* djhjr - 2/7/99 */
+#define kwn_DoorBevelWidth				28
+#define kwn_VirtualDesktopBevelWidth	29
+
 /* djhjr - 9/8/98 */
-#define kwn_PanResistance		28
+#define kwn_PanResistance		30
+
+/* djhjr - 5/22/00 */
+#define kwn_MenuScrollBorderWidth	31
+#define kwn_MenuScrollJump			32
+
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+#define kwn_SoundVolume			33
+#endif
+#define kwn_PauseOnExit			34
+#define kwn_PauseOnQuit			35
 
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
@@ -496,6 +599,10 @@ typedef struct _TwmKeyword {
 #define kwc_RealScreenBackground		10	/* RFB 4/92 */
 #define kwc_RealScreenForeground		11	/* RFB 4/92 */
 
+/* djhjr - 10/20/01 */
+#define kwm_Name			LTYPE_NAME
+#define kwm_ResName			LTYPE_RES_NAME
+#define kwm_ResClass			LTYPE_RES_CLASS
 
 /*
  * The following is sorted alphabetically according to name (which must be
@@ -504,6 +611,10 @@ typedef struct _TwmKeyword {
  */
 static TwmKeyword keytable[] = {
     { "all",			ALL, 0 },
+
+    /* djhjr - 4/26/99 */
+    { "appletregion",	APPLET_REGION, 0 },
+
     { "autopan",		NKEYWORD, kwn_AutoPan },
     { "autopanborderwidth", NKEYWORD, kwn_AutoPanBorderWidth },       /* DSE */
     { "autopanextrawarp", NKEYWORD, kwn_AutoPanExtraWarp },           /* DSE */
@@ -561,6 +672,10 @@ static TwmKeyword keytable[] = {
     { "desktopdisplayforeground",
 	  CLKEYWORD, kwcl_VirtualDesktopForeground },
     { "destroy",		KILL, 0 },
+
+	/* djhjr - 6/22/99 */
+    { "dontdeiconifytransients", KEYWORD, kw0_DontDeiconifyTransients },
+
     { "donticonifybyunmapping",	DONT_ICONIFY_BY_UNMAPPING, 0 },
     { "dontinterpolatetitles", KEYWORD, kw0_DontInterpolateTitles },
     { "dontmoveoff",		KEYWORD, kw0_DontMoveOff },
@@ -574,6 +689,10 @@ static TwmKeyword keytable[] = {
     { "dontsqueezetitle",	DONT_SQUEEZE_TITLE, 0 },
     { "door",			DOOR, 0 },
     { "doorbackground",		CLKEYWORD, kwcl_DoorBackground },
+
+	/* djhjr - 2/7/99 */
+    { "doorbevelwidth",		NKEYWORD, kwn_DoorBevelWidth },
+
     { "doorfont",		SKEYWORD, kws_DoorFont },
     { "doorforeground",		CLKEYWORD, kwcl_DoorForeground },
     { "doors",			DOORS, 0 },
@@ -655,6 +774,12 @@ static TwmKeyword keytable[] = {
     { "f.snugdesktop",        FKEYWORD, F_SNUGDESKTOP },
     { "f.snugwindow",     FKEYWORD, F_SNUGWINDOW },
     { "f.sorticonmgr",		FKEYWORD, F_SORTICONMGR },
+
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+    { "f.sounds",		FKEYWORD, F_SOUNDS },
+#endif
+
     { "f.source",		FSKEYWORD, F_BEEP },  /* XXX - don't work */
     { "f.squeezecenter",		FKEYWORD, F_SQUEEZECENTER },/*RFB SQUEEZE*/
     { "f.squeezeleft",		FKEYWORD, F_SQUEEZELEFT },/*RFB SQUEEZE*/
@@ -663,8 +788,15 @@ static TwmKeyword keytable[] = {
 	/* djhjr - 7/15/98 */
     { "f.startwm",		FSKEYWORD, F_STARTWM },
 
+	/* djhjr - 12/14/98 */
+	{ "f.staticiconpositions",	FKEYWORD, F_STATICICONPOSITIONS },
+
     { "f.stick",			FKEYWORD, F_NAIL },
     { "f.stickyabove", FKEYWORD, F_STICKYABOVE }, /* DSE */
+
+    /* djhjr - 10/2/01 */
+    { "f.stricticonmgr",	FKEYWORD, F_STRICTICONMGR },
+
     { "f.title",		FKEYWORD, F_TITLE },
     { "f.topzoom",		FKEYWORD, F_TOPZOOM },
     { "f.twmrc",		FKEYWORD, F_RESTART },
@@ -678,10 +810,18 @@ static TwmKeyword keytable[] = {
     { "f.warpclassnext",	FSKEYWORD, F_WARPCLASSNEXT }, /* PF */
     { "f.warpclassprev",	FSKEYWORD, F_WARPCLASSPREV }, /* PF */
     { "f.warpring",		FSKEYWORD, F_WARPRING },
+
+    /* djhjr - 5/30/00 */
+    { "f.warpsnug",        FKEYWORD, F_WARPSNUG },
+
     { "f.warpto",		FSKEYWORD, F_WARPTO },
     { "f.warptoiconmgr",	FSKEYWORD, F_WARPTOICONMGR },
     { "f.warptonewest", FKEYWORD, F_WARPTONEWEST }, /* PF */
     { "f.warptoscreen",		FSKEYWORD, F_WARPTOSCREEN },
+
+    /* submitted by Ugen Antsilevitch - 5/28/00 */
+    { "f.warpvisible",		FKEYWORD, F_WARPVISIBLE },
+
     { "f.winrefresh",		FKEYWORD, F_WINREFRESH },
     { "f.zoom",			FKEYWORD, F_ZOOM },
     { "f.zoomzoom",			FKEYWORD, F_ZOOMZOOM },
@@ -747,6 +887,11 @@ static TwmKeyword keytable[] = {
 
     { "menufont",		SKEYWORD, kws_MenuFont },
     { "menuforeground",		CKEYWORD, kwc_MenuForeground },
+
+	/* djhjr - 5/22/00 */
+    { "menuscrollborderwidth",	NKEYWORD, kwn_MenuScrollBorderWidth },
+    { "menuscrolljump",		NKEYWORD, kwn_MenuScrollJump },
+
     { "menushadowcolor",	CKEYWORD, kwc_MenuShadowColor },
     { "menutitlebackground",	CKEYWORD, kwc_MenuTitleBackground },
     { "menutitlefont", SKEYWORD, kws_MenuTitleFont },                /* DSE */
@@ -758,6 +903,10 @@ static TwmKeyword keytable[] = {
     { "movedelta",		NKEYWORD, kwn_MoveDelta },
     { "nailedabove",    KEYWORD, kw0_StickyAbove },                  /* DSE */
     { "naileddown",		NAILEDDOWN, 0},
+
+    /* djhjr - 10/20/01 */
+    { "name",			MKEYWORD, kwm_Name },
+
     { "naturalautopanbehavior", KEYWORD, 
     	kw0_NaturalAutopanBehavior },                                /* DSE */
     { "nobackingstore",		KEYWORD, kw0_NoBackingStore },
@@ -782,6 +931,9 @@ static TwmKeyword keytable[] = {
 	/* djhjr - 4/7/98 */
     { "noopaquemove",		NO_OPAQUE_MOVE, 0 },
 	{ "noopaqueresize",		NO_OPAQUE_RESIZE, 0 },
+
+    /* for rader - djhjr - 2/9/99 */
+    { "noprettytitles",		KEYWORD, kw0_NoPrettyTitles },
 
     { "noraiseondeiconify",	KEYWORD, kw0_NoRaiseOnDeiconify },
     { "noraiseonmove",		KEYWORD, kw0_NoRaiseOnMove },
@@ -816,6 +968,10 @@ static TwmKeyword keytable[] = {
 	/* djhjr - 4/7/98 */
     { "panresistance",		NKEYWORD, kwn_PanResistance },
 
+	/* djhjr - 6/22/01 */
+    { "pauseonexit",		NKEYWORD, kwn_PauseOnExit },
+    { "pauseonquit",		NKEYWORD, kwn_PauseOnQuit },
+
 	{ "pixmaps",		PIXMAPS, 0 },
 	{ "prettyzoom", KEYWORD, kw0_PrettyZoom }, /* DSE */
     { "r",			ROOT, 0 },
@@ -825,11 +981,18 @@ static TwmKeyword keytable[] = {
     { "realscreenborderwidth", NKEYWORD, kwn_RealScreenBorderWidth }, /* DSE */
     { "realscreenforeground", CKEYWORD, kwc_RealScreenForeground },/*RFB 4/92*/
     { "realscreenpixmap",		REALSCREENMAP, 0 },/*RFB PIXMAP*/
+
+    /* djhjr - 10/20/01 */
+    { "resclass",		MKEYWORD, kwm_ResClass },
+
     { "resize",			RESIZE, 0 },
     { "resizefont",		SKEYWORD, kws_ResizeFont },
 
 	/* djhjr - 5/15/96 */
     { "resizeregion",		SKEYWORD, kws_ResizeRegion },
+
+    /* djhjr - 10/20/01 */
+    { "resname",		MKEYWORD, kwm_ResName },
 
     { "restartpreviousstate",	KEYWORD, kw0_RestartPreviousState },
     { "rhspulldownmenus", KEYWORD, kw0_RightHandSidePulldownMenus }, /* DSE */
@@ -848,13 +1011,28 @@ static TwmKeyword keytable[] = {
     { "showiconmanager",	KEYWORD, kw0_ShowIconManager },
     { "snaprealscreen",		KEYWORD, kw0_SnapRealScreen },
     { "sorticonmanager",	KEYWORD, kw0_SortIconManager },
+
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+    { "soundhost",		SKEYWORD, kws_SoundHost },
+    { "sounds",			SOUNDS, 0 },
+    { "soundvolume",		NKEYWORD, kwn_SoundVolume },
+#endif
+
     { "south",			DKEYWORD, D_SOUTH },
     { "squeezetitle",		SQUEEZE_TITLE, 0 },
     { "starticonified",		START_ICONIFIED, 0 },
+
+    /* djhjr - 12/14/98 */
+    { "staticiconpositions",	KEYWORD, kw0_StaticIconPositions },
+
     { "stayupmenus",		KEYWORD, kw0_StayUpMenus },
     { "stayupoptionalmenus",	KEYWORD, kw0_StayUpOptionalMenus }, /* PF */
     { "sticky",             NAILEDDOWN, 0 },/*RFB*/
     { "stickyabove",        KEYWORD, kw0_StickyAbove },                /* DSE */
+
+    /* djhjr - 10/2/01 */
+    { "stricticonmanager",	KEYWORD, kw0_StrictIconManager },
 
 	/* djhjr - 4/25/96 */
     { "sunkfocuswindowtitle",	KEYWORD, kw0_SunkFocusWindowTitle },
@@ -879,7 +1057,10 @@ static TwmKeyword keytable[] = {
     { "titlepadding",		NKEYWORD, kwn_TitlePadding },
     { "unknownicon",		SKEYWORD, kws_UnknownIcon },
     { "usepposition",		SKEYWORD, kws_UsePPosition },
-	{ "userealscreenborder", KEYWORD, kw0_UseRealScreenBorder },/*RFB*/
+
+/* djhjr - 2/15/99 - this is dumb - if RealScreenBorderWidth is defined, use it!
+	{ "userealscreenborder", KEYWORD, kw0_UseRealScreenBorder }, *RFB*
+*/
 
 /* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
 	* djhjr - 4/18/96 *
@@ -898,6 +1079,10 @@ static TwmKeyword keytable[] = {
     { "virtualbackground",	CKEYWORD, kwc_VirtualBackground },/*RFB VCOLOR*/
     { "virtualbackgroundpixmap",		VIRTUALMAP, 0 },/*RFB PIXMAP*/
     { "virtualdesktop",		VIRTUALDESKTOP, 0 },
+
+	/* djhjr - 2/7/99 */
+    { "virtualdesktopbevelwidth",	NKEYWORD, kwn_VirtualDesktopBevelWidth },
+
     { "virtualdesktopfont",	SKEYWORD, kws_VirtualFont },
     { "virtualforeground",	CKEYWORD, kwc_VirtualForeground },/*RFB VCOLOR*/
 
@@ -913,6 +1098,10 @@ static TwmKeyword keytable[] = {
     { "warpsnug",		KEYWORD, kw0_WarpSnug }, /* DSE */
     { "warptotransients",	KEYWORD, kw0_WarpToTransients }, /* PF */
     { "warpunmapped",		KEYWORD, kw0_WarpUnmapped },
+
+    /* submitted by Ugen Antsilevitch - 5/28/00 */
+    { "warpvisible",		KEYWORD, kw0_WarpVisible },
+
     { "warpwindows",		KEYWORD, kw0_WarpWindows },
     { "west",			DKEYWORD, D_WEST },
     { "window",			WINDOW, 0 },
@@ -920,6 +1109,9 @@ static TwmKeyword keytable[] = {
     { "windowring",		WINDOW_RING, 0 },
     { "xorvalue",		NKEYWORD, kwn_XorValue },
     { "zoom",			ZOOM, 0 },
+
+	/* djhjr - 10/11/01 */
+    { "zoomzoom",		KEYWORD, kw0_ZoomZoom },
 };
 
 static int numkeywords = (sizeof(keytable)/sizeof(keytable[0]));
@@ -979,9 +1171,11 @@ int do_single_keyword (keyword)
 		if (Scr->FirstTime) Scr->StayUpOptionalMenus = Scr->StayUpMenus = TRUE;
 		return 1;
 
-	case kw0_UseRealScreenBorder:/*RFB*/
+/* djhjr - 2/15/99 - this is dumb - if RealScreenBorderWidth is defined, use it!
+	case kw0_UseRealScreenBorder: *RFB*
 		Scr->UseRealScreenBorder = TRUE;
 		return 1;
+*/
 
 	case kw0_OldFashionedTwmWindowsMenu:/*RFB*/
 		Scr->OldFashionedTwmWindowsMenu = TRUE;
@@ -1196,6 +1390,36 @@ int do_single_keyword (keyword)
 	case kw0_NoIconManagerFocus:
 		Scr->IconManagerFocus = FALSE;
 		return 1;
+
+	/* djhjr - 12/14/98 */
+	case kw0_StaticIconPositions:
+		Scr->StaticIconPositions = TRUE;
+		return 1;
+
+	/* for rader - djhjr - 2/9/99 */
+	case kw0_NoPrettyTitles:
+		Scr->NoPrettyTitles = TRUE;
+		return 1;
+
+	/* djhjr - 6/22/99 */
+	case kw0_DontDeiconifyTransients:
+		Scr->DontDeiconifyTransients = TRUE;
+		return 1;
+
+	/* submitted by Ugen Antsilevitch - 5/28/00 */
+	case kw0_WarpVisible:
+		Scr->WarpVisible = TRUE;
+		return 1;
+
+	/* djhjr - 10/2/01 */
+	case kw0_StrictIconManager:
+		Scr->StrictIconManager = TRUE;
+		return 1;
+
+	/* djhjr - 10/11/01 */
+	case kw0_ZoomZoom: /* DSE */
+		Scr->ZoomZoom = TRUE;
+		return 1;
     }
 
     return 0;
@@ -1283,6 +1507,13 @@ int do_string_keyword (keyword, s)
 	if (!Scr->HaveFonts) Scr->DoorFont.name = s;
 	return 1;
 
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+	case kws_SoundHost:
+		if (Scr->FirstTime) SetSoundHost(s);
+		return 1;
+#endif
+
 	/* djhjr - 5/15/96 */
 	case kws_ResizeRegion:
 		XmuCopyISOLatin1Lowered (s, s);
@@ -1341,7 +1572,7 @@ int do_number_keyword (keyword, num)
 	    return 1;
 	    
 	  case kwn_RealScreenBorderWidth: /* DSE */
-		Scr->RealScreenBorderWidth = (num<0)?0:num;
+		Scr->RealScreenBorderWidth = (num < 0) ? 0 : num;
 	    return 1;
 
       case kwn_MoveDelta:
@@ -1473,6 +1704,41 @@ int do_number_keyword (keyword, num)
 		if (Scr->FirstTime) Scr->IconBevelWidth = num;
 		if (Scr->IconBevelWidth < 0) Scr->IconBevelWidth = 0;
 		if (Scr->IconBevelWidth > 9) Scr->IconBevelWidth = 9;
+		return 1;
+
+	/* djhjr - 2/7/99 */
+	case kwn_DoorBevelWidth:
+		if (Scr->FirstTime) Scr->DoorBevelWidth = num;
+		if (Scr->DoorBevelWidth < 0) Scr->DoorBevelWidth = 0;
+		if (Scr->DoorBevelWidth > 9) Scr->DoorBevelWidth = 9;
+		return 1;
+	case kwn_VirtualDesktopBevelWidth:
+		if (Scr->FirstTime) Scr->VirtualDesktopBevelWidth = num;
+		if (Scr->VirtualDesktopBevelWidth < 0) Scr->VirtualDesktopBevelWidth = 0;
+		if (Scr->VirtualDesktopBevelWidth > 9) Scr->VirtualDesktopBevelWidth = 9;
+		return 1;
+
+	/* djhjr - 5/22/00 */
+	case kwn_MenuScrollBorderWidth:
+		if (Scr->FirstTime) Scr->MenuScrollBorderWidth = num;
+		return 1;
+	case kwn_MenuScrollJump:
+		if (Scr->FirstTime) Scr->MenuScrollJump = num;
+		return 1;
+
+/* djhjr - 8/16/01 */
+#ifndef NO_SOUND_SUPPORT
+	case kwn_SoundVolume:
+		if (Scr->FirstTime) SetSoundVolume(num);
+		return 1;
+#endif
+
+	/* djhjr - 6/22/01 */
+	case kwn_PauseOnExit:
+		if (Scr->FirstTime) Scr->PauseOnExit = num;
+		return 1;
+	case kwn_PauseOnQuit:
+		if (Scr->FirstTime) Scr->PauseOnQuit = num;
 		return 1;
     }
 
@@ -1619,11 +1885,15 @@ void put_pixel_on_root(pixel)
   int           retFormat;
   unsigned long nPixels, retAfter;
   Pixel        *retProp;
+
   pixelAtom = XInternAtom(dpy, "_MIT_PRIORITY_COLORS", True);
-  XGetWindowProperty(dpy, Scr->Root, pixelAtom, 0, 8192,
+
+  /* added tests for success - djhjr - 1/10/98 */
+  if (XGetWindowProperty(dpy, Scr->Root, pixelAtom, 0, 8192,
 		     False, XA_CARDINAL, &retAtom,
 		     &retFormat, &nPixels, &retAfter,
-		     (unsigned char **)&retProp);
+		     (unsigned char **)&retProp) != Success || retAtom == None)
+      return;
 
   for (i=0; i< nPixels; i++)
       if (pixel == retProp[i]) addPixel = 0;
@@ -1738,9 +2008,11 @@ static int ParseUsePPosition (s)
 }
 
 
-void do_squeeze_entry (list, name, justify, num, denom)
+/* added 'type' argument - djhjr - 10/20/01 */
+void do_squeeze_entry (list, name, type, justify, num, denom)
     name_list **list;			/* squeeze or dont-squeeze list */
     char *name;				/* window name */
+    short type;				/* match type */
     int justify;			/* left, center, right */
     int num;				/* signed pixel count or fraction num */
     int denom;				/* signed 0 or indicates fraction denom */
@@ -1783,6 +2055,193 @@ void do_squeeze_entry (list, name, justify, num, denom)
 	sinfo->justify = justify;
 	sinfo->num = absnum;
 	sinfo->denom = absdenom;
-	AddToList (list, name, (char *) sinfo);
+	/* added 'type' argument - djhjr - 10/20/01 */
+	AddToList (list, name, type, (char *)sinfo);
     }
 }
+
+/* Submitted by Jason Gloudon */
+/* added support for user-defined parameters - djhjr - 2/20/99 */
+/* added support for sound - djhjr - 6/22/01 */
+/* added support for regex - djhjr - 10/20/01 */
+#ifndef NO_M4_SUPPORT
+char *make_m4_cmdline(display_name, cp, m4_option)
+char *display_name;
+char *cp;
+char *m4_option; /* djhjr - 2/20/99 */
+{
+  char *m4_lines[6] = {
+      "m4 -DHOME='%s' -DWIDTH='%d' -DHEIGHT='%d' -DSOUND='%s' ",
+      "-DPLANES='%d' -DBITS_PER_RGB='%d' -DCLASS='%s' -DXPM='%s' ",
+      "-DCOLOR='%s' -DX_RESOLUTION='%d' -DY_RESOLUTION='%d' ",
+      "-DREGEX='%s' -DUSER='%s' -DSERVERHOST='%s' -DCLIENTHOST='%s' ",
+      "-DHOSTNAME='%s' -DTWM_TYPE='vtwm' -DVERSION='%d' ",
+      "-DREVISION='%d' -DVENDOR='%s' -DRELEASE='%d'"
+  };
+  char *client, *server, *hostname;
+  char *m4_cmdline, *colon, *vc;
+  char *is_sound, *is_xpm, *is_regex, *is_color, *env_username;
+  int i, client_len, opt_len = 0, cmd_len = 0, server_is_client = 0;
+  struct hostent *hostname_ent;
+
+  /* djhjr - 2/20/99 */
+  if (m4_option)
+  {
+    opt_len = strlen(m4_option);
+
+    /* this isn't likely ever needed, but you just never know... */
+    if (m4_option[0] == '\'' || m4_option[0] == '"')
+      if (m4_option[opt_len - 1] != '\'' && m4_option[opt_len - 1] != '"')
+      {
+        fprintf(stderr,"%s: badly formed user-defined m4 parameter\n", ProgramName);
+        return (NULL);
+      }
+      else
+      {
+        m4_option++;
+        opt_len -= 2;
+      }
+  }
+
+  /* the sourcing of various hostnames is stolen from tvtwm */
+  for(client = NULL, client_len = 256; client_len < 1024; client_len *= 2){
+    if((client = malloc(client_len)) == NULL){
+      fprintf(stderr,"%s: cannot allocate %d bytes for m4\n", ProgramName, client_len);
+      return (NULL);
+    }
+
+    client[client_len] = '\0';
+    XmuGetHostname(client, client_len);
+
+    if(client[client_len] == '\0')
+       break;
+
+    free(client);
+    client = NULL;
+  }
+
+  if(client == NULL){
+    fprintf(stderr, "%s: cannot get hostname for m4\n", ProgramName);
+    return (NULL);
+  }
+
+  if((server = XDisplayName(display_name)) == NULL){
+    fprintf(stderr, "%s: cannot get display name for m4\n", ProgramName);
+    return (NULL);
+  }
+
+  /* we copy so we can modify it safely */
+  server = strdup(server);
+
+  if((colon = index(server, ':')) != NULL){
+    *colon = '\0';
+  }
+
+  /* connected to :0 or unix:0 ? */
+  if((server[0] == '\0') || (!strcmp(server, "unix"))){
+    if (colon){
+      *colon = ':';
+      colon = NULL;
+    }
+    free(server);
+    server = client;
+    server_is_client = 1;
+  }
+
+  hostname_ent = gethostbyname(client);
+  hostname = hostname_ent != NULL ? hostname_ent->h_name : client;
+
+#ifdef NO_XPM_SUPPORT
+  is_xpm = "No";
+#else
+  is_xpm = "Yes";
+#endif
+#ifdef NO_SOUND_SUPPORT
+  is_sound = "No";
+#else
+  is_sound = "Yes";
+#endif
+#ifdef NO_REGEX_SUPPORT
+  is_regex = "No";
+#else
+  is_regex = "Yes";
+#endif
+
+  /* assume colour visual */
+  is_color = "Yes";
+  switch(Scr->d_visual->class)
+  {
+    case(StaticGray):	vc = "StaticGray"; is_color = "No";	break;
+    case(GrayScale):	vc = "GrayScale";  is_color = "No";	break;
+    case(StaticColor):	vc = "StaticColor";	break;
+    case(PseudoColor):	vc = "PseudoColor";	break;
+    case(TrueColor):	vc = "TrueColor";	break;
+    case(DirectColor):	vc = "DirectColor";	break;
+    default:            vc = "NonStandard";	break;
+  }
+
+  if((env_username = getenv("LOGNAME")) == NULL){
+    env_username = "";
+  }
+
+  /*
+   * Start with slightly more than the minimal command line, add space for
+   * nine numeric fields, ensure we have room for each of the strings, and
+   * add some breathing room
+   *
+   * Then add space for any user-defined parameters - djhjr - 2/20/99
+   */
+  for (i = 0; i < 6; i++) cmd_len += strlen(m4_lines[i]);
+  cmd_len += M4_MAXDIGITS * 9 + HomeLen + strlen(vc) + strlen(is_xpm) +
+      strlen(is_color) + strlen(env_username) + strlen(server) +
+      strlen(client) + strlen(hostname) + strlen(ServerVendor(dpy)) +
+      strlen(is_sound) + strlen(is_regex) + strlen(cp) + 16;
+  if (opt_len) cmd_len += opt_len;
+
+  if((m4_cmdline = malloc(cmd_len)) == NULL){
+    fprintf(stderr,"%s: cannot allocate %d bytes for m4\n", ProgramName, cmd_len);
+    return (NULL);
+  }
+
+  /*
+   * Non-SysV systems - specifically, BSD-derived systems - return a
+   * pointer to the string, not its length.
+   */
+  sprintf(m4_cmdline, m4_lines[0], Home, Scr->MyDisplayWidth,
+      Scr->MyDisplayHeight, is_sound);
+  cmd_len = strlen(m4_cmdline);
+  sprintf(m4_cmdline + cmd_len, m4_lines[1], Scr->d_depth,
+      Scr->d_visual->bits_per_rgb, vc, is_xpm);
+  cmd_len = strlen(m4_cmdline);
+  sprintf(m4_cmdline + cmd_len, m4_lines[2], is_color, 
+	  Resolution(Scr->MyDisplayWidth, DisplayWidthMM(dpy, Scr->screen)),
+	  Resolution(Scr->MyDisplayHeight, DisplayHeightMM(dpy, Scr->screen)));
+  cmd_len = strlen(m4_cmdline);
+  sprintf(m4_cmdline + cmd_len, m4_lines[3], is_regex, env_username,
+	  server, client);
+  cmd_len = strlen(m4_cmdline);
+  sprintf(m4_cmdline + cmd_len, m4_lines[4], hostname, ProtocolVersion(dpy));
+  cmd_len = strlen(m4_cmdline);
+  sprintf(m4_cmdline + cmd_len, m4_lines[5], ProtocolRevision(dpy),
+      ServerVendor(dpy), VendorRelease(dpy));
+
+  /* djhjr - 2/20/99 */
+  cmd_len = strlen(m4_cmdline);
+  if (opt_len)
+  {
+    sprintf(m4_cmdline + cmd_len, " %*.*s", opt_len, opt_len, m4_option);
+    cmd_len = strlen(m4_cmdline);
+  }
+  sprintf(m4_cmdline + cmd_len, " < %s", cp);
+
+  if (PrintErrorMessages)
+    fprintf(stderr, "\n%s: %s\n", ProgramName, m4_cmdline);
+
+  if (colon) *colon = ':';
+  if (!server_is_client) free(server);
+  free(client);
+
+  return (m4_cmdline);
+}
+#endif /* NO_M4_SUPPORT */
+

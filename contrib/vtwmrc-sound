@@ -1,0 +1,78 @@
+
+#
+# DESCRIPTION FILE FOR vtwm - $(HOME)/vtwm/vtwmrc-sound
+#
+# PRE-PROCESSED BY vtwm-5.4.6 USING m4
+#
+
+PauseOnExit	3
+PauseOnQuit	3
+
+Sounds
+{
+	"(vtwm start)"		"HOME/vtwm/sounds/startup.wav"
+	"(vtwm stop)"		"HOME/vtwm/sounds/shutdown.wav"
+
+#	"f.exec"		"HOME/vtwm/sounds/ping.au"
+	"f.newdoor"		"HOME/vtwm/sounds/ping.au"
+	"(client map)"		"HOME/vtwm/sounds/ping.au"
+
+	"f.delete"		"HOME/vtwm/sounds/doh2.au"
+	"f.deletedoor"		"HOME/vtwm/sounds/doh1.au"
+	"f.destroy"		"HOME/vtwm/sounds/doh3.au"
+	"(client unmap)"	"HOME/vtwm/sounds/ping.au"
+
+	"f.bottomzoom"		"HOME/vtwm/sounds/bleebloo.au"	50
+	"f.fullzoom"		"HOME/vtwm/sounds/bleebloo.au"	50
+	"f.horizoom"		"HOME/vtwm/sounds/bleebloo.au"	50
+	"f.leftzoom"		"HOME/vtwm/sounds/bleebloo.au"	50
+	"f.rightzoom"		"HOME/vtwm/sounds/bleebloo.au"	50
+	"f.topzoom"		"HOME/vtwm/sounds/bleebloo.au"	50
+	"f.zoom"		"HOME/vtwm/sounds/bleebloo.au"	50
+	"f.stricticonmgr"	"HOME/vtwm/sounds/bleebloo.au"	50
+
+	"f.resize"		"HOME/vtwm/sounds/chime5.au"
+
+	"f.squeezeleft"		"HOME/vtwm/sounds/tshhh.wav"	50
+	"f.squeezecenter"	"HOME/vtwm/sounds/tshhh.wav"	50
+	"f.squeezeright"	"HOME/vtwm/sounds/tshhh.wav"	50
+
+	"f.deiconify"		"HOME/vtwm/sounds/whoosh4.au"	50
+	"f.iconify"		"HOME/vtwm/sounds/dedoo.au"	30
+	"f.hidedesktopdisplay"	"HOME/vtwm/sounds/dedoo.au"	30
+	"f.hideiconmgr"		"HOME/vtwm/sounds/dedoo.au"	30
+	"f.showdesktopdisplay"	"HOME/vtwm/sounds/dedoo.au"	30
+	"f.showiconmgr"		"HOME/vtwm/sounds/dedoo.au"	30
+
+	"f.move"		"HOME/vtwm/sounds/chime5.au"
+	"f.forcemove"		"HOME/vtwm/sounds/chime5.au"
+
+#	"f.warp"		"HOME/vtwm/sounds/whoosh4.au"	50
+	"f.warpclassnext"	"HOME/vtwm/sounds/whoosh4.au"	50
+	"f.warpclassprev"	"HOME/vtwm/sounds/whoosh4.au"	50
+	"f.warpring"		"HOME/vtwm/sounds/whoosh4.au"	50
+	"f.warpto"		"HOME/vtwm/sounds/whoosh4.au"	50
+	"f.warptoiconmgr"	"HOME/vtwm/sounds/whoosh4.au"	50
+	"f.warptonewest"	"HOME/vtwm/sounds/whoosh4.au"	50
+
+	"f.panup"		"HOME/vtwm/sounds/whoosh1.wav"
+	"f.pandown"		"HOME/vtwm/sounds/whoosh1.wav"
+	"f.panleft"		"HOME/vtwm/sounds/whoosh1.wav"
+	"f.panright"		"HOME/vtwm/sounds/whoosh1.wav"
+	"f.enterdoor"		"HOME/vtwm/sounds/whoosh1.wav"
+	"(autopan event)"	"HOME/vtwm/sounds/whoosh1.wav"
+
+	"f.autopan"		"HOME/vtwm/sounds/pop1.wav"	50
+	"f.snaprealscreen"	"HOME/vtwm/sounds/pop1.wav"	50
+	"f.staticiconpositions"	"HOME/vtwm/sounds/pop1.wav"	50
+	"f.warpsnug"		"HOME/vtwm/sounds/pop1.wav"	50
+	"f.warpvisible"		"HOME/vtwm/sounds/pop1.wav"	50
+
+	"(menu map)"		"HOME/vtwm/sounds/chime3.au"
+#	"(menu unmap)"		"HOME/vtwm/sounds/chime3.au"
+	"f.identify"		"HOME/vtwm/sounds/chime4.au"
+#	"(info unmap)"		"HOME/vtwm/sounds/chime4.au"
+
+	"(bell event)"		"HOME/vtwm/sounds/chime1.au"
+}
+

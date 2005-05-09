@@ -13,7 +13,7 @@
 .\" .if t .sp .5
 .\" ..
 .\" .ta .3i .6i .9i 1.2i 1.5i 1.8i
-.TH VTWM 1 "Release 5.4.5" "X11R4-6"
+.TH VTWM 1 "Release 5.4.6" "X11R4-6"
 .\"*********************************************************************
 .\" Important note: At the time 5.4.4 was released, this manual page
 .\" conformed to Sun's guidelines for manual page markup, passed
@@ -29,16 +29,15 @@ vtwm - Virtual Tab Window Manager for the X Window System
 .\"=====================================================================
 .SH SYNTAX
 .PP
-\&\fBvtwm \fP[-display \fIdpy\fP] [-s] [-f \fIinitfile\fP] [-v]
+\&\fBvtwm \fP[-d \fIdisplay\fP] [-f \fIinitfile\fP] [-m [\fIoptions\fP]] [-s] [-v]
 .PP
 .\"=====================================================================
 .SH DESCRIPTION
 .PP
 \&\fBvtwm\fP is a window manager for the X Window System.  It provides
-titlebars, shaped windows,
-several forms of icon management, user-defined macro functions,
-click-to-type and pointer-driven keyboard focus, and user-specified
-key and pointer button bindings.
+titlebars, shaped windows, several forms of icon management, user-defined
+macro functions, click-to-type and pointer-driven keyboard focus, and
+user-specified key and pointer button bindings.
 .PP
 This program is usually started by the user's session manager or
 startup script.  When used from \fBxdm\fP(1) or \fBxinit\fP(1) without
@@ -52,48 +51,48 @@ contains the window's name, a rectangle that is lit when the window is
 receiving keyboard input, and function boxes known as "titlebuttons" at
 the left and right edges of the titlebar.
 .PP
-Pressing pointer Button1 (usually the left-most
-button unless it has been changed with \fBxmodmap\fP(1)) on a
-titlebutton will invoke the function associated with the button.
-In the default interface, windows are iconified by clicking (pressing
-and then immediately releasing) the left titlebutton (which looks
-like a dot).  Conversely, windows are deiconified by clicking in the
-associated icon or entry in the icon manager
-(see the descriptions of the variable
-\&\fBShowIconManager\fP and the function \fBf.showiconmgr\fP in the
+Pressing pointer Button1 (usually the left-most button unless it has been
+changed with \fBxmodmap\fP(1)) on a titlebutton will invoke the function
+associated with the button.  In the default interface, windows are iconified
+by clicking (pressing and then immediately releasing) the left titlebutton
+(which looks like a dot).  Conversely, windows are deiconified by clicking
+in the associated icon or entry in the icon manager (see the descriptions
+of the variable \fBShowIconManager\fP and the function \fBf.showiconmgr\fP
+in the
 .B BINDINGS
 section).
 .PP
 Windows are resized by pressing the right titlebutton (which resembles a
 group of nested squares), dragging the pointer over the edge that is to be
-moved, and releasing the pointer when the outline of the window is the desired
-size.  Similarly, windows are moved by pressing in the title or highlight
-region, dragging a window outline to the new location, and then releasing
-when the outline is in the desired position.  Just
-clicking in the title or highlight region raises the window without moving it.
+moved, and releasing the pointer when the window is the desired size.
+Similarly, windows are moved by pressing in the title or highlight region,
+dragging it to the new location, and then releasing when the window is in
+the desired position.  Just clicking in the title or highlight region
+raises the window without moving it.
 .PP
 When new windows are created, \fBvtwm\fP will honor any size and location
 information requested by the user (usually through \fB\-geometry\fP
 command line argument or X11 resources for the individual applications).
-Otherwise, an outline of the window's default size, its titlebar, and lines
-crossing the
-window diagonally that track the pointer are displayed.
-Clicking pointer Button1
-will position the window at the current position and give it the default
-size.  Pressing pointer Button2 (usually the middle pointer button)
-and dragging the outline
-will give the window its current position but allow the sides to be resized as
-described above.  Clicking pointer Button3 (usually the right pointer button)
-will give the window its current position but attempt to make it long enough
-to touch the bottom of the screen.
+Clicking pointer Button1 will position the window at the current position
+and give it the default size.  Pressing pointer Button2 (usually the middle
+pointer button) and dragging the window will give the window its current
+position but allow the sides to be resized as described above.  Clicking
+pointer Button3 (usually the right pointer button) will give the window its
+current position but attempt to make it long enough to touch the bottom of
+the screen.
+.PP
+The default behavior during these operations is to represent the window with
+an outline of the client window and its titlebar, lines crossing within the
+client window.  Alternatively, \fBvtwm\fP may be configured to draw the
+window completely, but it is not recommended unless yours is a fast system.
 .\"=====================================================================
 .SH THE VIRTUAL DESKTOP
 \&\fBvtwm\fP is based upon the \fBtwm\fP(1) window manager, but adds extra
-functionality in the form of a virtual desktop.  The virtual desktop is an area
-larger than the physical screen. The real screen is considered to be a
-window onto portions of the virtual desktop showing whatever windows
-are present in that area of the desktop.   To help navigate around the desktop, \fBvtwm\fP
-creates a new window, of the name \fIVTWM Desktop\fP, which shows
+functionality in the form of a virtual desktop.  The virtual desktop is an
+area larger than the physical screen. The real screen is considered to be a
+window onto portions of the virtual desktop showing whatever windows are
+present in that area of the desktop.   To help navigate around the desktop,
+\fBvtwm\fP creates a new window, of the name \fIVTWM Desktop\fP, which shows
 the entire desktop using a small scale.  In the Virtual Desktop window, all
 windows that exist are displayed and various options are provided to recognize
 the identity of the different windows (see the descriptions of the variables
@@ -119,25 +118,32 @@ such as \fBxsetroot\fP(1) will continue to work unmodified.
 .SH OPTIONS
 \&\fBvtwm\fP accepts the following command line options:
 .PP
-.TP 8
-.B \-display \fIdpy\fP
+.TP 15
+.B \-d \fIdisplay\fP
 This option specifies the X server to use.
-.TP 8
-.B \-s
-This option indicates that only the default screen (as specified by
-\&\fB\-display\fP or by the \fBDISPLAY\fP environment variable) should be
-managed.  By default, \fBvtwm\fP will attempt to manage
-all screens on the display.
-.TP 8
-.B \-f \fIfilename\fP
+.TP 15
+.B \-f \fIinitfile\fP
 This option specifies the name of the startup file to use.  By default,
 \&\fBvtwm\fP will look in the user's home directory for files named
-\&\fI.vtwmrc.num\fP, \fI.vtwmrc\fP, \fI.twmrc.num\fP, or \fI.twmrc\fP
-(\fInum\fP is a screen number).  It also looks for system-wide default
+\&\fI.vtwmrc.N\fP, \fI.vtwmrc\fP, \fI.twmrc.N\fP, or \fI.twmrc\fP (where
+\'\fIN\fP\' is a screen number).  It also looks for system-wide default
 files; see the
 .B CUSTOMIZATION
 section below for details.
-.TP 8
+.TP 15
+.B \-m \fP[\fIoptions\fP]
+This option causes \fBvtwm\fP to preprocess the startup file using the
+\fBm4\fP(1) macro processor. The \fIoptions\fP will be passed verbatim to
+\fBm4\fP along with those symbols that \fBvtwm\fP declares.  Note that
+\fIoptions\fP itself should be quoted, to prevent unwanted processing that
+may occur by the shell, etc.
+.TP 15
+.B \-s
+This option indicates that only the default screen (as specified by the
+\&\fB\-d\fP option or by the \fBDISPLAY\fP environment variable) should be
+managed.  By default, \fBvtwm\fP will attempt to manage all screens on the
+display.
+.TP 15
 .B \-v
 This option indicates that \fBvtwm\fP should print error messages whenever
 an unexpected X Error event is received.  This can be useful when debugging
@@ -197,8 +203,8 @@ file should not notice any difference.
 If no startup files are found, \fBvtwm\fP will use the built-in defaults
 described above.  The only X11 resource used by \fBvtwm\fP is
 \&\fIbitmapFilePath\fP for a colon-separated list of directories to search
-when looking for bitmap files (for more information, see the \fIAthena
-Widgets\fP manual and \fBxrdb\fP(1)).
+when looking for bitmap and pixmap files (for more information, see the
+\fIAthena Widgets\fP manual and \fBxrdb\fP(1)).
 .PP
 \&\fBvtwm\fP startup files are logically broken up into three types of
 specifications:  \fIVariables\fP, \fIBindings\fP, \fIMenus\fP.
@@ -220,6 +226,117 @@ by double quote characters (e.g., \fI"blue"\fP) and are case-sensitive.
 A sharp sign (#) outside
 of a string causes the remainder of the line in which the character appears to
 be treated as a comment.
+.\"=====================================================================
+.SH M4 PREPROCESSING
+.PP
+A powerful feature of \fBvtwm\fP as of version 5.4.6 is that it can use
+\fBm4\fP(1) to pre-process it's startup files.  When \fBvtwm\fP is started
+with \fB\-m\fP, it will open a file for input as described above, but will
+process that file through \fBm4\fP before parsing it.  So, you can use
+\fBm4\fP macros to perform operations at runtime.  This makes it very easy
+to work when you use many different displays, etc.  For example, if you want
+to set the lower right section of the screen to be your \fBIconRegion\fP,
+you can use \fBm4\fP directives and pre-defined symbols to calculate the
+region you want:
+.RS
+.nf
+define(IRegion, translit(eval(WIDTH/3)*eval(HEIGHT/2)+eval(WIDTH-WIDTH/3)-0, *, x))
+IconRegion  "IRegion" SOUTH EAST 75 25
+.fi
+.RE
+will define the lower half, and right-hand third of the screen.  The symbols
+\fIWIDTH\fP and \fIHEIGHT\fP are calculated by \fBvtwm\fP for \fBm4\fP to
+use.  The following symbols are pre-defined by \fBvtwm\fP:
+.TP 15
+.B "SERVERHOST"
+This variable is set to the name of the machine that is running the X
+server.
+.TP 15
+.B "CLIENTHOST"
+The machine that is running the X clients (i.e., "vtwm", "xterm", etc.).
+.TP 15
+.B "HOSTNAME"
+The canonical hostname running the clients (i.e., a fully-qualified
+version of \fBCLIENTHOST\fP).
+.TP 15
+.B "USER"
+The name of the user running the program.  Gotten from the environment.
+.TP 15
+.B "HOME"
+The user's home directory.  Gotten from the environment.
+.TP 15
+.B "VERSION"
+The X major protocol version.  As seen by ProtocolVersion().
+.TP 15
+.B "REVISION"
+The X minor protocol revision.  As seen by ProtocolRevision().
+.TP 15
+.B "VENDOR"
+The vendor of your X server (i.e., "MIT X Consortium").
+.TP 15
+.B "RELEASE"
+The release number of your X server.  For MIT X11R5, this is "5".
+.TP 15
+.B "WIDTH"
+The width of your display in pixels.
+.TP 15
+.B "HEIGHT"
+The height of your display in pixels.
+.TP 15
+.B "X_RESOLUTION"
+The X resolution of your display in pixels per meter.
+.TP 15
+.B "Y_RESOLUTION"
+The Y resolution of your display in pixels per meter.
+.TP 15
+.B "PLANES"
+The number of bit planes your display supports in the default root window.
+.TP 15
+.B "BITS_PER_RGB"
+The number of significant bits in an RGB color.  (log base 2 of the number
+of distinct colors that can be created.  This is often different from the
+number of colors that can be displayed at once.)
+.TP 15
+.B "TWM_TYPE"
+Tells which \fBtwm\fP derivative is running.  It will always be set to "vtwm"
+in this program.  This is useful for protecting parts of your startup file
+that \fBtwm\fP proper won't understand (like \fBVirtualDesktop\fP) so that it
+is still usable with other \fBtwm\fP-based programs.
+.TP 15
+.B "CLASS"
+Your visual class.  Will return one of "StaticGray", "GrayScale",
+"StaticColor", "PseudoColor", "TrueColor", "DirectColor", or, if it cannot
+determine what you have, "NonStandard".
+.TP 15
+.B "COLOR"
+This will be either "Yes" or "No".  This is just a wrapper around the above
+definition.  Returns "Yes" on "*Color", and "No" on "StaticGray" and "GrayScale".
+.TP 15
+.B "XPM"
+This will be either "Yes" or "No" depending on whether support for pixmap
+image files has been compiled in.
+.TP 15
+.B "SOUND"
+This will be either "Yes" or "No" depending on whether support for sound has
+been compiled in.
+.TP 15
+.B "REGEX"
+This will be either "Yes" or "No" depending on whether support for regular
+expressions ("RE"s) has been compiled in.
+.PP
+Note that any symbols passed to \fBm4\fP on the command line that conflict
+with these will not be anticipated or dealt with by \fBvtwm\fP; you will be
+at the mercy of your particular \fBm4\fP.
+.PP
+Note also that if \fBvtwm\fP's preparation for executing \fBm4\fP fails, the
+startup file will be processed normally, and will choke on the first \fBm4\fP
+macro encountered.
+.PP
+Finally, be aware that \fBm4\fP preprocessing can cause things often found in
+startup files to break.  For example, quotes and backquotes in shell commands
+will be badly messed up by \fBm4\fP's own internal quoting mechanism.  This
+particular problem can be worked around by placing \fIchangequote(,)\fP at
+the top of your startup file.
 .\"=====================================================================
 .SH VARIABLES
 .PP
@@ -252,14 +369,14 @@ When a variable containing a list of strings representing windows is searched
 (e.g., to determine whether or not to enable autoraise as shown above), a
 string must be a case-sensitive match to the window's name (given by the
 WM_NAME window property), or the resource or class names (both given by the
-WM_CLASS window property).  Note that \fBvtwm\fP supports a subset of
-regular expression wildcards, the reserved characters being question
-marks (?), asterisks (*), brackets ([ and ]), and backslashes (\\).  The
-preceding example would enable autoraise on windows named "emacs", all
-\fBvtwm\fP-specific windows, any clocks installed whose name starts with
-an 'x' (\fBasclock\fP will not autoraise), and all \fBxmh\fP and
-\fBxterm\fP windows (which are of class "XTerm and "Xmh" respectively).
-See \fBregex\fP(7).
+WM_CLASS window property).  The preceding example would enable autoraise on
+windows named "emacs", all \fBvtwm\fP-specific windows, any clocks installed
+whose name starts with an 'x' (\fBasclock\fP will not autoraise), and all
+\fBxmh\fP and \fBxterm\fP windows (which are of class "XTerm" and "Xmh",
+respectively).  See the
+.B
+WILDCARDS
+section for details on what the asterisks ('*') mean.
 .PP
 String arguments that are interpreted as filenames (see the \fBPixmaps\fP,
 \&\fBCursors\fP, and \fBIconDirectory\fP variables below) will
@@ -268,16 +385,33 @@ prepend the user's directory
 a tilde (~).  If, instead, the first character is a colon (:), the name is
 assumed to refer to one of the internal bitmaps that are used to
 create the default 2D titlebar buttons:  \fB:xlogo\fP and \fB:delete\fP,
-\fB:iconify\fP and \fB:dot\fP, \fB:resize\fP, \fB:menu\fP, and
-\fB:question\fP (used for non-existent bitmap files).  Finally, if the first
-five characters are ":xpm:", the name is assumed to refer to one of the
-internal pixmaps that are used to create the default 3D titlebar buttons:
-\fB:xpm:dot\fP, \fB:xpm:resize\fP, \fB:xpm:menu\fP, \fB:xpm:zoom\fP, and
-\fB:xpm:bar\fP.
+\fB:iconify\fP and \fB:dot\fP, \fB:resize\fP, \fB:menu\fP, \fB:darrow\fP,
+\fB:rarrow\fP, and \fB:question\fP (used for non-existent bitmap files).
+Finally, if the first five characters are ":xpm:", the name is assumed to
+refer to one of the internal pixmaps that are used to create the default
+3D titlebar buttons: \fB:xpm:dot\fP, \fB:xpm:resize\fP, \fB:xpm:menu\fP,
+\fB:xpm:zoom\fP, \fB:xpm:bar\fP, \fB:xpm:darrow\fP, and \fB:xpm:rarrow\fP.
 .PP
 The following variables may be specified at the top of a \fBvtwm\fP startup
 file.  Lists of Window name prefix strings are indicated by \fIwin-list\fP.
 Optional arguments are shown in square brackets:
+.PP
+.IP "\fBAppletRegion\fP \fIgeomstr\fP \fIvgrav hgrav hgrid vgrid\fP { \fIwin-list\fP }"
+This variable specifies an area on the root window in which the windows
+listed in \fIwin-list\fP are placed.  The \fIgeomstr\fP is a quoted string
+containing a standard geometry specification for the region size and location.
+If more than one \fBAppletRegion\fP is specified, windows will be put into
+succeeding regions that have the window listed when the first is full.  The
+\fIvgrav\fP argument should be either \fBNorth\fP or \fBSouth\fP and is used
+to control whether windows are first filled in from the top or bottom of the
+region.  Similarly, the \fIhgrav\fP argument should be either \fBEast\fP or
+\fBWest\fP and is used to control whether windows should be filled in from
+the left or right.  Windows are laid out in a grid with cells \fIhgrid\fP
+pixels wide and \fIvgrid\fP pixels high.  Note that the smallest dimension of
+the region must be at least the size of the largest window in it, including
+frame and titlebar, in the same direction.  This variable is intended to
+simplify management of all those little tool applications like \fBxcb\fP(1),
+\fBxbiff\fP(1), \fBxload\fP(1), etc. that are used regularly.
 .IP "\fBAutoPan\fP \fIN\fP" 8
 This variable allows the screen to automatically pan by \fIN%\fP of a real
 screen when the mouse approaches the edge of the screen.   The pan will be in
@@ -285,13 +419,13 @@ the direction of the edge approached.  On reasonably fast
 machines a value of 5 is nice.
 .IP "\fBAutoPanBorderWidth\fP \fIpixels\fP" 8
 If \fBAutoPan\fP is turned on, when the mouse goes within the specified
-number of \fIpixels\fP of the real screen's border, the screen is panned.  The default
-value is 5.
+number of \fIpixels\fP of the real screen's border, the screen is panned.
+The default value is \fI5\fP.
 .IP "\fBAutoPanExtraWarp\fP \fIpixels\fP" 8
 If \fBAutoPan\fP is turned on and \fBNaturalAutopanBehavior\fP turned off,
 this variable specifies how far, in pixels, you want the mouse to move away
 from the inner edge of the autopan border
-when autopanning.  The default value is 2 pixels.
+when autopanning.  The default value is \fI2\fP pixels.
 .IP "\fBAutoPanWarpWithRespectToRealScreen\fP \fIN\fP" 8
 With this option turned on, the pointer is warped by \fIN%\fP as many pixels
 on the real screen as the screen is scrolled, or by
@@ -438,7 +572,8 @@ For example:
 {
         \fBMenuBackground\fP            "gray50"
         \fBMenuForeground\fP            "blue"
-        \fBBorderColor\fP               "red" {
+        \fBBorderColor\fP               "red"
+         {
                  "XTerm" "yellow"
          }
         \fBTitleForeground\fP           "yellow"
@@ -539,8 +674,9 @@ windows not named in the list.  The optional
 \&\fIwin-list\fP is a list of window names and colors, for example:
 .RS
 .nf
-\fBDesktopDisplayBackground\fP "purple" {
-	"zwgc" "green"
+\fBDesktopDisplayBackground\fP "purple"
+{
+    "zwgc"    "green"
 }
 .fi
 .RE
@@ -551,8 +687,9 @@ The \fIwin-list\fP is in the same format as \fBTitleForeground\fP and other
 similar variables.
 .RS
 .nf
-\fBDesktopDisplayBorder\fP "black" {
-	"zwgc" "green"
+\fBDesktopDisplayBorder\fP "black"
+{
+    "zwgc"    "green"
 }
 .fi
 .RE
@@ -564,6 +701,11 @@ This entry also sets foreground colors for entries in the
 \fBVTWM Windows\fP menu.
 The format of this variable is
 the same as that used for \fBDesktopDisplayBackground\fP.
+.IP "\fBDontDeiconifyTransients\fP" 8
+This variable sees that iconified transient windows of an iconified parent
+window aren't deiconified when that parent is, thus preserving their state.
+Default behavior is to deiconify all transient subwindows of the ancestor
+window when it is deiconified.
 .IP "\fBDontIconifyByUnmapping\fP { \fIwin-list\fP }" 8
 This variable specifies a list of windows that should not be iconified by
 simply unmapping the window (as would be the case if \fBIconifyByUnmapping\fP
@@ -583,9 +725,10 @@ This variable specifies a list of clients that should not appear in
 the desktop display.  It is useful to define as a minimum the list:
 .RS
 .nf
-\fBDontShowInDisplay\fP {
-	"VTWM Desktop"
-	"VTWM Door"
+\fBDontShowInDisplay\fP
+{
+    "VTWM Desktop"
+    "VTWM Door"
 }
 .fi
 .RE
@@ -600,6 +743,9 @@ If the optional window list is supplied, only those windows will be
 prevented from being squeezed.
 .IP "\fBDoorBackground\fP \fIcolor\fP [{ \fIdoor-list\fP }]" 8
 Specifies background colors of doors.
+.IP "\fBDoorBevelWidth\fP \fIpixels\fP" 8
+Tells \fBvtwm\fP to use 3D-looking doors. It specifies the width in pixels
+of the bevel.  The default is \fI0\fP.
 .IP "\fBDoorFont\fP \fIstring\fP"
 This variable specifies the font to be used for text in doors.  This must
 be set in order to see the doors.
@@ -639,9 +785,9 @@ want all these commands to be backgrounded, try the following:
 .RS
 .nf
 f.exec "{ foo; bar; baz }" # note that "{" and "}"
-			   # are shell keywords; they
-			   # MUST be separated by
-			   # spaces.
+                           # are shell keywords; they
+                           # MUST be separated by
+                           # spaces.
 .fi
 .RE
 .IP
@@ -649,8 +795,8 @@ If you still want a command to block the window manager, you would use:
 .RS
 .nf
 f.exec "xset fp rehash;" # vtwm will not append " &"
-			 # because ';' is the last
-			 # non-space character.
+                         # because ';' is the last
+                         # non-space character.
 .fi
 .RE
 .IP
@@ -745,7 +891,7 @@ This variable specifies the geometry of the icon manager window.  The
 the initial full size of the icon manager.  The icon manager window is
 then broken into \fIcolumns\fP pieces and scaled according to the number
 of entries in the icon manager.  Extra entries are wrapped to form
-additional rows.  The default number of columns is 1.
+additional rows.  The default number of columns is \fI1\fP.
 .IP "\fBIconManagerHighlight\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies the border color to be used when highlighting
 the icon manager entry that currently has the focus,
@@ -773,8 +919,8 @@ the number of columns in this icon manager as described in
 .nf
 \&\fBIconManagers\fP
 {
-        "XTerm" "=300x5+800+5"  5
-        "myhost"        "=400x5+100+5"  2
+        "XTerm"      "300x5+800+5"  5
+        "myhost"     "400x5+100+5"  2
 }
 .fi
 .RE
@@ -786,20 +932,22 @@ be put into the "myhost" icon manager.
 This variable specifies a list of windows that should appear in the icon
 manager.  When used in conjunction with the \fBIconManagerDontShow\fP
 variable, only the windows in this list will be shown in the icon manager.
-.IP "\fBIconRegion\fP \fIgeomstring\fP \fIvgrav hgrav gridwidth gridheight\fP"
+.IP "\fBIconRegion\fP \fIgeomstr\fP \fIvgrav hgrav hgrid vgrid\fP"
 This variable specifies an area on the root window in which icons are placed
-if no specific icon location is provided by the client.  The \fIgeomstring\fP
-is a quoted string containing a standard geometry specification.
-If more than one
-\&\fBIconRegion\fP lines are given,
-icons will be put into the succeeding icon regions when the first is full.
-The \fIvgrav\fP argument should be either \fBNorth\fP or \fBSouth\fP and
-control and is used to control whether icons are first filled in from the
-top or bottom of the icon region.  Similarly, the \fIhgrav\fP argument should
-be either \fBEast\fP or \fBWest\fP and is used to control whether icons should
-be filled in from left from the right.  Icons are laid out within the region
-in a grid with cells \fIgridwidth\fP pixels wide and \fIgridheight\fP pixels
-high.
+if no specific icon location is provided by the client.  The \fIgeomstr\fP
+is a quoted string containing a standard geometry specification for the
+region size and location.  If more than one \fBIconRegion\fP line is given,
+icons will be put into the succeeding regions when the first is full.  The
+\fIvgrav\fP argument should be either \fBNorth\fP or \fBSouth\fP and is used
+to control whether icons are first filled in from the top or bottom of the
+region.  Similarly, the \fIhgrav\fP argument should be either \fBEast\fP or
+\fBWest\fP and is used to control whether icons should be filled in from the
+left or right.  Icons are laid out in a grid with cells \fIhgrid\fP pixels
+wide and \fIvgrid\fP pixels high.  Note that the smallest dimension of the
+region must be at least the size of the largest icon in it in the same
+direction.  Note also that many applications change their icon name as they
+run, and no provision is made to reformat the icon regions if any icon
+changes size accordingly.
 .IP "\fBIcons\fP { \fIwin-list\fP }" 8
 This variable specifies a list of window names and the image filenames that
 should be used as their icons.  For example:
@@ -846,9 +994,9 @@ between black and white, and the background colors between red and green.
 Similarly, the foreground for "entry4" will be half-way between white and
 red, and the background will be half-way between green and white.
 .IP "\fBLessRandomZoomZoom\fP" 8
-With this option turned on, this makes the \fBf.zoomzoom\fP function a bit
-less "random" and a bit more visible.  This might make a better visual bell,
-depending on your personal taste.
+With this option turned on, this makes random zooms a bit less "random" and
+a bit more visible.  This might make a better visual bell, depending on your
+personal taste.
 .IP "\fBMakeTitle\fP { \fIwin-list\fP }" 8
 This variable specifies a list of windows on which a titlebar should be placed
 and is used to request titles on specific windows when \fBNoTitle\fP has been
@@ -871,6 +1019,14 @@ is \fI"variable"\fP.
 This variable specifies the foreground color used for menus,
 and can only be specified inside of a
 \&\fBColor\fP or \fBMonochrome\fP list.  The default is \fI"black"\fP.
+.IP "\fBMenuScrollBorderWidth\fP \fIpixels\fP" 8
+When the contents of a menu would make it taller than the display, moving
+the pointer within \fIpixels\fP of the top or bottom of the menu causes it
+to scroll the entries.  The default value is \fI2\fP.
+.IP "\fBMenuScrollJump\fP \fIentries\fP" 8
+This variable specifies the number of entries to scroll when the pointer
+is moved within the area defined by \fBMenuScrollBorderWidth\fP.  The
+default is \fI3\fP entries.
 .IP "\fBMenuShadowColor\fP \fIstring\fP" 8
 This variable specifies the color of the shadow behind pull-down menus
 and can only be specified inside of a
@@ -903,10 +1059,11 @@ This variable gives a \fIlist\fP of clients that are nailed initially.
 It is usual to provide as a minimum the list:
 .RS
 .nf
-\fBNailedDown\fP {
-	"VTWM Desktop"
-	"VTWM Door"
-	"VTWM Icon Manager"
+\fBNailedDown\fP
+{
+    "VTWM Desktop"
+    "VTWM Door"
+    "VTWM Icon Manager"
 }
 .fi
 .RE
@@ -996,6 +1153,10 @@ These variables indicate that the \fBf.move\fP and \fBf.resize\fP functions
 should change just a window's outline.  If the optional \fIwin-list\fP is
 given, only those windows will be affected. These are usually used to narrow
 the scope of "global" \fBOpaqueMove\fP and \fBOpaqueResize\fP variables.
+.IP "\fBNoPrettyTitles\fP" 8
+If you don't mind long titles butting up against the right edge of short
+titlebars and icon managers. Disables the default behavior of using ellipses
+to indicate a truncated title.
 .IP "\fBNoRaiseOnDeiconify\fP" 8
 This variable indicates that windows that are deiconified should not be
 raised.
@@ -1058,7 +1219,7 @@ These variables indicate that the \fBf.move\fP and \fBf.resize\fP functions
 should actually change the window instead of just an outline so that the user
 can immediately see what the window will look like.  If the optional
 \fIwin-list\fP is given, only those windows will be affected "opaquely".
-These options are typically used on fast displays (particularly if
+These options are typically used on fast systems (particularly when
 \fBNoGrabServer\fP is set).
 .IP "\fBPanDistanceX\fP \fIN\fP" 8
 .IP "\fBPanDistanceY\fP \fIN\fP" 8
@@ -1071,6 +1232,11 @@ This variable indicates how hard it should be to pan to an adjacent virtual
 screen.  It specifies how long the pointer must be within \fBAutoPanBorderWidth\fP
 pixels of the real screen's edge.  Values equal to \fI0\fP or greater than
 \fI10000\fP disables this feature.  The default is \fI0\fP milliseconds.
+.IP "\fBPauseOnExit\fP \fIN\fP" 8
+.IP "\fBPauseOnQuit\fP \fIN\fP" 8
+These variables define a delay on exit, expressed in seconds. They allow the
+\fB(vtwm stop)\fP and \fBf.quit\fP sounds time to play before the connection
+to \fBrplayd\fP(8) is closed.
 .IP "\fBPixmaps\fP { \fIpixmaps\fP }" 8
 This variable specifies a list of image filenames that define the appearance
 of various windows.  Each entry is a keyword indicating the window to set,
@@ -1100,14 +1266,14 @@ the window before it is raised.  The default is \fI0\fP milliseconds.
 400 milliseconds works well.
 .IP "\fBRandomPlacement\fP" 8
 This variable indicates that windows with no specified geometry should
-be placed in a pseudo-random location instead of having the user drag out
-an outline.
+be placed in a pseudo-random location instead of having the user drag an
+outline (or the window itself if the \fBOpaqueMove\fP variable is set) to
+the preferred location.
 .IP "\fBRealScreenBackground\fP \fIstring\fP" 8
 See \fBRealScreenForeground\fP.
 .IP "\fBRealScreenBorderWidth\fP \fIpixels\fP" 8
-If \fBUseRealScreenBorder\fP is turned on, this value specifies the border
-width of the \fBRealScreen\fP window (see \fBRealScreenForeground\fP).
-The default value is 2 pixels.
+This value specifies the border width of the \fBRealScreen\fP window
+(see \fBRealScreenForeground\fP). The default value is \fI0\fP pixels.
 .IP "\fBRealScreenForeground\fP \fIstring\fP" 8
 Inside what
 .B vtwm
@@ -1121,7 +1287,7 @@ source code calls this little window the RealScreen.
 By default, it has no border, and can be distinguished from the normal
 backdrop of the panner only by its color or image.
 Its foreground color has no meaning unless you give it an image.
-(It can be given a border by specifying \fBUseRealScreenBorder\fP.)
+(It can be given a border with \fBRealScreenBorderWidth\fP.)
 .IP "\fBRealScreenPixmap\fP \fIstring\fP" 8
 Names an image file used to decorate the RealScreen window.
 A sample is provided, \fInestedsqu.xbm\fP, but your mileage may vary as the
@@ -1188,6 +1354,60 @@ moves. The \fBf.snaprealscreen\fP function can be used to toggle this setting.
 This variable indicates that entries in the icon manager should be
 sorted alphabetically rather than by simply appending new windows to
 the end.
+.IP "\fBSoundHost\fP \fIstring\fP" 8
+This variable specifies what machine (by its \fITCP/IP hostname\fP) is
+running the \fBrplayd\fP(8) daemon. If not specified, the local machine
+is tried. If \fBrplayd\fP(8) cannot be accessed, sound will be toggled off.
+.IP "\fBSounds\fP { \fIsound-list\fP }" 8
+This variable is a list of identifiers and associated sound files. It
+contains entries of the form:
+.RS
+.nf
+"\fIidentifier\fP"      "\fIsoundfile\fP"      [\fIvolume\fP]
+.fi
+.RE
+.IP
+where \fIidentifier\fP is any function described in the
+.B BINDINGS
+section except \fBf.sounds\fP and \fBf.separator\fP, as well as the
+following event identifiers: \fB(vtwm start)\fP, \fB(vtwm stop)\fP,
+\fB(client map)\fP, \fB(client unmap)\fP, \fB(menu map)\fP,
+\fB(menu unmap)\fP, \fB(info unmap)\fP, \fB(autopan event)\fP,
+and \fB(bell event)\fP. The \fIsoundfile\fP is the full pathname of
+the sound file to play for the associated \fIidentifier\fP, and
+\fIvolume\fP sets the volume for which to play that sound (see also
+\fBSoundVolume\fP). Note that the list entries must be quoted:
+.RS
+.nf
+\&\fBSounds\fP
+{
+        "(vtwm start)"    "/usr/local/share/sound/wowee.wav"
+        "(vtwm stop)"     "/usr/local/share/sound/seeya.wav"
+        "f.exec"          "/usr/local/share/sound/click.au"   50
+        "(client map)"    "/usr/local/share/sound/ping.au"    50
+        "f.delete"        "/usr/local/share/sound/doh1.wav"
+        "f.deletedoor"    "/usr/local/share/sound/doh2.wav"
+        "f.destroy"       "/usr/local/share/sound/doh3.wav"
+        "(client unmap)"  "/usr/local/share/sound/ping.au"
+}
+.fi
+.RE
+.IP
+This example points out that some \fIidentifier\fPs "overlap":
+.RS
+.nf
+  f.beep > (bell event)            f.exec > (client map)
+  f.delete > (client unmap)        f.menu > (menu map)
+  f.deletedoor > (client unmap)    f.quit > (vtwm stop)
+  f.destroy > (client unmap)       f.version = f.identify
+.fi
+.RE
+.IP
+In these cases, the function takes precedence over the event when both
+would otherwise play.
+.IP "\fBSoundVolume\fP \fIN\fP" 8
+This variable sets the overall volume for which to play sounds, expressed
+as \fIN%\fP of maximum. Default is \fI25\fP (1/4 attenuation).
 .IP "\fBSqueezeTitle\fP [{ \fIsqueeze-list\fP }] " 8
 This variable indicates that \fBvtwm\fP should attempt to use the SHAPE
 extension to make titlebars occupy only as much screen space as they need,
@@ -1230,6 +1450,12 @@ icons until explicitly deiconified by the user.  If the optional \fIwin-list\fP
 is given, only those windows will be started iconic.  This is useful for
 programs that do not support an \fI-iconic\fP command line option or
 resource.
+.IP "\fBStaticIconPositions\fP" 8
+This variable alters icon placement such that they will maintain their
+positions on the virtual desktop when not nailed and \fBDeiconifyToScreen\fP
+is not used.  This is most applicable when \fBSnapRealScreen\fP and
+\fBAutoPan\fP is used with \fBPanDistanceX\fP and \fBPanDistanceY\fP values
+to simulate \fBctwm\fP(1) workspaces.
 .IP "\fBStayUpMenus\fP" 8
 This variable alters menu interaction.  By default, a menu item is selected
 when a mouse button is released over it.  This variable causes menu items to
@@ -1246,6 +1472,9 @@ the right button will activate that menu item and dismiss the menu.
 A synonym for \fBNailedDown\fP.
 .IP "\fBStickyAbove\fP" 8
 A synonym for \fBNailedAbove\fP.
+.IP "\fBStrictIconManager\fP" 8
+This variable causes icon managers to list only those windows that are in
+an iconified state.
 .IP "\fBSunkFocusWindowTitle\fP" 8
 This variable specifies that the title highlight bar of the focus window
 (if exists) should be of a sunken appearance instead of a bitmap or image.
@@ -1298,9 +1527,6 @@ should be used, and
 \&\fI"non-zero"\fP indicating that the position should used if
 it is other than (0,0).  The latter option is for working around a bug in
 older toolkits.
-.IP "\fBUseRealScreenBorder\fP" 8
-This variable lets the RealScreen have a border.
-It may be useful for monochrome systems.
 .IP "\fBVirtualBackground\fP \fIstring\fP
 This is the background color for the panner, a.k.a. the Virtual
 Desktop window.
@@ -1339,12 +1565,15 @@ times the size of the desktop window: the desktop area will be
 .RE
 .IP
 The size of the desktop can be changed dynamically,
-by simply resizing the Virtual Desktop window.
-.IP "\fBVirtualFont\fP \fIfont\fP" 8
+by simply resizing the virtual desktop window.
+.IP "\fBVirtualDesktopBevelWidth\fP \fIpixels\fP" 8
+Tells \fBvtwm\fP to use a 3D-looking virtual desktop. It specifies the width
+in pixels of the bevel.  The default is \fI0\fP.
+.IP "\fBVirtualDesktopFont\fP \fIfont\fP" 8
 This variable causes \fIfont\fP to be used when displaying the names
 of windows in the virtual desktop display.  If this variable is not
-set, then names will not be displayed.  The \fBDesktopDisplayForeground\fP should
-also be set for this feature to be useful.
+set, then names will not be displayed.  The \fBDesktopDisplayForeground\fP
+should also be set for this feature to be useful.
 .IP "\fBVirtualReceivesMotionEvents\fP" 8
 .IP "\fBVirtualSendsMotionEvents\fP" 8
 These variables indicate that changes to the position and dimension of
@@ -1367,6 +1596,11 @@ should deiconify any iconified windows they encounter.  This is typically
 used to make a key binding that will pop a particular window (such as
 \fIxmh\fP), no matter where it is.  The default is for the functions to
 ignore iconified windows.
+.IP "\fBWarpVisible\fP" 8
+This variable indicates that the warp functions \fBf.warpclassnext\fP,
+\fBf.warpclassprev\fP, \fBf.warpring\fP, and \fBf.warpto\fP should restrict
+themselves to windows that are on the screen.  The default is for the
+functions to traverse the entire virtual desktop.
 .IP "\fBWarpWindows\fP" 8
 When warping to a window, by default the real screen will be moved
 to find the window on the virtual desktop. With this set, the window
@@ -1389,7 +1623,12 @@ end of the colormap from the graphics.
 This variable indicates that outlines suggesting movement of a window
 to and from its iconified state should be displayed whenever a window is
 iconified or deiconified.  The optional \fIcount\fP argument specifies the
-number of outlines to be drawn.  The default count is 8.
+number of outlines to be drawn.  The default count is \fI8\fP.
+.IP "\fBZoomZoom\fP" 8
+This variable modifies zooms such that a random place will be used for the
+source or destination when there isn't an appropriate window (e.g., an icon,
+icon manager entry, or client window).  Default behavior inhibits zooms when
+there aren't appropriate windows, except for the \fBf.zoomzoom\fP function.
 .\"=====================================================================
 .SH SPECIAL VARIABLES
 .PP
@@ -1402,8 +1641,9 @@ event is received for which no binding is provided.  This is typically
 bound to \fBf.nop\fP, \fBf.beep\fP, or a menu containing window operations.
 .IP "\fBWindowFunction\fP \fIfunction\fP" 8
 This variable specifies the function to execute when a window is selected
-from the \fBVTWM Windows\fP menu.  If this variable is not set, the window
-will be deiconified and raised.
+from the \fBVTWM Windows\fP menu.  If this variable is not set (default),
+the window will be deiconified and raised.  It is strongly recommended that
+if this is set, the function includes provision for deiconifying windows.
 .\"=====================================================================
 .SH BINDINGS
 .PP
@@ -1461,10 +1701,10 @@ Similarly, the \fIcontext\fP is any combination of
 \&\fBdoor\fP,
 \&\fBiconmgr\fP, their first letters (\fBiconmgr\fP abbreviation is
 \&\fBm\fP, \fBdoor\fP has no abbreviation),
-or \fBall\fP,
-separated by a vertical bar.  The \fIfunction\fP is any of the \fBf.\fP
-keywords described below.  For example, the default startup
-file contains the following bindings:
+or \fBall\fP, separated by a vertical bar.  It is rumored that window class
+names will also work.  The \fIfunction\fP is any of the \fBf.\fP keywords
+described below.  For example, the default startup file contains the following
+bindings:
 .RS
 .nf
 Button1 =       : root          : f.menu "VTWM Windows"
@@ -1537,7 +1777,8 @@ upon startup or restarting of the window manager.  For example:
 AutoPan 25
         .
         .
-Function "VTWM Profile" {
+Function "VTWM Profile"
+{
         .
         .
     f.autopan
@@ -1665,7 +1906,8 @@ This function is a synonym for \fBf.bottomzoom\fP.
 .IP "\fBf.hidedesktopdisplay\fP" 8
 This function unmaps the desktop display.
 .IP "\fBf.hideiconmgr\fP" 8
-This function unmaps the current icon manager.
+This function unmaps the current icon manager when selected from a client
+window, and unmaps all icon managers when selected from the root window.
 .IP "\fBf.horizoom\fP" 8
 This variable is similar to the \fBf.zoom\fP function except that the
 selected window is resized to the full width of the display.
@@ -1791,8 +2033,9 @@ This function moves the real display to (0,0)
 .IP "\fBf.resize\fP" 8
 This function displays an outline of the selected window.  Crossing a border
 (or setting \fBAutoRelativeResize\fP) will cause the outline to begin to
-rubber band until the invoking button is released.  To abort a resize,
-press another button before releasing the first button.
+rubber band until the invoking button is released.  To abort the resize,
+press another button before releasing the first button.  Note that the
+window itself is manipulated if the \fBOpaqueResize\fP variable is not set.
 .IP "\fBf.restart\fP" 8
 This function kills and restarts \fBvtwm\fP. See also \fBf.startwm\fP.
 .IP "\fBf.righticonmgr\fP" 8
@@ -1816,12 +2059,15 @@ will be rung.
 Valid only in menus. The effect is to add a line separator between the
 previous and the following entry. The name selector part in the menu is not
 used (but must be present).
-.IP "\fBf.setrealscreen\fP \fIXxY\fP" 8
-This function sets the real screen to the virtual coordinates (\fIX,Y\fP).
+.IP "\fBf.setrealscreen\fP \fIgeomstr\fP" 8
+This function sets the real screen to the virtual coordinates specified.
+The \fIgeomstr\fP is a quoted string containing a standard geometry
+specification.
 .IP "\fBf.showdesktopdisplay\fP" 8
 This function maps the desktop display.
 .IP "\fBf.showiconmgr\fP" 8
-This function maps the current icon manager.
+This function maps the current icon manager when selected from a client
+window, and maps all icon managers when selected from the root window.
 .IP "\fBf.snap\fP" 8
 This function snaps the real screen to a grid defined on virtual space with
 \fBPanDistanceX\fP and \fBPanDistanceY\fP increments.
@@ -1836,6 +2082,8 @@ on the screen
 .IP "\fBf.sorticonmgr\fP" 8
 This function sorts the entries in the current icon manager alphabetically.
 See the variable \fBSortIconManager\fP.
+.IP "\fBf.sounds\fP" 8
+This function toggles the playing of sounds. It's a "mute" function.
 .\".IP "\fBf.source\fP \fIstring\fP (DOES NOT WORK!!!)" 8
 .\"This function assumes \fIstring\fP is a file name.  The file is read
 .\"and parsed as a \fBvtwm\fP startup file.
@@ -1858,10 +2106,14 @@ This function kills \fBvtwm\fP, and starts up the window manager specified
 by \fIcommandline\fP. Note that \fIcommandline\fP accepts up to eight
 options for the command (as counted by whitespace), and that no environment
 variables nor a trailing ampersand should be used. See also \fBf.restart\fP.
+.IP "\fBf.staticiconpositions\fP" 8
+This function toggles the setting of \fBStaticIconPositions\fP.
 .IP "\fBf.stick\fP" 8
 This function is a synonym for \fBf.nail\fP.
 .IP "\fBf.stickyabove\fP" 8
 This function is synonymous with the \fBf.nailedabove\fP function.
+.IP "\fBf.stricticonmgr\fP" 8
+This function toggles the setting of \fBStrictIconManager\fP.
 .IP "\fBf.title\fP" 8
 This function provides a centered, unselectable item in a menu definition.  It
 should not be used in any other context.
@@ -1882,7 +2134,7 @@ This function causes the \fBvtwm\fP version window to be displayed.  This
 window will be displayed until a pointer button is pressed or the
 pointer is moved from one window to another.
 .IP "\fBf.virtualgeometries\fP" 8
-Toggles the setting of NotVirtualGeometries.
+This function toggles the setting of \fBNotVirtualGeometries\fP.
 .IP "\fBf.vlzoom\fP" 8
 This function is a synonym for \fBf.leftzoom\fP.
 .IP "\fBf.vrzoom\fP" 8
@@ -1903,6 +2155,8 @@ This function warps the pointer to the next or previous window (as indicated
 by the argument \fIstring\fP, which may be \fI"next"\fP or \fI"prev"\fP)
 specified in the \fBWindowRing\fP variable.  If the window is iconified, it
 will be deiconified if the variable \fBWarpUnmapped\fP is set or else ignored.
+.IP "\fBf.warpsnug\fP" 8
+This function toggles the setting of \fBWarpSnug\fP.
 .IP "\fBf.warpto\fP \fIstring\fP" 8
 This function warps the pointer to the window which has a name or class
 that matches \fIstring\fP.  If the window is iconified, it will be deiconified
@@ -1925,6 +2179,8 @@ skipping over any unmanaged screens),
 the word \fI"back"\fP (indicating the current screen minus 1, skipping over
 any unmanaged screens), or the word
 \&\fI"prev"\fP (indicating the last screen visited.
+.IP "\fBf.warpvisible\fP" 8
+This function toggles the setting of \fBWarpVisible\fP.
 .IP "\fBf.winrefresh\fP" 8
 This function is similar to the \fBf.refresh\fP function except that only the
 selected window is refreshed.
@@ -1932,10 +2188,10 @@ selected window is refreshed.
 This function is similar to the \fBf.fullzoom\fP function, except that
 the only the height of the selected window is changed.
 .IP "\fBf.zoomzoom\fP" 8
-This silly function makes a zoom outline from a random place to
-another random place. (See the \fB"Zoom"\fP variable.) It's silly
-but it looks spiffy, and can be used as a visual bell in place of
-\fBf.beep\fP.  Also see \fBLessRandomZoomZoom\fP.
+This function makes a zoom outline from a random place to another random
+place (see the \fBZoom\fP and \fBZoomZoom\fP variables). It's silly, but
+can be used as a visual bell in place of \fBf.beep\fP.  See also the
+\fBLessRandomZoomZoom\fP variable.
 .\"=====================================================================
 .SH MENUS
 .PP
@@ -2024,30 +2280,55 @@ The root window can be decorated with whatever image file format that is
 supported by whatever X Window System utilities and applications you may
 have installed (\fBxloadimage\fP(1), \fBxsetroot\fP(1), \fBxv\fP(1), etc.).
 .\"=====================================================================
+.SH WILDCARDS
+\&\fBvtwm\fP supports "wildcarding" when matching windows against a
+variable's \fIwin-list\fP. By default, the question mark ('?') represents
+any single character, the asterisk ('*') represents any zero or more
+characters, and brackets ('[' and ']') represent any characters listed
+within them. The backslash ('\\') "escapes" any one character, allowing
+these reserved characters to be used literally.
+.PP
+\&\fBvtwm\fP can support a richer method of character substitution, called
+\fIregular expressions\fP, or \fI"RE"\fPs. If \fBvtwm\fP is built with REs,
+many more "wildcard" rules are added. A description of REs is beyond the
+scope of this document; see the \fBregex\fP(7) man page.
+.PP
+\&\fBvtwm\fP distinguishes REs from strings by enclosing them in forward
+slashes ('/'). The two may be freely mixed; changing the example in the
+.B
+VARIABLES
+section to:
+.RS
+.nf
+\&\fBAutoRaise\fP
+{
+        "emacs"
+        "VTWM*"
+        /x.*clock/ # was "x*clock"
+        "Xmh"
+        "XTerm"
+}
+.fi
+.RE
+accomplishes the same thing. This is but a simple example of RE usage,
+and as such doesn't demonstrate or leverage their capabilities.
+.\"=====================================================================
 .SH SIGNALS
 It is possible to issue a \fBf.restart\fP via a UNIX signal, to ease
 debugging of \fBvtwm\fP resource files.  To do this, send a SIGUSR1 to the
 \fBvtwm\fP process ID.  See \fBkill\fP(1) or \fBslay\fP(1).
 .\"=====================================================================
 .SH BUGS
-The resource manager should have been used instead of all of the window
-lists.
-.PP
-The \fBIconRegion\fP variable should take a list.
-.PP
 There are precious few safeguards against binding functions to objects
 inappropriately, especially where the virtual desktop is concerned.
 .PP
 Double clicking very fast to get the constrained move function will sometimes
 cause the window to move, even though the pointer is not moved.
 .PP
-If \fBIconifyByUnmapping\fP is on and windows are listed in
-\&\fBIconManagerDontShow\fP but not in \fBDontIconifyByUnmapping\fP,
-they may be lost if they are iconified and no bindings to
-\fBf.menu "VTWM Windows"\fP, \fBf.menu "TwmWindows"\fP, or the warp
-functions (\fBf.warp\fP and the like) exist.  In such a case, correct
-your startup file, and then simply restart the window manager with
-the \fBf.restart\fP function (or signal \fBvtwm\fP with SIGUSR1).
+It is possible to "lose" windows in the virtual desktop by placing them
+in a large desktop area, then shrinking the desktop so as to remove them
+from view. They are still there, of course, but are unreachable until the
+desktop is grown sufficiently large again.
 .PP
 See the \fIBUGS\fP file in the distribution for others.
 .\"=====================================================================
@@ -2075,9 +2356,11 @@ for locating the \fBvtwm\fP startup file.
 .SH "SEE ALSO"
 \fBbitmap\fP(5),
 \fBctwm\fP(1),
+\fBm4\fP(1),
 \fBmwm\fP(1),
 \fBpixmap\fP(5),
 \fBregex\fP(7),
+\fBrplayd\fP(8),
 \fBtvtwm\fP(1),
 \fBtwm\fP(1),
 \fBvuewm\fP(1),
@@ -2098,14 +2381,14 @@ Tom LaStrange, Solbourne Computer; Jim Fulton, MIT X Consortium;
 Steve Pitschke, Stardent Computer; Keith Packard, MIT X Consortium;
 Dave Payne, Apple Computer; Nick Williams <njw@athena.mit.edu>;
 Dave Edmondson, Santa Cruz Operation, <davided@sco.com>;
-Dana Chee, Bellcore (R5 conversion) <dana@thumper.bellcore.com>;
-Warren Jessop, University of Washington <whj@cs.washington.edu>;
+Dana Chee, Bellcore (R5 conversion), <dana@thumper.bellcore.com>;
+Warren Jessop, University of Washington, <whj@cs.washington.edu>;
 Gilligan <thoth@reef.cis.ufl.edu>;
 Tim Ramsey <tar@math.ksu.edu>;
 Ralph Betza <gnohmon@ssiny.com>;
 Michael Kutzner <futzi@uni-paderborn.de>;
 Stig Ostholm <ostholm@ce.chalmers.se>;
-M. Eyckmans <eyckmans@imec.be>;
+M. Eyckmans <mce@ping.be>;
 Tony Brannigan <tbrann@ox.ac.uk>;
 Alec Wolman <wolman@crl.dec.com>;
 <gdmr@dcs.edinburgh.ac.uk>;
@@ -2113,16 +2396,21 @@ Marcel Mol <marcel@duteca.et.tudelft.nl>;
 Darren S. Embry <dsembr01@starbase.spd.louisville.edu>;
 Chris P. Ross <cross@eng.umd.edu>;
 Paul Falstad <pf@z-code.z-code.com>;
-D. J. Hawkey Jr. (version 5.4) <hawkeyd@visi.com>,
+D. J. Hawkey Jr., (version 5.4), <hawkeyd@visi.com>,
 with
-Nelson H. F. Beebe <beebe@math.utah.edu>,
-Jason Gloudon <jgloudon@bbn.com>,
-Steve Ratcliffe <sterat@dial.pipex.com>,
-Caveh Frank Jalali <caveh@eng.sun.com>
 Erik Agsjo <erik.agsjo@aktiedirekt.com>,
+Ugen Antsilevitch <ugen@xonix.com>,
+Nelson H. F. Beebe <beebe@math.utah.edu>,
+Michael Dales <michael@dcs.gla.ac.uk>,
+Michel Eyckmans <mce@ping.be>,
+Jason Gloudon <jdg@world.std.com>,
 Nicholas Jacobs <nicholas_jacobs@hotmail.com>,
+Caveh Frank Jalali <caveh@eng.sun.com>
 Takeharu Kato <magician@maekawa.is.uec.ac.jp>,
 Goran Larsson <hoh@lorelei.approve.se>,
+Rolf Neugebauer <neugebar@dcs.gla.ac.uk>,
+Steve Ratcliffe <sterat@dial.pipex.com>,
+Mehul N. Sanghvi <mehul@kirsun.ne.mediaone.net>,
 acknowledging
-Claude Lecommandeur, SPIL (ctwm) <lecom@sic.epfl.ch>
+Claude Lecommandeur, (ctwm), <lecom@sic.epfl.ch>
 .\"==============================[The End]==============================

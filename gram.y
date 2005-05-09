@@ -49,6 +49,8 @@
 #include "screen.h"
 #include "parse.h"
 #include "doors.h"
+/* djhjr - 4/26/99 */
+#include "regions.h"
 #include <X11/Xos.h>
 #include <X11/Xmu/CharSet.h>
 
@@ -63,9 +65,11 @@ static char *Name = "";
 static MenuRoot	*root, *pull = NULL;
 
 static MenuRoot *GetRoot();
-void RemoveDQuote();
+/* was type 'void' - djhjr - 10/20/01 */
+static char *RemoveDQuote();
+/* djhjr - 10/20/01 */
+static char *RemoveRESlash();
 void twmrc_error_prefix();
-
 
 /* djhjr - 4/30/96 */
 static MenuItem *lastmenuitem = (MenuItem*) 0;
@@ -73,8 +77,9 @@ static MenuItem *lastmenuitem = (MenuItem*) 0;
 static Bool CheckWarpScreenArg(), CheckWarpRingArg();
 static Bool CheckColormapArg();
 static void GotButton(), GotKey(), GotTitleButton();
-static char *ptr;
 static name_list **list;
+/* djhjr - 4/26/99 */
+static RootRegion *ARlist;
 static int cont = 0;
 static int color;
 int mods = 0;
@@ -84,10 +89,15 @@ extern void SetHighlightPixmap();
 extern void SetVirtualPixmap(), SetVirtualDesktop(), SetRealScreenPixmap();
 extern void NewBitmapCursor();
 extern void AddIconRegion();
+/* next two - djhjr - 4/26/99 */
+extern RootRegion *AddAppletRegion();
+extern int AddToAppletList();
 extern int do_single_keyword(), do_string_keyword(), do_number_keyword();
 extern name_list **do_colorlist_keyword();
 extern int do_color_keyword();
 extern void do_string_savecolor(), do_var_savecolor(), do_squeeze_entry();
+/* djhjr - 6/22/01 */
+extern int SetSound();
 
 /*
  * this used to be the definition - now making the assumption it's
@@ -103,6 +113,12 @@ extern int yylineno;
 {
     int num;
     char *ptr;
+    /* djhjr - 10/20/01 */
+    struct
+    {
+	short ltype;
+	char *lval;
+    } match;
 };
 
 %token <num> LP RP MENUS MENU BUTTON DEFAULT_FUNCTION PLUS MINUS
@@ -111,13 +127,17 @@ extern int yylineno;
 %token <num> ICONMGR_GEOMETRY ICONMGR_NOSHOW MAKE_TITLE
 %token <num> ICONIFY_BY_UNMAPPING DONT_ICONIFY_BY_UNMAPPING
 %token <num> NO_TITLE AUTO_RAISE NO_HILITE NO_ICONMGR_HILITE ICON_REGION
+/* djhjr - 4/26/99 */
+%token <num> APPLET_REGION
 %token <num> META SHIFT LOCK CONTROL WINDOW TITLE ICON ROOT FRAME VIRTUAL VIRTUAL_WIN
-%token <num> COLON EQUALS SQUEEZE_TITLE DONT_SQUEEZE_TITLE
+/* TILDE - djhjr - 10/20/01 */
+%token <num> COLON EQUALS TILDE SQUEEZE_TITLE DONT_SQUEEZE_TITLE
 /* opaque stuff - djhjr - 4/7/98 */
 %token <num> OPAQUE_MOVE NO_OPAQUE_MOVE OPAQUE_RESIZE NO_OPAQUE_RESIZE
 %token <num> START_ICONIFIED NO_TITLE_HILITE TITLE_HILITE
 %token <num> MOVE RESIZE WAIT SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON
-%token <num> NUMBER KEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD
+/* MKEYWORD - djhjr - 10/20/01 */
+%token <num> NUMBER KEYWORD MKEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD
 %token <num> SKEYWORD DKEYWORD JKEYWORD WINDOW_RING WARP_CURSOR ERRORTOKEN
 %token <num> NO_STACKMODE NAILEDDOWN VIRTUALDESKTOP NO_SHOW_IN_DISPLAY
 /* Submitted by Erik Agsjo <erik.agsjo@aktiedirekt.com> */
@@ -127,12 +147,17 @@ extern int yylineno;
 %token <num> VIRTUALMAP
 %token <num> REALSCREENMAP
 /*<RFB PIXMAP*/
-%token <ptr> STRING
+/* djhjr - 6/22/01 */
+%token SOUNDS
+/* REGEXP - djhjr - 10/20/01 */
+%token <ptr> STRING REGEXP
 %token SAVECOLOR
 %token LB
 %token RB
 
-%type <ptr> string
+/* regex stuff - djhjr - 10/20/01 */
+%type <match> matcher
+%type <ptr> string regexp
 %type <num> action button number signed_number full fullkey
 
 %start twmrc
@@ -153,6 +178,9 @@ stmt		: error
 		| doors
 		| ICON_REGION string DKEYWORD DKEYWORD number number
 					{ AddIconRegion($2, $3, $4, $5, $6); }
+		| APPLET_REGION string DKEYWORD DKEYWORD number number
+					{ ARlist = AddAppletRegion($2, $3, $4, $5, $6); }
+		  applet_list
 		| ICONMGR_GEOMETRY string number	{ if (Scr->FirstTime)
 						  {
 						    Scr->iconmgr.geometry=$2;
@@ -260,6 +288,8 @@ stmt		: error
 		  function
 		| ICONS 		{ list = &Scr->IconNames; }
 		  icon_list
+		| SOUNDS
+		  sound_list
 		| COLOR 		{ color = COLOR; }
 		  color_list
                 | SAVECOLOR
@@ -541,9 +571,11 @@ win_color_entries	: /* Empty */
 		| win_color_entries win_color_entry
 		;
 
-win_color_entry	: string string		{ if (Scr->FirstTime &&
+/* 'matcher', mods to 'AddToList()' - djhjr - 10/20/01 */
+win_color_entry	: matcher string	{ if (Scr->FirstTime &&
 					      color == Scr->Monochrome)
-					    AddToList(list, $1, $2); }
+					    AddToList(list, $1.lval, $1.ltype,
+							$2); }
 		;
 
 squeeze		: SQUEEZE_TITLE {
@@ -559,10 +591,12 @@ squeeze		: SQUEEZE_TITLE {
 		  win_list
 		;
 
+/* 'matcher', mods to 'do_sqeeze_entry()' - djhjr - 10/20/01 */
 win_sqz_entries	: /* Empty */
-		| win_sqz_entries string JKEYWORD signed_number signed_number	{
+		| win_sqz_entries matcher JKEYWORD signed_number signed_number	{
 				if (Scr->FirstTime) {
-				   do_squeeze_entry (list, $2, $3, $4, $5);
+				   do_squeeze_entry (list, $2.lval, $2.ltype,
+							$3, $4, $5);
 				}
 			}
 		;
@@ -587,16 +621,17 @@ iconm_entries	: /* Empty */
 		| iconm_entries iconm_entry
 		;
 
-iconm_entry	: string string number	{ if (Scr->FirstTime)
-					    AddToList(list, $1, (char *)
-						AllocateIconManager($1, NULLSTR,
-							$2,$3));
+/* 'matcher', mods to 'AddToList()', 'AllocateIconManager()' - djhjr - 10/20/01 */
+iconm_entry	: matcher string number	{ if (Scr->FirstTime)
+					    AddToList(list, $1.lval, $1.ltype, (char *)
+						AllocateIconManager($1.lval,
+							NULLSTR, $2, $3));
 					}
-		| string string string number
+		| matcher string string number
 					{ if (Scr->FirstTime)
-					    AddToList(list, $1, (char *)
-						AllocateIconManager($1,$2,
-						$3, $4));
+					    AddToList(list, $1.lval, $1.ltype, (char *)
+						AllocateIconManager($1.lval,
+							$2, $3, $4));
 					}
 		;
 
@@ -607,8 +642,9 @@ win_entries	: /* Empty */
 		| win_entries win_entry
 		;
 
-win_entry	: string		{ if (Scr->FirstTime)
-					    AddToList(list, $1, 0);
+/* 'matcher', mods to 'AddToList()' - djhjr - 10/20/01 */
+win_entry	: matcher		{ if (Scr->FirstTime)
+					    AddToList(list, $1.lval, $1.ltype, 0);
 					}
 		;
 
@@ -619,7 +655,41 @@ icon_entries	: /* Empty */
 		| icon_entries icon_entry
 		;
 
-icon_entry	: string string		{ if (Scr->FirstTime) AddToList(list, $1, $2); }
+/* 'matcher', mods to 'AddToList()' - djhjr - 10/20/01 */
+icon_entry	: matcher string	{ if (Scr->FirstTime)
+					    AddToList(list, $1.lval, $1.ltype, $2);
+					}
+		;
+
+/* djhjr - 6/22/01 */
+sound_list	: LB sound_entries RB
+		;
+
+/* djhjr - 6/22/01 */
+sound_entries	: /* Empty */
+		| sound_entries sound_entry
+		;
+
+/* djhjr - 8/16/01 */
+sound_entry	: string string		{ if (Scr->FirstTime) SetSound($1, $2, -1); }
+		| string string number	{ if (Scr->FirstTime) SetSound($1, $2, $3); }
+		;
+
+/* djhjr - 4/26/99 */
+applet_list	: LB applet_entries RB
+		;
+
+/* djhjr - 4/26/99 */
+applet_entries	: /* Empty */
+		| applet_entries applet_entry
+		;
+
+/* djhjr - 4/26/99 */
+/* 'matcher', mods to 'AddToAppletList()' - djhjr - 10/20/01 */
+applet_entry	: matcher 		{ if (Scr->FirstTime)
+					      AddToAppletList(ARlist,
+							$1.lval, $1.ltype);
+					}
 		;
 
 function	: LB function_entries RB
@@ -723,11 +793,6 @@ action		: FKEYWORD	{ $$ = $1; }
 		;
 
 
-signed_number	: number		{ $$ = $1; }
-		| PLUS number		{ $$ = $2; }
-		| MINUS number		{ $$ = -($2); }
-		;
-
 button		: BUTTON number		{ $$ = $2;
 					  if ($2 == 0)
 						yyerror("bad button 0");
@@ -740,11 +805,33 @@ button		: BUTTON number		{ $$ = $2;
 					}
 		;
 
-string		: STRING		{ ptr = (char *)malloc(strlen($1)+1);
-					  strcpy(ptr, $1);
-					  RemoveDQuote(ptr);
-					  $$ = ptr;
+/* djhjr - 10/20/01 */
+matcher		: string		{ $$.ltype = LTYPE_ANY_STRING;
+					  $$.lval = $1;
 					}
+		| regexp		{ $$.ltype = LTYPE_ANY_REGEXP;
+					  $$.lval = $1;
+					}
+		| MKEYWORD EQUALS string { $$.ltype = $1 | LTYPE_STRING;
+					   $$.lval = $3;
+					 }
+		| MKEYWORD TILDE regexp { $$.ltype = $1 | LTYPE_REGEXP;
+					  $$.lval = $3;
+					}
+		;
+
+string		: STRING		{ $$ = RemoveDQuote($1); }
+		;
+
+/* djhjr - 10/20/01 */
+regexp		: REGEXP		{ $$ = RemoveRESlash($1); }
+		;
+
+signed_number	: number		{ $$ = $1; }
+		| PLUS number		{ $$ = $2; }
+		| MINUS number		{ $$ = -($2); }
+		;
+
 number		: NUMBER		{ $$ = $1; }
 		;
 
@@ -756,14 +843,16 @@ yyerror(s) char *s;
     ParseError = 1;
 }
 
-void RemoveDQuote(str)
+/* do manipulations in place, then copy it - djhjr - 10/20/01 */
+static char *RemoveDQuote(str)
 char *str;
 {
     register char *i, *o;
-    register int n;
-    register int count;
+    register int n, count;
+    int length = 0;
+    char *ptr = "";
 
-    for (i=str+1, o=str; *i && *i != '\"'; o++)
+    for (i = str + 1, o = str; *i && *i != '\"'; o++)
     {
 	if (*i == '\\')
 	{
@@ -800,7 +889,7 @@ char *str;
 		count = 0;
 		while (*i >= '0' && *i <= '7' && count < 3)
 		{
-		    n = (n<<3) + (*i++ - '0');
+		    n = (n << 3) + (*i++ - '0');
 		    count++;
 		}
 		*o = n;
@@ -812,19 +901,23 @@ char *str;
 		while (i++, count++ < 2)
 		{
 		    if (*i >= '0' && *i <= '9')
-			n = (n<<4) + (*i - '0');
+			n = (n << 4) + (*i - '0');
 		    else if (*i >= 'a' && *i <= 'f')
-			n = (n<<4) + (*i - 'a') + 10;
+			n = (n << 4) + (*i - 'a') + 10;
 		    else if (*i >= 'A' && *i <= 'F')
-			n = (n<<4) + (*i - 'A') + 10;
+			n = (n << 4) + (*i - 'A') + 10;
 		    else
+		    {
+			length--; /* account for length++ at loop end */
 			break;
+		    }
 		}
 		*o = n;
 		break;
 	    case '\n':
 		i++;	/* punt */
 		o--;	/* to account for o++ at end of loop */
+		length--; /* account for length++ at loop end */
 		break;
 	    case '\"':
 	    case '\'':
@@ -836,8 +929,53 @@ char *str;
 	}
 	else
 	    *o = *i++;
+
+	length++;
     }
     *o = '\0';
+
+    if (length > 0)
+    {
+	ptr = (char *)malloc(length + 1);
+	memcpy(ptr, str, length);
+	ptr[length] = '\0';
+
+#ifdef DEBUG
+	fprintf(stderr, "RemoveDQuote(): '");
+	for (n = 0; n < length; n++)
+	    fprintf(stderr, "%c", ptr[n]);
+	fprintf(stderr, "'\n", ptr);
+#endif
+    }
+
+    return (ptr);
+}
+
+/* djhjr - 10/20/01 */
+static char *RemoveRESlash(str)
+char *str;
+{
+    int length = strlen(str);
+    char *ptr = "";
+
+#ifndef NO_REGEX_SUPPORT
+    if (length > 2)
+    {
+	ptr = (char *)malloc(length - 1);
+	memcpy(ptr, str + 1, length - 2);
+	ptr[length - 2] = '\0';
+
+#ifdef DEBUG
+	fprintf(stderr, "RemoveRESlash(): '%s'\n", ptr);
+#endif
+    }
+#else
+    twmrc_error_prefix();
+    fprintf(stderr, "no regex support for %s\n", str);
+    ParseError = 1;
+#endif
+
+    return (ptr);
 }
 
 static MenuRoot *GetRoot(name, fore, back)

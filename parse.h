@@ -49,7 +49,7 @@ extern void TwmOutput();
  *
  * djhjr - 4/20/98
  */
-#define F_NOFUNCTION	0
+#define F_NOFUNCTION		0
 
 #define F_NOP			0
 #define F_BEEP			1
@@ -109,10 +109,10 @@ extern void TwmOutput();
 #define F_SHOWDESKTOP		55
 #define F_ENTERDOOR		56
 #define F_NEWDOOR		57
-#define F_SNUGDESKTOP     58
-#define F_SNUGWINDOW      59
-#define F_AUTOPAN			60/*RFB F_AUTOPAN*/
-#define F_RING				61/*RFB F_RING*/
+#define F_SNUGDESKTOP		58
+#define F_SNUGWINDOW		59
+#define F_AUTOPAN		60/*RFB F_AUTOPAN*/
+#define F_RING			61/*RFB F_RING*/
 #define F_SQUEEZELEFT		62/*RFB F_SQUEEZE*/
 #define F_SQUEEZERIGHT		63/*RFB F_SQUEEZE*/
 #define F_SQUEEZECENTER		64/*RFB F_SQUEEZE*/
@@ -120,8 +120,8 @@ extern void TwmOutput();
 #define F_VIRTUALGEOMETRIES	66/*marcel@duteca.et.tudelft.nl*/
 #define F_DELETEDOOR		67/*marcel@duteca.et.tudelft.nl*/
 #define F_ZOOMZOOM		68 /* RFB silly */
-#define F_WARP          69 /* PF */
-#define F_STICKYABOVE   70 /* DSE */
+#define F_WARP			69 /* PF */
+#define F_STICKYABOVE		70 /* DSE */
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */
@@ -146,6 +146,23 @@ extern void TwmOutput();
 
 /* djhjr - 7/15/98 */
 #define F_STARTWM		117
+
+/* djhjr - 12/14/98 */
+#define F_STATICICONPOSITIONS	118
+
+/* submitted by Ugen Antsilevitch - 5/28/00 */
+#define F_WARPVISIBLE		119
+
+/* djhjr - 5/30/00 */
+#define F_WARPSNUG		120
+
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+#define F_SOUNDS		121
+#endif
+
+/* djhjr - 10/2/01 */
+#define F_STRICTICONMGR		122
 
 #define D_NORTH			1
 #define D_SOUTH			2

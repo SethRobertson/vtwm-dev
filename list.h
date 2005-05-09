@@ -39,22 +39,34 @@
 #ifndef _LIST_
 #define _LIST_
 
+#define LTYPE_NAME	(1<<0)		/* match against window name */
+#define LTYPE_RES_NAME	(1<<1)		/* match against resource name */
+#define LTYPE_RES_CLASS	(1<<2)		/* match against resource class */
+#define LTYPE_PROPERTY	(1<<3)		/* match against a window property */
+#define LTYPE_HOST	(1<<4)		/* match against a host name */
+
+#define LTYPE_REGEXP	(1<<8)		/* match as a regular expression */
+#define LTYPE_C_REGEXP	(1<<9)		/* match as a compiled regexp */
+#define LTYPE_STRING	(1<<10)		/* match as an exact string */
+#define LTYPE_ANYTHING	(1<<11)		/* match anything */
+#define LTYPE_NOTHING	(1<<12)		/* match nothing */
+
+#define LTYPE_ANY_STRING	(LTYPE_NAME | LTYPE_RES_NAME | \
+				 LTYPE_RES_CLASS | LTYPE_STRING)
+#define LTYPE_ANY_REGEXP	(LTYPE_NAME | LTYPE_RES_NAME | \
+				 LTYPE_RES_CLASS | LTYPE_REGEXP)
+#define LTYPE_EXACT_NAME	(LTYPE_NAME | LTYPE_STRING)
+
 typedef struct name_list_struct name_list;
 
-struct name_list_struct
-{
-    name_list *next;		/* pointer to the next name */
-    char *name;			/* the name of the window */
-    char *ptr;			/* list dependent data */
-};
+extern void AddToList();
+extern char *LookInList();
+extern char *LookInNameList();
+extern int GetColorFromList();
+extern void FreeList();
 
-extern void	AddToList();
-extern char*	LookInList();
-extern char*	LookInNameList();
-extern char*	LookPatternInList();
-extern char*	LookPatternInNameList();
-extern int 	GetColorFromList();
-extern void	FreeList();
+extern name_list *next_entry();
+extern char *contents_of_entry();
 
 #endif /* _LIST_ */
 

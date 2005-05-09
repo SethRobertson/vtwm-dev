@@ -53,6 +53,7 @@ extern int ParseError;
 %}
 
 string				\"([^"]|\\.)*\"
+regexp				\/([^/]|\\.)*\/
 number				[0-9]+
 %%
 "{"				{ return (LB); }
@@ -60,6 +61,7 @@ number				[0-9]+
 "("				{ return (LP); }
 ")"				{ return (RP); }
 "="				{ return (EQUALS); }
+"~"				{ return (TILDE); }
 ":"				{ return (COLON); }
 "+"				{ return PLUS; }
 "-"				{ return MINUS; }
@@ -81,6 +83,7 @@ number				[0-9]+
 "^"				{ yylval.num = F_CUT; return FSKEYWORD; }
 
 {string}			{ yylval.ptr = (char *)yytext; return STRING; }
+{regexp}			{ yylval.ptr = (char *)yytext; return REGEXP; }
 {number}			{ (void)sscanf((char *)&yytext[0], "%d", &yylval.num);
 				  return (NUMBER);
 				}

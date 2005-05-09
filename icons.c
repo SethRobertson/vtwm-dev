@@ -33,109 +33,65 @@
 #include <string.h>
 #include "twm.h"
 #include "screen.h"
-#include "icons.h"
+#include "regions.h"
+#include "list.h"
 #include "gram.h"
 #include "parse.h"
 #include "util.h"
 
-void AddIconRegion();
-void CreateIconWindow();
-void IconDown();
-void IconUp();
-static void mergeEntries();
-void PlaceIcon();
-static void splitEntry();
+extern void splitRegionEntry();
+extern int roundEntryUp();
+extern RegionEntry *prevRegionEntry();
+extern void mergeRegionEntries();
+extern void downRegionEntry();
+extern RootRegion *AddRegion();
 
 #define iconWidth(w)	(Scr->IconBorderWidth * 2 + w->icon_w_width)
 #define iconHeight(w)	(Scr->IconBorderWidth * 2 + w->icon_w_height)
-
-static void
-splitEntry (ie, grav1, grav2, w, h)
-    IconEntry	*ie;
-    int		grav1, grav2;
-    int		w, h;
-{
-    IconEntry	*new;
-
-    switch (grav1) {
-    case D_NORTH:
-    case D_SOUTH:
-	if (w != ie->w)
-	    splitEntry (ie, grav2, grav1, w, ie->h);
-	if (h != ie->h) {
-	    new = (IconEntry *)malloc (sizeof (IconEntry));
-	    new->twm_win = 0;
-	    new->used = 0;
-	    new->next = ie->next;
-	    ie->next = new;
-	    new->x = ie->x;
-	    new->h = (ie->h - h);
-	    new->w = ie->w;
-	    ie->h = h;
-	    if (grav1 == D_SOUTH) {
-		new->y = ie->y;
-		ie->y = new->y + new->h;
-	    } else
-		new->y = ie->y + ie->h;
-	}
-	break;
-    case D_EAST:
-    case D_WEST:
-	if (h != ie->h)
-	    splitEntry (ie, grav2, grav1, ie->w, h);
-	if (w != ie->w) {
-	    new = (IconEntry *)malloc (sizeof (IconEntry));
-	    new->twm_win = 0;
-	    new->used = 0;
-	    new->next = ie->next;
-	    ie->next = new;
-	    new->y = ie->y;
-	    new->w = (ie->w - w);
-	    new->h = ie->h;
-	    ie->w = w;
-	    if (grav1 == D_EAST) {
-		new->x = ie->x;
-		ie->x = new->x + new->w;
-	    } else
-		new->x = ie->x + ie->w;
-	}
-	break;
-    }
-}
-
-roundUp (v, multiple)
-{
-    return ((v + multiple - 1) / multiple) * multiple;
-}
 
 void PlaceIcon(tmp_win, def_x, def_y, final_x, final_y)
 TwmWindow *tmp_win;
 int def_x, def_y;
 int *final_x, *final_y;
 {
-    IconRegion	*ir;
-    IconEntry	*ie;
-    int		w = 0, h = 0;
+    RootRegion	*rr;
+    RegionEntry	*re;
+    int		w, h;
 
-    ie = 0;
-    for (ir = Scr->FirstRegion; ir; ir = ir->next) {
-	w = roundUp (iconWidth (tmp_win), ir->stepx);
-	h = roundUp (iconHeight (tmp_win), ir->stepy);
-	for (ie = ir->entries; ie; ie=ie->next) {
-	    if (ie->used)
+    re = 0;
+    for (rr = Scr->FirstIconRegion; rr; rr = rr->next) {
+	w = roundEntryUp (iconWidth (tmp_win), rr->stepx);
+	h = roundEntryUp (iconHeight (tmp_win), rr->stepy);
+	for (re = rr->entries; re; re=re->next) {
+	    if (re->usedby)
 		continue;
-	    if (ie->w >= w && ie->h >= h)
+/* don't include grid spacing - djhjr - 5/22/99
+	    if (re->w >= w && re->h >= h)
+*/
+	    if (re->w >= iconWidth(tmp_win) && re->h >= iconHeight(tmp_win))
 		break;
 	}
-	if (ie)
+	if (re)
 	    break;
     }
-    if (ie) {
-	splitEntry (ie, ir->grav1, ir->grav2, w, h);
-	ie->used = 1;
-	ie->twm_win = tmp_win;
-	*final_x = ie->x + (ie->w - iconWidth (tmp_win)) / 2;
-	*final_y = ie->y + (ie->h - iconHeight (tmp_win)) / 2;
+    if (re) {
+	splitRegionEntry (re, rr->grav1, rr->grav2, w, h);
+	re->usedby = USEDBY_TWIN;
+	re->u.twm_win = tmp_win;
+
+/* evenly spaced icon placement - djhjr - 4/24/99
+	*final_x = re->x + (re->w - iconWidth (tmp_win)) / 2;
+	*final_y = re->y + (re->h - iconHeight (tmp_win)) / 2;
+*/
+	*final_x = re->x;
+	*final_y = re->y;
+
+	/* adjust for region gravity - djhjr 4/26/99 */
+	if (rr->grav2 == D_EAST)
+		*final_x += re->w - iconWidth(tmp_win);
+	if (rr->grav1 == D_SOUTH)
+		*final_y += re->h - iconHeight(tmp_win);
+
     } else {
 	*final_x = def_x;
 	*final_y = def_y;
@@ -143,20 +99,20 @@ int *final_x, *final_y;
     return;
 }
 
-static IconEntry *
-FindIconEntry (tmp_win, irp)
+static RegionEntry *
+FindIconEntry (tmp_win, rrp)
     TwmWindow   *tmp_win;
-    IconRegion	**irp;
+    RootRegion	**rrp;
 {
-    IconRegion	*ir;
-    IconEntry	*ie;
+    RootRegion	*rr;
+    RegionEntry	*re;
 
-    for (ir = Scr->FirstRegion; ir; ir = ir->next) {
-	for (ie = ir->entries; ie; ie=ie->next)
-	    if (ie->twm_win == tmp_win) {
-		if (irp)
-		    *irp = ir;
-		return ie;
+    for (rr = Scr->FirstIconRegion; rr; rr = rr->next) {
+	for (re = rr->entries; re; re=re->next)
+	    if (re->u.twm_win == tmp_win) {
+		if (rrp)
+		    *rrp = rr;
+		return re;
 	    }
     }
     return 0;
@@ -167,7 +123,7 @@ void IconUp (tmp_win)
 {
     int		x, y;
     int		defx, defy;
-    struct IconRegion *ir;
+    struct RootRegion *rr;
 
     /*
      * If the client specified a particular location, let's use it (this might
@@ -182,15 +138,19 @@ void IconUp (tmp_win)
 			   &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth))
 	  return;
 
+/* evenly spaced icon placement - djhjr - 4/24/99
 	x = defx + ((int) JunkWidth) / 2;
 	y = defy + ((int) JunkHeight) / 2;
+*/
+	x = defx;
+	y = defy;
 
-	for (ir = Scr->FirstRegion; ir; ir = ir->next) {
-	    if (x >= ir->x && x < (ir->x + ir->w) &&
-		y >= ir->y && y < (ir->y + ir->h))
+	for (rr = Scr->FirstIconRegion; rr; rr = rr->next) {
+	    if (x >= rr->x && x < (rr->x + rr->w) &&
+		y >= rr->y && y < (rr->y + rr->h))
 	      break;
 	}
-	if (!ir) return;		/* outside icon regions, leave alone */
+	if (!rr) return;		/* outside icon regions, leave alone */
     }
 
     defx = -100;
@@ -202,147 +162,33 @@ void IconUp (tmp_win)
     }
 }
 
-static IconEntry *
-prevIconEntry (ie, ir)
-    IconEntry	*ie;
-    IconRegion	*ir;
-{
-    IconEntry	*ip;
-
-    if (ie == ir->entries)
-	return 0;
-    for (ip = ir->entries; ip->next != ie; ip=ip->next)
-	;
-    return ip;
-}
-
-/* old is being freed; and is adjacent to ie.  Merge
- * regions together
- */
-
-static void
-mergeEntries (old, ie)
-    IconEntry	*old, *ie;
-{
-    if (old->y == ie->y) {
-	ie->w = old->w + ie->w;
-	if (old->x < ie->x)
-	    ie->x = old->x;
-    } else {
-	ie->h = old->h + ie->h;
-	if (old->y < ie->y)
-	    ie->y = old->y;
-    }
-}
-
 void
 IconDown (tmp_win)
     TwmWindow   *tmp_win;
 {
-    IconEntry	*ie, *ip, *in;
-    IconRegion	*ir;
+    RegionEntry	*re;
+    RootRegion	*rr;
 
-    ie = FindIconEntry (tmp_win, &ir);
-    if (ie) {
-	ie->twm_win = 0;
-	ie->used = 0;
-	ip = prevIconEntry (ie, ir);
-	in = ie->next;
-	for (;;) {
-	    if (ip && ip->used == 0 &&
-	       ((ip->x == ie->x && ip->w == ie->w) ||
-	        (ip->y == ie->y && ip->h == ie->h)))
-	    {
-	    	ip->next = ie->next;
-	    	mergeEntries (ie, ip);
-	    	free ((char *) ie);
-		ie = ip;
-	    	ip = prevIconEntry (ip, ir);
-	    } else if (in && in->used == 0 &&
-	       ((in->x == ie->x && in->w == ie->w) ||
-	        (in->y == ie->y && in->h == ie->h)))
-	    {
-	    	ie->next = in->next;
-	    	mergeEntries (in, ie);
-	    	free ((char *) in);
-	    	in = ie->next;
-	    } else
-		break;
-	}
-    }
+    re = FindIconEntry (tmp_win, &rr);
+    if (re)
+        downRegionEntry(rr, re);
 }
 
 void
 AddIconRegion(geom, grav1, grav2, stepx, stepy)
 char *geom;
-int grav1, grav2;
+int grav1, grav2, stepx, stepy;
 {
-    IconRegion *ir;
-    int mask;
+    RootRegion *rr;
 
-    ir = (IconRegion *)malloc(sizeof(IconRegion));
-    ir->next = NULL;
-    if (Scr->LastRegion)
-	Scr->LastRegion->next = ir;
-    Scr->LastRegion = ir;
-    if (!Scr->FirstRegion)
-	Scr->FirstRegion = ir;
+    rr = AddRegion(geom, grav1, grav2, stepx, stepy);
 
-    ir->entries = NULL;
-    ir->grav1 = grav1;
-    ir->grav2 = grav2;
-    if (stepx <= 0)
-	stepx = 1;
-    if (stepy <= 0)
-	stepy = 1;
-    ir->stepx = stepx;
-    ir->stepy = stepy;
-    ir->x = ir->y = ir->w = ir->h = 0;
-
-    mask = XParseGeometry(geom, &ir->x, &ir->y, (unsigned int *)&ir->w, (unsigned int *)&ir->h);
-
-    if (mask & XNegative)
-	ir->x += Scr->MyDisplayWidth - ir->w;
-
-    if (mask & YNegative)
-	ir->y += Scr->MyDisplayHeight - ir->h;
-    ir->entries = (IconEntry *)malloc(sizeof(IconEntry));
-    ir->entries->next = 0;
-    ir->entries->x = ir->x;
-    ir->entries->y = ir->y;
-    ir->entries->w = ir->w;
-    ir->entries->h = ir->h;
-    ir->entries->twm_win = 0;
-    ir->entries->used = 0;
+    if (Scr->LastIconRegion)
+        Scr->LastIconRegion->next = rr;
+    Scr->LastIconRegion = rr;
+    if (!Scr->FirstIconRegion)
+        Scr->FirstIconRegion = rr;
 }
-
-#ifdef comment
-FreeIconEntries (ir)
-    IconRegion	*ir;
-{
-    IconEntry	*ie, *tmp;
-
-    for (ie = ir->entries; ie; ie=tmp)
-    {
-	tmp = ie->next;
-	free ((char *) ie);
-    }
-}
-FreeIconRegions()
-{
-    IconRegion *ir, *tmp;
-
-    for (ir = Scr->FirstRegion; ir != NULL;)
-    {
-	tmp = ir;
-	FreeIconEntries (ir);
-	ir = ir->next;
-	free((char *) tmp);
-    }
-    Scr->FirstRegion = NULL;
-    Scr->LastRegion = NULL;
-}
-#endif
 
 #ifdef NO_XPM_SUPPORT
 void CreateIconWindow(tmp_win, def_x, def_y)
@@ -395,7 +241,9 @@ int def_x, def_y;
 	    if ((bm = (Pixmap)LookInNameList(Scr->Icons, icon_name)) == None)
 	    {
 		if ((bm = GetBitmap (icon_name)) != None)
-		    AddToList(&Scr->Icons, icon_name, (char *)bm);
+		    /* added 'type' argument - djhjr - 10/20/01 */
+		    AddToList(&Scr->Icons, icon_name, LTYPE_EXACT_NAME,
+		    		(char *)bm);
 	    }
 	}
 
@@ -455,7 +303,9 @@ int def_x, def_y;
 	    if ((bm = (Pixmap)LookInNameList(Scr->Icons, icon_name)) == None)
 	    {
 		if ((bm = GetBitmap (icon_name)) != None)
-		    AddToList(&Scr->Icons, icon_name, (char *)bm);
+		    /* added 'type' argument - djhjr - 10/20/01 */
+		    AddToList(&Scr->Icons, icon_name, LTYPE_EXACT_NAME,
+		    		(char *)bm);
 	    }
 	}
 
@@ -497,8 +347,10 @@ int def_x, def_y;
     }
     else
     {
-	valuemask = CWBackPixmap;
+	/* added pixel specs - djhjr - 12/28/98 */
+	valuemask = CWBackPixmap | CWBackPixel;
 	attributes.background_pixmap = pm;
+	attributes.background_pixel = tmp_win->iconc.fore;
     }
 
     tmp_win->icon_w_width = XTextWidth(Scr->IconFont.font,
@@ -651,10 +503,13 @@ int def_x, def_y;
 #else /* NO_XPM_SUPPORT */
 /*
  * to help clean up CreateIconWindow() below - djhjr - 8/13/98
+ * added background color and XPM indicator - djhjr - 12/28/98
  */
 Image *
-GetIconImage(name)
+GetIconImage(name, background, numcolors)
 char *name;
+Pixel background;
+unsigned int *numcolors;
 {
     Image *iconimage;
 	GC gc;
@@ -674,17 +529,19 @@ char *name;
 			iconimage->pixmap = XCreatePixmap(dpy, Scr->Root, bitmap_width,
 					bitmap_height, Scr->d_depth);
 	    
-/* silly me! - djhjr - 8/23/98
 			XGetGeometry(dpy, bm,
 					&JunkRoot, &JunkX, &JunkY,
 					&JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
 
+			/*
+			 * XCopyArea() seems to be necessary for some apps that change
+			 * their icons - djhjr - rem'd 8/23/98, re-instated 11/15/98
+			 */
 			if (JunkDepth == Scr->d_depth) 
 				XCopyArea(dpy, bm, iconimage->pixmap,
 						Scr->NormalGC, 0, 0, iconimage->width, iconimage->height,
 						0, 0);
 			else
-*/
 				XCopyPlane(dpy, bm, iconimage->pixmap,
 						Scr->NormalGC, 0, 0, iconimage->width, iconimage->height,
 						0, 0, 1);
@@ -705,11 +562,21 @@ char *name;
 			XFreePixmap(dpy, bm);
 		}
 		else
-			iconimage = FindImage(name);
+		{
+			/* added color argument - djhjr - 9/28/99 */
+			iconimage = FindImage(name, background);
+		}
 
 		if (iconimage != NULL)
-			AddToList(&Scr->Icons, name, (char *)iconimage);
+			/* added 'type' argument - djhjr - 10/20/01 */
+			AddToList(&Scr->Icons, name, LTYPE_EXACT_NAME,
+					(char *)iconimage);
 	}
+
+	/* djhjr - 12/28/98 */
+	*numcolors = 0;
+	if (iconimage != NULL)
+		*numcolors = SetPixmapsBackground(iconimage, Scr->Root, background);
 
 	return (iconimage);
 }
@@ -729,6 +596,7 @@ int def_x, def_y;
     Image *iconimage;
     char *icon_name;
     int x, final_x, final_y;
+	unsigned int pm_numcolors = 0; /* djhjr - 12/28/98 */
 
 	/* djhjr - 4/27/96 */
     GetColorFromList(Scr->IconBorderColorL, tmp_win->full_name, &tmp_win->class,
@@ -752,7 +620,7 @@ int def_x, def_y;
     pm = None;
 
     /*
-	 * now go through the steps to get an icon window,  if ForceIcon is 
+     * now go through the steps to get an icon window,  if ForceIcon is 
      * set, then no matter what else is defined, the bitmap from the
      * .vtwmrc file is used
      */
@@ -764,7 +632,9 @@ int def_x, def_y;
 					&tmp_win->class);
 
 		if (icon_name != NULL)
-			iconimage = GetIconImage(icon_name);
+			/* added background and XPM indicator - djhjr - 12/28/98 */
+			iconimage = GetIconImage(icon_name, tmp_win->iconc.back,
+					&pm_numcolors);
       
 		if (iconimage != NULL)
 		{
@@ -803,6 +673,8 @@ int def_x, def_y;
 		XGetGeometry(dpy, tmp_win->wmhints->icon_pixmap,
 				&JunkRoot, &JunkX, &JunkY,
 				&JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
+
+		pm_numcolors = 3; /* Submitted by Caveh Frank Jalali */
 
 		iconimage = (Image*)malloc(sizeof(Image));
 		iconimage->mask = None;
@@ -864,7 +736,9 @@ int def_x, def_y;
 					&tmp_win->class);
 
 		if (icon_name != NULL)
-			iconimage = GetIconImage(icon_name);
+			/* added background and XPM indicator - djhjr - 12/28/98 */
+			iconimage = GetIconImage(icon_name, tmp_win->iconc.back,
+					&pm_numcolors);
 
 		if (iconimage != NULL)
 		{
@@ -897,7 +771,9 @@ int def_x, def_y;
 #else /* ORIGINAL_PIXMAPS */
 	if (pm == None && Scr->UnknownPm != NULL)
 	{
-		iconimage = GetIconImage(Scr->UnknownPm);
+		/* added background and XPM indicator - djhjr - 12/28/98 */
+		iconimage = GetIconImage(Scr->UnknownPm, tmp_win->iconc.back,
+				&pm_numcolors);
 
 		if (iconimage != NULL)
 		{
@@ -919,6 +795,13 @@ int def_x, def_y;
     {
 	valuemask = CWBackPixmap;
 	attributes.background_pixmap = pm;
+
+		/* djhjr - 12/28/98 */
+		if (pm_numcolors <= 2) /* not a pixmap */
+		{
+			valuemask |= CWBackPixel;
+			attributes.background_pixel = tmp_win->iconc.fore;
+		}
     }
 
     tmp_win->icon_w_width = XTextWidth(Scr->IconFont.font,

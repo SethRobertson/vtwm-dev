@@ -123,7 +123,8 @@ void CreateDesktopDisplay()
 	width = Scr->VirtualDesktopWidth / Scr->VirtualDesktopDScale;
 	height = Scr->VirtualDesktopHeight / Scr->VirtualDesktopDScale;
 
-	/* we have some checking for negative (x,y) to do */
+/* done in SetVirtualDesktop() - djhjr - 9/26/01
+	* we have some checking for negative (x,y) to do *
 	if (Scr->VirtualDesktopDX < 0) {
 		Scr->VirtualDesktopDX = Scr->MyDisplayWidth - width -
 			(2 * Scr->BorderWidth) + Scr->VirtualDesktopDX;
@@ -132,17 +133,35 @@ void CreateDesktopDisplay()
 		Scr->VirtualDesktopDY = Scr->MyDisplayHeight - height -
 			(2 * Scr->BorderWidth) + Scr->VirtualDesktopDY;
 	}
+*/
 
 	Scr->VirtualDesktopDisplayOuter =
 		XCreateSimpleWindow(dpy, Scr->Root,
 				    Scr->VirtualDesktopDX, Scr->VirtualDesktopDY,
+
+/* djhjr - 2/7/99
 				    width, height,
-				    Scr->BorderWidth,
+*/
+				    width + (Scr->VirtualDesktopBevelWidth * 2),
+				    height + (Scr->VirtualDesktopBevelWidth * 2),
+
+/* was 'Scr->BorderWidth' - submitted by Rolf Neugebauer */
+				    0,
+				    
 				    Scr->Black, Scr->VirtualDesktopDisplayC.back);
 
-	if ( width > Scr->VirtualDesktopMaxWidth )
+	/* djhjr - 2/7/99 */
+	{
+		XSetWindowAttributes attr;
+
+		attr.backing_store = True;
+		XChangeWindowAttributes(dpy, Scr->VirtualDesktopDisplayOuter,
+				CWBackingStore, &attr);
+	}
+
+	if ( width != Scr->VirtualDesktopMaxWidth )
 		Scr->VirtualDesktopMaxWidth = width;
-	if ( height > Scr->VirtualDesktopMaxHeight )
+	if ( height != Scr->VirtualDesktopMaxHeight )
 		Scr->VirtualDesktopMaxHeight = height;
 /* vtwm 5.2: RFB growable but not unreasonable interior window! */
 
@@ -154,7 +173,13 @@ void CreateDesktopDisplay()
 #ifdef ORIGINAL_PIXMAPS
 	Scr->VirtualDesktopDisplay =
 		XCreateSimpleWindow(dpy, Scr->VirtualDesktopDisplayOuter,
+
+/* djhjr - 2/7/99
 			0, 0,
+*/
+			Scr->VirtualDesktopBevelWidth,
+			Scr->VirtualDesktopBevelWidth, 
+
 			Scr->VirtualDesktopMaxWidth,
 			Scr->VirtualDesktopMaxHeight,
 			0,
@@ -208,7 +233,13 @@ void CreateDesktopDisplay()
 
 		Scr->VirtualDesktopDisplay = XCreateWindow(dpy,
 				Scr->VirtualDesktopDisplayOuter,
+
+/* djhjr - 2/7/99
 				0, 0,
+*/
+				Scr->VirtualDesktopBevelWidth,
+				Scr->VirtualDesktopBevelWidth, 
+
 				Scr->VirtualDesktopMaxWidth,
 				Scr->VirtualDesktopMaxHeight,
 				0,
@@ -219,7 +250,13 @@ void CreateDesktopDisplay()
 	{
 		Scr->VirtualDesktopDisplay = XCreateSimpleWindow(dpy,
 				Scr->VirtualDesktopDisplayOuter,
+
+/* djhjr - 2/7/99
 				0, 0,
+*/
+				Scr->VirtualDesktopBevelWidth,
+				Scr->VirtualDesktopBevelWidth, 
+
 				Scr->VirtualDesktopMaxWidth,
 				Scr->VirtualDesktopMaxHeight,
 				0,
@@ -274,12 +311,15 @@ void CreateDesktopDisplay()
 
 /* Stig Ostholm moved a few lines away from here */
 
+/* djhjr - 2/15/99
 	border = 0;
 	if ( Scr->UseRealScreenBorder )
 		{
-		/* border = 2; */
-		border = Scr->RealScreenBorderWidth; /* DSE */
+		* border = 2; *
+		border = Scr->RealScreenBorderWidth; * DSE *
 		}
+*/
+	border = Scr->RealScreenBorderWidth;
 
 /*
  * re-written to use an Image structure for XPM support
@@ -291,8 +331,14 @@ void CreateDesktopDisplay()
 	Scr->VirtualDesktopDScreen =
 		XCreateSimpleWindow(dpy, Scr->VirtualDesktopDisplay,
 				    0, 0,
-				    SCALE_D(Scr->MyDisplayWidth - 2*border ),
-				    SCALE_D(Scr->MyDisplayHeight - 2*border ),
+
+/* djhjr - 2/15/99
+				    SCALE_D(Scr->MyDisplayWidth - 2 * border),
+				    SCALE_D(Scr->MyDisplayHeight - 2 * border),
+*/
+				    SCALE_D(Scr->MyDisplayWidth) - 2 * border,
+				    SCALE_D(Scr->MyDisplayHeight) - 2 * border,
+
 				    border, /* make it distinctive */
 /* RFB 4/92: make borderwidth 0 instead of 2 */
 /* RFB 5.2: some people need the border... */
@@ -345,8 +391,14 @@ void CreateDesktopDisplay()
 		Scr->VirtualDesktopDScreen = XCreateWindow(dpy,
 				Scr->VirtualDesktopDisplay,
 				0, 0,
+
+/* djhjr - 2/15/99
 				SCALE_D(Scr->MyDisplayWidth - 2 * border),
 				SCALE_D(Scr->MyDisplayHeight - 2 * border),
+*/
+				SCALE_D(Scr->MyDisplayWidth) - 2 * border,
+				SCALE_D(Scr->MyDisplayHeight) - 2 * border,
+
 				border,
 				Scr->d_depth, (unsigned int) CopyFromParent,
 				Scr->d_visual, valuemask, &attributes);
@@ -356,8 +408,14 @@ void CreateDesktopDisplay()
 		Scr->VirtualDesktopDScreen = XCreateSimpleWindow(dpy,
 				Scr->VirtualDesktopDisplay,
 				0, 0,
+
+/* djhjr - 2/15/99
 				SCALE_D(Scr->MyDisplayWidth - 2 * border),
 				SCALE_D(Scr->MyDisplayHeight - 2 * border),
+*/
+				SCALE_D(Scr->MyDisplayWidth) - 2 * border,
+				SCALE_D(Scr->MyDisplayHeight) - 2 * border,
+
 				border, /* make it distinctive */
 /* RFB 4/92: make borderwidth 0 instead of 2 */
 /* RFB 5.2: some people need the border... */
@@ -398,7 +456,7 @@ void CreateDesktopDisplay()
 
 	/* declare our interest */
 	XSelectInput(dpy, Scr->VirtualDesktopDisplay, ButtonPressMask | ButtonReleaseMask |
-		     KeyPressMask | KeyReleaseMask );
+		     KeyPressMask | KeyReleaseMask | ExposureMask);
 
 /* Stig Ostholm moved some lines to here: */
 	Scr->VirtualDesktopDisplayTwin =
@@ -408,6 +466,13 @@ void CreateDesktopDisplay()
 	Scr->VirtualDesktopDisplayTwin->class.res_name = strdup(VTWM_DESKTOP_CLASS);
 	Scr->VirtualDesktopDisplayTwin->class.res_class = strdup(VTWM_DESKTOP_CLASS);
 	XSetClassHint(dpy, Scr->VirtualDesktopDisplayOuter, &Scr->VirtualDesktopDisplayTwin->class);
+
+	/* limit the minimum size of the virtual desktop - djhjr - 2/23/99 */
+	Scr->VirtualDesktopDisplayTwin->hints.flags |= PMinSize;
+	Scr->VirtualDesktopDisplayTwin->hints.min_width =
+		SCALE_D(Scr->MyDisplayWidth) + (Scr->VirtualDesktopBevelWidth * 2);
+	Scr->VirtualDesktopDisplayTwin->hints.min_height =
+		SCALE_D(Scr->MyDisplayHeight) + (Scr->VirtualDesktopBevelWidth * 2);
 
 #ifdef GROSS_HACK
 	/* this is a gross hack, but people wanted it */
@@ -480,8 +545,15 @@ void CreateDesktopDisplay()
 					       "Automatic Pan", "Automatic Pan",
 					       None, NULL, 0, NULL);
 
+			/*
+			 * Added the leave event for pan resistance -
+			 * see events.c:HandleEnterNotify().
+			 *
+			 * djhjr - 11/16/98
+			 */
 			XSelectInput(dpy, Scr->VirtualDesktopAutoPan[l],
-				     EnterWindowMask /* | lowernotify (or something) */ );
+				     EnterWindowMask | LeaveWindowMask);
+
 			XMapWindow(dpy, Scr->VirtualDesktopAutoPan[l]);
 		} /* end for l */
 	
@@ -743,7 +815,7 @@ TwmWindow *moving_twindow;
 /*  the window; therefore it can only have a non-zero     */
 /*  value if you clicked at a random location in the      */
 /*  panner, making the RealScreen jump to the pointer,    */
-/*  AND you also had UseRealScreenBorder set.             */
+/*  AND you also had RealScreenBorderWidth set.           */
 /*                                                        */
 /*  This is almost the final step in getting the panner   */
 /*  to behave pefectly! It still jitters a bit at the     */
@@ -761,8 +833,11 @@ void DisplayScreenOnDesktop()
 	if (!Scr->Virtual)
 		return;
 
+/* djhjr - 2/15/99
 	border = ( Scr->UseRealScreenBorder ) ? moving_bw : 0;
 	moving_bw = 0;
+*/
+	border = moving_bw = 0;
 
 	/* the -3 is to account for the 2 pixel border and the 1 pixel
 	 * offset added by SCALE_D.... */
@@ -785,18 +860,26 @@ void DisplayScreenOnDesktop()
 void ResizeDesktopDisplay(w, h)
 int w, h;
 {
-	int x, y, np;
+	int bw, x, y, np;
 
 	if (!Scr->Virtual)
 		return;
 
+
+	/* added compensation for the titlebar - djhjr - 2/23/99 */
+	h -= Scr->VirtualDesktopDisplayTwin->title_height;
+
+	/* added compensation for frame and bevel widths - djhjr - 2/7/99 */
+	bw = Scr->VirtualDesktopBevelWidth * 2;
+	if (Scr->BorderBevelWidth) bw += Scr->BorderWidth * 2;
+
 	np = 0;
-	if ( w > Scr->VirtualDesktopMaxWidth )
-	{	Scr->VirtualDesktopMaxWidth = w;
+	if ( w - bw != Scr->VirtualDesktopMaxWidth )
+	{	Scr->VirtualDesktopMaxWidth = w - bw;
 		np = 1;
 	}
-	if ( h > Scr->VirtualDesktopMaxHeight )
-	{	Scr->VirtualDesktopMaxHeight = h;
+	if ( h - bw != Scr->VirtualDesktopMaxHeight )
+	{	Scr->VirtualDesktopMaxHeight = h - bw;
 		np = 1;
 	}
 	if ( np )
@@ -806,8 +889,8 @@ int w, h;
 	}
 
 	/* calculate the new vd size */
-	Scr->VirtualDesktopWidth = SCALE_U(w);
-	Scr->VirtualDesktopHeight = SCALE_U(h);
+	Scr->VirtualDesktopWidth = SCALE_U(w - bw);
+	Scr->VirtualDesktopHeight = SCALE_U(h - bw);
 
 	x = SCALE_D(Scr->VirtualDesktopX);
 	y = SCALE_D(Scr->VirtualDesktopY);
@@ -901,8 +984,25 @@ XMotionEvent ev;
 	if (moving_window == Scr->VirtualDesktopDScreen)
 		JunkX = JunkY = 0;
 	else
+	{
 		XGetGeometry(dpy, moving_twindow->frame, &JunkChild, &JunkX, &JunkY,
 				&JunkWidth, &JunkHeight, &JunkBW, &JunkMask);
+
+		/* djhjr - 9/28/99 */
+		{
+			int hilite = moving_twindow->highlight;
+
+			moving_twindow->highlight = True;
+			SetBorder(moving_twindow, (hilite) ? True : False);
+			moving_twindow->highlight = hilite;
+
+			Scr->Focus = moving_twindow; /* evil */
+
+			EventHandler[EnterNotify] = HandleUnknown;
+			EventHandler[LeaveNotify] = HandleUnknown;
+		}
+	}
+
 	DisplayPosition(JunkX + Scr->VirtualDesktopX, JunkY + Scr->VirtualDesktopY);
 
 	/* get things going */
@@ -922,14 +1022,22 @@ int x, y;
 	if (x == starting_x && y == starting_y)
 		return;
 
+	/* djhjr - 2/7/99 */
+	x -= Scr->VirtualDesktopBevelWidth;
+	y -= Scr->VirtualDesktopBevelWidth;
+
 	x += moving_off_x;
 	y += moving_off_y;
 	/* check that we are legit */
 	if (x < 0)
 		x = 0;
 	else {
+
+		/* added real screen's border!? - djhjr - 2/15/99 */
 		int np = ( Scr->VirtualDesktopWidth /
-			Scr->VirtualDesktopDScale ) - moving_w;
+			Scr->VirtualDesktopDScale ) - moving_w -
+			Scr->RealScreenBorderWidth * 2;
+
 /* RFB 4/92 no SCALE_D */
 		if (x > np)
 			x = np;
@@ -937,8 +1045,12 @@ int x, y;
 	if (y < 0)
 		y = 0;
 	else {
+
+		/* added real screen's border!? - djhjr - 2/15/99 */
 		int np = ( Scr->VirtualDesktopHeight /
-			Scr->VirtualDesktopDScale ) - moving_h;
+			Scr->VirtualDesktopDScale ) - moving_h -
+			Scr->RealScreenBorderWidth * 2;
+
 /* RFB 4/92 no SCALE_D */
 		if (y > np)
 			y = np;
@@ -948,7 +1060,8 @@ int x, y;
 	moving_y = y;
 
 	/* move the display window */
-	XMoveWindow(dpy, moving_window, x - moving_bw, y - moving_bw);
+	/* removed '- moving_bw' - djhjr - 2/15/99 */
+	XMoveWindow(dpy, moving_window, x/* - moving_bw*/, y/* - moving_bw*/);
 
 	/* djhjr - 4/28/98 */
 	DisplayPosition(SCALE_U(x), SCALE_U(y));
@@ -960,6 +1073,7 @@ int x, y;
 */
 	if (Scr->VirtualSendsMotionEvents)
 		if (moving_window != Scr->VirtualDesktopDScreen)
+		{
 			if (moving_twindow->opaque_move)
 				XMoveWindow(dpy, moving_twindow->frame,
 					SCALE_U(x) - Scr->VirtualDesktopX,
@@ -972,6 +1086,10 @@ int x, y;
 					moving_twindow->frame_height,
 					moving_twindow->frame_bw,
 					moving_twindow->title_height + moving_twindow->frame_bw3D);
+
+			/* djhjr - 9/28/99 */
+			Scr->Focus = moving_twindow; /* evil */
+		}
 }
 
 void EndMoveWindowOnDesktop()
@@ -1006,9 +1124,24 @@ void EndMoveWindowOnDesktop()
 
 		XMoveWindow(dpy, moving_twindow->frame,
 			    moving_twindow->frame_x, moving_twindow->frame_y);
+
 		/* notify the window */
 		SendConfigureNotify(moving_twindow,
 			    moving_twindow->frame_x, moving_twindow->frame_y);
+		}
+
+		/* djhjr - 9/28/99 */
+		{
+			int hilite = moving_twindow->highlight;
+
+			moving_twindow->highlight = True;
+			SetBorder(moving_twindow, False);
+			moving_twindow->highlight = hilite;
+
+			Scr->Focus = NULL; /* evil */
+
+			EventHandler[EnterNotify] = HandleEnterNotify;
+			EventHandler[LeaveNotify] = HandleLeaveNotify;
 		}
 
 		/* raise the window ? */
@@ -1115,17 +1248,20 @@ int scale;
         /* else specified as size of panner window */
 
 	/* tar@math.ksu.edu: fix handling of -0 X and Y geometry */
+/* account for VirtualDesktopBevelWidth - djhjr - 9/26/01 */
 	if (JunkMask & XValue) {
 		if (JunkMask & XNegative) {
 			Scr->VirtualDesktopDX = Scr->MyDisplayWidth
-			    - JunkWidth - (2 * Scr->BorderWidth) + JunkX;
+			    - JunkWidth - (2 * Scr->BorderWidth)
+			    - (2 * Scr->VirtualDesktopBevelWidth) + JunkX;
 		}
 		else	Scr->VirtualDesktopDX = JunkX;
 	}
 	if (JunkMask & YValue) {
 		if (JunkMask & YNegative) {
 			Scr->VirtualDesktopDY = Scr->MyDisplayHeight
-			    - JunkHeight - (2 * Scr->BorderWidth) + JunkY;
+			    - JunkHeight - (2 * Scr->BorderWidth)
+			    - (2 * Scr->VirtualDesktopBevelWidth) + JunkY;
 		}
 		else	Scr->VirtualDesktopDY = JunkY;
 	}
@@ -1246,7 +1382,7 @@ short dosnap;
 	if (y > (Scr->VirtualDesktopHeight - Scr->MyDisplayHeight))
 		y = Scr->VirtualDesktopHeight - Scr->MyDisplayHeight;
 
-	/* if ( Scr->UseRealScreenBorder ) */
+	/* if ( Scr->RealScreenBorderWidth ) */
 	/* {	x -= 2; */
 		/* y -= 2; */
 	/* } */
@@ -1286,26 +1422,48 @@ short dosnap;
 
 	/* move all of the windows by walking the twm list */
 	for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL; Tmp_win = Tmp_win->next)
-		if (Tmp_win->nailed || (Scr->DeIconifyToScreen && Tmp_win->icon)) {
-			/* the window is nailed or...
-			 * the window is currently an icon, we are trying to
+	{
+		if (Scr->StaticIconPositions && Tmp_win->icon && Tmp_win->icon_w)
+		{
+			/*
+			 * Make icons "stay put" on the virtual desktop when
+			 * not otherwise nailed - djhjr - 12/14/98
+			 */
+			XGetGeometry(dpy, Tmp_win->icon_w, &JunkRoot, &JunkX, &JunkY,
+					&JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
+
+			XMoveWindow(dpy, Tmp_win->icon_w,
+					JunkX + xdiff, JunkY + ydiff);
+		}
+
+		if (Tmp_win->nailed || (Scr->DeIconifyToScreen && Tmp_win->icon))
+		{
+			/*
+			 * The window is nailed or...
+			 * The window is currently an icon, we are trying to
 			 * keep things on the screen, so move it around the
-			 * virtual desktop so that it stays on the real
-			 * screen */
+			 * virtual desktop so that it stays on the real screen
+			 */
 			Tmp_win->virtual_frame_x -= xdiff;
 			Tmp_win->virtual_frame_y -= ydiff;
-		} else {
-			/* move the window */
+		}
+		else
+		{
+			/*
+			 * move the window
+			 */
 			Tmp_win->frame_x += xdiff;
 			Tmp_win->frame_y += ydiff;
 
-			if (!dosnap) {
+			if (!dosnap)
+			{
 				XMoveWindow(dpy, Tmp_win->frame,
-					    Tmp_win->frame_x, Tmp_win->frame_y);
+						Tmp_win->frame_x, Tmp_win->frame_y);
 				SendConfigureNotify(Tmp_win,
-					    Tmp_win->frame_x, Tmp_win->frame_y);
+						Tmp_win->frame_x, Tmp_win->frame_y);
 			}
 		}
+	}
 
 	Scr->VirtualDesktopX = x;
 	Scr->VirtualDesktopY = y;

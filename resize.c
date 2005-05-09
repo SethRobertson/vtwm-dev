@@ -81,6 +81,9 @@ void PaintBorderAndTitlebar();
 /* djhjr - 4/17/98 */
 static void DoVirtualMoveResize();
 
+/* djhjr - 9/10/99 */
+void ResizeTwmWindowContents();
+
 static void do_auto_clamp (tmp_win, evp)
     TwmWindow *tmp_win;
     XEvent *evp;
@@ -234,11 +237,16 @@ int context;
 
 
 
+/* added the passed 'context' - djhjr - 2/22/99 */
 void
-MenuStartResize(tmp_win, x, y, w, h)
+MenuStartResize(tmp_win, x, y, w, h, context)
 TwmWindow *tmp_win;
 int x, y, w, h;
+int context;
 {
+	/* djhjr - 2/22/99 */
+	resize_context = context;
+
 /* djhjr - 7/17/98
 	* djhjr - 4/15/98 *
 	if (!Scr->NoGrabServer)
@@ -307,6 +315,9 @@ AddStartResize(tmp_win, x, y, w, h)
 TwmWindow *tmp_win;
 int x, y, w, h;
 {
+	/* djhjr - 2/22/99 */
+	resize_context = C_WINDOW;
+
 /* djhjr - 7/17/98
 	* djhjr - 4/15/98 *
 	if (!Scr->NoGrabServer)
@@ -450,7 +461,58 @@ TwmWindow *tmp_win;
 		SetupWindow (tmp_win,
 			dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
 			dragWidth, dragHeight, -1);
+
+		/* force the redraw of a door - djhjr - 2/28/99 */
+		{
+			TwmDoor *door;
+
+			if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *)&door) != XCNOENT)
+				RedoDoorName(tmp_win, door);
+		}
+
+		/* force the redraw of the desktop - djhjr - 2/28/99 */
+		if (!strcmp(tmp_win->class.res_class, VTWM_DESKTOP_CLASS))
+		{
+			ResizeDesktopDisplay(dragWidth, dragHeight);
+
+			Draw3DBorder(Scr->VirtualDesktopDisplayOuter, 0, 0,
+					Scr->VirtualDesktopMaxWidth + (Scr->VirtualDesktopBevelWidth * 2),
+					Scr->VirtualDesktopMaxHeight + (Scr->VirtualDesktopBevelWidth * 2),
+					Scr->VirtualDesktopBevelWidth, Scr->VirtualC, off, False, False);
+		}
+
+		/* force the redraw of an icon manager - djhjr - 3/1/99 */
+		if (tmp_win->iconmgr)
+		{
+			struct WList *list;
+			int ncols = tmp_win->iconmgrp->cur_columns;
+			if (ncols == 0) ncols = 1;
+
+/* djhjr - 4/24/96
+			tmp_win->iconmgrp->width = (int) ((dragWidth *
+*/
+			tmp_win->iconmgrp->width = (int) (((dragWidth - 2 * tmp_win->frame_bw3D) *
+
+				   (long) tmp_win->iconmgrp->columns)
+				  / ncols);
+			PackIconManager(tmp_win->iconmgrp);
+
+			list = tmp_win->iconmgrp->first;
+			while (list)
+			{
+				RedoListWindow(list->twm);
+				list = list->next;
+			}
+		}
+
 		PaintBorderAndTitlebar(tmp_win);
+
+		/* djhjr - 4/15/98 */
+		if (!Scr->NoGrabServer)
+		{
+			/* these let the application window be drawn - djhjr - 4/14/98 */
+			XUngrabServer(dpy); XSync(dpy, 0); XGrabServer(dpy);
+		}
 	}
 	else
 		MoveOutline(Scr->Root,
@@ -591,6 +653,49 @@ TwmWindow *tmp_win;
 			SetupWindow(tmp_win,
 				dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
 				dragWidth, dragHeight, -1);
+
+			/* force the redraw of a door - djhjr - 2/28/99 */
+			{
+				TwmDoor *door;
+
+				if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *)&door) != XCNOENT)
+					RedoDoorName(tmp_win, door);
+			}
+
+			/* force the redraw of the desktop - djhjr - 2/28/99 */
+			if (!strcmp(tmp_win->class.res_class, VTWM_DESKTOP_CLASS))
+			{
+				ResizeDesktopDisplay(dragWidth, dragHeight);
+
+				Draw3DBorder(Scr->VirtualDesktopDisplayOuter, 0, 0,
+						Scr->VirtualDesktopMaxWidth + (Scr->VirtualDesktopBevelWidth * 2),
+						Scr->VirtualDesktopMaxHeight + (Scr->VirtualDesktopBevelWidth * 2),
+						Scr->VirtualDesktopBevelWidth, Scr->VirtualC, off, False, False);
+			}
+
+			/* force the redraw of an icon manager - djhjr - 3/1/99 */
+			if (tmp_win->iconmgr)
+			{
+				struct WList *list;
+				int ncols = tmp_win->iconmgrp->cur_columns;
+				if (ncols == 0) ncols = 1;
+
+/* djhjr - 4/24/96
+				tmp_win->iconmgrp->width = (int) ((dragWidth *
+*/
+				tmp_win->iconmgrp->width = (int) (((dragWidth - 2 * tmp_win->frame_bw3D) *
+
+					   (long) tmp_win->iconmgrp->columns)
+					  / ncols);
+				PackIconManager(tmp_win->iconmgrp);
+
+				list = tmp_win->iconmgrp->first;
+				while (list)
+				{
+					RedoListWindow(list->twm);
+					list = list->next;
+				}
+			}
 
 			PaintBorderAndTitlebar(tmp_win);
 
@@ -766,24 +871,12 @@ EndResize()
     SetupWindow (tmp_win, dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
 		 dragWidth, dragHeight, -1);
 
-    if (tmp_win->iconmgr)
-    {
-	int ncols = tmp_win->iconmgrp->cur_columns;
-	if (ncols == 0) ncols = 1;
-
-/* djhjr - 4/24/96
-	tmp_win->iconmgrp->width = (int) ((dragWidth *
-*/
-	tmp_win->iconmgrp->width = (int) (((dragWidth - 2 * tmp_win->frame_bw3D) *
-
-					   (long) tmp_win->iconmgrp->columns)
-					  / ncols);
-        PackIconManager(tmp_win->iconmgrp);
-    }
-
-    if (tmp_win->w == Scr->VirtualDesktopDisplayOuter) {
- 	    ResizeDesktopDisplay(dragWidth, dragHeight);
-    }
+	/* added test for opaque resizing - djhjr - 2/28/99, 3/1/99 */
+	if (!tmp_win->opaque_resize)
+	{
+		/* was inline code - djhjr - 9/10/99 */
+		ResizeTwmWindowContents(tmp_win, dragWidth, dragHeight);
+	}
 
     if (!Scr->NoRaiseResize) {
         XRaiseWindow(dpy, tmp_win->frame);
@@ -803,7 +896,10 @@ EndResize()
     MoveResizeDesktop(tmp_win, Scr->NoRaiseResize); /* Stig */
 
 	/* djhjr - 6/4/98 */
-	if (Scr->VirtualReceivesMotionEvents && !tmp_win->opaque_move)
+	/* don't re-map if the window is the virtual desktop - djhjr - 2/28/99 */
+	if (Scr->VirtualReceivesMotionEvents &&
+			/* !tmp_win->opaque_resize && */
+			tmp_win->w != Scr->VirtualDesktopDisplayOuter)
 	{
 		XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
 		XMapWindow(dpy, Scr->VirtualDesktopDisplay);
@@ -819,8 +915,13 @@ void
 MenuEndResize(tmp_win)
 TwmWindow *tmp_win;
 {
-    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
+    /* added this 'if (...) ... else' - djhjr - 2/22/99 */
+    if (resize_context == C_VIRTUAL_WIN)
+	    MoveOutline(Scr->VirtualDesktopDisplay, 0, 0, 0, 0, 0, 0);
+    else
+	    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
     XUnmapWindow(dpy, Scr->SizeWindow);
+
     ConstrainSize (tmp_win, &dragWidth, &dragHeight);
     AddingX = dragx;
     AddingY = dragy;
@@ -832,12 +933,17 @@ TwmWindow *tmp_win;
 	if (dragWidth != tmp_win->frame_width || dragHeight != tmp_win->frame_height)
 		tmp_win->zoomed = ZOOM_NONE;
 
+#if 0 /* done in menus.c:ExecuteFunction() - djhjr - 10/11/01 */
 	/* djhjr - 6/4/98 */
-	if (Scr->VirtualReceivesMotionEvents && !tmp_win->opaque_move)
+	/* don't re-map if the window is the virtual desktop - djhjr - 2/28/99 */
+	if (Scr->VirtualReceivesMotionEvents &&
+			/* !tmp_win->opaque_resize && */
+			tmp_win->w != Scr->VirtualDesktopDisplayOuter)
 	{
 		XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
 		XMapWindow(dpy, Scr->VirtualDesktopDisplay);
 	}
+#endif
 
 	/* djhjr - 9/5/98 */
 	resizing_window = 0;
@@ -848,7 +954,7 @@ TwmWindow *tmp_win;
 /***********************************************************************
  *
  *  Procedure:
- *      AddEndResize - finish the resize operation for AddWindo<w
+ *      AddEndResize - finish the resize operation for AddWindow
  *
  ***********************************************************************
  */
@@ -862,6 +968,10 @@ TwmWindow *tmp_win;
     fprintf(stderr, "AddEndResize\n");
 #endif
 
+    /* djhjr - 2/22/99 */
+    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
+    XUnmapWindow(dpy, Scr->SizeWindow);
+
     ConstrainSize (tmp_win, &dragWidth, &dragHeight);
     AddingX = dragx;
     AddingY = dragy;
@@ -872,12 +982,14 @@ TwmWindow *tmp_win;
 	if (dragWidth != tmp_win->frame_width || dragHeight != tmp_win->frame_height)
 		tmp_win->zoomed = ZOOM_NONE;
 
+#if 0 /* done in add_window.c:AddMoveAndResize() - djhjr - 10/11/01 */
 	/* djhjr - 6/4/98 */
-	if (Scr->VirtualReceivesMotionEvents && !tmp_win->opaque_move)
+	if (Scr->VirtualReceivesMotionEvents/* && !tmp_win->opaque_resize*/)
 	{
 		XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
 		XMapWindow(dpy, Scr->VirtualDesktopDisplay);
 	}
+#endif
 
 	/* djhjr - 9/5/98 */
 	resizing_window = 0;
@@ -1406,12 +1518,45 @@ int flag;
 	ConstrainSize(tmp_win, &dragWidth, &dragHeight);
 	SetupWindow (tmp_win, dragx , dragy , dragWidth, dragHeight, -1);
 
+	/* djhjr - 9/10/99 */
+	ResizeTwmWindowContents(tmp_win, dragWidth, dragHeight);
+
 	/* 9/21/96 - djhjr */
 	if ((Scr->WarpCursor || LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)))
 		WarpToWindow (tmp_win);
 
 	XUngrabPointer (dpy, CurrentTime);
 	XUngrabServer (dpy);
+}
+
+/*
+ * adjust contents of iconmgrs, doors and the desktop - djhjr - 9/10/99
+ */
+void ResizeTwmWindowContents(tmp_win, width, height)
+    TwmWindow *tmp_win;
+	int width, height;
+{
+	TwmDoor *door;
+	int ncols;
+
+	if (tmp_win->iconmgr)
+	{
+		ncols = tmp_win->iconmgrp->cur_columns;
+		if (ncols == 0) ncols = 1;
+
+/* djhjr - 4/24/96
+		tmp_win->iconmgrp->width = (int) ((width *
+*/
+		tmp_win->iconmgrp->width =
+				(int)(((width - 2 * tmp_win->frame_bw3D) *
+
+				(long) tmp_win->iconmgrp->columns) / ncols);
+		PackIconManager(tmp_win->iconmgrp);
+	}
+	else if (tmp_win->w == Scr->VirtualDesktopDisplayOuter)
+		ResizeDesktopDisplay(width, height);
+	else if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *)&door) != XCNOENT)
+		RedoDoorName(tmp_win, door);
 }
 
 void SetFrameShape (tmp)

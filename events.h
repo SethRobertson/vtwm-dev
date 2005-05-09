@@ -72,6 +72,8 @@ extern void InstallRootColormap();
 extern int Transient();
 extern void UninstallRootColormap();
 extern void InstallWindowColormaps();
+extern void RedoDoorName(); /* djhjr - 2/28/99 */
+extern void RedoListWindow(); /* djhjr - 3/1/99 */
 
 extern event_proc EventHandler[];
 extern Window DragWindow;

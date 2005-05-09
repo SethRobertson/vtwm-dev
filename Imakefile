@@ -13,9 +13,27 @@ XCOMM =============== Start of common editables =====================
 
 XCOMM To omit XPM image support, uncomment this
 XCOMM   NO_XPM_SUPPORT = -DNO_XPM_SUPPORT
-XCOMM and comment this
+XCOMM and comment these
            XPMLIB = -lXpm
+           XPMINC =
 XCOMM (version 3.4h of the XPM library is the earliest supported I know of)
+
+XCOMM To omit regular expressions ("RE"s) support, uncomment this
+XCOMM NO_REGEX_SUPPORT = -DNO_REGEX_SUPPORT
+XCOMM and comment these
+         REGEXLIB =
+         REGEXINC =
+XCOMM (the library must conform to the POSIX 1003.2 specification)
+
+XCOMM To omit sound support, uncomment this
+ NO_SOUND_SUPPORT = -DNO_SOUND_SUPPORT
+XCOMM and comment these
+XCOMM         SOUNDLIB = -L/usr/local/lib -lrplay
+XCOMM         SOUNDINC = -I/usr/local/include
+XCOMM (sound is supported only by way of the rplay library)
+
+XCOMM To omit m4 pre-processing of resource files, uncomment this
+XCOMM    NO_M4_SUPPORT = -DNO_M4_SUPPORT
 
 XCOMM To omit platform and build info in the version window, uncomment this
 XCOMM    NO_BUILD_INFO = -DNO_BUILD_INFO
@@ -23,15 +41,20 @@ XCOMM    NO_BUILD_INFO = -DNO_BUILD_INFO
 XCOMM For those systems that don't have putenv(), uncomment this
 XCOMM    NEED_PUTENV_F = -DNEED_PUTENV_F
 
-XCOMM For those systems require sys/select.h, uncomment this
+XCOMM For those systems that require sys/select.h, uncomment this
 XCOMM    NEED_SELECT_H = -DNEED_SELECT_H
 
-XCOMM For those systems require process.h, uncomment this
+XCOMM For those systems that require process.h, uncomment this
 XCOMM   NEED_PROCESS_H = -DNEED_PROCESS_H
 
-XCOMM For those systems that have TWM installed in locations other than
-XCOMM the default for the $(LIBDIR) macro, change this to match
-          VTWMDIR = $(LIBDIR)/twm
+XCOMM Installation path for the binary
+       VTWMBINDIR = $(BINDIR)
+
+XCOMM Installation path for the system resource file
+       VTWMLIBDIR = $(LIBDIR)/twm
+
+XCOMM Installation path for the man page
+       VTWMMANDIR = $(MANDIR)
 
 XCOMM For the traditional look of TWM as the system fallback,
 XCOMM change this to "2D"
@@ -58,51 +81,61 @@ XCOMM ========= Editing below here should not be necessary ==========
 
            YFLAGS = -d
           DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
-  LOCAL_LIBRARIES = $(LEXLIB) $(XPMLIB) $(XMULIB) $(EXTENSIONLIB) $(XLIB)
+  LOCAL_LIBRARIES = $(LEXLIB) $(XPMLIB) $(REGEXLIB) $(SOUNDLIB) \
+                    $(XMULIB) $(EXTENSIONLIB) $(XLIB)
          LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
-          DEFINES = $(SIGNAL_DEFINES)
+   EXTRA_INCLUDES = $(XPMINC) $(REGEXINC) $(SOUNDINC)
+          DEFINES = $(SIGNAL_DEFINES) $(NO_XPM_SUPPORT) $(NO_REGEX_SUPPORT) \
+                    $(NO_SOUND_SUPPORT) $(NO_M4_SUPPORT)
 
-             SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c twm.c \
-                    parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
-                    cursor.c icons.c desktop.c doors.c lastmake.c
+             SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c \
+                    twm.c sound.c parse.c menus.c events.c resize.c util.c \
+                    version.c iconmgr.c cursor.c regions.c applets.c \
+                    icons.c desktop.c doors.c lastmake.c
 
-             OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o twm.o \
-                    parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
-                    cursor.o icons.o desktop.o doors.o lastmake.o
+             OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o \
+                    twm.o sound.o parse.o menus.o events.o resize.o util.o \
+                    version.o iconmgr.o cursor.o regions.o applets.o \
+                    icons.o desktop.o doors.o lastmake.o
 
 AllTarget(vtwm)
 
-SpecialObjectRule(menus.o,menus.c,$(NO_BUILD_INFO) $(NEED_PROCESS_H) $(NEED_PUTENV_F))
+SpecialObjectRule(menus.o,menus.c,$(NO_BUILD_INFO) \
+$(NEED_PUTENV_F) $(NEED_PROCESS_H))
 
-SpecialObjectRule(util.o,util.c,$(NO_XPM_SUPPORT) $(NEED_PUTENV_F))
+SpecialObjectRule(util.o,util.c,$(NEED_PUTENV_F))
 
 SpecialObjectRule(events.o,events.c,$(NEED_SELECT_H))
 
-SpecialObjectRule(icons.o,icons.c,$(NO_XPM_SUPPORT))
-
-SpecialObjectRule(add_window.o,add_window.c,$(NO_XPM_SUPPORT))
-
-SpecialObjectRule(desktop.o,desktop.c,$(NO_XPM_SUPPORT))
-
 SpecialObjectRule(parse.o,parse.c,\
-'-DSYSTEM_VTWMRC="'$(VTWMDIR)'/system.vtwmrc"' \
-'-DSYSTEM_TWMRC="'$(VTWMDIR)'/system.twmrc"')
+'-DSYSTEM_VTWMRC="'$(VTWMLIBDIR)'/system.vtwmrc"' \
+'-DSYSTEM_TWMRC="'$(VTWMLIBDIR)'/system.twmrc"')
 
-depend:: lex.c gram.c deftwmrc.c lastmake.c
+NormalProgramTarget(vtwm,$(OBJS),$(DEPLIBS),$(LOCAL_LIBRARIES),NullParameter)
 
-ComplexProgramTarget(vtwm)
-InstallNonExecFile(system.vtwmrc,$(VTWMDIR))
+InstallProgram(vtwm,$(VTWMBINDIR))
+InstallManPage(vtwm,$(VTWMMANDIR))
+InstallNonExecFile(system.vtwmrc,$(VTWMLIBDIR))
+
+depend:: lex.c gram.c deftwmrc.c lastmake.c vtwm.man
+
+all::
+	$(RM) deftwmrc.* lastmake.*
+
+install::
+	$(RM) deftwmrc.* lastmake.*
+	$(MAKE) install.man
+
+clean::
+	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c \
+	lastmake.c system.vtwmrc vtwm.man
 
 gram.h gram.c: gram.y
 	$(YACC) $(YFLAGS) gram.y
 	$(MV) y.tab.c gram.c
 	$(MV) y.tab.h gram.h
 
-clean::
-	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c lastmake.c system.vtwmrc
-
-deftwmrc.c: system.vtwmrc.$(SYS_VTWMRC_LOOK)
-	$(CP) system.vtwmrc.$(SYS_VTWMRC_LOOK) system.vtwmrc
+deftwmrc.c: system.vtwmrc
 	$(RM) $@
 	echo '/* ' >>$@
 	echo ' * This file is generated automatically from the default' >>$@
@@ -123,6 +156,14 @@ lastmake.c:
 	echo '    "Platform:  '`uname -s`' Version '`uname -v`' Release '`uname -r`'",' >>$@
 	echo '    "Build:  '`date`'",' >>$@
 	echo '    "" };' >>$@
+
+system.vtwmrc:
+	$(RM) $@
+	$(CP) $@.$(SYS_VTWMRC_LOOK) $@
+
+vtwm.man:
+	$(RM) $@
+	$(LN) doc/$@ $@
 
 XCOMM Handy for developers to check the man page
 dw vtwm.dw: vtwm.man

@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h> /* for sleep() */
 #include <signal.h>
 #include <fcntl.h>
 #include "twm.h"
@@ -52,6 +53,10 @@
 #include "screen.h"
 #include "iconmgr.h"
 #include "desktop.h"
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+#include "sound.h"
+#endif
 #include <X11/Xresource.h>
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
@@ -119,6 +124,9 @@ unsigned long black, white;
 
 extern void assign_var_savecolor();
 
+/* djhjr - 4/26/99 */
+extern void FreeRegions();
+
 /***********************************************************************
  *
  *  Procedure:
@@ -127,6 +135,7 @@ extern void assign_var_savecolor();
  ***********************************************************************
  */
 
+/* Changes for m4 pre-processing submitted by Jason Gloudon */
 int
 main(argc, argv, environ)
     int argc;
@@ -136,16 +145,27 @@ main(argc, argv, environ)
     Window root, parent, *children;
     unsigned int nchildren;
     int i, j;
-    char *display_name = NULL;
+    char *def, *display_name = NULL;
     unsigned long valuemask;	/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
     int numManaged, firstscrn, lastscrn, scrnum;
     extern ColormapWindow *CreateColormapWindow();
+#ifndef NO_M4_SUPPORT
+    int m4_preprocess = False;	/* filter the *twmrc file through m4 */
+    char *m4_option = NULL; /* pass these options to m4 - djhjr - 2/20/98 */
+#endif
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+    int sound_state = 0;
+#endif
 
     /* djhjr - 7/21/98 */
     SIGNAL_T QueueRestartVtwm();
     
-    ProgramName = argv[0];
+	if ((ProgramName = strrchr(argv[0], '/')))
+		ProgramName++;
+	else
+		ProgramName = argv[0];
     Argc = argc;
     Argv = argv;
     Environ = environ;
@@ -153,34 +173,56 @@ main(argc, argv, environ)
     for (i = 1; i < argc; i++) {
 	if (argv[i][0] == '-') {
 	    switch (argv[i][1]) {
-	      case 'd':				/* -display dpy */
+	      case 'd':				/* -display display */
 		if (++i >= argc) goto usage;
 		display_name = argv[i];
 		continue;
-	      case 's':				/* -single */
-		MultiScreen = FALSE;
-		continue;
-	      case 'f':				/* -file twmrcfilename */
+	      case 'f':				/* -file initfile */
 		if (++i >= argc) goto usage;
 		InitFile = argv[i];
+		continue;
+#ifndef NO_M4_SUPPORT
+	      case 'm':				/* -m4 [options] */
+		m4_preprocess = True;
+		/* this isn't really right, but hey... - djhjr - 2/20/98 */
+		if (i + 1 < argc &&
+				(argv[i + 1][0] != '-' ||
+				(argv[i + 1][0] == '-' && !strchr("dfsv", argv[i + 1][1]))))
+			m4_option = argv[++i];
+		continue;
+#endif
+	      case 's':				/* -single */
+		MultiScreen = FALSE;
 		continue;
 	      case 'v':				/* -verbose */
 		PrintErrorMessages = True;
 		continue;
+#ifdef NEVER /* djhjr - 2/20/99 */
 	      case 'q':				/* -quiet */
 		PrintErrorMessages = False;
 		continue;
+#endif
 	    }
 	}
       usage:
 	fprintf (stderr,
-		 "usage:  %s [-display dpy] [-f file] [-s] [-q] [-v]\n",
+#ifndef NO_M4_SUPPORT
+		 "usage:  %s [-d display] [-f initfile] [-m [options]] [-s] [-v]\n",
+#else
+		 "usage:  %s [-d display] [-f initfile] [-s] [-v]\n",
+#endif
 		 ProgramName);
 	exit (1);
     }
 
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+#define newhandler(sig) \
+    if (signal (sig, SIG_IGN) != SIG_IGN) (void) signal (sig, PlaySoundDone)
+#else
 #define newhandler(sig) \
     if (signal (sig, SIG_IGN) != SIG_IGN) (void) signal (sig, Done)
+#endif
 
     newhandler (SIGINT);
     newhandler (SIGHUP);
@@ -341,6 +383,12 @@ main(argc, argv, environ)
 	Scr->Root = RootWindow(dpy, scrnum);
 	XSaveContext (dpy, Scr->Root, ScreenContext, (caddr_t) Scr);
 
+	/* djhjr - 1/31/99 */
+	if ((def = XGetDefault(dpy, "*", "bitmapFilePath")))
+		Scr->BitmapFilePath = strdup(def);
+	else
+		Scr->BitmapFilePath = NULL;
+
 	Scr->TwmRoot.cmaps.number_cwins = 1;
 	Scr->TwmRoot.cmaps.cwins =
 		(ColormapWindow **) malloc(sizeof(ColormapWindow *));
@@ -440,6 +488,10 @@ main(argc, argv, environ)
 	Scr->tbpm.menu = None;
 	Scr->tbpm.delete = None;
 
+	/* djhjr - 6/4/00 */
+	Scr->tbpm.darrow = None;
+	Scr->tbpm.rarrow = None;
+
 	if ( Scr->FirstTime )
 	{	/* retain max size on restart. */
 		Scr->VirtualDesktopMaxWidth = 0;
@@ -450,7 +502,28 @@ main(argc, argv, environ)
 	InitMenus();
 
 	/* Parse it once for each screen. */
+#ifndef NO_M4_SUPPORT
+	/* added 'm4_option' - djhjr - 2/20/99 */
+	ParseTwmrc(InitFile, display_name, m4_preprocess, m4_option);
+#else
 	ParseTwmrc(InitFile);
+#endif
+
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+	OpenSound();
+
+	if (PlaySound(S_START))
+	{
+		/*
+		 * Save setting from resource file, and turn sound off
+		 */
+		sound_state = ToggleSounds();
+		sound_state ^= 1;
+		if (sound_state == 0) ToggleSounds();
+	}
+#endif
+
 	assign_var_savecolor(); /* storeing pixels for twmrc "entities" */
 
 	/* djhjr - 4/19/96 */
@@ -487,6 +560,10 @@ main(argc, argv, environ)
 	if (Scr->MenuBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuTitleC);
 	if (Scr->BorderBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->BorderColorC);
 
+	/* djhjr - 2/7/99 */
+	if (Scr->DoorBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->DoorC);
+	if (Scr->VirtualDesktopBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->VirtualC);
+
 /* djhjr - 8/11/98
 	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
 	if (Scr->BorderBevelWidth == 0)
@@ -516,20 +593,28 @@ main(argc, argv, environ)
 	CreateGCs();
 	MakeMenus();
 
+	/*
+	 * Set titlebar height from font height and padding,
+	 * then adjust to titlebutton height - djhjr - 12/10/98
+	 */
 	Scr->TitleBarFont.y += Scr->FramePadding;
-	Scr->TitleHeight = Scr->TitleBarFont.height + Scr->FramePadding * 2;
+	i = Scr->TitleBarFont.height;
+	do
+	{
+		Scr->TitleBarFont.y += (i - Scr->TitleBarFont.height) / 2;
+		Scr->TitleHeight = i + Scr->FramePadding * 2;
 
 /* djhjr - 4/29/98
-	* djhjr - 4/19/96 *
-	if (Scr->use3Dtitles) Scr->TitleHeight += 4;
+		* djhjr - 4/19/96 *
+		if (Scr->use3Dtitles) Scr->TitleHeight += 4;
 */
-	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
-	if (Scr->TitleBevelWidth > 0) Scr->TitleHeight += 2 * Scr->TitleBevelWidth + 2;
+		/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+		if (Scr->TitleBevelWidth > 0)
+			Scr->TitleHeight += 2 * Scr->TitleBevelWidth + 2;
 
-	/* make title height be odd so buttons look nice and centered */
-	if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
-
-	InitTitlebarButtons ();		/* menus are now loaded! */
+		/* make title height be odd so buttons look nice and centered */
+		if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
+	} while ((i = InitTitlebarButtons()) > Scr->TitleHeight - Scr->FramePadding * 2);
 
 	XGrabServer(dpy);
 	XSync(dpy, 0);
@@ -731,6 +816,12 @@ main(argc, argv, environ)
 			&Scr->TwmRoot, &Event, C_NO_CONTEXT, FALSE);
 	}
 
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+	/* restore setting from resource file */
+	if (sound_state == 1) ToggleSounds();
+#endif
+
     HandleEvents();
 
 	return (0);
@@ -898,8 +989,14 @@ void InitVariables()
     Scr->DoZoom = FALSE;
     Scr->TitleFocus = TRUE;
 
-	/* djhjr - 5/27/98 */
-	Scr->IconManagerFocus = TRUE;
+    /* djhjr - 5/27/98 */
+    Scr->IconManagerFocus = TRUE;
+
+    /* djhjr - 12/14/98 */
+    Scr->StaticIconPositions = FALSE;
+
+    /* djhjr - 10/2/01 */
+    Scr->StrictIconManager = FALSE;
 
     Scr->NoTitlebar = FALSE;
     Scr->DecorateTransients = FALSE;
@@ -930,8 +1027,16 @@ void InitVariables()
     Scr->NoIconifyIconManagers = FALSE; /* PF */
     Scr->ClientBorderWidth = FALSE;
     Scr->SqueezeTitle = -1;
-    Scr->FirstRegion = NULL;
-    Scr->LastRegion = NULL;
+
+/* djhjr - 4/26/99
+    Scr->FirstIconRegion = NULL;
+    Scr->LastIconRegion = NULL;
+*/
+    FreeRegions(Scr->FirstIconRegion, Scr->LastIconRegion);
+
+	/* djhjr - 4/26/99 */
+    FreeRegions(Scr->FirstAppletRegion, Scr->LastAppletRegion);
+
     Scr->FirstTime = TRUE;
     Scr->HaveFonts = FALSE;		/* i.e. not loaded yet */
     Scr->CaseSensitive = TRUE;
@@ -962,6 +1067,9 @@ void InitVariables()
 
 	/* djhjr - 4/26/96 */
     Scr->SunkFocusWindowTitle = FALSE;
+
+	/* for rader - djhjr - 2/9/99 */
+	Scr->NoPrettyTitles = FALSE;
 
 	/* djhjr - 9/21/96 */
     Scr->ButtonColorIsFrame = FALSE;
@@ -1039,7 +1147,13 @@ void InitVariables()
 	Scr->AutoPanExtraWarp = 2;                     /* DSE */
 	Scr->EnhancedExecResources = FALSE;            /* DSE */
 	Scr->RightHandSidePulldownMenus = FALSE;       /* DSE */
-	Scr->RealScreenBorderWidth = 2;                /* DSE */
+
+	/* was '2' for when UseRealScreenBorderWidth existed - djhjr - 2/15/99 */
+	Scr->RealScreenBorderWidth = 0;                /* DSE */
+
+	/* djhjr - 10/11/01 */
+	Scr->ZoomZoom = FALSE;
+
 	Scr->LessRandomZoomZoom = FALSE;               /* DSE */
 	Scr->PrettyZoom = FALSE;                       /* DSE */
 	Scr->StickyAbove = FALSE;                      /* DSE */
@@ -1065,6 +1179,24 @@ void InitVariables()
 	/* djhjr - 8/11/98 */
 	Scr->IconBevelWidth = 0;
 	Scr->ButtonBevelWidth = 0;
+
+	/* djhjr - 2/7/99 */
+	Scr->DoorBevelWidth = 0;
+	Scr->VirtualDesktopBevelWidth = 0;
+
+	/* djhjr - 5/22/00 */
+	Scr->MenuScrollBorderWidth = 2;
+	Scr->MenuScrollJump = 3;
+
+	/* djhjr - 6/22/99 */
+	Scr->DontDeiconifyTransients = FALSE;
+
+	/* submitted by Ugen Antsilevitch - 5/28/00 */
+	Scr->WarpVisible = FALSE;
+
+	/* djhjr - 6/22/01 */
+	Scr->PauseOnExit = 0;
+	Scr->PauseOnQuit = 0;
 }
 
 
@@ -1139,26 +1271,6 @@ void RestoreWithdrawnLocation (tmp)
 }
 
 
-/***********************************************************************
- *
- *  Procedure:
- *	Done - cleanup and exit twm
- *
- *  Returned Value:
- *	none
- *
- *  Inputs:
- *	none
- *
- *  Outputs:
- *	none
- *
- *  Special Considerations:
- *	none
- *
- ***********************************************************************
- */
-
 void Reborder (time)
 Time time;
 {
@@ -1185,6 +1297,39 @@ Time time;
     SetFocus ((TwmWindow*)NULL, time);
 }
 
+
+/*
+ * Exit handlers. Clean up and exit VTWM.
+ *
+ *    PlaySoundDone()
+ *    Done()
+ *    QueueRestartVtwm()
+ */
+
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+SIGNAL_T PlaySoundDone()
+{
+    if (PlaySound(S_STOP))
+    {
+	/* allow time to emit */
+	if (Scr->PauseOnExit) sleep(Scr->PauseOnExit);
+    }
+
+    Done();
+    SIGNAL_RETURN;
+}
+
+void Done()
+{
+    CloseSound();
+
+    SetRealScreen(0,0);
+    Reborder (CurrentTime);
+    XCloseDisplay(dpy);
+    exit(0);
+}
+#else
 SIGNAL_T Done()
 {
     SetRealScreen(0,0);
@@ -1193,6 +1338,7 @@ SIGNAL_T Done()
     exit(0);
     SIGNAL_RETURN;
 }
+#endif
 
 /* djhjr - 7/31/98 */
 SIGNAL_T
@@ -1210,6 +1356,7 @@ QueueRestartVtwm()
     XFlush(dpy);
     SIGNAL_RETURN;
 }
+
 
 /*
  * Error Handlers.  If a client dies, we'll get a BadWindow error (except for

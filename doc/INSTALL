@@ -1,8 +1,8 @@
 
-BUILDING VTWM-5.4.N
-===================
+BUILDING VTWM 5.4
+=================
 
-  - Unpack the distribution. You've likely done that already.
+  - Unpack the distribution. You've likely done that already, no?
 
   - Determine if you have the XPM library installed:
       - The library is usually found in /usr/X11/lib, /usr/local/lib,
@@ -10,36 +10,74 @@ BUILDING VTWM-5.4.N
       - The header file is usually found in /usr/X11/include,
         /usr/local/include, or some such directory. It's "xpm.h".
 
-  - Look over the Imakefile, and edit to taste.
+  - Determine if you have regular expressions ("RE"s) support:
+      - On many systems, the routines are built into the standard
+        C library. If not, the library might be in /usr/local/lib,
+        /usr/lib, or some such directory, and would be called
+        something like "libregex.a".
+      - The header file is usually found in /usr/local/include,
+        /usr/include, or some such directory. It's "regex.h".
+      - Note that the routines must conform to the POSIX 1003.2
+        specification. Older systems may have regex support that
+        predates this POSIX spec, and will not suffice.
 
-  - Issue 'xmkmf'. If that doesn't work (you'll know it), you'll
-    have to copy Makefile.QNX to Makefile, and edit the latter
-    to taste.
+  - Determine if you have the rplay library installed:
+      - The library is usually found in /usr/local/lib, /usr/lib,
+        or some such directory. It's usually called "librplay.a".
+      - The header file is usually found in /usr/local/include,
+        /usr/include, or some such directory. It's "rplay.h".
 
-  - Issue 'make'. While it's building, read the man page. Start
-    building up your $(HOME)/.vtwmrc. If the build breaks, check
-    further down in this file, and retry. If it still breaks, ask
-    a friend. If it _still_ breaks, write me.
+  - Determine if you have the m4 macro processor installed:
+      - Issuing 'whence m4' or 'which m4' ought to do it.
+
+  - Look over the Imakefile, and edit to taste. If you run FreeBSD or
+    Linux, you may want to make a change as described further down in
+    this file.
+
+  - Issue 'xmkmf'. If that doesn't work (you'll know it), you'll have
+    to copy Makefile.QNX to Makefile, and edit the latter to taste.
+
+  - Issue 'make'. This shouldn't take very long at all; VTWM is small.
+    Should the build break, check further down in this file. If it still
+    breaks, ask a friend. If it _still_ breaks, you can write me.
+
+  - The sysrc_add_apps.sh script in contrib/support/ may be of help in
+    customizing the default system resource file. It automagically adds
+    selected applications found on your system to system.vtwmrc. Issue
+    'sh contrib/support/sysrc_add_apps.sh -h' for a brief help message.
 
 
-INSTALLING VTWM-5.4.N
-=====================
+INSTALLING VTWM 5.4
+===================
 
   - If you trust whoever set up your build environment:
-      - As root, issue 'make install' and 'make install.man'.
+      - As root, issue 'make install'.
     If you don't:
-      - Issue 'make -n install' and 'make -n install.man' to see
-        what it'll do, without actually doing it.
-    If you want (or have) to set it up manually:
+      - Issue 'make -n install' to see what it'll do, without actually
+        doing it.
+  - If you want (or have) to set it up manually:
       - As root, copy vtwm to /usr/X11/bin, or to wherever other X
         window managers and binaries are.
       - As root, copy system.vtwmrc to wherever it's spec'd in the
         Makefile (this path is built into the VTWM binary).
       - As root, copy vtwm.man to wherever other X window manager
-        man pages are (usually /usr/man/mann).
+        man pages are (usually /usr/X11/man/mann).
 
-  - Edit the script that starts your current X window manager to
-    start VTWM (mine is 'vtwm -display :0.0' in $(HOME)/.xinitrc).
+  - Set up user resource files:
+      - Copy system.vtwmrc to your home directory as .vtwmrc, and edit
+        it to suit your immediate needs (you'll be editing it a lot more,
+        I'm sure).
+      - If you built VTWM with m4 support, you can copy the contrib/
+        directory into your home directory as vtwm/ or some such. Then,
+        create a symlink $(HOME)/.vtwmrc to one of the vtwmrc-*ish files
+        in that subdirectory, or specify one of those files on VTWM's
+        invocation (either will give you much more to work with).
+      - The sysrc_add_apps.sh script may also be useful in customizing
+        user resource files by playing with its command-line switches.
+
+  - Edit the script that starts your current X window manager to start
+    VTWM instead (mine is 'vtwm -d :0.0 -f vtwm/vtwmrc-MWMish -s -m' in
+    $(HOME)/.xinitrc).
 
   - Exit X, and restart it.
 
@@ -50,14 +88,27 @@ BUILD HINTS
   - If, during the build, you get complaints of an undefined "yylineno",
     remove the "extern" keyword from the declaration in gram.y. Likewise,
     if "yywrap" turns up as undefined, add a line "yywrap() {return(1)};"
-    to lex.l. They're both expected to be defined and initialized in the
-    [f]lex skeleton file, but some systems seem to choke on these.
+    to lex.l. Finally, if "yylex" turns up undefined, it can be fixed by
+    adding a line "#define YY_DECL int yylex YY_PROTO((void))" to lex.l.
+    These are all expected to be in the lex skeleton file, but there are
+    systems that have choked on them.
 
   - If, during the build, you get complaints of undefined data types and
     functions "Xpm" whatall, it's because you've built VTWM with XPM image
-    support and either you don't have the XPM library available, or it's
+    support, and either you don't have the XPM library available, or it's
     not a recent enough version (3.4h is the earliest I know of). Read the
     comments in Imakefile and/or Makefile.QNX.
+
+  - If, during the build, you get complaints of an undefined data type
+    "regex_t" or functions "reg" whatall, it's because you've built VTWM
+    with regular expressions ("RE"s) support, and either you don't have
+    regex support, or it's not POSIX 1003.2 compliant. Read the comments
+    in Imakefile and/or Makefile.QNX.
+
+  - If, during the build, you get complaints of an undefined data type
+    "RPLAY" or functions "rplay" whatall, it's because you've built VTWM
+    with sound support and you don't have the rplay library available.
+    Read the comments in Imakefile and/or Makefile.QNX.
 
   - If, during the build, you get complaints of an unknown data type
     "Pixel", add "EXTRA_DEFINES=-DNEED_PIXEL_T" to the make command.
@@ -66,9 +117,45 @@ BUILD HINTS
     or VTWM doesn't fall back on system resource files on startup, read
     the comments in Imakefile and/or Makefile.QNX.
 
+  - FreeBSD users: For a more sensible root Identify window, you may want
+    to change a line in Imakefile, for the lastmake.c target, from:
+      echo '    "Platform:  '`uname -s`' Version '`uname -v`' Release '\
+      `uname -r`'",' >>$@
+    to:
+      echo '    "Platform:  '`uname -s`' Version '`uname -v | cut -f 2 \
+      -d ' ' | cut -f 1 -d '-'`' Release '`uname -v | cut -f 2 -d '#' \
+      | cut -f 1 -d ':'`'",' >>$@
+
+  - Linux users: For a more sensible root Identify window, you may want
+    to change a line in Imakefile, for the lastmake.c target, from:
+      echo '    "Platform:  '`uname -s`' Version '`uname -v`' Release '\
+      `uname -r`'",' >>$@
+    to:
+      echo '    "Platform:  '`uname -s`' Version '`uname -v | cut -f 2 \
+      -d '#' | cut -f 1 -d ' '`' Release '`uname -r`'",' >>$@
+
+  - Windows users: VTWM builds and runs with Cygwin (DLL version 1.3.2),
+    but the Makefile must have the line "vtwm:" after the "all:: vtwm"
+    line, and the directory /usr/X11R6/lib/X11/twm from Cygwin's install
+    may have to be deleted.
+
 
 RUNTIME HINTS
 =============
+
+  - If, on startup, things are coming up weird (if at all!), check the
+    resource file for m4 macros, and if found, see that VTWM is version
+    5.4.6 or later, that it was built with m4 support, that "-m" is in
+    the line that starts VTWM, and that m4 is in $(PATH).
+
+  - If you like a border on the virtual desktop's real screen, and your
+    resource file is from versions before 5.4.6, you will find that it
+    generates errors on startup. That's because the UseRealScreenBorder
+    resource no longer exists! If the RealScreenBorderWidth resource is
+    non-zero, why wouldn't you want to use it?
+
+  - As of version 5.4.6, random zooms during deiconification won't occur
+    unless the ZoomZoom variable is set.
 
   - If you use any of the 3D resources from versions before 5.4.5, you
     will find that they generate errors on startup. They no longer exist!
@@ -79,10 +166,5 @@ RUNTIME HINTS
     want to check the man page to see if the new enterpretation of the
     resource's list parameters fouls your setup.
 
-  - It's mentioned all over the place, but bears repeating: The virtual
-    desktop just won't behave correctly if its geometries don't work out
-    to whole-number ratios of both itself and the physical display as
-    measured in pixels.
-
-  - See also the BUGS file.
+  - See also the man page, and the SOUND and BUGS files in doc/.
 

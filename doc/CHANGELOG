@@ -7,10 +7,334 @@ IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 ============ vtwm-5.4.N.tar.gz =============
 hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
 
-    September 27, 1998
-        [menus.c] [resize.c]
+    November 3, 2001
+        VTWM 5.4.6 released for public consumption.
 
-            From Goran Larsson (hoh@lorelei.approve.se)
+    October 20 & 21, 2001
+        [*akefile*] [applets.c] [gram.y] [icons.c] [lex.l] [list.c]
+        [menus.c] [parse.c] [regions.c] [util.c] [list.h] [regions.h]
+            Added support for POSIX 1003.2 regular expressions ("RE"s)
+            in resource file window lists.
+
+    October 11, 2001
+        [menus.c] [parse.c] [resize.c] [twm.c] [util.c] [screen.h]
+            Fixed window resizing via icon managers and the virtual
+            desktop and window moves (f.move) via the virtual desktop.
+            Improved virtual desktop updates after window resizes and
+            moves. Zooms are aware of icon managers now. Random zooms
+            during deiconification are controlled by a variable now.
+
+            Added the following variable:
+                ZoomZoom
+
+    October 2 & 3, 2001
+        [events.c] [iconmgr.c] [menus.c] [parse.c] [twm.c] [parse.h]
+        [screen.h]
+            A new feature to make icon managers function strictly as
+            icon managers, listing only iconified windows.
+
+            Added the following variable:
+                StrictIconManager
+            Added the following function:
+                f.stricticonmgr
+
+    September 24 - 28, 2001
+        A new script in the contrib/support directory can add installed
+        applications to the system default resource file.
+
+        [*akefile*] [system.vtwmrc*] [add_window.c] [desktop.c]
+        [iconmgr.c]
+            Ensure the built-in resources and build info are current.
+            Made the system default resource files a bit more useful
+            and appealing. Fixed transposed default desktop foreground
+            and background colors.
+
+            From Michael Dales <michael@dcs.gla.ac.uk>:
+                Work on the bug where windows may be mapped in desktop
+                (0,0) regardless of the desktop's virtual location.
+
+            From Rolf Neugebauer <neugebar@dcs.gla.ac.uk>:
+                Fixed positioning errors for the icon manager and
+                virtual desktop windows.
+
+    August 16, 2001
+        [gram.y] [parse.c] [sound.c]
+            Added micro-manageable volume control.
+
+            Changed the following variable:
+                Sounds l
+
+    August 3, 2001
+        Added another build hint to the INSTALL file.
+
+    June 22 & 23, 2001
+        [*akefile*] [events.c] [gram.y] [iconmgr.c] [menus.c] [parse.c]
+        [sound.c] [twm.c] [menus.h] [parse.h] [screen.h] [sound.h] [twm.h]
+            Sound effects are now supported, by way of the rplay library
+            and daemon. Updated the doc and contrib directories.
+
+            Added the following variables:
+                PauseOnExit n
+                PauseOnQuit n
+                SoundHost s
+                Sounds l
+                SoundVolume n
+            Added the following function:
+                f.sounds
+
+    October 24 & 31, 2000
+        [doors.c] [menus.c]
+            Sanity checks on door renames. Fixed two menu repaint bugs.
+
+    August 23, 2000
+        [menus.c]
+            Fixed a menu scroll bug.
+
+    June 14 & 21, 2000
+        [menus.c]
+            Plugged holes where executing f.warptoiconmgr when thene
+            is no icon manager to warp to, and f.warpclass* when there
+            is no class, window, or focus, blew VTWM out of the water.
+
+    June 4, 2000
+        [twm.c] [util.c] [screen.h] [twm.h]
+            Added four new built-in window button images: ":darrow",
+            ":rarrow", ":xpm:darrow", and ":xpm:rarrow".
+
+    May 28 - 31, 2000
+        Added two more build hints to the INSTALL file.
+
+        [iconmgr.c] [menus.c] [parse.c] [twm.c] [menus.h] [parse.h]
+        [screen.h]
+            When the pointer would end up in an AutoPan border on warps,
+            it is adjusted out, preventing unwanted screen pans. All the
+            f.*iconmgr warp functions honor the WarpSnug and WarpWindows
+            variables now (or absence of). The WarpSnug state can now be
+            toggled.
+
+            From Ugen Antsilevitch <ugen@xonix.com>:
+                Support for warping only to visible windows.
+
+            Added the following variable:
+                WarpVisible
+            Added the following functions:
+                f.warpsnug
+                f.warpvisible
+
+    May 22 - 24, 2000
+        [menus.c] [parse.c] [twm.c] [menus.h] [screen.h]
+            Added "scrollability" to menus that would be taller than the
+            display (inspired by the neXtaw SimpleMenu widget).
+
+            Added the following variables:
+                MenuScrollBorderWidth n
+                MenuScrollJump n
+
+    April 1, 2000
+        Added another build hint to the INSTALL file.
+
+        [menus.c]
+            Made the pointer warp to the titlebar on a squeeze operation
+            if WarpCursor is set on, a la zoom operations.
+
+    September 28, 1999
+        [desktop.c] [icons.c] [util.c]
+            When moving an application window in the virtual desktop, the
+            border of the corresponding real screen window now highlights
+            as required. Streamlined the handling of transparent pixmaps
+            for window buttons, improving exposure response to pointer-
+            driven focus changes.
+
+    September 21, 1999
+        [add_window.c] [iconmgr.c] [menus.c]
+            Icon managers now honor the IconifyByUnmapping resource.
+            Fixed a bug where removing the last entry in an iconified
+            icon manager didn't unmap that icon, and it contained an
+            empty entry when deiconified. Fixed the f.hideiconmgr and
+            f.showiconmgr functions so that they now work against icon
+            managers that are defined with the IconManagers resource.
+            More work on the "Don't iconify if can't deiconify" logic.
+
+    September 14 & 15, 1999
+        [*akefile*] [events.c] [menus.c]
+            Fixed the notorious "Can't resize or move from icon managers
+            and menus not of the root or window in question" bug. Woo-woo!
+
+            From Mehul N. Sanghvi <mehul@kirsun.ne.mediaone.net>:
+                Additional tweaks to the *akefile*s for more flexible
+                installations.
+
+    September 10 & 11, 1999
+        Moved the man page into the doc directory. On request, renamed
+        the lnf directory to contrib. 
+
+        [*akefile*] [events.c] [menus.c] [resize.c]
+            Changed the *akefile*s to accomodate the above, as the man
+            page is now included in 'make install'. Reverted the setting
+            of the context of a door's frame to that prior to the change
+            on May 13 (it wasn't needed after all). Added code to prevent
+            iconifying windows that don't have provision to deiconify or
+            otherwise restore them. Fixed f.destroy and f.delete so that
+            they can be safely used on doors, icon managers, and the
+            virtual desktop. Fixed the zooming of doors, icon managers
+            and the virtual desktop so that their contents adjust to the
+            new size.
+
+    June 18 & 22, 1999
+        [menus.c] [parse.c] [twm.c] [util.c] [screen.h]
+            Fixed a bug, noted by "digs", where the truncation of long
+            titles messed up in titlebars that don't have any left-side
+            buttons. Added a new variable to see that iconified transient
+            windows of an iconified parent window aren't deiconified when
+            that parent is.
+
+            Added the following variable:
+                DontDeiconifyTransients
+
+    May 22, 1999
+        [applets.c] [icons.c]
+            The same small tweak in both to have the region layout
+            logic disregard grid spacing in determining whether a
+            window will fit (clarified the man page accordingly).
+
+    May 10 & 13, 1999
+        [doors.c] [events.c] [menus.c] [util.c]
+            Relaxed the door geometry parser, allowing omission of
+            the position. Fixed a bug where rodent button events on a
+            door's frame didn't correctly set the context, and added
+            a kludge to "fix" not getting the rodent button up event.
+            Applied the XPM library's color closeness attribute to
+            external pixmap images. Updated the resource files in lnf
+            to demonstrate some of m4's capabilities.
+
+    April 26 & 27, 1999
+        [*akefile*] [add_window.c] [applets.c] [doors.c] [events.c]
+        [gram.y] [icons.c] [menus.c] [parse.c] [regions.c] [twm.c]
+        [regions.h] [screen.h]
+            By cleverly re-using the code for icon regions, a new window
+            management scheme, applet regions, is born! Moved the generic
+            functions of icons.c into a new regions.c, renamed icons.h
+            to regions.h, copied and modified the remaining icons.c to
+            create applets.c, and made all this known to the rest of the
+            modules above. Setting up all those little tool applications
+            is now just a matter of dropping them into a list resource!
+
+            Added the following variable:
+                AppletRegion g s s n n l
+
+    February 28 & March 1, 1999
+        [doors.c] [events.c] [iconmgr.c] [menus.c] [resize.c] [events.h]
+            Doors, icon managers, and the virtual desktop now get redrawn
+            during opaque resizes (I have yet to figure out how to redraw
+            doors during interactive creation). The first two also have
+            minimum sizes imposed on them now. Fixed the icon manager's
+            class assignment; it's visible to resource list entries now.
+            Skip re-mapping of the virtual desktop to clean up outline
+            droppings if the window moved or resized is itself.
+
+    February 22 & 23, 1999
+        [desktop.c] [menus.c] [resize.c]
+            Added a trap to prevent resizing windows via the virtual
+            desktop (it's horribly broken). Imposed a minimum size on
+            the virtual desktop, that of the scaled real screen.
+
+    February 20, 1999
+        [add_window.c] [events.c] [parse.c] [twm.c]
+            The window's icon name now has it's own memory space; this
+            to keep some apps from blowing VTWM out of the water when
+            they change it. Added support for user-defined m4 parameters
+            passed from the command line.
+
+    February 15 & 16, 1999
+        [desktop.c] [icons.c] [parse.c] [twm.c] [screen.h]
+            If the RealScreenBorderWidth resource is defined, is there any
+            reason why the UseRealScreenBorder resource wouldn't be? More
+            fixes for the virtual desktop; these to properly accomodate the
+            real screen's border.
+
+            From Caveh Frank Jalali <caveh@eng.sun.com>:
+                A last tweak for icon images on multiple screens.
+
+            Removed the following variable:
+                UseRealScreenBorder
+
+    February 10 & 13, 1999
+        [events.c] [resize.c] [util.c]
+            Hacked in code to see that the virtual desktop's bevel gets
+            redrawn after being resized. Ick.
+
+            From Caveh Frank Jalali <caveh@eng.sun.com>:
+                Tweaks to correct the painting of external images on
+                multiple screens.
+
+    February 5 - 9, 1999
+        [system.vtwmrc*] [desktop.c] [doors.c] [events.c] [parse.c]
+        [twm.c] [util.c] [screen.h] [twm.h]
+            Doors and the virtual desktop can now be rendered in 3D.
+            Doors now override real screen snapping on entry. Fixed a
+            few bugs regarding the virtual desktop when it's resized;
+            these may have been responsible for the problems noted in
+            previous releases, because they don't happen anymore!
+            Added a resource to override title truncation when in short
+            titlebars and icon managers.
+
+            Added the following variables:
+                DoorBevelWidth n
+                VirtualDesktopBevelWidth n
+                NoPrettyTitles
+
+    January 30, 1999
+        [*akefile*] [menus.c] [parse.c] [twm.c] [version.c]
+            Added compiled-in options to the build info in the version
+            window.
+
+            From Jason Gloudon <jdg@world.std.com>:
+                Added m4 pre-processing of resource files. Woo-woo!
+
+    January 10 & 14, 1999
+        [add_window.c] [doors.c] [menus.c] [parse.c]
+            Added proper tests for success of XGetWindowProperty() calls
+            to fix getting icon names, window states, and pixel atoms from
+            the X server. Fixed a bug in the display of a renamed door.
+
+    December 26 & 28, 1998
+        [icons.c] [twm.c] [util.c] [screen.h]
+            Fixed a bug where icon bitmaps were rendered with the wrong
+            color. The X database resource "*bitmapFilePath" is now
+            searched for pixmap image files, like that for bitmap image
+            files.
+
+    December 10 & 14, 1998
+        [desktop.c] [menus.c] [parse.c] [twm.c] [menus.h] [parse.h]
+        [screen.h]
+            Non-nailed icons can now stay put at their locations on the
+            virtual desktop. The titlebar height now adjusts to external
+            button images. Added a few button image files to lnf.
+
+            Added the following variable:
+                StaticIconPositions
+            Added the following function:
+                f.staticiconpositions
+
+    November 15 - 16, 1998
+        [Imakefile] [desktop.c] [events.c] [menus.c]
+            Fixed the PanResistance resource's not recognizing when the
+            pointer has left the autopan windows. Fixed the "orphaning"
+            of intermediate parent menu(s) when skipping them for some
+            superior parent menu.
+
+            From Steve Ratcliffe <sterat@dial.pipex.com>:
+                Moved $(NO_XPM_SUPPORT) into DEFINES for global
+                visibility, and removed several SpecialObjectRule()s.
+
+            From Michel Eyckmans <mce@ping.be>:
+                Fixed deferred execution on keyboard events when the
+                root window has focus.
+
+    September 27, 1998
+        [menus.c] [resize.c] [version.c]
+
+            From Goran Larsson <hoh@lorelei.approve.se>:
                 Fixed text display bug in the size and position windows.
 
         VTWM 5.4.5a released for public consumption.
@@ -24,6 +348,8 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
         [util.c]
             The menu, resize and X logo built-in bitmaps now account
             for the ButtonBevelWidth variable.
+
+        VTWM 5.4.5 released for public consumption.
 
     September 8 - 10, 1998
         [events.c] [iconmgr.c] [parse.c] [twm.c] [screen.h]
@@ -40,7 +366,7 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
             noted by C. F. Jalali. Applied the MoveDelta variable
             to window resizing and initial menu highlighting.
 
-            From Steve Ratcliffe (sterat@dial.pipex.com);
+            From Steve Ratcliffe <sterat@dial.pipex.com>:
                 Fixed a bug for the AutoPan variable, when the pan
                 windows are obscured by a newly-raised window.
 
@@ -50,25 +376,25 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
             transparent pixmap resources weren't freed before re-use.
 
     August 23 - 27, 1998
-        [add_window] [events.c] [icons.c] [menus.c] [parse.c]
-        [twm.c] [util.c]
+        [add_window] [events.c] [icons.c] [menus.c] [parse.c] [twm.c]
+        [util.c]
             Fixed a bug where the titlebar highlight wasn't
             erased when focus was unset and the BeNiceToColormap
             and SunkFocusWindowTitle variables were used.
 
-            From Steve Ratcliffe (sterat@dial.pipex.com):
+            From Steve Ratcliffe <sterat@dial.pipex.com>:
                 Tweaks to suppress menu highlighting on mapping,
                 relieve CPU consumption on menus bound to rodent
                 buttons, and allow a second rodent button press to
                 cancel menus. A safer approach to the RaiseDelay
                 variable's timeout.
 
-            From Jason Gloudon (jgloudon@bbn.com):
+            From Jason Gloudon <jgloudon@bbn.com>:
                 Tweaks to streamline icon bitmap handling, and
                 fixed the painting of non-transparent titlebar
                 highlight pixmaps.
 
-            From Caveh Frank Jalali (caveh@eng.sun.com):
+            From Caveh Frank Jalali <caveh@eng.sun.com>:
                 Fixed a bug I introduced where non-3D borders were
                 always rendered as highlighted! Tweaks to correct
                 the painting of built-in images on multiple screens.
@@ -81,7 +407,8 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
         and *BevelWidth.
 
         [add_window.c] [doors.c] [events.c] [iconmgr.c] [icons.c]
-        [menus.c] [parse.c] [resize.c] [twm.c] [util.c] [screen.h]
+        [menus.c] [parse.c] [resize.c] [twm.c] [util.c] [version.c]
+        [screen.h]
             Fixed an oversight, color (XPM) image support for the
             UnknownIcon variable and application-specified icons.
             Window buttons are now beveled when external images are
@@ -96,11 +423,9 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
                 UseThreeDMenus
                 UseThreeDTitles
                 ThreeDBorderWidth n
-
             Added the following variables:
                 ButtonBevelWidth n
                 IconBevelWidth n
-
             Changed the following variable:
                 UnknownIcon s
 
@@ -133,7 +458,7 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
             Aliased a new variable, OldFashionedVtwmWindowsMenu, to the
             OldFashionedTwmWindowsMenu variable, just for consistancy.
 
-            From Erik Agsjo (erik.agsjo@aktiedirekt.com)
+            From Erik Agsjo <erik.agsjo@aktiedirekt.com>:
                 Added code to support two new variable(s).
 
             Added the following variables:
@@ -242,7 +567,7 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
                 MenuBevelWidth n
                 TitleBevelWidth n
 
-            From Nelson H. F. Beebe (beebe@math.utah.edu):
+            From Nelson H. F. Beebe <beebe@math.utah.edu>:
                 Even more tweaks for portability, most notably, restoring
                 X11R4 compatability by not including the X11R5,6 headers
                 Xosdefs.h and Xfuncs.h! X11R5,6 don't seem to mind.
@@ -250,7 +575,7 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
     April 20 - 23, 1998
         [nexpm/nexpm.c]
 
-            From Steve Ratcliffe (sterat@dial.pipex.com):
+            From Steve Ratcliffe <sterat@dial.pipex.com>:
                 Added a test for the child window of the selected window.
 
         [*akefile*] [add_window.c] [desktop.c] [doors.c] [events.c]
@@ -263,11 +588,11 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
             Added the following function:
                 f.namedoor
 
-            From Steve Ratcliffe (sterat@dial.pipex.com):
+            From Steve Ratcliffe <sterat@dial.pipex.com>:
                 Many tweaks made in the name of Portability. The snug
                 variables now take border width into account.
 
-            From Nelson H. F. Beebe (beebe@math.utah.edu):
+            From Nelson H. F. Beebe <beebe@math.utah.edu>:
                 Many more tweaks for portability's sake.
 
     April 14 - 17, 1998
@@ -297,7 +622,6 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
                 OpaqueResize [l]
                 NoOpaqueResize [l]
                 NoOpaqueMove [l]
-
             Changed the following variable:
                 OpaqueMove [l]
 
@@ -309,11 +633,11 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
             longer than the space they're drawn on.
 
     March 23 - 24, 1998
-        [gram.y] [util.c] [version.c]
+        [gram.y] [util.c]
             Fixed the rendition of a squeezed titlebar's right-side 3D
             border (a silly gunkulation error).
 
-            From Jason Gloudon (jgloudon@bbn.com):
+            From Jason Gloudon <jgloudon@bbn.com>:
                 Support for bison.
 
     March 20 - 22, 1998
@@ -331,7 +655,7 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
             the border color when the background color should have been
             used.
 
-            From Steve Ratcliffe (sterat@dial.pipex.com):
+            From Steve Ratcliffe <sterat@dial.pipex.com>:
                 Fixed warping to titlebars not flush left.
 
         VTWM 5.4.4b released for public consumption.
@@ -341,7 +665,7 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
         [*akefile*] [events.c] [menus.c] [util.c] [version.c]
             Tweaks to accomodate the following made to the *akefile*s.
 
-            From Takeharu Kato (magician@maekawa.is.uec.ac.jp):
+            From Takeharu Kato <magician@maekawa.is.uec.ac.jp>:
                 Fixed a fault causing a SIGSEGV in the info window,
                 and the use of a depreciated constant in the XPM library.
 
@@ -360,15 +684,15 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
             Added the following variable:
                 NoIconManagerHighlight
 
-            From Nicholas Jacobs (nicholas_jacobs@hotmail.com):
+            From Nicholas Jacobs <nicholas_jacobs@hotmail.com>:
                 A better effort at getting a name for the window.
 
     January 24, 1998
         [desktop.c] [menus.c]
             Allow screen warps to honor the SnapRealScreen variable.
-            Added a kludge to "fix" screen warps to de-iconifying windows
-            not on the real screen (high degree of confidence it's not the
-            source of the problem).
+            Added a kludge to "fix" screen warps to deiconifying windows
+            not on the real screen (high degree of confidence it's not
+            the source of the problem).
 
     January 21, 1998
         Added the HINTS file to the distribution. Moved and added many
@@ -385,7 +709,7 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
         [twm.c] [util.c] [util.h] [version.c] [screen.h] [gram.y]
             Rewrote most of the 3D border code, adding, among other things,
             drawing the top border segment when 3D borders are used with
-            squeezed titles! Simplified the meaning of the SqueezeTitle
+            squeezed titlebars! Simplified the meaning of the SqueezeTitle
             variable list parameters. Fixed a bug causing SIGFPEs when pan
             distances are set to zero. Added a bug workaround to try to
             make managed windows used as transients behave, a la the
@@ -401,14 +725,14 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
                 BeNiceToColormap
                 FixManagedVirtualGeometries
 
-            From Nelson H. F. Beebe (beebe@math.utah.edu):
+            From Nelson H. F. Beebe <beebe@math.utah.edu>:
                 On startup, VTWM now searches for user and system .vtwmrc
                 files, then user and system .twmrc files, in this order.
                 Fixed and added many declarations and definitions. Updated
                 the man page. Support for HTML and Postscript versions of
                 the man page added to the *akefile*s. 
 
-            From Jason Gloudon (jgloudon@bbn.com):
+            From Jason Gloudon <jgloudon@bbn.com>:
                 Color image (XPM) support for icons.
 
         Added a pixmap (djhjr.vtwmpm) referenced in my resource file
@@ -424,7 +748,7 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
         VTWM 5.4.3 released for public consumption.
 
     November 17 - 19, 1997
-        [events.c] [menus.c] [util.c] [util.h]
+        [events.c] [menus.c] [util.c] [util.h] [version.c]
             Fixed a bug where the wrong variable was being used to
             highlight the window border that has focus. Fixed an omission
             where the window buttons would not follow the border color
@@ -449,17 +773,17 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
             Changed code to properly scale menus to the fonts used.
 
     September 14 - 21, 1996
-        [add_window.c] [iconmgr.c] [menus.c] [resize.c] [twm.h] [util.c]
-        [version.h] [*akefil*] [vtwm.man]
+        [*akefile*] [add_window.c] [iconmgr.c] [menus.c] [resize.c]
+        [twm.h] [util.c] [version.h] [*akefil*] [vtwm.man]
             Fixed a bug in zooms that I introduced! Applied the backing
             store and NoBackingStore variables to the Icon Manager and
-            titlebars (defeats effects of RaiseDelay). Made the cursor
+            titlebars (defeats effects of RaiseDelay). Made the pointer
             warp to the titlebar on a zoom operation if WarpCursor is
             set on. The function f.showdesktopdisplay now deiconifies as
             required. Working on code to make the window buttons stay the
             same color as their titlebar on a restart operation (obviously
             wasn't thought about much before). Added build info to the
-            Version window by having the *makefil*s create a temporary C
+            version window by having the *akefile*s create a temporary C
             module.
 
             Added the following variable:
@@ -522,7 +846,6 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
                 DarkBevelContrast n
                 InfoFont s
                 ResizeRegion s
-
             Added the following function:
                 f.separator
 

@@ -42,6 +42,9 @@ extern void twmrc_error_prefix();
 extern void HandleExpose();
 extern void SetupWindow();
 
+/* djhjr - 4/27/99 */
+extern void AppletDown();
+
 TwmDoor *door_add(name, position, destination)
 char *name, *position, *destination;
 {
@@ -66,19 +69,29 @@ char *name, *position, *destination;
 		JunkY += Scr->MyDisplayHeight - JunkHeight - (2 * bw);
 		}
 
+/* allow position to be omitted - djhjr - 5/10/99
 	if ((JunkMask & (XValue | YValue)) !=
 	    (XValue | YValue)) {
 		twmrc_error_prefix();
 		fprintf (stderr, "bad Door position \"%s\"\n", position);
 		return NULL;
 	}
+*/
 
-/*	if (JunkX <= 0 || JunkY <= 0) {  */
-
-	if (JunkX < 0 || JunkY < 0) { /* 0,0 accepted now -- DSE */
-		twmrc_error_prefix();
-		fprintf (stderr, "silly Door position \"%s\"\n", position);
-		return NULL;
+	/* added this 'if (...) else' - djhjr - 5/10/99 */
+	if ((JunkMask & (XValue | YValue)) != (XValue | YValue))
+	{
+		/* allow AddWindow() to position it - djhjr - 5/10/99 */
+		JunkX = JunkY = -1;
+	}
+	else
+	{
+/*		if (JunkX <= 0 || JunkY <= 0) {  */
+		if (JunkX < 0 || JunkY < 0) { /* 0,0 accepted now -- DSE */
+			twmrc_error_prefix();
+			fprintf (stderr, "silly Door position \"%s\"\n", position);
+			return NULL;
+		}
 	}
 
 	/* they seemed ok */
@@ -172,9 +185,19 @@ TwmDoor *tmp_door;
 		tmp_door->width = XTextWidth(Scr->DoorFont.font,
 					     tmp_door->name,
 					     strlen(tmp_door->name))
+
+			/* djhjr - 2/7/99 */
+			+ (Scr->DoorBevelWidth * 2)
+
 			+ SIZE_HINDENT;
+
 	if (tmp_door->height < 0)
-		tmp_door->height = Scr->DoorFont.height + SIZE_VINDENT;
+		tmp_door->height = Scr->DoorFont.height
+
+			/* djhjr - 2/7/99 */
+			+ (Scr->DoorBevelWidth * 2)
+
+			+ SIZE_VINDENT;
 
 	/* create the window */
 	w = XCreateSimpleWindow(dpy, Scr->Root,
@@ -190,12 +213,15 @@ TwmDoor *tmp_door;
 					  tmp_door->colors.fore,
 					  tmp_door->colors.back);
 
+/* reworked to limit the minimum size of a door - djhjr - 3/1/99
 	if ((tmp_door->x < 0) || (tmp_door->y < 0)) {
 		XSizeHints *hints = NULL;
 		long ret;
 
-		/* set the wmhints so that addwindow will allow
-		 * the user to place the window */
+		 *
+		 * set the wmhints so that add_window() will allow
+		 * the user to place the window
+		 *
 		if (XGetWMNormalHints(dpy, w, hints, &ret) > 0) {
 			hints->flags = hints->flags &
 				(!USPosition & !PPosition);
@@ -209,6 +235,33 @@ TwmDoor *tmp_door;
 				       tmp_door->class->res_name,
 				       tmp_door->class->res_name,
 				       None, NULL, 0, NULL);
+	}
+*/
+	{
+		XSizeHints *hints = NULL;
+
+		if (tmp_door->x < 0 || tmp_door->y < 0)
+		{
+			long ret;
+
+			/*
+			 * set the wmhints so that add_window() will allow
+			 * the user to place the window
+			 */
+			if (XGetWMNormalHints(dpy, w, hints, &ret) != 0)
+				hints->flags &= (!USPosition & !PPosition);
+		}
+
+		if (!hints) hints = XAllocSizeHints();
+
+		hints->flags |= PMinSize;
+		hints->min_width = tmp_door->width;
+		hints->min_height = tmp_door->height;
+
+		XSetStandardProperties(dpy, w,
+				tmp_door->class->res_name,
+				tmp_door->class->res_name,
+				None, NULL, 0, hints);
 	}
 
 	XSetClassHint(dpy, w, tmp_door->class);
@@ -258,6 +311,8 @@ void door_enter(w, d)
 Window w;
 TwmDoor *d;
 {
+	int snapon; /* doors override real screen snapping - djhjr - 2/5/99 */
+
 	if (!d)
 		/* find the door */
 		if (XFindContext(dpy, w, DoorContext, (caddr_t *)&d)
@@ -266,7 +321,10 @@ TwmDoor *d;
 			return;
 
 	/* go to it */
+	snapon = (int)Scr->snapRealScreen;
+	Scr->snapRealScreen = FALSE;
 	SetRealScreen(d->goto_x, d->goto_y);
+	Scr->snapRealScreen = (snapon) ? TRUE : FALSE;
 }
 
 /*
@@ -291,21 +349,27 @@ TwmDoor *d;
 	if (d->next != NULL)
 		d->next->prev = d->prev;
 
-/* Must this be done here ? Is it do by XDestroyWindow, or by
-	HandleDestroyNotify() in events.c, or should it be done there...?
+	/* djhjr - 4/27/99 */
+	AppletDown(d->twin);
 
+/*
+ * Must this be done here ? Is it do by XDestroyWindow(),
+ * or by HandleDestroyNotify() in events.c, or should it
+ * it be done there ? M.J.E. Mol.
+ *
+ * It looks as though the contexts, at least, should be
+ * deleted here, maybe more, I dunno. - djhjr 2/25/99
+ */
 	XDeleteContext(dpy, d->w, DoorContext);
 	XDeleteContext(dpy, d->w,  TwmContext);
-	XDeleteContext(dpy, d->twin, DoorContext);
+	XDeleteContext(dpy, d->twin->w, DoorContext); /* ??? */
 	XUnmapWindow(dpy, d->w);
 	XUnmapWindow(dpy, w);
-*/
 	XDestroyWindow(dpy, w);
+	free(d->class->res_class); /* djhjr - 2/25/99 */
 	XFree(d->class);
+	free(d->name); /* djhjr - 2/25/99 */
 	free(d);
-	/*
-	 * Did I release all allocated memory ??? M.J.E. Mol.
-	 */
 }
 
 /*
@@ -334,19 +398,22 @@ door_paste_name(w, d)
 Window w;
 TwmDoor* d;
 {
-	int count;
+	int width, height, count;
 	char *ptr;
 /* djhjr - 8/11/98
 	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
 	int	bw = (Scr->BorderBevelWidth > 0) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
 */
-	int bw = Scr->BorderWidth;
+	/* added initialization and test - djhjr - 3/1/99 */
+	int bw = 0;
+	if (Scr->BorderBevelWidth) bw = Scr->BorderWidth;
  
 	if (!d)
 		if (XFindContext(dpy, w, DoorContext, (caddr_t *)&d) == XCNOENT)
-            return;
+			return;
 
-    ptr = XFetchBytes(dpy, &count);
+	/* sanity check - djhjr - 10/31/00 */
+	if (!(ptr = XFetchBytes(dpy, &count)) || count == 0) return;
 	if (count > 128) count = 128;
 
 	if (d->name)
@@ -357,10 +424,22 @@ TwmDoor* d;
 	sprintf(d->name, "%*s", count, ptr);
 	XFree(ptr);
 
-	SetupWindow(d->twin, d->twin->frame_x, d->twin->frame_y,
-		XTextWidth(Scr->DoorFont.font, d->name, count) + SIZE_HINDENT + 2 * bw,
-		d->height + 2 * bw, -1);
+	/* djhjr - 1/14/99 */
+	XClearWindow(dpy, d->w);
 
-    HandleExpose();
+	/* added 'Scr->DoorBevelWidth * 2' - djhjr - 2/7/99 */
+	width = XTextWidth(Scr->DoorFont.font, d->name, count) +
+			SIZE_HINDENT + (Scr->DoorBevelWidth * 2);
+	height = Scr->DoorFont.height + SIZE_VINDENT + (Scr->DoorBevelWidth * 2);
+
+	/* limit the size of a door - djhjr - 3/1/99 */
+	d->twin->hints.flags |= PMinSize;
+	d->twin->hints.min_width = width;
+	d->twin->hints.min_height = height;
+
+	SetupWindow(d->twin, d->twin->frame_x, d->twin->frame_y,
+			width + 2 * bw, height + d->twin->title_height + 2 * bw, -1);
+
+	HandleExpose();
 }
 

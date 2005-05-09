@@ -1,0 +1,100 @@
+
+NOTES ON SOUND SUPPORT
+======================
+
+As of version 5.4.6, VTWM can be built to support sound effects, by way of
+the rplay library and daemon. The following chart lists the identifiers for
+the sounds resource, loosely organized into categories. Those in parentheses
+are best described as "event identifiers" - cues that also trigger a sound.
+
+See the man page and sample resource file for usage and syntax.
+
+
+CREATE                       DESKTOP                  START STOP
+   m  !                         m  f.autopan             m  f.twmrc
+   m  f.exec                    m  f.panup               m  f.quit
+   m  f.newdoor                 m  f.pandown             m  f.restart
+   e  (client map)              m  f.panleft             m  f.startwm
+   m  (menu map)                m  f.panright            t  (vtwm start)
+                                m  f.movescreen          t  (vtwm stop)
+                                m  f.setrealscreen
+BUFFER                          m  f.resetdesktop
+   m  ^                         m  f.enterdoor        NAVIGATE
+   m  f.cut                     m  f.snap                m  f.backiconmgr
+   m  f.cutfile                 m  f.snugdesktop         m  f.downiconmgr
+   m  f.file                    m  f.snugwindow          m  f.forwiconmgr
+                                e  (autopan event)       m  f.lefticonmgr
+                                                         m  f.nexticonmgr
+ARRANGE                                                  m  f.previconmgr
+   m  f.autoraise            ZOOM RESIZE                 m  f.upiconmgr
+   m  f.circledown              m  f.bottomzoom          m  f.righticonmgr
+   m  f.circleup                m  f.fullzoom            m  f.warp
+   m  f.lower                   m  f.hbzoom              m  f.warpclassnext
+   m  f.raise                   m  f.horizoom            m  f.warpclassprev
+   m  f.raiselower              m  f.htzoom              m  f.warpring
+   m  f.deiconify               m  f.hzoom               m  f.warpto
+   m  f.iconify                 m  f.leftzoom            m  f.warptoiconmgr
+   m  f.hidedesktopdisplay      m  f.rightzoom           m  f.warptonewest
+   m  f.hideiconmgr             m  f.topzoom             m  f.warptoscreen
+   m  f.showdesktopdisplay      m  f.vlzoom
+   m  f.showiconmgr             m  f.vrzoom
+   m  f.forcemove               m  f.zoom
+   m  f.move                    m  f.resize
+   m  f.nail
+   m  f.stick
+   m  f.squeezecenter        DELETE DESTROY
+   m  f.squeezeleft             m  f.delete
+   m  f.squeezeright            m  f.deletedoor
+   m  f.namedoor                m  f.destroy
+   m  f.sorticonmgr             e  (client unmap)
+                                e  (info unmap)
+                                m  (menu unmap)
+MISC
+   m  f.beep
+   m  f.colormap
+   m  f.deltastop
+   m  f.focus
+   m  f.identify
+   m  f.menu
+   m  f.nailedabove
+   m  f.nop
+   m  f.saveyourself
+      f.separator
+   m  f.stickyabove
+   m  f.refresh
+   m  f.winrefresh
+   m  f.version
+   m  f.unfocus
+   m  f.function
+   m  f.ring
+   m  f.snaprealscreen
+   m  f.staticiconpositions
+   m  f.stricticonmgr
+   m  f.title
+   m  f.virtualgeometries
+   m  f.warpsnug
+   m  f.warpvisible
+   m  f.zoomzoom
+      f.sounds
+   m  (bell event)
+
+
+LEGEND:
+   m = handled in menus.c
+   e = handled in events.c
+   t = handled in twm.c
+     = no sound support
+
+NOTES:
+  - Where function identifiers overlap event identifiers, the function takes
+    precedence when both would otherwise play. These identifiers are:
+        f.beep > (bell event)            f.exec > (client map)
+        f.delete > (client unmap)        f.menu > (menu map)
+        f.deletedoor > (client unmap)    f.quit > (vtwm stop)
+        f.destroy > (client unmap)       f.version = f.identify
+  - f.exec will never know if the program is an X client, nor if it maps a
+    window if it is, so (client map) might be preferred.
+  - None should play if the function or event isn't possible, but they will.
+  - Two variables, PauseOnExit and PauseOnQuit, allow time for exit sounds
+    to play.
+

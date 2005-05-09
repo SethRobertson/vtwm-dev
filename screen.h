@@ -66,6 +66,10 @@ typedef struct _TitlebarPixmaps {
     Pixmap question;
     Pixmap menu;
     Pixmap delete;
+
+    /* djhjr - 6/4/00 */
+    Pixmap rarrow;
+    Pixmap darrow;
 } TitlebarPixmaps;
 
 typedef struct ScreenInfo
@@ -300,9 +304,17 @@ typedef struct ScreenInfo
     MyFont InfoFont;        /* for the info window */
     MyFont DefaultFont;
     IconMgr iconmgr;		/* default icon manager */
-    struct IconRegion *FirstRegion;	/* pointer to icon regions */
-    struct IconRegion *LastRegion;	/* pointer to the last icon region */
+    struct RootRegion *FirstIconRegion;	/* pointer to icon regions */
+    struct RootRegion *LastIconRegion;	/* pointer to the last icon region */
     char *IconDirectory;	/* icon directory to search */
+
+	/* djhjr - 4/26/99 */
+	struct RootRegion *FirstAppletRegion;	/* pointer to applet regions */
+	struct RootRegion *LastAppletRegion;	/* pointer to the last applet region */
+
+	/* djhjr - 12/26/98 */
+	char *BitmapFilePath;	/* local copy of the X database resource */
+
     int SizeStringOffset;	/* x offset in size window for drawing */
     int SizeStringWidth;	/* minimum width of size window */
     int BorderWidth;		/* border width of twm windows */
@@ -323,6 +335,14 @@ typedef struct ScreenInfo
     int IconBevelWidth;
     int ButtonBevelWidth;
 
+    /* djhjr - 2/7/99 */
+    int DoorBevelWidth;
+    int VirtualDesktopBevelWidth;
+
+    /* djhjr - 5/22/00 */
+    int MenuScrollBorderWidth;	/* top and bottom margins for menu scrolling */
+    int MenuScrollJump;		/* number of entries for menu scroll */
+
     int IconBorderWidth;	/* border width of icon windows */
     int TitleHeight;		/* height of the title bar window */
     TwmWindow *Focus;		/* the twm window that has focus */
@@ -337,6 +357,10 @@ typedef struct ScreenInfo
     short MoveDelta;		/* number of pixels before f.move starts */
     short ZoomCount;		/* zoom outline count */
 
+    /* djhjr - 6/22/01 */
+    int PauseOnExit;		/* delay before shutting down via Done() */
+    int PauseOnQuit;		/* delay before shuttind down via f.quit */
+
 /* djhjr - 5/17/96 */
 #ifdef ORIGINAL_SHORTS
 	/* short NoDefaults; - DSE */
@@ -344,7 +368,11 @@ typedef struct ScreenInfo
 	short NoDefaultTitleButtons; /* do not add default resize and iconify title buttons - DSE */
     short UsePPosition;		/* what do with PPosition, see values below */
     short OldFashionedTwmWindowsMenu;
+
+/* djhjr - 2/15/99
 	short UseRealScreenBorder;
+*/
+
     short AutoRelativeResize;	/* start resize relative to position in quad */
     short FocusRoot;		/* is the input focus on the root ? */
     short WarpCursor;		/* warp cursor on de-iconify ? */
@@ -358,8 +386,14 @@ typedef struct ScreenInfo
     short DoZoom;		/* zoom in and out of icons */
     short TitleFocus;		/* focus on window in title bar ? */
 
-	/* djhjr - 5/27/98 */
-	short IconManagerFocus;		/* focus on window of the icon manager entry? */
+    /* djhjr - 5/27/98 */
+    short IconManagerFocus;	/* focus on window of the icon manager entry? */
+
+    /* djhjr - 12/14/98 */
+    short StaticIconPositions;	/* non-nailed icons stay put */
+
+    /* djhjr - 10/2/01 */
+    short StrictIconManager;	/* show only the iconified */
 
     short NoTitlebar;		/* put title bars on windows */
     short DecorateTransients;	/* put title bars on transients */
@@ -436,12 +470,24 @@ typedef struct ScreenInfo
 	/* djhjr - 4/25/96 */
 	short SunkFocusWindowTitle;
 
+	/* for rader - djhjr - 2/9/99 */
+	short NoPrettyTitles;
+
 	/* djhjr - 9/21/96 */
 	short ButtonColorIsFrame;
 
 	/* djhjr - 4/17/98 */
 	short VirtualReceivesMotionEvents;
 	short VirtualSendsMotionEvents;
+
+	/* djhjr - 6/22/99 */
+	short DontDeiconifyTransients;
+
+	/* submitted by Ugen Antsilevitch - 5/28/00 */
+	short WarpVisible;
+
+	/* djhjr - 10/11/01 */
+	short ZoomZoom;         /* fallback on random zooms on iconify */
 #else
 	struct
 	{
@@ -449,7 +495,11 @@ typedef struct ScreenInfo
 		unsigned int NoDefaultTitleButtons				: 1;
 		unsigned int UsePPosition						: 2;
     	unsigned int OldFashionedTwmWindowsMenu			: 1;
+
+/* djhjr - 2/15/99
 		unsigned int UseRealScreenBorder				: 1;
+*/
+
     	unsigned int AutoRelativeResize					: 1;
     	unsigned int FocusRoot							: 1;
     	unsigned int WarpCursor							: 1;
@@ -463,8 +513,14 @@ typedef struct ScreenInfo
     	unsigned int DoZoom								: 1;
     	unsigned int TitleFocus							: 1;
 
-		/* djhjr - 5/27/98 */
-		unsigned int IconManagerFocus					: 1;
+	/* djhjr - 5/27/98 */
+	unsigned int IconManagerFocus					: 1;
+
+	/* djhjr - 12/14/98 */
+	unsigned int StaticIconPositions				: 1;
+
+	/* djhjr - 10/2/01 */
+	unsigned int StrictIconManager					: 1;
 
     	unsigned int NoTitlebar							: 1;
     	unsigned int DecorateTransients					: 1;
@@ -533,17 +589,34 @@ typedef struct ScreenInfo
 
     	unsigned int BeNiceToColormap					: 1;
 		unsigned int SunkFocusWindowTitle				: 1;
+
+		/* for rader - djhjr - 2/9/99 */
+		unsigned int NoPrettyTitles						: 1;
+
 		unsigned int ButtonColorIsFrame					: 1;
 
 		/* djhjr - 4/17/98 */
 		unsigned int VirtualReceivesMotionEvents		: 1;
 		unsigned int VirtualSendsMotionEvents			: 1;
+
+		/* djhjr - 6/22/99 */
+		unsigned int DontDeiconifyTransients			: 1;
+
+		/* submitted by Ugen Antsilevitch - 5/28/00 */
+		unsigned int WarpVisible						: 1;
+
+		/* djhjr - 10/11/01 */
+		unsigned int ZoomZoom					: 1;
 	} userflags;
 #define NoDefaultMouseOrKeyboardBindings	userflags.NoDefaultMouseOrKeyboardBindings
 #define NoDefaultTitleButtons				userflags.NoDefaultTitleButtons
 #define UsePPosition						userflags.UsePPosition
 #define OldFashionedTwmWindowsMenu			userflags.OldFashionedTwmWindowsMenu
+
+/* djhjr - 2/15/99
 #define UseRealScreenBorder					userflags.UseRealScreenBorder
+*/
+
 #define AutoRelativeResize					userflags.AutoRelativeResize
 #define FocusRoot							userflags.FocusRoot
 #define WarpCursor							userflags.WarpCursor
@@ -559,6 +632,12 @@ typedef struct ScreenInfo
 
 /* djhjr - 5/27/98 */
 #define IconManagerFocus					userflags.IconManagerFocus
+
+/* djhjr - 12/14/98 */
+#define StaticIconPositions					userflags.StaticIconPositions
+
+/* djhjr - 10/2/01 */
+#define StrictIconManager					userflags.StrictIconManager
 
 #define NoTitlebar							userflags.NoTitlebar
 #define DecorateTransients					userflags.DecorateTransients
@@ -627,11 +706,24 @@ typedef struct ScreenInfo
 
 #define BeNiceToColormap					userflags.BeNiceToColormap
 #define SunkFocusWindowTitle				userflags.SunkFocusWindowTitle
+
+/* for rader - djhjr - 2/9/99 */
+#define NoPrettyTitles						userflags.NoPrettyTitles
+
 #define ButtonColorIsFrame					userflags.ButtonColorIsFrame
 
 /* djhjr - 4/17/98 */
 #define VirtualReceivesMotionEvents			userflags.VirtualReceivesMotionEvents
 #define VirtualSendsMotionEvents			userflags.VirtualSendsMotionEvents
+
+/* djhjr - 6/22/99 */
+#define DontDeiconifyTransients				userflags.DontDeiconifyTransients
+
+/* submitted by Ugen Antsilevitch - 5/28/00 */
+#define WarpVisible							userflags.WarpVisible
+
+/* djhjr - 10/11/01 */
+#define ZoomZoom					userflags.ZoomZoom
 #endif
 
     FuncKey FuncKeyRoot;

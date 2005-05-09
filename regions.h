@@ -21,32 +21,56 @@
 
 /**********************************************************************
  *
- * $XConsortium: icons.h,v 1.4 89/07/18 17:16:24 jim Exp $
+ * regions.h (was icons.h)
  *
- * Icon releated definitions
+ * Region related definitions
  *
- * 10-Apr-89 Tom LaStrange        Initial Version.
+ * 4/26/99 D. J. Hawkey Jr.
  *
  **********************************************************************/
 
-#ifndef ICONS_H
-#define ICONS_H
+#ifndef REGIONS_H
+#define REGIONS_H
 
-typedef struct IconRegion
+#define USEDBY_TWIN 1
+#define USEDBY_NAME 2
+
+/* djhjr - 10/20/01 */
+#ifndef NO_REGEX_SUPPORT
+#include <sys/types.h>
+#include <regex.h>
+#endif
+
+typedef struct RootRegion
 {
-    struct IconRegion	*next;
+    struct RootRegion	*next;
     int			x, y, w, h;
     int			grav1, grav2;
-    int			stepx, stepy;	/* allocation granularity */
-    struct IconEntry	*entries;
-} IconRegion;
+    int			stepx, stepy;
+    struct RegionEntry	*entries;
+} RootRegion;
 
-typedef struct IconEntry
+typedef struct RegionEntry
 {
-    struct IconEntry	*next;
+    struct RegionEntry	*next;
     int			x, y, w, h;
-    TwmWindow		*twm_win;
-    short 		used;
-}IconEntry;
 
-#endif /* ICONS_H */
+    /* icons use twm_win, applets use both - djhjr - 4/26/99 */
+    union
+    {
+        TwmWindow	*twm_win;
+        char		*name;
+    } u;
+
+/* djhjr - 10/20/01 */
+#ifndef NO_REGEX_SUPPORT
+    regex_t		re;
+#else
+    char		re;
+#endif
+    short 		type;
+
+    short 		usedby;
+} RegionEntry;
+
+#endif /* REGIONS_H */

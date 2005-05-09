@@ -1,0 +1,175 @@
+
+#
+# DESCRIPTION FILE FOR vtwm - $(HOME)/vtwm/vtwmrc-lists
+#
+# PRE-PROCESSED BY vtwm-5.4.6 USING m4
+# 
+
+#
+# Lists
+#
+
+# This is a list variable, but won't work globally if braces are present!
+WindowRing
+
+# These are list variables, but won't work globally if braces are present!
+IconifyByUnmapping
+WarpCursor
+#OpaqueMove
+#NoOpaqueMove
+#OpaqueResize
+#NoOpaqueResize
+
+Cursors
+{
+	Button		"arrow"
+#	Frame		"arrow"
+	IconMgr		"arrow"
+	Menu		"arrow"
+	Title		"arrow"
+}
+
+IconManagers
+{
+	"*"		"+5+5"		1
+	"Xcoral*"	"+5+405"	1
+	"xv *"		"+5+605"	1
+}
+
+# These are dependant on the virtual screen counts...
+Doors
+{
+# Set the window dimensions...
+define(Dwidth, 20) define(Dheight, 19)
+# Calculate the window coordinates...
+define(Dy, eval(HEIGHT - (Dheight + WMborder + WMpanborder + WMdoortitle)))
+define(Dx, eval(WMborder + WMpanborder))
+# Translate to an X geometry string...
+define(Dgeometry, translit(Dwidth*Dheight, *, x))
+# Use one of these two sets for LLC or LRC...
+#	"1"		"Dgeometry+eval(Dx + Dwidth * 0)+Dy"	"+eval(WIDTH * 0)+0"
+#	"2"		"Dgeometry+eval(Dx + Dwidth * 2)+Dy"	"+eval(WIDTH * 1)+0"
+#	"3"		"Dgeometry+eval(Dx + Dwidth * 4)+Dy"	"+eval(WIDTH * 2)+0"
+#	"4"		"Dgeometry+eval(Dx + Dwidth * 6)+Dy"	"+eval(WIDTH * 3)+0"
+#	"5"		"Dgeometry+eval(Dx + Dwidth * 8)+Dy"	"+eval(WIDTH * 4)+0"
+#	"1"		"Dgeometry-eval(Dx + Dwidth * 8)+Dy"	"+eval(WIDTH * 0)+0"
+#	"2"		"Dgeometry-eval(Dx + Dwidth * 6)+Dy"	"+eval(WIDTH * 1)+0"
+#	"3"		"Dgeometry-eval(Dx + Dwidth * 4)+Dy"	"+eval(WIDTH * 2)+0"
+#	"4"		"Dgeometry-eval(Dx + Dwidth * 2)+Dy"	"+eval(WIDTH * 3)+0"
+#	"5"		"Dgeometry-eval(Dx + Dwidth * 0)+Dy"	"+eval(WIDTH * 4)+0"
+# Or just stick 'em in an applet region...
+#	"1"		"Dgeometry"		"+eval(WIDTH * 0)+0"
+#	"2"		"Dgeometry"		"+eval(WIDTH * 1)+0"
+#	"3"		"Dgeometry"		"+eval(WIDTH * 2)+0"
+#	"4"		"Dgeometry"		"+eval(WIDTH * 3)+0"
+#	"5"		"Dgeometry"		"+eval(WIDTH * 4)+0"
+}
+
+NailedDown
+{
+	"VTWM*"
+	"xbiff*"
+	"xcb"
+	"*clock"
+	"xeyes"
+	"xload"
+	"xpostit"
+	"as*"
+}
+
+IconManagerDontShow
+{
+	"VTWM*"
+#	"xbiff*"
+#	"xcb"
+#	"*clock"
+#	"xeyes"
+#	"xload"
+#	"xpostit"
+#	"as*"
+}
+
+DontShowInDisplay
+{
+	"VTWM*"
+	"xbiff*"
+	"xcb"
+	"*clock"
+	"xeyes"
+	"xload"
+	"xpostit"
+	"as*"
+}
+
+NoTitle
+{
+	"VTWM*"
+	"xbiff*"
+	"xcb"
+	"*clock"
+	"xeyes"
+	"xload"
+	"xpostit"
+	"as*"
+}
+
+# Confusing if click-to-type focus is enabled...
+AutoRaise
+{
+	"VTWM*"
+	"XTerm"
+	"Xqsh"
+	"xbiff*"
+	"xcb"
+	"*clock"
+	"xeyes"
+	"xload"
+	"xpostit"
+	"as*"
+}
+
+# Calculate the region dimensions...
+define(R0width, eval(WIDTH - VDwidth - 50))
+define(R0height, eval(Dheight + 2 * WMborder + WMdoortitle))
+# Calculate the region coordinates...
+define(R0x, WMpanborder)
+define(R0y, eval(HEIGHT - (R0height + WMpanborder)))
+# Translate to an X geometry string...
+define(R0geometry, translit(R0width*R0height+R0x+R0y, *, x))
+# Set the resource...
+AppletRegion	"R0geometry" South East 20 0
+{
+	"VTWM Door"
+}
+
+# Calculate the region dimensions...
+define(R1width, eval(WIDTH - 200))
+define(R1height, eval(64 + 2 * WMborder + WMapplettitle))
+# Translate to an X geometry string...
+define(R1geometry, translit(R1width*R1height-WMpanborder+WMpanborder, *, x))
+# Set the resource...
+AppletRegion	"R1geometry" North East 30 0
+{
+	"as*"
+}
+
+# Calculate the region coordinates...
+define(R2x, WMpanborder) define(R2y, eval(R1height + 20))
+# Calculate the region dimensions...
+define(R2width, eval(100 + 2 * WMborder))
+define(R2height, eval(HEIGHT - R2y - (VDheight + WMdesktoptitle)))
+# Translate to an X geometry string...
+define(R2geometry, translit(R2width*R2height-R2x+R2y, *, x))
+# Set the resource...
+AppletRegion	"R2geometry" North East 0 25
+{
+	"xbiff*"
+	"xcb"
+	"xload"
+	"oclock"
+	"xarclock"
+	"xclock"
+	"xdaliclock"
+	"xpostit"
+}
+

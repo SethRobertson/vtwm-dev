@@ -60,6 +60,9 @@
 #include "iconmgr.h"
 #include "desktop.h"
 
+/* 4/26/99 - djhjr */
+extern int PlaceApplet();
+
 #define gray_width 2
 #define gray_height 2
 static char gray_bits[] = {
@@ -159,6 +162,7 @@ IconMgr *iconp;
     int gravx, gravy;			/* gravity signs for positioning */
     int namelen;
     int bw2;
+	char *icon_name; /* djhjr - 2/20/99 */
 
 #ifdef DEBUG
     fprintf(stderr, "AddWindow: w = 0x%x\n", w);
@@ -261,7 +265,10 @@ IconMgr *iconp;
 	tmp_win->iconify_by_unmapping = Scr->IconifyByUnmapping;
 	if (Scr->IconifyByUnmapping)
 	{
+/* djhjr - 9/21/99
 	tmp_win->iconify_by_unmapping = iconm ? FALSE :
+*/
+	tmp_win->iconify_by_unmapping =
 /* djhjr - 4/22/98
 		!(short)(int) LookInList(Scr->DontIconify, tmp_win->full_name,
 			&tmp_win->class);
@@ -389,6 +396,9 @@ IconMgr *iconp;
 		(LookInList(Scr->NoOpaqueMoveL, tmp_win->full_name,
 			&tmp_win->class) == (char *)NULL);
 
+	/* djhjr - 9/21/99 */
+	if (tmp_win->opaque_move) tmp_win->attr.save_under = True;
+
 	/* djhjr - 4/7/98 */
 	if (LookInList(Scr->OpaqueResizeL, tmp_win->full_name, &tmp_win->class))
 		tmp_win->opaque_resize = TRUE;
@@ -399,6 +409,9 @@ IconMgr *iconp;
 */
 		(LookInList(Scr->NoOpaqueResizeL, tmp_win->full_name,
 			&tmp_win->class) == (char *)NULL);
+
+	/* djhjr - 9/21/99 */
+	if (tmp_win->opaque_resize) tmp_win->attr.save_under = True;
 
     /* if it is a transient window, don't put a title on it */
     if (tmp_win->transient && !Scr->DecorateTransients)
@@ -435,6 +448,11 @@ IconMgr *iconp;
 	 (Scr->UsePPosition == PPOS_ON ||
 	  tmp_win->attr.x != 0 || tmp_win->attr.y != 0)))
       ask_user = FALSE;
+
+	/* check for applet regions - djhjr - 4/26/99 */
+	if (PlaceApplet(tmp_win, tmp_win->attr.x, tmp_win->attr.y,
+			&tmp_win->attr.x, &tmp_win->attr.y))
+		ask_user = FALSE;
 
     if (LookInList(Scr->NailedDown, tmp_win->full_name, &tmp_win->class))
 	    tmp_win->nailed = TRUE;
@@ -473,13 +491,26 @@ IconMgr *iconp;
     tmp_win->name_width = XTextWidth(Scr->TitleBarFont.font, tmp_win->name,
 				     namelen);
 
-    if (XGetWindowProperty (dpy, tmp_win->w, XA_WM_ICON_NAME, 0L, 200L, False,
-			    XA_STRING, &actual_type, &actual_format, &nitems,
-			    &bytesafter,(unsigned char **)&tmp_win->icon_name))
-	tmp_win->icon_name = tmp_win->name;
+	/* used to be a simple boolean test for success - djhjr - 1/10/98 */
+	if (XGetWindowProperty (dpy, tmp_win->w, XA_WM_ICON_NAME, 0L, 200L, False,
+			XA_STRING, &actual_type, &actual_format, &nitems, &bytesafter,
 
+/* see that the icon name is it's own memory - djhjr - 2/20/99
+			(unsigned char **)&tmp_win->icon_name) != Success || actual_type == None)
+		tmp_win->icon_name = tmp_win->name;
+*/
+			(unsigned char **)&icon_name) != Success || actual_type == None)
+		tmp_win->icon_name = strdup(tmp_win->name);
+	else
+	{
+		tmp_win->icon_name = strdup(icon_name);
+		XFree(icon_name);
+	}
+
+/* redundant? - djhjr - 1/10/98
     if (tmp_win->icon_name == NULL)
 	tmp_win->icon_name = tmp_win->name;
+*/
 
     tmp_win->iconified = FALSE;
     tmp_win->icon = FALSE;
@@ -547,13 +578,15 @@ IconMgr *iconp;
 	&tmp_win->iconc.fore);
     GetColorFromList(Scr->IconBackgroundL, tmp_win->full_name, &tmp_win->class,
 	&tmp_win->iconc.back);
+
+/* fixed transposed fallback fore and back color lists - djhjr - 9/25/01 */
     if (!GetColorFromList(Scr->VirtualDesktopColorFL, tmp_win->full_name,
 		     &tmp_win->class, &tmp_win->virtual.fore))
-	    GetColorFromList(Scr->TitleBackgroundL, tmp_win->full_name,
+	    GetColorFromList(Scr->TitleForegroundL, tmp_win->full_name,
 			     &tmp_win->class, &tmp_win->virtual.fore);
     if (!GetColorFromList(Scr->VirtualDesktopColorBL, tmp_win->full_name,
 		     &tmp_win->class, &tmp_win->virtual.back))
-	    GetColorFromList(Scr->TitleForegroundL, tmp_win->full_name,
+	    GetColorFromList(Scr->TitleBackgroundL, tmp_win->full_name,
 			     &tmp_win->class, &tmp_win->virtual.back);
 
 	/* djhjr - 4/19/96 */
@@ -837,10 +870,12 @@ AddPaintRealWindows(tmp_win, x, y)
 TwmWindow *tmp_win;
 int x, y;
 {
+/* handled in add_window() now - djhjr - 9/21/99
 	XSetWindowAttributes attr;
 
 	attr.save_under = True;
 	XChangeWindowAttributes(dpy, tmp_win->frame, CWSaveUnder, &attr);
+*/
 
 	/* don't need to send a configure notify event */
 	SetupWindow(tmp_win, tmp_win->frame_x, tmp_win->frame_y,
@@ -875,7 +910,6 @@ TwmWindow *tmp_win;
 int ask_user;
 {
     XEvent event;
-	XSetWindowAttributes attr;
     int stat, gravx, gravy;
     int bw2 = tmp_win->frame_bw * 2;
 
@@ -1269,38 +1303,47 @@ Why?
 			XMapWindow(dpy, Scr->VirtualDesktopDisplay);
 		}
     } else {				/* put it where asked, mod title bar */
-	    /* interpret the position specified as a virtual one if asked */
-#if 0
-	    if (Scr->GeometriesAreVirtual)
-#endif
+	/* interpret the position specified as a virtual one if asked */
+
 /* added 'FixManagedVirtualGeometries' - djhjr - 1/6/98 */
-		if (Scr->GeometriesAreVirtual ||
-			(!Scr->GeometriesAreVirtual &&
-				(tmp_win->nailed ||
-				(Scr->FixManagedVirtualGeometries && !tmp_win->transient ||
-				(Scr->FixTransientVirtualGeometries && tmp_win->transient))
-		)))
+/* added test for 'PPosition' - submitted by Michael Dales */
+	if (Scr->GeometriesAreVirtual ||
+	    (!Scr->GeometriesAreVirtual &&
+		(tmp_win->nailed ||
+		    (   ( (Scr->FixManagedVirtualGeometries &&
+				!tmp_win->transient) ||
+			  (Scr->FixTransientVirtualGeometries &&
+				tmp_win->transient)
+			) && (tmp_win->hints.flags & PPosition)
+		    )
+		)
+	    )
+	)
+	    /*
+	     * If virtual geometries is set, or virtual geometries
+	     * isn't set and (nailed or (fix virtual geometries and
+	     * preferred position)). This is a bug workaround -- DSE
+	     */
+	    {
+		tmp_win->attr.x = V_TO_R_X(tmp_win->attr.x);
+		tmp_win->attr.y = V_TO_R_Y(tmp_win->attr.y);
+	    }
 
-		/* if NotVirtualGeometries is set, should also do this if it's
-		   a sticky or (it's a transient window and
-		   FixTransientVirtualGeometries is set -- this case is a
-		   bug workaround; any better ideas???????????) -- DSE */
-	    	{
-		    tmp_win->attr.x = V_TO_R_X(tmp_win->attr.x);
-		    tmp_win->attr.y = V_TO_R_Y(tmp_win->attr.y);
-		    }
-
-    GetGravityOffsets (tmp_win, &gravx, &gravy);
+	GetGravityOffsets (tmp_win, &gravx, &gravy);
 
 	/* if the gravity is towards the top, move it by the title height */
 	if (gravy < 0) tmp_win->attr.y -= gravy * tmp_win->title_height;
     }
 
+/* should never have been - djhjr - 9/21/99
 	if (tmp_win->opaque_move)
 	{
+		XSetWindowAttributes attr;
+
 		attr.save_under = False;
 		XChangeWindowAttributes(dpy, tmp_win->frame, CWSaveUnder, &attr);
 	}
+*/
 
 /*
  * consider client borderwidths based on the ClientBorderWidth and

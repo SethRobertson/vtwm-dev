@@ -398,12 +398,20 @@ typedef struct TwmWindow
 #define TBPM_MENU ":menu"	/* name of titlebar pixmap for menus */
 #define TBPM_QUESTION ":question"	/* name of unknown titlebar pixmap */
 
+/* djhjr - 6/4/00 */
+#define TBPM_RARROW ":rarrow"	/* name of right arrow pixmap */
+#define TBPM_DARROW ":darrow"	/* name of down arrow pixmap */
+
 /* djhjr - 4/18/96 */
 #define TBPM_3DDOT ":xpm:dot"		/* name of titlebar pixmap for dot */
 #define TBPM_3DRESIZE ":xpm:resize"	/* name of titlebar pixmap for resize button */
 #define TBPM_3DMENU ":xpm:menu"	/* name of titlebar pixmap for menus */
 #define TBPM_3DZOOM ":xpm:zoom"
 #define TBPM_3DBAR ":xpm:bar"
+
+/* djhjr - 6/4/00 */
+#define TBPM_3DRARROW ":xpm:rarrow"	/* name of right arrow pixmap */
+#define TBPM_3DDARROW ":xpm:darrow"	/* name of down arrow pixmap */
 
 #ifdef NEVER /* stay X11R4 compatable; X11R5,6 doesn't seem to mind! */
 #include <X11/Xosdefs.h>
@@ -415,9 +423,18 @@ extern char *malloc(), *calloc(), *realloc(), *getenv();
 extern void free();
 #endif
 extern void Reborder();
+
+/* djhjr - 6/22/01 */
+#ifndef NO_SOUND_SUPPORT
+extern SIGNAL_T PlaySoundDone();
+void Done();
+#else
 extern SIGNAL_T Done();
+#endif
+
 void ComputeCommonTitleOffsets();
 void ComputeWindowTitleOffsets(), ComputeTitleLocation();
+
 extern char *ProgramName;
 extern Display *dpy;
 extern Window ResizeWindow;	/* the window we are resizing */

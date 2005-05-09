@@ -1,0 +1,244 @@
+
+#
+# DESCRIPTION FILE FOR vtwm - $(HOME)/vtwm/vtwmrc-TWMish
+#
+# PRE-PROCESSED BY vtwm-5.4.6 USING m4
+# 
+
+#
+# m4 Variables
+#
+
+# Border width, autopan border width, desktop and door bevel widths...
+define(WMborder, 2) define(WMpanborder, 5)
+define(WMdesktopbevel, 0) define(WMdoorbevel, 0)
+# Title heights (must be set manually for the desktop, doors, or applets)...
+define(WMdesktoptitle, 0) define(WMdoortitle, 0) define(WMapplettitle, 0)
+
+#
+# Boolean Variables
+#
+
+# Read in the variables file...
+include(HOME/vtwm/vtwmrc-bools)
+
+#ShallowReliefWindowButton
+#SunkFocusWindowTitle
+
+DecorateTransients
+#ButtonColorIsFrame
+
+#
+# Parametered Variables
+#
+
+# Read in the variables file...
+include(HOME/vtwm/vtwmrc-parms)
+
+# See 'Lists' below...
+#IconManagerGeometry		"+5+5" 1
+
+RealScreenBorderWidth		0
+
+# These are nice when 3D built-in buttons are used on flat titlebars...
+#FramePadding			2
+#TitleButtonBorderWidth		0
+#ButtonIndent			0
+
+ClearBevelContrast		40
+DarkBevelContrast		40
+
+BorderBevelWidth		0
+ButtonBevelWidth		0
+DoorBevelWidth			WMdoorbevel
+IconBevelWidth			0
+IconManagerBevelWidth		0
+InfoBevelWidth			0
+MenuBevelWidth			0
+TitleBevelWidth			0
+VirtualDesktopBevelWidth	WMdesktopbevel
+
+# Windows are snappier if 'NoBackingStore' is not used when this is...
+RaiseDelay		80
+
+XorValue		255
+
+ResizeRegion		"NorthEast"
+
+UnknownIcon		"xlogo32"
+
+TitleFont		"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+ResizeFont		"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+MenuFont		"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+MenuTitleFont		"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+IconFont		"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+InfoFont		"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+IconManagerFont		"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+DoorFont		"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+VirtualDesktopFont      "-adobe-helvetica-medium-r-normal--*-75-*-*-*-*-*-*"
+
+#
+# Functions and Bindings
+#
+
+# Read in the bindings file...
+include(HOME/vtwm/vtwmrc-binds)
+
+# These are nice built-in 3D buttons...
+#LeftTitleButton	":xpm:bar" = f.menu "ArrangeMenu"
+#RightTitleButton	":xpm:dot" = f.iconify
+#RightTitleButton	":xpm:resize" = f.resize
+# These are the box-stock flat buttons...
+LeftTitleButton		":xlogo" = f.menu "ArrangeMenu"
+RightTitleButton	":dot" = f.iconify
+RightTitleButton	":resize" = f.resize
+
+Function "decorate-virtual"
+{
+	f.exec "nexpm -vtwm -in vtwm/images/djhjr.xpm &"
+}
+
+Function "clear-virtual"
+{
+	f.exec "nexpm -vtwm -solid gray60 &"
+}
+
+#
+# Lists
+#
+
+# Read in the sound file...
+include(ifelse(SOUND, `Yes', `HOME/vtwm/vtwmrc-sound'))
+
+# Read in the lists file...
+include(HOME/vtwm/vtwmrc-lists)
+
+# Check 'BorderColor', as that's the highlight color...
+# This is a list variable, but borders flicker if braces are present!
+#NoHighlight
+
+# Nice when 3D built-in buttons are used on flat titlebars...
+# This is a list variable, but won't work globally if braces are present!
+#NoTitleHighlight
+
+SqueezeTitle {}
+
+DontSqueezeTitle {}
+
+Pixmaps
+{
+#	TitleHighlight			"eyesline.xpm"
+#	TitleHighlight			"byzantine.xpm"
+#	VirtualBackgroundPixmap		"djhjr.xpm"
+}
+
+# Box-stock Background is, of course, "maroon"
+# Box-stock Foreground and IconBorderColor is "gray85"
+# Box-stock MenuTitleBackground and BorderColor is "gray70"
+Color
+{
+	DefaultBackground		"gray60"
+	DefaultForeground		"gray90"
+	MenuBackground			"gray60"
+	MenuForeground			"gray90"
+	MenuTitleBackground		"gray60"
+	MenuTitleForeground		"gray90"
+	RealScreenBackground		"gray50"
+	RealScreenForeground		"black"
+	VirtualBackground		"gray60"
+	VirtualForeground		"black"
+	BorderColor			"gray75" {}
+	BorderTileBackground		"gray60" {}
+	BorderTileForeground		"gray60" {}
+	TitleBackground			"DeepSkyBlue4"
+	{
+		"VTWM*"			"gray60"
+		"XTerm"			"SeaGreen"
+		"Xqsh"			"maroon"
+		"ssh:*"			"maroon"
+		"telnet:*"		"maroon"
+		"rlogin:*"		"maroon"
+		"ftp:*"			"maroon"
+		"xbiff*"		"gray60"
+		"xcb"			"gray60"
+		"*clock"		"gray60"
+		"xload"			"gray60"
+		"as*"			"gray60"
+	}
+	TitleForeground			"gray90" {}
+	IconBackground			"DeepSkyBlue4"
+	{
+		"VTWM*"			"gray60"
+		"XTerm"			"SeaGreen"
+		"Xqsh"			"maroon"
+		"ssh:*"			"maroon"
+		"telnet:*"		"maroon"
+		"rlogin:*"		"maroon"
+		"ftp:*"			"maroon"
+		"xbiff*"		"gray60"
+		"xcb"			"gray60"
+		"*clock"		"gray60"
+		"xload"			"gray60"
+		"as*"			"gray60"
+	}
+	IconForeground			"gray90" {}
+	IconBorderColor			"gray75" {}
+#	IconBorderColor			"DeepSkyBlue4"
+#	{
+#		"VTWM*"			"gray60"
+#		"XTerm"			"SeaGreen"
+#		"Xqsh"			"maroon"
+#		"ssh:*"			"maroon"
+#		"telnet:*"		"maroon"
+#		"rlogin:*"		"maroon"
+#		"ftp:*"			"maroon"
+#		"xbiff*"		"gray60"
+#		"xcb"			"gray60"
+#		"*clock"		"gray60"
+#		"xload"			"gray60"
+#		"as*"			"gray60"
+#	}
+	IconManagerBackground		"DeepSkyBlue4"
+	{
+		"VTWM*"			"gray60"
+		"XTerm"			"SeaGreen"
+		"Xqsh"			"maroon"
+		"ssh:*"			"maroon"
+		"telnet:*"		"maroon"
+		"rlogin:*"		"maroon"
+		"ftp:*"			"maroon"
+		"xbiff*"		"gray60"
+		"xcb"			"gray60"
+		"*clock"		"gray60"
+		"xload"			"gray60"
+		"as*"			"gray60"
+	}
+	IconManagerForeground		"gray90" {}
+	IconManagerHighlight		"gray75" {}
+	DoorBackground			"gray60" {}
+	DoorForeground			"gray90" {}
+	DesktopDisplayBackground	"DeepSkyBlue4"
+	{
+		"VTWM*"			"gray60"
+		"XTerm"			"SeaGreen"
+		"Xqsh"			"maroon"
+		"ssh:*"			"maroon"
+		"telnet:*"		"maroon"
+		"rlogin:*"		"maroon"
+		"ftp:*"			"maroon"
+		"xbiff*"		"gray60"
+		"xcb"			"gray60"
+		"*clock"		"gray60"
+		"xload"			"gray60"
+		"as*"			"gray60"
+	}
+	DesktopDisplayForeground	"gray90" {}
+}
+
+#
+# Menus
+#
+
+# Read in the menus file...
+include(HOME/vtwm/vtwmrc-menus)
+
