@@ -93,6 +93,45 @@ char *filename;
  ***********************************************************************
  */
 
+struct Colori {
+    Pixel color;
+    Pixmap pix;
+    struct Colori *next;
+};
+
+#if 0
+Pixmap Create3DIconManagerIcon (cp)
+ColorPair cp;
+{
+    unsigned int w, h;
+    struct Colori *col;
+    static struct Colori *colori = NULL;
+
+    w = (unsigned int) siconify_width;
+    h = (unsigned int) siconify_height;
+
+    for (col = colori; col; col = col->next) {
+	if (col->color == cp.back) break;
+    }
+    if (col != NULL) return (col->pix);
+    col = (struct Colori*) malloc (sizeof (struct Colori));
+    col->color = cp.back;
+    col->pix   = XCreatePixmap (dpy, Scr->Root, w, h, Scr->d_depth);
+#ifdef ORIGINAL_ICONMGRPIXMAP
+    Draw3DBorder (col->pix, 0, 0, w, h, 4, cp, off, True, False);
+#else
+    Draw3DBorder (col->pix, 0, 0, w, h, 1, cp, off, True, False);
+#ifdef DO_DOT
+    Draw3DBorder (col->pix, (w / 2) - 1, (h / 2) - 1, 3, 3, 1, cp, off, True, False);
+#endif
+#endif
+    col->next = colori;
+    colori = col;
+
+    return (colori->pix);
+}
+#endif
+
 void CreateIconManagers()
 {
 	XClassHint *class; /* djhjr - 2/28/99 */

@@ -410,6 +410,7 @@ typedef struct ScreenInfo
     short BackingStore;		/* use backing store for menus */
     short SaveUnder;		/* use save under's for menus */
     short RandomPlacement;	/* randomly place windows that no give hints */
+    short PointerPlacement;	/* place near mouse pointer */
     short OpaqueMove;		/* move the window rather than outline */
 
 	/* djhjr - 4/6/98 */
@@ -552,6 +553,7 @@ typedef struct ScreenInfo
     	unsigned int BackingStore						: 1;
     	unsigned int SaveUnder							: 1;
     	unsigned int RandomPlacement					: 1;
+    	unsigned int PointerPlacement					: 1;
     	unsigned int OpaqueMove							: 1;
 
         /* djhjr - 4/6/98 */
@@ -685,6 +687,7 @@ typedef struct ScreenInfo
 #define BackingStore						userflags.BackingStore
 #define SaveUnder							userflags.SaveUnder
 #define RandomPlacement						userflags.RandomPlacement
+#define PointerPlacement						userflags.PointerPlacement
 #define OpaqueMove							userflags.OpaqueMove
 
 /* djhjr - 4/6/98 */

@@ -1057,6 +1057,21 @@ int ask_user;
 	tmp_win->attr.y = PlaceY;
 	PlaceX += PLACEMENT_INCR;
 	PlaceY += PLACEMENT_INCR;
+      } else if (Scr->PointerPlacement) {
+	  /* find pointer */
+	  if (!XQueryPointer (dpy, Scr->Root, &JunkRoot,
+			      &JunkChild, &JunkX, &JunkY,
+			      &AddingX, &AddingY, &JunkMask))
+	      JunkMask = 0;
+	  /* fit window onto screen */
+	  if (Scr->WarpSnug) {
+	      if (JunkX + wd > Scr->MyDisplayWidth)
+		  JunkX -= (JunkX + wd - Scr->MyDisplayWidth);
+	      if (JunkY + tmp_win->attr.height > Scr->MyDisplayHeight)
+		  JunkY -= (JunkY + tmp_win->attr.height - Scr->MyDisplayHeight);
+	  }
+	  tmp_win->attr.x = JunkX;
+	  tmp_win->attr.y = JunkY;
       } else {				/* else prompt */
 	if (!(tmp_win->wmhints && tmp_win->wmhints->flags & StateHint &&
 	      tmp_win->wmhints->initial_state == IconicState))

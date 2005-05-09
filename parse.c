@@ -442,6 +442,7 @@ typedef struct _TwmKeyword {
 
 #define kw0_WarpSnug                         46 /* DSE */
 
+#define kw0_PointerPlacement		47	/* cg */
 /* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
 * djhjr - 4/18/96 *
 #define kw0_Use3DMenus			47
@@ -1023,6 +1024,7 @@ static TwmKeyword keytable[] = {
     { "pauseonquit",		NKEYWORD, kwn_PauseOnQuit },
 
 	{ "pixmaps",		PIXMAPS, 0 },
+    { "pointerplacement",	KEYWORD, kw0_PointerPlacement },
 	{ "prettyzoom", KEYWORD, kw0_PrettyZoom }, /* DSE */
     { "r",			ROOT, 0 },
 	{ "raisedelay",       NKEYWORD, kwn_RaiseDelay },/*RAISEDELAY*/
@@ -1324,6 +1326,10 @@ int do_single_keyword (keyword)
 
       case kw0_RandomPlacement:
 	Scr->RandomPlacement = TRUE;
+	return 1;
+
+      case kw0_PointerPlacement:
+	Scr->PointerPlacement = TRUE;
 	return 1;
 
       case kw0_DecorateTransients:

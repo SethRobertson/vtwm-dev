@@ -1139,6 +1139,7 @@ void InitVariables()
     Scr->BackingStore = TRUE;
     Scr->SaveUnder = TRUE;
     Scr->RandomPlacement = FALSE;
+    Scr->PointerPlacement = FALSE;
     Scr->OpaqueMove = FALSE;
 
 	/* djhjr - 4/6/98 */
