@@ -1364,6 +1364,12 @@ is built with 2D features, or "sunken" lines when \fBvtwm\fP is built with 3D
 features. The \fBMenuIconPixmap\fP is a right arrow by default (rendered 3D as
 appropriate), and the default \fBIconManagerPixmap\fP is either the X logo or
 a "raised" box, for 2D or 3D features, respectively.
+.IP "\fBPointerPlacement\fP" 8
+This variable indicates that windows with no specified geometry should
+be placed with the window origin at the location of the mouse pointer or,
+if \fBWarpSnug\fP is specified, as close as possible to that location such
+that the window fits onto the real screen. If \fBRandomPlacement\fP is also
+set then it takes precedence.
 .IP "\fBPrettyZoom\fP" 8
 If \fBZoom\fP is turned on, this makes the associated animation look just a little
 nicer, depending on your personal taste.  This makes the zoom slower,
