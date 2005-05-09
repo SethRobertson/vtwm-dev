@@ -1,5 +1,5 @@
 /*
- * Copyright 2001 David J. Hawkey Jr.
+ * Copyright 2001, 2002 David J. Hawkey Jr.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose and without fee is hereby granted, provided
@@ -24,7 +24,7 @@
 /*
  * sound.h
  *
- * D. J. Hawkey Jr. - 6/22/01
+ * D. J. Hawkey Jr. - 6/22/01 11/15/02
  */
 
 #ifndef _SOUND_
@@ -41,7 +41,8 @@
 #define S_APAN		907
 #define S_BELL		908
 
-extern int OpenSound(), SetSound(), PlaySound(), ToggleSounds();
+extern int OpenSound(), SetSound(), ToggleSounds();
+extern int PlaySound(), PlaySoundAdhoc();
 extern void CloseSound(), SetSoundHost(), SetSoundVolume();
 
 #endif	/* _SOUND_ */

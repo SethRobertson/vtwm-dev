@@ -2,6 +2,89 @@
 VERSION HISTORY OF VTWM 5.4
 ===========================
 
+VTWM 5.4.7
+
+    New Features
+        - Added internationalization (I18N) support.
+        - Support ignoring "shift states" when determining if a key
+          or rodent button event is bound (added the IgnoreModifiers
+          variable).
+        - Support passing raw key and rodent button events to windows
+          (added the f.bindbuttons, f.bindkeys, f.unbindbuttons and
+          f.unbindkeys functions).
+        - Allow warp functions to position the pointer at the center
+          of windows (added the WarpCentered variable).
+        - Allow the 3D borders of titled windows to be unadorned (added
+          the NoBorderDecorations variable).
+        - Prohibit windows from being added to the WindowRing list
+          (added the NoWindowRing variable).
+        - Opened up icon managers and menus to user-specified images
+          (added the MenuIconPixmap and IconManagerPixmap keywords).
+          This gives the ShallowReliefWindowButton variable wider scope.
+        - Two new 3D built-in pixmaps, :xpm:box and :xpm:lines.
+        - Four new 3D built-in pixmaps for the titlebar highlight,
+          :xpm:raisedbox, :xpm:sunkenbox, :xpm:raisedlines, and
+          :xpm:sunkenlines. These obsolete the SunkFocusHighlightWindow
+          variable.
+        - The command line can specify that no startup file be used
+          (primarily for testing compiled-in defaults).
+        - Added support for Motif window manager hints (currently, honor
+          "noborder" and "notitle" hints).
+        - Allow sounds to be played "ad hoc" (added the f.playsound
+          function).
+    Changed Features
+        - The UsePPosition variable accepts a list now.
+        - The f.warpto function accepts VTWM-style wildcards now.
+        - Refinements to the f.resize and f.move functions: Both are
+          now single rodent button operations from any context, and both
+          warp the pointer back to the virtual desktop when started from
+          there. The wireframe is drawn immediately, ignoring MoveDelta.
+          MoveDelta is otherwise used consistantly now. Constrain virtual
+          desktop resizes to multiples of PanDistance when SnapRealScreen
+          is set.
+        - Refinements to the titlebar: The title bevel can now frame the
+          entire titlebar when built-in 3D buttons are not full height.
+          Buttons can now "extend into" the title bevel and frame padding.
+          The highlight area (or absence of) is handled correctly now.
+          The built-in 3D highlight is now available with or without a
+          title bevel. The ButtonIndent, FramePadding, TitleBevelWidth,
+          and TitlePadding variables are changed.
+        - The TitleHighlight keyword accepts built-in pixmaps now, like
+          the LeftTitleButton and RightTitleButton bindings.
+        - The raise for moved and resized windows now occurs after the
+          movement (added the RaiseOnStart variable).
+        - Some shaping optimizations.
+        - Depreciated the motion event handler.
+        - Chmod 0600 $(HOME)/vtwm.pid.
+        - Let lexers track line numbers by default.
+        - Reduced the compiled-in defaults footprint.
+    Bug Fixes
+        - Fixed warp bugs when windows are borderless or shaped.
+        - Fixed some icon move and resize bugs.
+        - Fixed a vertical placement error in applet regions.
+        - Fixed most stacking order bugs when moving and resizing windows.
+        - Cancelled moves and resizes now work correctly, except one case.
+        - The pointer is adjusted back to the window as needed on resizes.
+        - Fixed some titlebar highlight exposure bugs.
+        - Fixed some off-by-clientborderwidth window placement bugs.
+        - Fixed an off-by-one malloc() and a null pointer reference.
+        - Checks for the number of rodent buttons and VTWM Windows entries.
+        - The f.warpring function has been fixed. Again.
+        - Fixed a race condition when f.squeeze* functions are invoked
+          from a window menu while Opaque* variables are set.
+        - Prevent f.squeeze* functions when the DontSqueezeTitle variable
+          is set.
+        - Removed the limitations of the f.startwm argument.
+        - Fixed the 3D borders of titled windows when the BeNiceToColormap
+          variable is set.
+        - Reduced server grabs.
+        - Better handling of missing or empty string resources.
+    Misc.
+        - Updated the man page, and the BUGS, INSTALL, SOUND, and WISHLIST
+          files.
+        - Updated the system and sample resource files.
+        - Updated contrib/support/sysrc_add_apps.sh.
+
 VTWM 5.4.6b (bugfix release)
 
     Fixed a bug causing sporadic restarts when realizing unmanaged

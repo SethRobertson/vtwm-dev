@@ -38,7 +38,6 @@
 #include "screen.h"
 #include "resize.h"
 #include "add_window.h"
-#include "siconify.xbm"
 #include <X11/Xos.h>
 #include <X11/Xmu/CharSet.h>
 
@@ -59,8 +58,25 @@ int iconmgr_iconx = 0, iconmgr_textx = 0;
 
 WList *Active = NULL;
 WList *DownIconManager = NULL;
+
+/* was an external file - djhjr - 10/30/02 */
+#define siconify_width 11
+#define siconify_height 11
+/*
+static unsigned char siconify_bits[] = {
+   0xff, 0x07, 0x01, 0x04, 0x0d, 0x05, 0x9d, 0x05, 0xb9, 0x04, 0x51, 0x04,
+   0xe9, 0x04, 0xcd, 0x05, 0x85, 0x05, 0x01, 0x04, 0xff, 0x07};
+*/
+
 int iconifybox_width = siconify_width;
 int iconifybox_height = siconify_height;
+
+/* djhjr - 10/30/02 */
+void SetIconMgrPixmap(filename)
+char *filename;
+{
+	Scr->iconMgrIconName = filename;
+}
 
 /***********************************************************************
  *
@@ -90,11 +106,13 @@ void CreateIconManagers()
     if (Scr->NoIconManagers)
 	return;
 
+/* djhjr - 10/30/02
     if (Scr->siconifyPm == None)
     {
-	Scr->siconifyPm = XCreatePixmapFromBitmapData(dpy, Scr->Root,
+	Scr->siconifyPm->pixmap = XCreatePixmapFromBitmapData(dpy, Scr->Root,
 	    (char *)siconify_bits, siconify_width, siconify_height, 1, 0, 1);
     }
+*/
 
     for (p = &Scr->iconmgr; p != NULL; p = p->next)
     {
@@ -538,9 +556,17 @@ WList *AddIconManager(tmp_win)
 
     /* djhjr - 4/19/96 */
 	/* was 'Scr->use3Diconmanagers' - djhjr - 8/11/98 */
-    if (Scr->IconMgrBevelWidth > 0) {
+/* djhjr - 10/30/02
+    if (Scr->IconMgrBevelWidth > 0)
+*/
+    {
 	if (!Scr->BeNiceToColormap) GetShadeColors (&tmp->cp);
+/* djhjr - 10/30/02
 	tmp->iconifypm = Create3DIconManagerIcon (tmp->cp);
+*/
+	tmp->iconifypm = GetImage(Scr->iconMgrIconName,
+				iconifybox_width, iconifybox_height,
+				0, tmp->cp);
     }
 
 	/* djhjr - 5/2/98 */
@@ -728,6 +754,10 @@ void RemoveIconManager(tmp_win)
 
     tmp = tmp_win->list;
 
+    /* submitted by Jonathan Paisley - 11/11/02 */
+    if (Active == tmp)
+	Active = NULL;
+
 	/*
 	 * Believe it or not, the kludge in events.c:HandleKeyPress() needs
 	 * this, or a window that's been destroyed still registers there,
@@ -735,10 +765,14 @@ void RemoveIconManager(tmp_win)
 	 *
 	 * djhjr - 6/5/98
 	 */
-#ifdef NEVER /* warps to icon managers uniquely handled in menus.c:WarpToWindow() */
+	/*
+	 * Somehwere alone the line, whatever it was got fixed, and this is
+	 * needed again - djhjr - 5/27/03
+	 */
+/*#ifdef NEVER*/ /* warps to icon managers uniquely handled in menus.c:WarpToWindow() */
 	tmp->active = FALSE;
 	tmp->iconmgr->active = NULL;
-#endif
+/*#endif*/
 
     tmp_win->list = NULL;
     ip = tmp->iconmgr;

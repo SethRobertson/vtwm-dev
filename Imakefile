@@ -32,11 +32,17 @@ XCOMM         SOUNDLIB = -L/usr/local/lib -lrplay
 XCOMM         SOUNDINC = -I/usr/local/include
 XCOMM (sound is supported only by way of the rplay library)
 
+XCOMM To omit Internationalization support, uncomment this
+XCOMM  NO_I18N_SUPPORT = -DNO_I18N_SUPPORT
+
 XCOMM To omit m4 pre-processing of resource files, uncomment this
 XCOMM    NO_M4_SUPPORT = -DNO_M4_SUPPORT
 
 XCOMM To omit platform and build info in the version window, uncomment this
 XCOMM    NO_BUILD_INFO = -DNO_BUILD_INFO
+
+XCOMM For lexers that don't track line numbers, uncomment this
+XCOMM  NEED_YYLINENO_V = -DNEED_YYLINENO_V
 
 XCOMM For those systems that don't have putenv(), uncomment this
 XCOMM    NEED_PUTENV_F = -DNEED_PUTENV_F
@@ -86,7 +92,7 @@ XCOMM ========= Editing below here should not be necessary ==========
          LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
    EXTRA_INCLUDES = $(XPMINC) $(REGEXINC) $(SOUNDINC)
           DEFINES = $(SIGNAL_DEFINES) $(NO_XPM_SUPPORT) $(NO_REGEX_SUPPORT) \
-                    $(NO_SOUND_SUPPORT) $(NO_M4_SUPPORT)
+                    $(NO_SOUND_SUPPORT) $(NO_I18N_SUPPORT) $(NO_M4_SUPPORT)
 
              SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c \
                     twm.c sound.c parse.c menus.c events.c resize.c util.c \
@@ -100,16 +106,18 @@ XCOMM ========= Editing below here should not be necessary ==========
 
 AllTarget(vtwm)
 
-SpecialObjectRule(menus.o,menus.c,$(NO_BUILD_INFO) \
-$(NEED_PUTENV_F) $(NEED_PROCESS_H))
+SpecialObjectRule(menus.o,gram.h,$(NO_BUILD_INFO) $(NEED_PROCESS_H))
 
-SpecialObjectRule(util.o,util.c,$(NEED_PUTENV_F))
+SpecialObjectRule(util.o,gram.h,$(NEED_PUTENV_F))
 
-SpecialObjectRule(events.o,events.c,$(NEED_SELECT_H))
+SpecialObjectRule(events.o,gram.h,$(NEED_SELECT_H))
 
-SpecialObjectRule(parse.o,parse.c,\
+SpecialObjectRule(parse.o,gram.h,$(NEED_YYLINENO_V) \
 '-DSYSTEM_VTWMRC="'$(VTWMLIBDIR)'/system.vtwmrc"' \
 '-DSYSTEM_TWMRC="'$(VTWMLIBDIR)'/system.twmrc"')
+
+SpecialObjectRule(add_window.o applets.o icons.o \
+list.o regions.o sound.o twm.o,gram.h,NullParameter)
 
 NormalProgramTarget(vtwm,$(OBJS),$(DEPLIBS),$(LOCAL_LIBRARIES),NullParameter)
 
@@ -128,7 +136,7 @@ install::
 
 clean::
 	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c \
-	lastmake.c system.vtwmrc vtwm.man
+	lastmake.c system.vtwmrc vtwm.dw vtwm.ser vtwm.html vtwm.ps vtwm.man
 
 gram.h gram.c: gram.y
 	$(YACC) $(YFLAGS) gram.y
@@ -143,8 +151,8 @@ deftwmrc.c: system.vtwmrc
 	echo ' */' >>$@
 	echo '' >>$@
 	echo 'char *defTwmrc[] = {' >>deftwmrc.c
-	sed -e '/^#/d' -e 's/"/\\"/g' -e 's/^/    "/' -e 's/$$/",/' system.vtwmrc >>$@
-	echo '    (char *) 0 };' >>$@
+	sed -e '/^$$/d' -e '/^#/d' -e 's/"/\\"/g' -e 's/^/"/' -e 's/$$/",/' -e 's/[	]\{1,\}/ /g' -e 's/^" /"/' system.vtwmrc >>$@
+	echo '(char *)0 };' >>$@
 
 lastmake.c:
 	$(RM) $@

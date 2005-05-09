@@ -61,6 +61,7 @@
 #else
 #include <sys/time.h>	/* RAISEDELAY */
 #include <sys/types.h>	/* RAISEDELAY */
+#include <unistd.h>
 #endif
 
 extern void IconDown();
@@ -176,7 +177,9 @@ InitEvents()
 	EventHandler[MapRequest] = HandleMapRequest;
 	EventHandler[MapNotify] = HandleMapNotify;
 	EventHandler[UnmapNotify] = HandleUnmapNotify;
+#if 0 /* functionality moved to menus.c:ExecuteFunction() - djhjr - 11/7/03 */
 	EventHandler[MotionNotify] = HandleMotionNotify;
+#endif
 	EventHandler[ButtonRelease] = HandleButtonRelease;
 	EventHandler[ButtonPress] = HandleButtonPress;
 	EventHandler[EnterNotify] = HandleEnterNotify;
@@ -291,10 +294,14 @@ Window WindowOfEvent (e)
  *  Procedure:
  *	DispatchEvent2 -
  *      handle a single X event stored in global var Event
- *      this rouitine for is for a call during an f.move
+ *      this routine for is for a call during an f.move
  *
- ***********************************************************************
+ **********************************************************************/
+/*
+ * Merged into DispatchEvent()
+ * djhjr - 10/6/02
  */
+#if 0
 Bool DispatchEvent2 ()
 {
 	Window w = Event.xany.window;
@@ -318,6 +325,7 @@ Bool DispatchEvent2 ()
 
 	return True;
 }
+#endif
 
 /***********************************************************************
  *
@@ -332,17 +340,20 @@ Bool DispatchEvent ()
 	StashEventTime (&Event);
 
 	if (XFindContext (dpy, w, TwmContext, (caddr_t *) &Tmp_win) == XCNOENT)
-	  Tmp_win = NULL;
+		Tmp_win = NULL;
 
-	if (XFindContext (dpy, w, ScreenContext, (caddr_t *)&Scr) == XCNOENT) {
-	Scr = FindScreenInfo (WindowOfEvent (&Event));
-	}
+	if (XFindContext (dpy, w, ScreenContext, (caddr_t *)&Scr) == XCNOENT)
+		Scr = FindScreenInfo (WindowOfEvent (&Event));
 
 	if (!Scr) return False;
 
-	if (Event.type>= 0 && Event.type < MAX_X_EVENT) {
-	(*EventHandler[Event.type])();
+	if (MoveFunction != F_NOFUNCTION && menuFromFrameOrWindowOrTitlebar)
+	{
+		if (Event.type == Expose)
+			HandleExpose();
 	}
+	else if (Event.type >= 0 && Event.type < MAX_X_EVENT)
+		(*EventHandler[Event.type])();
 
 	return True;
 }
@@ -648,6 +659,7 @@ Simply remove it...
 	 * djhjr - 6/5/98 7/2/98 7/14/98
 	 */
 	if (Scr->Focus && (Context == C_NO_CONTEXT || Context == C_ROOT))
+	{
 		/* ugly, but it works! see also iconmgr.c:RemoveIconManager() */
 		if (Scr->Focus->iconmgr)
 		{
@@ -689,6 +701,7 @@ Simply remove it...
 			Event.xany.window = Tmp_win->frame;
 			Context = C_FRAME;
 		}
+	}
 
 	modifier = (Event.xkey.state & mods_used);
 	for (key = Scr->FuncKeyRoot.next; key != NULL; key = key->next)
@@ -826,7 +839,9 @@ static void free_window_names (tmp, nukefull, nukename, nukeicon)
 	TwmWindow *tmp;
 	Bool nukefull, nukename, nukeicon;
 {
+	/*  the other two "free()"s were "XFree()"s - djhjr - 9/14/03 */
 /*
+
  * XXX - are we sure that nobody ever sets these to another constant (check
  * twm windows)?
  */
@@ -838,8 +853,8 @@ static void free_window_names (tmp, nukefull, nukename, nukeicon)
 
 #define isokay(v) ((v) && (v) != NoName)
 
-	if (nukefull && isokay(tmp->full_name)) XFree (tmp->full_name);
-	if (nukename && isokay(tmp->name)) XFree (tmp->name);
+	if (nukefull && isokay(tmp->full_name)) free (tmp->full_name);
+	if (nukename && isokay(tmp->name)) free (tmp->name);
 
 /* ...because the icon name is now alloc()'d locally - djhjr - 2/20/99
 	if (nukeicon && isokay(tmp->icon_name)) XFree (tmp->icon_name);
@@ -893,9 +908,11 @@ void
 HandlePropertyNotify()
 {
 	char *prop = NULL;
+#ifdef NO_I18N_SUPPORT
 	Atom actual = None;
 	int actual_format;
 	unsigned long nitems, bytesafter;
+#endif
 	unsigned long valuemask;		/* mask for create windows */
 	XSetWindowAttributes attributes;	/* attributes for create windows */
 	Pixmap pm;
@@ -927,19 +944,33 @@ HandlePropertyNotify()
 
 	switch (Event.xproperty.atom) {
 	  case XA_WM_NAME:
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	if (!I18N_FetchName(dpy, Tmp_win->w, &prop))
+#else
 	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0L,
 			MAX_NAME_LEN, False, XA_STRING, &actual,
 			&actual_format, &nitems, &bytesafter,
 			(unsigned char **) &prop) != Success || actual == None)
+#endif
 		return;
 
-	if (!prop) prop = NoName;
 	free_window_names (Tmp_win, True, True, False);
-	Tmp_win->full_name = prop;
+	Tmp_win->full_name = (prop) ? strdup(prop) : NoName;
+	Tmp_win->name = (prop) ? strdup(prop) : NoName;
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	if (prop) free(prop);
+#else
+	if (prop) XFree(prop);
+#endif
 
-	Tmp_win->name = prop;
-
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	Tmp_win->name_width = MyFont_TextWidth (&Scr->TitleBarFont,
+#else
 	Tmp_win->name_width = XTextWidth (Scr->TitleBarFont.font,
+#endif
 					  Tmp_win->name,
 					  strlen (Tmp_win->name));
 
@@ -965,10 +996,15 @@ HandlePropertyNotify()
 	break;
 
 	  case XA_WM_ICON_NAME:
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	if (!I18N_GetIconName(dpy, Tmp_win->w, &prop))
+#else
 	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0,
 			MAX_ICON_NAME_LEN, False, XA_STRING, &actual,
 			&actual_format, &nitems, &bytesafter,
 			(unsigned char **) &prop) != Success || actual == None)
+#endif
 		return;
 
 /* see that the icon name is it's own memory - djhjr - 2/20/99
@@ -977,13 +1013,13 @@ HandlePropertyNotify()
 	Tmp_win->icon_name = prop;
 */
 	free_window_names (Tmp_win, False, False, True);
-	if (!prop)
-		Tmp_win->icon_name = strdup(NoName);
-	else
-	{
-		Tmp_win->icon_name = strdup(prop);
-		XFree(prop);
-	}
+	Tmp_win->icon_name = (prop) ? strdup(prop) : NoName;
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	if (prop) free(prop);
+#else
+	if (prop) XFree(prop);
+#endif
 
 	RedoIconName();
 
@@ -1197,8 +1233,13 @@ void RedoIconName()
 	if (Tmp_win->icon_not_ours)
 	return;
 
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	Tmp_win->icon_w_width = MyFont_TextWidth(&Scr->IconFont,
+#else
 	Tmp_win->icon_w_width = XTextWidth(Scr->IconFont.font,
-	Tmp_win->icon_name, strlen(Tmp_win->icon_name));
+#endif
+			Tmp_win->icon_name, strlen(Tmp_win->icon_name));
 
 /* djhjr - 6/11/96
 	Tmp_win->icon_w_width += 6;
@@ -1264,9 +1305,8 @@ TwmDoor *door;
 {
 	TwmWindow *tmp_win;
 
-	/* repaint the door name */
-	FBF(door->colors.fore, door->colors.back,
-	Scr->DoorFont.font->fid);
+	/* font was font.font->fid - djhjr - 9/14/03 */
+	FBF(door->colors.fore, door->colors.back, Scr->DoorFont);
 
 	/* find it's twm window to get the current width, etc. */
 /*
@@ -1287,8 +1327,13 @@ TwmDoor *door;
 	{
 		int tw, bw;
 
-		tw = XTextWidth(Scr->DoorFont.font, door->name,
-				strlen(door->name));
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+		tw = MyFont_TextWidth(&Scr->DoorFont,
+#else
+		tw = XTextWidth(Scr->DoorFont.font,
+#endif
+				door->name, strlen(door->name));
 
 		/* djhjr - 4/26/96 */
 /* djhjr - 8/11/98
@@ -1308,8 +1353,13 @@ TwmDoor *door;
 ** over to the right, it just looks wrong!
 ** For example grog-9 from ISC's X11R3 distribution.
 */
-		XDrawString(dpy, door->w, Scr->NormalGC,
-
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+		MyFont_DrawString(dpy, door->w, &Scr->DoorFont,
+#else
+		XDrawString(dpy, door->w,
+#endif
+			Scr->NormalGC,
 /* gets 'SIZE_VINDENT' out of here... djhjr - 5/14/96
 			(tmp_win->frame_width - tw)/2,
 			tmp_win->frame_height - SIZE_VINDENT -
@@ -1318,7 +1368,10 @@ TwmDoor *door;
 			(tmp_win->frame_width - tw - 2 * bw) / 2,
 			(tmp_win->frame_height - tmp_win->title_height -
 					Scr->DoorFont.height - 2 * bw) / 2 +
+/* djhjr - 9/14/03
 					Scr->DoorFont.font->ascent,
+*/
+					Scr->DoorFont.ascent,
 			door->name, strlen(door->name));
 
 		/* djhjr - 2/7/99 */
@@ -1327,7 +1380,13 @@ TwmDoor *door;
 					tmp_win->frame_height - (bw * 2),
 					Scr->DoorBevelWidth, Scr->DoorC, off, False, False);
 	} else {
-		XDrawString(dpy, door->w, Scr->NormalGC,
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+		MyFont_DrawString(dpy, door->w, &Scr->DoorFont,
+#else
+		XDrawString(dpy, door->w,
+#endif
+			Scr->NormalGC,
 			SIZE_HINDENT/2, 0/*Scr->DoorFont.height*/,
 			door->name, strlen(door->name));
 	}
@@ -1343,9 +1402,15 @@ RedoListWindow(twin)
 TwmWindow *twin;
 {
 /* djhjr - 4/19/96
-	FBF(twin->list->fore, twin->list->back,
-		Scr->IconManagerFont.font->fid);
-	XDrawString (dpy, Event.xany.window, Scr->NormalGC,
+	* font was font.font->fid - djhjr - 9/14/03 *
+	FBF(twin->list->fore, twin->list->back, Scr->IconManagerFont);
+* djhjr - 9/14/03 *
+#ifndef NO_I18N_SUPPORT
+	MyFont_DrawString (dpy, Event.xany.window, &Scr->IconManagerFont,
+#else
+	XDrawString (dpy, Event.xany.window,
+#endif
+		Scr->NormalGC,
 		iconmgr_textx, Scr->IconManagerFont.y+4,
 		twin->icon_name, strlen(twin->icon_name));
 	DrawIconManagerBorder(twin->list);
@@ -1369,13 +1434,25 @@ TwmWindow *twin;
 	 */
 	if (Scr->NoPrettyTitles == FALSE) /* for rader - djhjr - 2/9/99 */
 	{
-		i = XTextWidth(Scr->IconManagerFont.font, twin->icon_name, slen);
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+		i = MyFont_TextWidth(&Scr->IconManagerFont,
+#else
+		i = XTextWidth(Scr->IconManagerFont.font,
+#endif
+				twin->icon_name, slen);
 
 /* DUH! - djhjr - 6/18/99
 		j = twin->list->width - iconmgr_textx - en;
 */
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+		if (!en) en = MyFont_TextWidth(&Scr->IconManagerFont, "n", 1);
+		if (!dots) dots = MyFont_TextWidth(&Scr->IconManagerFont, "...", 3);
+#else
 		if (!en) en = XTextWidth(Scr->IconManagerFont.font, "n", 1);
 		if (!dots) dots = XTextWidth(Scr->IconManagerFont.font, "...", 3);
+#endif
 		j = twin->list->width - iconmgr_textx - dots;
 
 		/* djhjr - 5/5/98 */
@@ -1397,7 +1474,13 @@ TwmWindow *twin;
 /* djhjr - 6/18/99
 				if (XTextWidth(Scr->IconManagerFont.font, twin->icon_name, i) + 2 * en < j)
 */
-				if (XTextWidth(Scr->IconManagerFont.font, twin->icon_name, i) + en < j)
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+				if (MyFont_TextWidth(&Scr->IconManagerFont,
+#else
+				if (XTextWidth(Scr->IconManagerFont.font,
+#endif
+						twin->icon_name, i) + en < j)
 				{
 					slen = i;
 					break;
@@ -1410,13 +1493,19 @@ TwmWindow *twin;
 		}
 	}
 
-	FBF(twin->list->cp.fore, twin->list->cp.back,
-		Scr->IconManagerFont.font->fid);
+	/* font was font.font->fid - djhjr - 9/14/03 */
+	FBF(twin->list->cp.fore, twin->list->cp.back, Scr->IconManagerFont);
 
 /* what's the point of this? - djhjr - 5/2/98
 	if (Scr->use3Diconmanagers && (Scr->Monochrome != COLOR))
-		XDrawImageString (dpy, twin->list->w, Scr->NormalGC, 
-		iconmgr_textx,
+* djhjr - 9/14/03 *
+#ifndef NO_I18N_SUPPORT
+		MyFont_DrawImageString (dpy, twin->list->w,
+				&Scr->IconManagerFont,
+#else
+		XDrawImageString (dpy, twin->list->w,
+#endif
+		Scr->NormalGC, iconmgr_textx,
 
 * djhjr - 5/2/98
 		Scr->IconManagerFont.y+4,
@@ -1427,8 +1516,14 @@ TwmWindow *twin;
 		(a) ? a : twin->icon_name, slen);
 	else
 */
-		XDrawString (dpy, twin->list->w, Scr->NormalGC, 
-		iconmgr_textx,
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+		MyFont_DrawString (dpy, twin->list->w,
+				&Scr->IconManagerFont,
+#else
+		XDrawString (dpy, twin->list->w,
+#endif
+		Scr->NormalGC, iconmgr_textx,
 
 /* djhjr - 5/2/98
 		Scr->IconManagerFont.y+4,
@@ -1476,7 +1571,7 @@ HandleClientMessage()
 			XUngrabPointer(dpy, CurrentTime);
 			}
 		}
-    }
+	}
 	/* djhjr - 7/31/98 */
 	else if (Event.xclient.message_type == _XA_TWM_RESTART)
 		RestartVtwm(CurrentTime);
@@ -1523,8 +1618,8 @@ HandleExpose()
 	int i, k;
 	int height;
 
-	FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
-	    Scr->InfoFont.font->fid);
+	/* font was font.font->fid - djhjr - 9/14/03 */
+	FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->InfoFont);
 
 	/* djhjr - 5/10/96 */
 	XGetGeometry (dpy, Scr->InfoWindow, &JunkRoot, &JunkX, &JunkY,
@@ -1541,12 +1636,22 @@ HandleExpose()
 		/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 		if (!i && Scr->BorderBevelWidth > 0) k += Scr->InfoBevelWidth;
 
-	    XDrawString(dpy, Scr->InfoWindow, Scr->NormalGC,
-
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	    MyFont_DrawString(dpy, Scr->InfoWindow, &Scr->InfoFont,
+#else
+	    XDrawString(dpy, Scr->InfoWindow,
+#endif
+		Scr->NormalGC,
 /* centers the lines... djhjr - 5/10/96
 		10,
 */
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+		(JunkWidth - MyFont_TextWidth(&Scr->InfoFont, Info[i], j)) / 2,
+#else
 		(JunkWidth - XTextWidth(Scr->InfoFont.font, Info[i], j)) / 2,
+#endif
 
 		/* 'k' was a hard-coded '5' - djhjr - 4/29/98 */
 		(i*height) + Scr->InfoFont.y + k, Info[i], j);
@@ -1554,7 +1659,7 @@ HandleExpose()
 
 	/* djhjr - 5/9/96 */
 	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
-	if (Scr->BorderBevelWidth > 0)
+	if (Scr->InfoBevelWidth > 0)
 	    Draw3DBorder(Scr->InfoWindow, 0, 0, JunkWidth, JunkHeight,
 /* djhjr - 4/29/98
 				BW, Scr->DefaultC, off, False, False);
@@ -1589,14 +1694,23 @@ HandleExpose()
 	if (Event.xany.window == Tmp_win->title_w)
 	{
 /* djhjr - 4/20/96
-	    FBF(Tmp_win->title.fore, Tmp_win->title.back,
-		Scr->TitleBarFont.font->fid);
+	    * font was font.font->fid - djhjr - 9/14/03 *
+	    FBF(Tmp_win->title.fore, Tmp_win->title.back, Scr->TitleBarFont);
 
-	    XDrawString (dpy, Tmp_win->title_w, Scr->NormalGC,
+* djhjr - 9/14/03 *
+#ifndef NO_I18N_SUPPORT
+	    MyFont_DrawString (dpy, Tmp_win->title_w, &Scr->TitleBarFont,
+#else
+	    XDrawString (dpy, Tmp_win->title_w,
+#endif
+			 Scr->NormalGC,
 			 Scr->TBInfo.titlex, Scr->TitleBarFont.y,
 			 Tmp_win->name, strlen(Tmp_win->name));
 */
 		PaintTitle (Tmp_win);
+
+		/* djhjr - 10/25/02 */
+		PaintTitleHighlight(Tmp_win, (Tmp_win == Scr->Focus) ? on : off);
 
 	    flush_expose (Event.xany.window);
 		return;
@@ -1605,10 +1719,15 @@ HandleExpose()
 	{
 
 /* djhjr - 4/21/96
-	    FBF(Tmp_win->iconc.fore, Tmp_win->iconc.back,
-		Scr->IconFont.font->fid);
+	    * font was font.font->fid - djhjr - 9/14/03 *
+	    FBF(Tmp_win->iconc.fore, Tmp_win->iconc.back, Scr->IconFont);
 
+* djhjr - 9/14/03 *
+#ifndef NO_I18N_SUPPORT
+	    MyFont_DrawString (dpy, Tmp_win->icon_w, &Scr->IconManagerFont,
+#else
 	    XDrawString (dpy, Tmp_win->icon_w,
+#endif
 		Scr->NormalGC,
 		Tmp_win->icon_x, Tmp_win->icon_y,
 		Tmp_win->icon_name, strlen(Tmp_win->icon_name));
@@ -1656,23 +1775,27 @@ HandleExpose()
 	    }
 	    if (Event.xany.window == Tmp_win->list->icon)
 	    {
-
 /* djhjr - 4/19/96
 		FB(Tmp_win->list->fore, Tmp_win->list->back);
 		XCopyPlane(dpy, Scr->siconifyPm, Tmp_win->list->icon,
 		    Scr->NormalGC,
 		    0,0, iconifybox_width, iconifybox_height, 0, 0, 1);
 */
-		/* was 'Scr->use3Diconmanagers' - djhjr - 8/11/98 */
+/* djhjr - 10/30/02
+		* was 'Scr->use3Diconmanagers' - djhjr - 8/11/98 *
 		if (Scr->IconMgrBevelWidth > 0 && Tmp_win->list->iconifypm)
 		    XCopyArea (dpy, Tmp_win->list->iconifypm, Tmp_win->list->icon,
 				Scr->NormalGC, 0, 0,
 				iconifybox_width, iconifybox_height, 0, 0);
 		else {
 		    FB(Tmp_win->list->cp.fore, Tmp_win->list->cp.back);
-		    XCopyPlane(dpy, Scr->siconifyPm, Tmp_win->list->icon, Scr->NormalGC,
+		    XCopyPlane(dpy, Scr->siconifyPm->pixmap, Tmp_win->list->icon, Scr->NormalGC,
 			0,0, iconifybox_width, iconifybox_height, 0, 0, 1);
 		}
+*/
+		XCopyArea(dpy, Tmp_win->list->iconifypm->pixmap,
+			  Tmp_win->list->icon, Scr->NormalGC, 0, 0,
+			  iconifybox_width, iconifybox_height, 0, 0);
 
 		flush_expose (Event.xany.window);
 		return;
@@ -1687,45 +1810,26 @@ HandleExpose()
 
 	    if (XFindContext(dpy, Event.xany.window, VirtualContext,
 			     (caddr_t *)&tmp_win) != XCNOENT) {
+		    /* font was font.font->fid - djhjr - 9/14/03 */
 		    FBF(tmp_win->virtual.fore, tmp_win->virtual.back,
-			Scr->VirtualFont.font->fid);
+			Scr->VirtualFont);
 		    if (tmp_win->icon_name)
 			    name = tmp_win->icon_name;
 		    else if (tmp_win->name)
 			    name = tmp_win->name;
 		    if (name)
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+			    MyFont_DrawImageString(dpy, Event.xany.window,
+					     &Scr->VirtualFont,
+#else
 			    XDrawImageString(dpy, Event.xany.window,
+#endif
 					     Scr->NormalGC,
 					     0, Scr->VirtualFont.height,
 					     name, strlen(name));
 	    }
 	}
-}
-
-
-
-static void remove_window_from_ring (tmp)
-	TwmWindow *tmp;
-{
-	TwmWindow *prev = tmp->ring.prev, *next = tmp->ring.next;
-
-	if (enter_win == tmp) {
-	enter_flag = FALSE;
-	enter_win = NULL;
-	}
-	if (raise_win == Tmp_win) raise_win = NULL;
-
-	/*
-	 * 1. Unlink window
-	 * 2. If window was only thing in ring, null out ring
-	 * 3. If window was ring leader, set to next (or null)
-	 */
-	if (prev) prev->ring.next = next;
-	if (next) next->ring.prev = prev;
-	if (Scr->Ring == tmp)
-	  Scr->Ring = (next != tmp ? next : (TwmWindow *) NULL);
-
-	if (!Scr->Ring || Scr->RingLeader == tmp) Scr->RingLeader = Scr->Ring;
 }
 
 
@@ -1847,7 +1951,17 @@ HandleDestroyNotify()
 	free_cwins (Tmp_win);				/* 9 */
 	if (Tmp_win->titlebuttons)					/* 10 */
 	  free ((char *) Tmp_win->titlebuttons);
-	remove_window_from_ring (Tmp_win);				/* 11 */
+	/*
+	 * 11a through 11c was handled in a local function, but
+	 * is now broken out (11a & 11b), and uses a public function
+	 * in menus.c (11c) - djhjr - 10/27/02
+	 */
+	if (enter_win == Tmp_win) {			/* 11a */
+	  enter_flag = FALSE;
+	  enter_win = NULL;
+	}
+	if (raise_win == Tmp_win) raise_win = NULL;	/* 11b */
+	RemoveWindowFromRing(Tmp_win);			/* 11c */
 
 	free((char *)Tmp_win);
 }
@@ -2102,13 +2216,17 @@ HandleUnmapNotify()
  ***********************************************************************
  */
 
+#if 0 /* functionality moved to menus.c:ExecuteFunction() - djhjr - 11/7/03 */
 void
 HandleMotionNotify()
 {
+#if 0 /* done in menus.c:ExecuteFunction() now - djhjr - 11/4/03 */
 	if (moving_window) {
 	    DoMoveWindowOnDesktop(Event.xmotion.x, Event.xmotion.y);
 	}
+#endif
 
+#if 0 /* done in menus.c:ExecuteFunction() now - djhjr - 5/27/03 */
 	if ( ResizeWindow )
 	{
 	XQueryPointer( dpy, Event.xany.window,
@@ -2135,7 +2253,9 @@ HandleMotionNotify()
 		DoResize(Event.xmotion.x_root, Event.xmotion.y_root, Tmp_win);
 	}
 	}
+#endif
 }
+#endif
 
 
 
@@ -2149,7 +2269,9 @@ HandleMotionNotify()
 void
 HandleButtonRelease()
 {
+/* djhjr - 10/6/02
 	int xl, xr, yt, yb, w, h;
+*/
 	unsigned mask;
 
 	if (Scr->StayUpMenus)
@@ -2177,12 +2299,21 @@ HandleButtonRelease()
 0	  }
 #endif
 
+#if 0 /* done in menus.c:ExecuteFunction() now - djhjr - 11/4/03 */
 	if (moving_window)
 	{	EndMoveWindowOnDesktop();
 	}
+#endif
 
 	if (DragWindow != None)
 	{
+/*
+ * Most all of this is redundant (see menus.c:ExecuteFunction()),
+ * and I don't see why. Everything except local functionality is
+ * '#if 0'd out, with just a few lines moved (copied) to menus.c.
+ * djhjr - 10/6/02
+ */
+#if 0
 		MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
 
 		XFindContext(dpy, DragWindow, TwmContext, (caddr_t *)&Tmp_win);
@@ -2280,15 +2411,18 @@ HandleButtonRelease()
 			raise_win = ((DragWindow == Tmp_win->frame && !Scr->NoRaiseMove)
 				 ? Tmp_win : NULL);
 		}
+#endif
 
 		DragWindow = None;
 		ConstMove = FALSE;
 	}
 
+#ifdef NEVER /* djhjr - 5/27/03 */
 	if ( ResizeWindow )
 	{
 		EndResize();
 	}
+#endif
 
 	if ( ActiveMenu && RootFunction == F_NOFUNCTION )
 	{
@@ -2445,6 +2579,10 @@ HandleButtonPress()
 	Cursor cur;
 	TwmDoor *door = NULL;
 
+	/* Submitted by Jennifer Elaan */
+	if (Event.xbutton.button > MAX_BUTTONS)
+		return;
+
 	if (Scr->StayUpMenus)
 	{
 		/* added '&& ButtonPressed == -1' - Submitted by Steve Ratcliffe */
@@ -2479,6 +2617,8 @@ HandleButtonPress()
 		* down, we need to cancel the operation we were doing
 		*/
 		Cancel = TRUE;
+	    if (DragWindow != None)
+	    {
 		CurrentDragX = origDragX;
 		CurrentDragY = origDragY;
 		if (!menuFromFrameOrWindowOrTitlebar)
@@ -2492,8 +2632,16 @@ HandleButtonPress()
 			else
 				MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
 		}
-		XUnmapWindow(dpy, Scr->SizeWindow);
 		if (!Scr->OpaqueMove) UninstallRootColormap();
+	    }
+
+#if 0 /* done in menus.c:ExecuteFunction() now - djhjr - 11/4/03 */
+	    /* this 'else if ...' - djhjr - 11/3/03 */
+	    else if (moving_window)
+		EndMoveWindowOnDesktop();
+#endif
+
+		XUnmapWindow(dpy, Scr->SizeWindow);
 		ResizeWindow = None;
 		DragWindow = None;
 		cur = LeftButt;
@@ -3247,9 +3395,14 @@ HandleEnterNotify()
 			/*
 			 * If this window is an icon manager window, make
 			 * the ring leader the icon manager - djhjr - 11/8/01
+			 *
+			 * Is the icon manager in the ring? - djhjr - 10/27/02
 			 */
-			if (Tmp_win->list && ewp->window == Tmp_win->list->w)
+			if (Tmp_win->list && ewp->window == Tmp_win->list->w &&
+					Tmp_win->list->iconmgr->twm_win->ring.next)
+			{
 				Scr->RingLeader = Tmp_win->list->iconmgr->twm_win;
+			}
 			else
 				Scr->RingLeader = Tmp_win;
 		}
@@ -3588,11 +3741,13 @@ HandleConfigureRequest()
 	 * requested client window width; the inner height is the same as the
 	 * requested client window height plus any title bar slop.
 	 */
+/* propogate ConfigureNotify events - submitted by Jonathan Paisley - 11/11/02
 	SetupWindow (Tmp_win, x, y, width, height, bw);
+*/
+	SetupFrame(Tmp_win, x, y, width, height, bw, True);
 
 	/* Change the size of the desktop representation */
 	MoveResizeDesktop (Tmp_win, TRUE);
-	/* Stig Ostholm <ostholm%ce.chalmers.se@uunet> */
 
 	/*
 	 * Raise the autopan windows in case the current window covers them.
@@ -3891,12 +4046,14 @@ UninstallRootColormapQScanner(dpy, ev, args)
 	char *args;
 {
 	if (!*args)
+	{
 	if (ev->type == EnterNotify) {
 		if (ev->xcrossing.mode != NotifyGrab)
 		*args = 1;
 	} else if (ev->type == LeaveNotify) {
 		if (ev->xcrossing.mode == NotifyNormal)
 		*args = 1;
+	}
 	}
 
 	return (False);

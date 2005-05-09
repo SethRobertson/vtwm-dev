@@ -1,5 +1,5 @@
 /*
- * Copyright 2001 David J. Hawkey Jr.
+ * Copyright 2001, 2002 David J. Hawkey Jr.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose and without fee is hereby granted, provided
@@ -24,7 +24,7 @@
 /*
  * sound.c
  *
- * D. J. Hawkey Jr. - 6/22/01 8/16/01
+ * D. J. Hawkey Jr. - 6/22/01 8/16/01 11/15/02
  */
 
 #ifdef NO_SOUND_SUPPORT
@@ -247,7 +247,7 @@ int function;
 {
     register int i, low, mid, high;
 
-    if (sound_state == 0)
+    if (sound_fd < 0 || sound_state == 0)
 	return (1);	/* pretend success */
 
     low = 0;
@@ -268,6 +268,39 @@ int function;
     }
 
     return (0);
+}
+
+int 
+PlaySoundAdhoc(filename)
+char *filename;
+{
+    RPLAY *rp;
+    int i;
+
+    if (sound_fd < 0 || sound_state == 0)
+	return (1);	/* pretend success */
+
+    if ((rp = rplay_create(RPLAY_PLAY)) == NULL)
+    {
+	twmrc_error_prefix();
+	fprintf(stderr, "unable to create sound \"%s\"\n", filename);
+	return (0);
+    }
+
+    if ((i = rplay_set(rp, RPLAY_INSERT, 0, RPLAY_SOUND, filename,
+		       RPLAY_VOLUME, sound_vol, NULL)) >= 0)
+	rplay(sound_fd, rp);
+
+    rplay_destroy(rp);
+
+    if (i < 0)
+    {
+	twmrc_error_prefix();
+	fprintf(stderr, "unable to set sound \"%s\"\n", filename);
+	return (0);
+    }
+
+    return (1);
 }
 
 void 

@@ -164,6 +164,15 @@ extern void TwmOutput();
 /* djhjr - 10/2/01 */
 #define F_STRICTICONMGR		122
 
+/* Next four submitted by Seth Robertson - 9/9/02 */
+#define F_BINDBUTTONS		123
+#define F_BINDKEYS		124
+#define F_UNBINDBUTTONS		125
+#define F_UNBINDKEYS		126
+
+/* djhjr - 11/15/02 */
+#define F_PLAYSOUND		127
+
 #define D_NORTH			1
 #define D_SOUTH			2
 #define D_EAST			3

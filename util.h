@@ -70,6 +70,15 @@ extern void RemoveRGBColormap();
 extern void SetFocus();
 extern void LocateStandardColormaps();
 extern void GetFont();
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+extern int MyFont_TextWidth();
+extern void MyFont_DrawImageString();
+extern void MyFont_DrawString();
+extern void MyFont_ChangeGC();
+extern Status I18N_FetchName();
+extern Status I18N_GetIconName();
+#endif
 
 /* djhjr - 1/13/98 */
 void setBorderGC();

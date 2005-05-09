@@ -46,7 +46,8 @@ typedef struct WList
 
     /* djhjr - 4/19/96 */
     ColorPair cp;
-    Pixmap iconifypm;
+    /* was Pixmap - djhjr - 10/30/02 */
+    Image *iconifypm;
 
     Pixel fore, back, highlight;
     unsigned top, bottom;
@@ -75,7 +76,7 @@ typedef struct IconMgr
 
 extern int iconmgr_textx;
 extern WList *DownIconManager;
-
+extern void SetIconMgrPixmap();
 extern void CreateIconManagers();
 extern IconMgr *AllocateIconManager();
 extern void MoveIconManager();

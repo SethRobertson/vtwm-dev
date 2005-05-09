@@ -31,11 +31,17 @@ SOUND_DEFINE = -DNO_SOUND_SUPPORT
 #SOUNDINC = -I/usr/local/include
 # (sound is supported only by way of the rplay library)
 
+# To omit Internationalization support, uncomment this
+I18N_DEFINE = -DNO_I18N_SUPPORT
+
 # To omit m4 pre-processing of resource files, uncomment this
 #M4_DEFINE = -DNO_M4_SUPPORT
 
 # To omit platform and build info in the version window, uncomment this
 #INFO_DEFINE = -DNO_BUILD_INFO
+
+# For lexers that don't track line numbers, uncomment this
+YYLINENO_DEFINE = -DNEED_YYLINENO_V
 
 # For those systems that don't have putenv(), uncomment this
 PUTENV_DEFINE = -DNEED_PUTENV_F
@@ -112,8 +118,9 @@ ALLINCLUDES = $(INCLUDES) $(EXTRA_INCLUDES) $(STD_INCLUDES)
 STD_DEFINES = -D__QNX__ -DMetroLink -DSTRINGS_ALIGNED -DNO_REGEX \
               -DBOGUS_MB_MAX
 EXTRA_DEFINES = $(XPM_DEFINE) $(SOUND_DEFINE) $(REGEX_DEFINE) \
-                $(M4_DEFINE) $(INFO_DEFINE) $(PUTENV_DEFINE) \
-                $(SELECT_DEFINE) $(PROCESS_DEFINE)
+                $(I18N_DEFINE) $(M4_DEFINE) $(INFO_DEFINE) \
+                $(YYLINENO_DEFINE) $(PUTENV_DEFINE) $(SELECT_DEFINE) \
+                $(PROCESS_DEFINE)
 PROTO_DEFINES =
 
 ALLDEFINES = $(ALLINCLUDES) $(STD_DEFINES) $(EXTRA_DEFINES) $(PROTO_DEFINES)
@@ -141,26 +148,30 @@ install:
 
 clean:
 	$(RM) $(PROGRAM) *.o *.b *.err *.map y.tab.h y.tab.c lex.yy.c \
-	gram.h gram.c lex.c deftwmrc.c lastmake.c system.vtwmrc
+	gram.h gram.c lex.c deftwmrc.c lastmake.c system.vtwmrc \
+	vtwm.dw vtwm.ser vtwm.html vtwm.ps
 
 vtwm: $(OBJS)
 	$(RM) $@
 	$(CC) -o $@ $(OBJS) $(CFLAGS) $(LDLIBS)
 	$(RM) deftwmrc.* lastmake.*
 
-lex.o: gram.h
-
-gram.h: gram.c
-	$(MV) y.tab.h gram.h
-
-gram.c: gram.y
-	$(YACC) $(YFLAGS) gram.y
-	$(MV) y.tab.c gram.c
-
-parse.o: parse.c
+parse.o: gram.h
 	$(RM) $@
 	$(CC) -c $(CFLAGS) '-DSYSTEM_VTWMRC="'$(VTWMLIBDIR)'/system.vtwmrc"' \
 	'-DSYSTEM_TWMRC="'$(VTWMLIBDIR)'/system.twmrc"' parse.c
+
+add_window.o applets.o events.o icons.o list.o menus.o \
+regions.o sound.o twm.o util.o: gram.h
+	$(RM) $@
+	$(CC) -c $(CFLAGS) $*.c
+
+lex.o: gram.h
+
+gram.h gram.c: gram.y
+	$(YACC) $(YFLAGS) gram.y
+	$(MV) y.tab.c gram.c
+	$(MV) y.tab.h gram.h
 
 deftwmrc.c:  system.vtwmrc
 	$(RM) $@
@@ -170,8 +181,8 @@ deftwmrc.c:  system.vtwmrc
 	echo ' */' >>$@
 	echo '' >>$@
 	echo 'char *defTwmrc[] = {' >>deftwmrc.c
-	sed -e '/^#/d' -e 's/"/\\"/g' -e 's/^/    "/' -e 's/$$/",/' system.vtwmrc >>$@
-	echo '    (char *) 0 };' >>$@
+	sed -e '/^$$/d' -e '/^#/d' -e 's/"/\\"/g' -e 's/^/"/' -e 's/$$/",/' -e 's/[	]\{1,\}/ /g' -e 's/^" /"/' system.vtwmrc >>$@
+	echo '(char *)0 };' >>$@
 
 lastmake.c:
 	$(RM) $@
@@ -189,15 +200,15 @@ system.vtwmrc:
 	$(CP) $@.$(SYS_VTWMRC_LOOK) $@
 
 # Handy for developers to check the man page
-dw vtwm.dw: vtwm.man
-	$(DEROFF) vtwm.man | $(DW) >vtwm.dw
+dw vtwm.dw: doc/vtwm.man
+	$(DEROFF) doc/vtwm.man | $(DW) >vtwm.dw
 	@if test -s vtwm.dw ; \
 	then \
 	    echo Doubled words in vtwm.man ... ; \
 	    cat vtwm.dw ; \
 	fi
-spell vtwm.ser: vtwm.man vtwm.sok
-	$(DEROFF) vtwm.man | $(SPELL) +vtwm.sok >vtwm.ser
+spell vtwm.ser: doc/vtwm.man vtwm.sok
+	$(DEROFF) doc/vtwm.man | $(SPELL) +vtwm.sok >vtwm.ser
 	@if test -s vtwm.ser ; \
 	then \
 	    echo Spelling exceptions in vtwm.man ... ; \
@@ -206,7 +217,7 @@ spell vtwm.ser: vtwm.man vtwm.sok
 
 # If you wish to generate HTML or Postscript versions of the man page,
 # enter 'make vtwm.html' or 'make vtwm.ps'
-vtwm.html: vtwm.man
-	$(MAN2HTML) vtwm.man
-vtwm.ps: vtwm.man
+vtwm.html: doc/vtwm.man
+	$(MAN2HTML) doc/vtwm.man
+vtwm.ps: doc/vtwm.man
 	$(MAN2PS) < $< >$@

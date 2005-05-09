@@ -9,18 +9,19 @@
 # Functions and Bindings
 #
 
-Function "VTWM Profile"
-{
-	f.exec "startxclients &"
-}
+# See $(HOME)/.xinitrc...
+#Function "VTWM Profile"
+#{
+#	f.exec "startxclients &"
+#}
 
 Function "move-or-raise"
 {
+	f.move
 # These two set up a click-to-type focus policy
 # (omitting the first allows it to be "togglable")...
 #	f.unfocus
 #	f.focus
-	f.move
 	f.deltastop
 	f.raise
 }
@@ -32,10 +33,28 @@ Function "move-or-iconify"
 	f.iconify
 }
 
-# This is for warping to the iconified...
-Function "deiconify-or-warp"
+# This is for warping from the icon manager...
+Function "deiconify-and-warp"
 {
 	f.deiconify
+	f.warp
+}
+
+# This is for warping from the virtual desktop...
+Function "move-or-warp"
+{
+	f.playsound "HOME/vtwm/sounds/whoosh4.au"
+	f.move
+	f.deltastop
+	f.warp
+}
+
+# This is for warping from the virtual desktop...
+Function "resize-or-warp"
+{
+	f.playsound "HOME/vtwm/sounds/whoosh4.au"
+	f.resize
+	f.deltastop
 	f.warp
 }
 
@@ -44,7 +63,7 @@ Button3 = : root : f.menu "XWindowsMenu"
 
 Button1 = : title : f.function "move-or-raise"
 Button2 = : title : f.resize
-Button3 = : title : f.lower
+Button3 = : title : f.raiselower
 
 Button1 = : frame : f.function "move-or-raise"
 Button2 = : frame : f.resize
@@ -54,21 +73,22 @@ Button1 = : icon : f.function "move-or-iconify"
 Button3 = : icon : f.menu "ArrangeMenu"
 
 Button1 = : iconmgr : f.iconify
-Button3 = : iconmgr : f.function "deiconify-or-warp"
+Button3 = : iconmgr : f.function "deiconify-and-warp"
 
 Button1 = : door : f.enterdoor
 Button2 = : door : f.namedoor
 Button3 = : door : f.deletedoor
 
 Button1 = : virtual | desktop : f.movescreen
+Button2 = : desktop : f.function "move-or-warp"
+Button3 = : desktop : f.function "resize-or-warp"
+# If you've got nothing better to do with 'em...
 #Button2 = : virtual | desktop : f.function "decorate-virtual"
-Button2 = : desktop : f.resize
 #Button3 = : virtual | desktop : f.function "clear-virtual"
-Button3 = : desktop : f.lower
 
 "Up" = : iconmgr : f.backiconmgr
 "Down" = : iconmgr : f.forwiconmgr
-"Return" = : iconmgr : f.function "deiconify-or-warp"
+"Return" = : iconmgr : f.function "deiconify-and-warp"
 "BackSpace" = : iconmgr : f.iconify
 
 "Return" = : door : f.enterdoor
@@ -78,10 +98,15 @@ Button3 = : desktop : f.lower
 "Left" = : virtual | desktop : f.panleft "100"
 "Right" = : virtual | desktop : f.panright "100"
 
-"Alt_L" = c : all : f.warpring "prev"
+"Meta_L" = c : all : f.warpring "prev"
 "Control_R" = m : all : f.warpring "prev"
 "Control_L" = m : all : f.warpring "next"
-"Alt_R" = c : all : f.warpring "next"
+"Meta_R" = c : all : f.warpring "next"
+
+"Meta_L" = c : root : f.warpto "*Icon Manager"
+"Control_R" = m : root : f.warpto "*Icon Manager"
+"Control_L" = m : root : f.warpto "*Icon Manager"
+"Meta_R" = c : root : f.warpto "*Icon Manager"
 
 "Shift_L" = c : all : f.warpclassprev ""
 "Shift_R" = c : all : f.warpclassprev ""
@@ -90,6 +115,6 @@ Button3 = : desktop : f.lower
 
 "Shift_L" = m : all : f.warptoiconmgr ""
 "Shift_R" = m : all : f.warptoiconmgr ""
-"Alt_L" = s : all : f.warptoiconmgr ""
-"Alt_R" = s : all : f.warptoiconmgr ""
+"Meta_L" = s : all : f.warptoiconmgr ""
+"Meta_R" = s : all : f.warptoiconmgr ""
 

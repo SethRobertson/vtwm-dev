@@ -1,0 +1,197 @@
+
+#
+# DESCRIPTION FILE FOR vtwm - $(HOME)/vtwm/vtwmrc-lists
+#
+# PRE-PROCESSED BY vtwm-5.4.6 USING m4
+# 
+
+#
+# Lists
+#
+
+WindowRing
+NoWindowRing
+{
+	"VTWM*"
+	"as*"
+}
+
+IconifyByUnmapping
+
+WarpCursor
+
+#OpaqueMove
+#NoOpaqueMove {}
+
+#OpaqueResize
+#NoOpaqueResize {}
+
+UsePPosition		"off"
+{
+	"MPlayer"	"on"
+}
+
+Cursors
+{
+	Button		"arrow"
+#	Frame		"arrow"
+	IconMgr		"arrow"
+	Menu		"arrow"
+	Title		"arrow"
+}
+
+# In addition to the default icon manager...
+IconManagers
+{
+	"Xcoral*"	"+5+405" 1
+	"xv *"		"+5+605" 1
+}
+
+NailedDown
+{
+	"VTWM*"
+	"xbiff*"
+	"xcb"
+	"*clock"
+	"xeyes"
+	"xload"
+	"xpostit"
+	"as*"
+}
+
+IconManagerDontShow
+{
+	"VTWM*"
+#	"xbiff*"
+#	"xcb"
+#	"*clock"
+#	"xeyes"
+#	"xload"
+#	"xpostit"
+	"as*"
+}
+
+DontShowInDisplay
+{
+	"VTWM*"
+	"xbiff*"
+	"xcb"
+	"*clock"
+	"xeyes"
+	"xload"
+	"xpostit"
+	"as*"
+}
+
+NoTitle
+{
+ifelse(WMdesktoptitle, 0, `"VTWM Desktop"')
+ifelse(WMdoortitle, 0, `"VTWM Door"')
+ifelse(WMiconmgrtitle, 0, `"VTWM Icon Manager"')
+ifelse(WMname, `95ish', `"MPlayer"', WMname, `MWMish', `"MPlayer"')
+ifelse(WMname, `PWMish', `"MPlayer"', WMname, `TWM3d', `"MPlayer"')
+ifelse(WMname, `TWMish', `"MPlayer"')
+ifelse(WMname, `95ish', `"xbiff*"', WMname, `MWMish', `"xbiff*"')
+ifelse(WMname, `PWMish', `"xbiff*"', WMname, `TWM3d', `"xbiff*"')
+ifelse(WMname, `TWMish', `"xbiff*"')
+ifelse(WMname, `95ish', `"xcb"', WMname, `MWMish', `"xcb"')
+ifelse(WMname, `PWMish', `"xcb"', WMname, `TWM3d', `"xcb"')
+ifelse(WMname, `TWMish', `"xcb"')
+ifelse(WMname, `95ish', `"*clock"', WMname, `MWMish', `"*clock"')
+ifelse(WMname, `PWMish', `"*clock"', WMname, `TWM3d', `"*clock"')
+ifelse(WMname, `TWMish', `"*clock"')
+	"xeyes"
+ifelse(WMname, `95ish', `"xload"', WMname, `MWMish', `"xload"')
+ifelse(WMname, `PWMish', `"xload"', WMname, `TWM3d', `"xload"')
+ifelse(WMname, `TWMish', `"xload"')
+ifelse(WMname, `95ish', `"xpostit"', WMname, `MWMish', `"xpostit"')
+ifelse(WMname, `PWMish', `"xpostit"', WMname, `TWM3d', `"xpostit"')
+ifelse(WMname, `TWMish', `"xpostit"')
+ifelse(WMapplettitle, 0, `"as*"')
+}
+
+# Confusing if click-to-type focus is enabled...
+AutoRaise
+{
+	"VTWM*"
+	"XTerm"
+	"Xqsh"
+	"xbiff*"
+	"xcb"
+	"*clock"
+	"xeyes"
+	"xload"
+	"xpostit"
+	"as*"
+	"XVroot"
+	"XVschnauze"
+}
+
+# These are dependant on the virtual desktop size...
+# Set the window dimensions...
+define(Dwidth, 20) define(Dheight, 19)
+# Translate to an X geometry string...
+define(Dgeometry, translit(Dwidth*Dheight, *, x))
+#Doors
+#{
+#	"1"		"Dgeometry" "+eval(WIDTH * 0)+0"
+#	"2"		"Dgeometry" "+eval(WIDTH * 1)+0"
+#	"3"		"Dgeometry" "+eval(WIDTH * 2)+0"
+#	"4"		"Dgeometry" "+eval(WIDTH * 3)+0"
+#	"5"		"Dgeometry" "+eval(WIDTH * 4)+0"
+#}
+
+# Calculate the region dimensions...
+define(R0width, eval(WIDTH - VDwidth - 50))
+define(R0height, eval(Dheight + 2 * WMborder + WMdoortitle))
+# Calculate the region coordinates...
+define(R0x, WMpanborder)
+define(R0y, eval(HEIGHT - (R0height + WMpanborder)))
+# Translate to an X geometry string...
+define(R0geometry, translit(R0width*R0height+R0x+R0y, *, x))
+# Calculate the grids...
+define(R0gridx, eval(2 * WMborder + 5))
+define(R0gridy, 0)
+# Set the resource...
+AppletRegion		"R0geometry" South East R0gridx R0gridy
+{
+	"VTWM Door"
+}
+
+# Calculate the region dimensions...
+define(R1width, eval(WIDTH - 200))
+define(R1height, eval(64 + 2 * WMborder + WMapplettitle))
+# Translate to an X geometry string...
+define(R1geometry, translit(R1width*R1height-WMpanborder+WMpanborder, *, x))
+# Calculate the grids...
+define(R1gridx, eval(2 * WMborder + 2))
+define(R1gridy, 0)
+# Set the resource...
+AppletRegion		"R1geometry" North East R1gridx R1gridy
+{
+	"as*"
+}
+
+# Calculate the region coordinates...
+define(R2x, WMpanborder) define(R2y, eval(R1height + 20))
+# Calculate the region dimensions...
+define(R2width, eval(100 + 2 * WMborder))
+define(R2height, eval(HEIGHT - R2y - (VDheight + WMdesktoptitle)))
+# Translate to an X geometry string...
+define(R2geometry, translit(R2width*R2height-R2x+R2y, *, x))
+# Calculate the grids...
+define(R2gridx, 0)
+define(R2gridy, eval(2 * WMborder + 4))
+# Set the resource...
+AppletRegion		"R2geometry" North East R2gridx R2gridy
+{
+	"xbiff*"
+	"xcb"
+	"xload"
+	"oclock"
+	"xarclock"
+	"xclock"
+	"xdaliclock"
+	"xpostit"
+}
+

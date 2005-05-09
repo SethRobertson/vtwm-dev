@@ -190,7 +190,7 @@ int grav1, grav2, stepx, stepy;
         Scr->FirstIconRegion = rr;
 }
 
-#ifdef NO_XPM_SUPPORT
+#ifdef ORIGINAL_PIXMAPS
 void CreateIconWindow(tmp_win, def_x, def_y)
 TwmWindow *tmp_win;
 int def_x, def_y;
@@ -353,7 +353,12 @@ int def_x, def_y;
 	attributes.background_pixel = tmp_win->iconc.fore;
     }
 
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+    tmp_win->icon_w_width = MyFont_TextWidth(&Scr->IconFont,
+#else
     tmp_win->icon_w_width = XTextWidth(Scr->IconFont.font,
+#endif
 	tmp_win->icon_name, strlen(tmp_win->icon_name));
 
 /* djhjr - 6/11/96
@@ -500,7 +505,7 @@ int def_x, def_y;
     if (pm) XFreePixmap (dpy, pm);
     return;
 }
-#else /* NO_XPM_SUPPORT */
+#else /* ORIGINAL_PIXMAPS */
 /*
  * to help clean up CreateIconWindow() below - djhjr - 8/13/98
  * added background color and XPM indicator - djhjr - 12/28/98
@@ -561,11 +566,13 @@ unsigned int *numcolors;
 
 			XFreePixmap(dpy, bm);
 		}
+#ifndef NO_XPM_SUPPORT
 		else
 		{
 			/* added color argument - djhjr - 9/28/99 */
 			iconimage = FindImage(name, background);
 		}
+#endif
 
 		if (iconimage != NULL)
 			/* added 'type' argument - djhjr - 10/20/01 */
@@ -575,8 +582,10 @@ unsigned int *numcolors;
 
 	/* djhjr - 12/28/98 */
 	*numcolors = 0;
+#ifndef NO_XPM_SUPPORT
 	if (iconimage != NULL)
 		*numcolors = SetPixmapsBackground(iconimage, Scr->Root, background);
+#endif
 
 	return (iconimage);
 }
@@ -654,8 +663,7 @@ int def_x, def_y;
 	if (pm == None && tmp_win->wmhints &&
 			tmp_win->wmhints->flags & IconPixmapHint)
 	{
-/* djhjr - 8/14/98 */
-#ifdef ORIGINAL_PIXMAPS
+/* djhjr - 8/14/98
 		XGetGeometry(dpy, tmp_win->wmhints->icon_pixmap,
 				&JunkRoot, &JunkX, &JunkY,
 				(unsigned int *)&tmp_win->icon_width,
@@ -669,7 +677,7 @@ int def_x, def_y;
 				0,0, tmp_win->icon_width, tmp_win->icon_height, 0, 0, 1 );
 
 		XFreePixmap(dpy, pm);
-#else /* ORIGINAL_PIXMAPS */
+*/
 		XGetGeometry(dpy, tmp_win->wmhints->icon_pixmap,
 				&JunkRoot, &JunkX, &JunkY,
 				&JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
@@ -721,7 +729,6 @@ int def_x, def_y;
 
 			pm = iconimage->pixmap;
 		}
-#endif /* ORIGINAL_PIXMAPS */
 	}
 	
 	/*
@@ -752,8 +759,7 @@ int def_x, def_y;
 	/*
 	 * if we still don't have an icon, assign the UnknownIcon
 	 */
-/* djhjr - 8/13/98 */
-#ifdef ORIGINAL_PIXMAPS
+/* djhjr - 8/13/98
 	if (pm == None && Scr->UnknownPm != None)
 	{
 		tmp_win->icon_width = Scr->UnknownWidth;
@@ -762,17 +768,17 @@ int def_x, def_y;
 		pm = XCreatePixmap(dpy, Scr->Root, tmp_win->icon_width,
 				tmp_win->icon_height, Scr->d_depth);
 
-		/* the copy plane works on color ! */
+		* the copy plane works on color ! *
 		XCopyPlane(dpy, Scr->UnknownPm, pm, Scr->NormalGC,
 				0,0, tmp_win->icon_width, tmp_win->icon_height, 0, 0, 1 );
 
 		XFreePixmap(dpy, pm);
 	}
-#else /* ORIGINAL_PIXMAPS */
-	if (pm == None && Scr->UnknownPm != NULL)
+*/
+	if (pm == None && Scr->unknownName != NULL)
 	{
 		/* added background and XPM indicator - djhjr - 12/28/98 */
-		iconimage = GetIconImage(Scr->UnknownPm, tmp_win->iconc.back,
+		iconimage = GetIconImage(Scr->unknownName, tmp_win->iconc.back,
 				&pm_numcolors);
 
 		if (iconimage != NULL)
@@ -783,7 +789,6 @@ int def_x, def_y;
 			pm = iconimage->pixmap;
 		}
 	}
-#endif /* ORIGINAL_PIXMAPS */
 
     if (pm == None)
     {
@@ -804,7 +809,12 @@ int def_x, def_y;
 		}
     }
 
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+    tmp_win->icon_w_width = MyFont_TextWidth(&Scr->IconFont,
+#else
     tmp_win->icon_w_width = XTextWidth(Scr->IconFont.font,
+#endif
 				       tmp_win->icon_name, strlen(tmp_win->icon_name));
 
 /* djhjr - 6/11/96
@@ -956,5 +966,5 @@ int def_x, def_y;
 
     return;
 }
-#endif /* NO_XPM_SUPPORT */
+#endif /* ORIGINAL_PIXMAPS */
 

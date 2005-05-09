@@ -77,7 +77,9 @@ struct name_list_struct
     char *ptr;			/* list dependent data */
 };
 
+#ifndef NO_REGEX_SUPPORT
 static char buffer[256];
+#endif
 
 int match();
 

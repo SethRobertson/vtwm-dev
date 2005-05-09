@@ -42,7 +42,7 @@ ARRANGE                                              m  f.previconmgr
   m  f.move                   m  f.resize            m  f.beep
   m  f.nail                                          m  f.colormap
   m  f.stick                                         m  f.deltastop
-  m  f.squeezecenter        DELETE DESTROY           m  f.focus
+  m  f.squeezecenter        DELETE DESTROY           m  f.version
   m  f.squeezeleft            m  f.delete            m  f.identify
   m  f.squeezeright           m  f.deletedoor        m  f.menu
   m  f.namedoor               m  f.destroy           m  f.nailedabove
@@ -52,8 +52,12 @@ ARRANGE                                              m  f.previconmgr
                                                      m  f.stickyabove
                                                      m  f.refresh
                                                      m  f.winrefresh
-                                                     m  f.version
+                                                     m  f.focus
                                                      m  f.unfocus
+                                                     m  f.bindbuttons
+                                                     m  f.bindkeys
+                                                     m  f.unbindbuttons
+                                                     m  f.unbindkeys
                                                      m  f.function
                                                      m  f.ring
                                                      m  f.snaprealscreen
@@ -64,6 +68,7 @@ ARRANGE                                              m  f.previconmgr
                                                      m  f.warpsnug
                                                      m  f.warpvisible
                                                      m  f.zoomzoom
+                                                        f.playsound
                                                         f.sounds
                                                      m  (bell event)
 

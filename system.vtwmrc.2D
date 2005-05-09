@@ -33,6 +33,11 @@ MoveDelta			3
 
 ResizeRegion			"NorthEast"
 
+FramePadding			2
+ButtonIndent			0
+TitlePadding			5
+TitleButtonBorderWidth		1
+
 VirtualDesktop			"5x2-0-0" 16
 PanDistanceX			100
 PanDistanceY			100
@@ -83,6 +88,11 @@ IconManagerDontShow
 	"VTWM *"
 	"xclock"
 	"xload"
+}
+
+Pixmaps
+{
+	"MenuIconPixmap"	":rarrow"
 }
 
 Color
@@ -141,21 +151,20 @@ Monochrome
 # Functions and Bindings
 #
 
-Function "move-or-lower" { f.move f.deltastop f.lower }
-Function "move-or-raise" { f.move f.deltastop f.raise }
 Function "move-or-iconify" { f.move f.deltastop f.iconify }
 
-LeftTitleButton ":xlogo" = f.menu "arrange"
+LeftTitleButton ":darrow" = f.menu "arrange"
 RightTitleButton ":dot" = f.iconify
 RightTitleButton ":resize" = f.resize
 
 Button1 = : root : f.version
 Button3 = : root : f.menu "main"
 
-Button1 = : title : f.function "move-or-raise"
-Button3 = : title : f.lower
+Button1 = : title : f.move
+Button2 = : title : f.resize
+Button3 = : title : f.raiselower
 
-Button1 = : frame : f.function "move-or-raise"
+Button1 = : frame : f.move
 Button2 = : frame : f.resize
 Button3 = : frame : f.iconify
 

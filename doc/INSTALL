@@ -27,12 +27,17 @@ BUILDING VTWM 5.4
       - The header file is usually found in /usr/local/include,
         /usr/include, or some such directory. It's "rplay.h".
 
+  - Determine if your system supports internationalization (I18N):
+      - On many systems, header files "locale.h" and "Xlocale.h"
+        are found in /usr/include and /usr/X11R6/include/X11,
+        respectively.
+
   - Determine if you have the m4 macro processor installed:
       - Issuing 'whence m4' or 'which m4' ought to do it.
 
-  - Look over the Imakefile, and edit to taste. If you use a VNC
-    client, or Cygwin under MS-Windows, you may want to make changes
-    as described further down in this file.
+  - Look over Imakefile, and edit to taste. If you use a VNC client, or
+    Cygwin under MS-Windows, you may want to make changes as described
+    further down in this file.
 
   - Issue 'xmkmf'. If that doesn't work (you'll know it), you'll have
     to copy Makefile.QNX to Makefile, and edit the latter to taste.
@@ -67,17 +72,18 @@ INSTALLING VTWM 5.4
       - Copy system.vtwmrc to your home directory as .vtwmrc, and edit
         it to suit your immediate needs (you'll be editing it a lot more,
         I'm sure).
-      - If you built VTWM with m4 support, you can copy the contrib/
-        directory into your home directory as vtwm/ or some such. Then,
-        create a symlink $(HOME)/.vtwmrc to one of the vtwmrc-*ish files
-        in that subdirectory, or specify one of those files on VTWM's
-        invocation (either will give you much more to work with).
-      - The sysrc_add_apps.sh script may also be useful in customizing
-        user resource files by playing with its command-line switches.
+      - If VTWM supports m4, you can copy the contrib/vtwmrc/ directory
+        into your home directory as vtwm/ or some such. Then, create a
+        symlink $(HOME)/.vtwmrc to one of the vtwmrc-*ish files in that
+        subdirectory, or specify one of those files on VTWM's invocation
+        (either will give you much more to work with).
+      - The sysrc_add_apps.sh script in contrib/support/ may also be
+        useful in customizing user resource files by playing with its
+        command-line switches.
 
   - Edit the script that starts your current X window manager to start
-    VTWM instead (mine is 'vtwm -d :0.0 -f vtwm/vtwmrc-MWMish -s -m' in
-    $(HOME)/.xinitrc).
+    VTWM instead (mine is 'vtwm -d :0.0 -f vtwm/vtwmrc-MWMish -s -m -p'
+    in $(HOME)/.xinitrc).
 
   - Exit X, and restart it.
 
@@ -86,12 +92,19 @@ BUILD HINTS
 ===========
 
   - If, during the build, you get complaints of an undefined "yylineno",
-    remove the "extern" keyword from the declaration in gram.y. Likewise,
+    uncomment the "NEED_YYLINENO_V" definition in Imakefile (or the
+    Makefile) and try the build again. If it is still undefined, also
+    remove the "extern" keyword from its declaration in gram.y. Likewise,
     if "yywrap" turns up as undefined, add a line "yywrap() {return(1)};"
     to lex.l. Finally, if "yylex" turns up undefined, it can be fixed by
     adding a line "#define YY_DECL int yylex YY_PROTO((void))" to lex.l.
-    These are all expected to be in the lex skeleton file, but there are
-    systems that have choked on them.
+    These are all expected to be in the lexer's skeleton file, but there
+    are some without.
+
+  - If, during the build, you get complaints of undefined data types and
+    functions "FontSet" and "Xmb" whatall, it's because you've built VTWM
+    with internationalization (I18N) support, and your system doesn't
+    support it. Read the comments in Imakefile and/or Makefile.QNX.
 
   - If, during the build, you get complaints of undefined data types and
     functions "Xpm" whatall, it's because you've built VTWM with XPM image
@@ -122,25 +135,44 @@ BUILD HINTS
     that VTWM's diagonal resize/move lines are more expensive than TWM's
     horizontal and vertical lines. YMMV.
 
-  - Windows users: VTWM builds and runs with Cygwin (DLL version 1.3.2),
-    but the Makefile must have the line "vtwm:" after the "all:: vtwm"
-    line, and the directory /usr/X11R6/lib/X11/twm from Cygwin's install
-    may have to be deleted.
+  - Windows users: VTWM is known to build and run under Cygwin with DLL
+    version 1.3.2. The Makefile may need a line "vtwm: vtwm.exe" added
+    beneath the "all:: vtwm" line for a successful build. The INSTALL
+    file and the /usr/X11R6/lib/X11/twm directory may have to be "moved
+    out of the way" for a successful installation.
 
 
 RUNTIME HINTS
 =============
+
+  - Prior to version 5.4.7, key and button bindings were dependant on
+    various "shift states". Version 5.4.7 can ignore these; check out
+    the IgnoreModifiers variable.
+
+  - As of version 5.4.7, all window moves and resizes initiated at the
+    virtual desktop will end there (previous behavior was to leave the
+    pointer at the window). Bind a function like
+        Function "move-or-warp" { f.move f.deltastop f.warp }
+    to a button and the desktop context with something like
+        Button2 = : desktop : f.function "move-or-warp"
+    to approximate previous behavior.
+
+  - As of version 5.4.7, the raise that normally accompanies moves and
+    resizes occurs at operation end, to preserve window stacking order
+    on cancellation. Set the RaiseOnStart variable for previous behavior.
+  
+  - The SunkFocusHighlightWindow variable was depreciated in version
+    5.4.7. Set the TitleHighlight argument of the Pixmaps variable to
+    an appropriate built-in pixmap.
 
   - If, on startup, things are coming up weird (if at all!), check the
     resource file for m4 macros, and if found, see that VTWM is version
     5.4.6 or later, that it was built with m4 support, that "-m" is in
     the line that starts VTWM, and that m4 is in $(PATH).
 
-  - If you like a border on the virtual desktop's real screen, and your
-    resource file is from versions before 5.4.6, you will find that it
-    generates errors on startup. That's because the UseRealScreenBorder
-    resource no longer exists! If the RealScreenBorderWidth resource is
-    non-zero, why wouldn't you want to use it?
+  - The UseRealScreenBorder variable was depreciated in version 5.4.6.
+    If the RealScreenBorderWidth variable is non-zero, why wouldn't you
+    want to use it?
 
   - As of version 5.4.6, random zooms during deiconification won't occur
     unless the ZoomZoom variable is set.

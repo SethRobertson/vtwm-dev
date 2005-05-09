@@ -29,24 +29,24 @@ Sounds
 	"f.rightzoom"		"HOME/vtwm/sounds/bleebloo.au"	50
 	"f.topzoom"		"HOME/vtwm/sounds/bleebloo.au"	50
 	"f.zoom"		"HOME/vtwm/sounds/bleebloo.au"	50
-	"f.stricticonmgr"	"HOME/vtwm/sounds/bleebloo.au"	50
-
-	"f.resize"		"HOME/vtwm/sounds/chime5.au"
 
 	"f.squeezeleft"		"HOME/vtwm/sounds/tshhh.wav"	50
 	"f.squeezecenter"	"HOME/vtwm/sounds/tshhh.wav"	50
 	"f.squeezeright"	"HOME/vtwm/sounds/tshhh.wav"	50
 
-	"f.deiconify"		"HOME/vtwm/sounds/whoosh4.au"	50
 	"f.iconify"		"HOME/vtwm/sounds/dedoo.au"	30
 	"f.hidedesktopdisplay"	"HOME/vtwm/sounds/dedoo.au"	30
 	"f.hideiconmgr"		"HOME/vtwm/sounds/dedoo.au"	30
 	"f.showdesktopdisplay"	"HOME/vtwm/sounds/dedoo.au"	30
 	"f.showiconmgr"		"HOME/vtwm/sounds/dedoo.au"	30
+	"f.stricticonmgr"	"HOME/vtwm/sounds/bleebloo.au"	50
 
+	"f.resize"		"HOME/vtwm/sounds/chime5.au"
+	"f.movescreen"		"HOME/vtwm/sounds/chime5.au"
 	"f.move"		"HOME/vtwm/sounds/chime5.au"
 	"f.forcemove"		"HOME/vtwm/sounds/chime5.au"
 
+	"f.deiconify"		"HOME/vtwm/sounds/whoosh4.au"	50
 #	"f.warp"		"HOME/vtwm/sounds/whoosh4.au"	50
 	"f.warpclassnext"	"HOME/vtwm/sounds/whoosh4.au"	50
 	"f.warpclassprev"	"HOME/vtwm/sounds/whoosh4.au"	50
@@ -62,11 +62,23 @@ Sounds
 	"f.enterdoor"		"HOME/vtwm/sounds/whoosh1.wav"
 	"(autopan event)"	"HOME/vtwm/sounds/whoosh1.wav"
 
-	"f.autopan"		"HOME/vtwm/sounds/pop1.wav"	50
-	"f.snaprealscreen"	"HOME/vtwm/sounds/pop1.wav"	50
-	"f.staticiconpositions"	"HOME/vtwm/sounds/pop1.wav"	50
-	"f.warpsnug"		"HOME/vtwm/sounds/pop1.wav"	50
-	"f.warpvisible"		"HOME/vtwm/sounds/pop1.wav"	50
+	"f.autopan"		"HOME/vtwm/sounds/pop1.wav"	30
+	"f.snaprealscreen"	"HOME/vtwm/sounds/pop1.wav"	30
+	"f.staticiconpositions"	"HOME/vtwm/sounds/pop1.wav"	30
+	"f.nail"		"HOME/vtwm/sounds/pop1.wav"	30
+	"f.ring"		"HOME/vtwm/sounds/pop1.wav"	30
+	"f.warpsnug"		"HOME/vtwm/sounds/pop1.wav"	30
+	"f.warpvisible"		"HOME/vtwm/sounds/pop1.wav"	30
+
+	"f.autoraise"		"HOME/vtwm/sounds/pop1.wav"	30
+#	"f.raise"		"HOME/vtwm/sounds/pop1.wav"	30
+#	"f.lower"		"HOME/vtwm/sounds/pop1.wav"	30
+	"f.focus"		"HOME/vtwm/sounds/pop1.wav"	30
+	"f.unfocus"		"HOME/vtwm/sounds/pop1.wav"	30
+	"f.bindbuttons"		"HOME/vtwm/sounds/pop1.wav"	30
+	"f.unbindbuttons"	"HOME/vtwm/sounds/pop1.wav"	30
+	"f.bindkeys"		"HOME/vtwm/sounds/pop1.wav"	30
+	"f.unbindkeys"		"HOME/vtwm/sounds/pop1.wav"	30
 
 	"(menu map)"		"HOME/vtwm/sounds/chime3.au"
 #	"(menu unmap)"		"HOME/vtwm/sounds/chime3.au"

@@ -9,11 +9,14 @@
 # m4 Variables
 #
 
+define(WMname, `MWMish')
+
 # Border width, autopan border width, desktop and door bevel widths...
-define(WMborder, 6) define(WMpanborder, 5)
+define(WMborder, 5) define(WMpanborder, 5)
 define(WMdesktopbevel, 1) define(WMdoorbevel, 1)
-# Title heights (must be set manually for the desktop, doors, or applets)...
-define(WMdesktoptitle, 0) define(WMdoortitle, 0) define(WMapplettitle, 0)
+# Title heights (must be set manually for VTWM windows and applets)...
+define(WMdesktoptitle, 0) define(WMdoortitle, 0)
+define(WMiconmgrtitle, 0) define(WMapplettitle, 0)
 
 #
 # Boolean Variables
@@ -23,9 +26,7 @@ define(WMdesktoptitle, 0) define(WMdoortitle, 0) define(WMapplettitle, 0)
 include(HOME/vtwm/vtwmrc-bools)
 
 ShallowReliefWindowButton
-SunkFocusWindowTitle
 
-#DecorateTransients
 ButtonColorIsFrame
 
 #
@@ -35,18 +36,22 @@ ButtonColorIsFrame
 # Read in the variables file...
 include(HOME/vtwm/vtwmrc-parms)
 
-# See 'Lists' below...
-#IconManagerGeometry	"+5+5" 1
+# See also 'Lists' below...
+IconManagerGeometry		"+5+5" 1
 
-RealScreenBorderWidth	0
+RealScreenBorderWidth		0
 
-# These are nice when 3D built-in buttons are used on flat titlebars...
-FramePadding		2
-TitleButtonBorderWidth	0
-ButtonIndent		0
+# Gap between frame and titlebar font (titlebar changes)
+FramePadding			2
+# Gap between FramePadding and buttons (buttons change)
+ButtonIndent			-2
+# Gap between titlebar elements
+TitlePadding			0
+# Button border width (TitleForeground color)
+TitleButtonBorderWidth		0
 
-ClearBevelContrast	40
-DarkBevelContrast	40
+ClearBevelContrast		40
+DarkBevelContrast		40
 
 BorderBevelWidth		2
 ButtonBevelWidth		1
@@ -58,13 +63,6 @@ MenuBevelWidth			2
 TitleBevelWidth			1
 VirtualDesktopBevelWidth	WMdesktopbevel
 
-# Windows are snappier if 'NoBackingStore' is not used when this is...
-RaiseDelay		80
-
-XorValue		255
-
-ResizeRegion		"NorthEast"
-
 UnknownIcon		"xlogo32"
 
 TitleFont		"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
@@ -75,7 +73,7 @@ IconFont		"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
 InfoFont		"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
 IconManagerFont		"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
 DoorFont		"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
-VirtualDesktopFont	"-adobe-helvetica-medium-r-normal--*-75-*-*-*-*-*-*"
+#VirtualDesktopFont	"-adobe-helvetica-medium-r-normal--*-75-*-*-*-*-*-*"
 
 #
 # Functions and Bindings
@@ -85,17 +83,13 @@ VirtualDesktopFont	"-adobe-helvetica-medium-r-normal--*-75-*-*-*-*-*-*"
 include(HOME/vtwm/vtwmrc-binds)
 
 # These are nice built-in 3D buttons...
-LeftTitleButton		":xpm:bar" = f.menu "ArrangeMenu"
+LeftTitleButton		":xpm:darrow" = f.menu "ArrangeMenu"
 RightTitleButton	":xpm:dot" = f.iconify
 RightTitleButton	":xpm:resize" = f.resize
-# These are the box-stock flat buttons...
-#LeftTitleButton	":xlogo" = f.menu "ArrangeMenu"
-#RightTitleButton	":dot" = f.iconify
-#RightTitleButton	":resize" = f.resize
 
 Function "decorate-virtual"
 {
-	f.exec "nexpm -vtwm -in vtwm/images/djhjr.xpm &"
+	f.exec "nexpm -vtwm -in HOME/vtwm/images/djhjr.xpm &"
 }
 
 Function "clear-virtual"
@@ -114,22 +108,21 @@ include(ifelse(SOUND, `Yes', `HOME/vtwm/vtwmrc-sound'))
 include(HOME/vtwm/vtwmrc-lists)
 
 # Check 'BorderColor', as that's the highlight color...
-# This is a list variable, but borders flicker if braces are present!
 NoHighlight
 
-# Nice when 3D built-in buttons are used on flat titlebars...
-# This is a list variable, but won't work globally if braces are present!
 #NoTitleHighlight
 
-SqueezeTitle {}
-
-DontSqueezeTitle {}
+SqueezeTitle
+#DontSqueezeTitle {}
 
 Pixmaps
 {
 #	TitleHighlight			"eyesline.xpm"
 #	TitleHighlight			"byzantine.xpm"
+	TitleHighlight			":xpm:sunkenlines"
 #	VirtualBackgroundPixmap		"djhjr.xpm"
+	MenuIconPixmap			":xpm:rarrow"
+	IconManagerPixmap		":xpm:zoom"
 }
 
 # Box-stock Background is, of course, "maroon"
@@ -147,9 +140,9 @@ Color
 	RealScreenForeground		"black"
 	VirtualBackground		"gray60"
 	VirtualForeground		"black"
-	BorderColor			"gray75" {}
-	BorderTileBackground		"gray60" {}
-	BorderTileForeground		"gray60" {}
+	BorderColor			"gray75"
+	BorderTileBackground		"gray60"
+	BorderTileForeground		"gray60"
 	TitleBackground			"DeepSkyBlue4"
 	{
 		"VTWM*"			"gray60"
@@ -158,14 +151,14 @@ Color
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
+		"*ftp:*"		"maroon"
 		"xbiff*"		"gray60"
 		"xcb"			"gray60"
 		"*clock"		"gray60"
 		"xload"			"gray60"
 		"as*"			"gray60"
 	}
-	TitleForeground			"gray90" {}
+	TitleForeground			"gray90"
 	IconBackground			"DeepSkyBlue4"
 	{
 		"VTWM*"			"gray60"
@@ -174,15 +167,15 @@ Color
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
+		"*ftp:*"		"maroon"
 		"xbiff*"		"gray60"
 		"xcb"			"gray60"
 		"*clock"		"gray60"
 		"xload"			"gray60"
 		"as*"			"gray60"
 	}
-	IconForeground			"gray90" {}
-	IconBorderColor			"gray75" {}
+	IconForeground			"gray90"
+	IconBorderColor			"gray75"
 #	IconBorderColor			"DeepSkyBlue4"
 #	{
 #		"VTWM*"			"gray60"
@@ -191,7 +184,7 @@ Color
 #		"ssh:*"			"maroon"
 #		"telnet:*"		"maroon"
 #		"rlogin:*"		"maroon"
-#		"ftp:*"			"maroon"
+#		"*ftp:*"		"maroon"
 #		"xbiff*"		"gray60"
 #		"xcb"			"gray60"
 #		"*clock"		"gray60"
@@ -206,17 +199,17 @@ Color
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
+		"*ftp:*"			"maroon"
 		"xbiff*"		"gray60"
 		"xcb"			"gray60"
 		"*clock"		"gray60"
 		"xload"			"gray60"
 		"as*"			"gray60"
 	}
-	IconManagerForeground		"gray90" {}
-	IconManagerHighlight		"gray90" {}
-	DoorBackground			"gray60" {}
-	DoorForeground			"gray90" {}
+	IconManagerForeground		"gray90"
+	IconManagerHighlight		"gray90"
+	DoorBackground			"gray60"
+	DoorForeground			"gray90"
 	DesktopDisplayBackground	"DeepSkyBlue4"
 	{
 		"VTWM*"			"gray60"
@@ -225,14 +218,14 @@ Color
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
+		"*ftp:*"		"maroon"
 		"xbiff*"		"gray60"
 		"xcb"			"gray60"
 		"*clock"		"gray60"
 		"xload"			"gray60"
 		"as*"			"gray60"
 	}
-	DesktopDisplayForeground	"gray90" {}
+	DesktopDisplayForeground	"gray90"
 }
 
 #

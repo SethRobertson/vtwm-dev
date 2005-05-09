@@ -69,7 +69,6 @@ static char buff[BUF_LEN+1];
 static char overflowbuff[20];		/* really only need one */
 static int overflowlen;
 static char **stringListSource, *currentString;
-static int ParseUsePPosition();
 void put_pixel_on_root();
 
 int RaiseDelay = 0;           /* msec, for AutoRaise *//*RAISEDELAY*/
@@ -88,7 +87,7 @@ extern char *defTwmrc[];		/* default bindings */
 #ifndef NO_M4_SUPPORT
 #define Resolution(pixels, mm) ((((pixels) * 100000 / (mm)) + 50) / 100)
 #define M4_MAXDIGITS 21 /* greater than the number of digits in a long int */
-extern PrintErrorMessages;
+extern Bool PrintErrorMessages;
 char *make_m4_cmdline();
 #endif
 
@@ -117,7 +116,10 @@ static int doparse (ifunc, srctypename, srcname)
     mods = 0;
     ptr = 0;
     len = 0;
+/* djhjr - 9/18/03 */
+#ifdef NEED_YYLINENO_V
     yylineno = 1;
+#endif
     ParseError = FALSE;
     twmInputFunc = ifunc;
     overflowlen = 0;
@@ -302,7 +304,10 @@ static int twmFileInput()
 	if (fgets(buff, BUF_LEN, twmrc) == NULL)
 	    return 0;
 
+/* djhjr - 9/18/03 */
+#ifdef NEED_YYLINENO_V
 	yylineno++;
+#endif
 
 	ptr = 0;
 	len = strlen(buff);
@@ -445,8 +450,10 @@ typedef struct _TwmKeyword {
 #define kw0_Use3DBorders		50
 */
 
-/* djhjr - 4/25/96 */
+/* obsoleted by the ":xpm:*" built-in pixmaps - djhjr - 10/26/02
+* djhjr - 4/25/96 *
 #define kw0_SunkFocusWindowTitle			51
+*/
 
 /* djhjr - 6/25/96 */
 #define kw0_ShallowReliefWindowButton		52
@@ -490,7 +497,15 @@ typedef struct _TwmKeyword {
 /* djhjr - 10/11/01 */
 #define kw0_ZoomZoom			65
 
+/* djhjr - 10/20/02 */
+#define kw0_NoBorderDecorations		66
+
+/* djhjr - 11/3/03 */
+#define kw0_RaiseOnStart		67
+
+/* djhjr - 9/24/02
 #define kws_UsePPosition		1
+*/
 #define kws_IconFont			2
 #define kws_ResizeFont			3
 #define kws_MenuFont			4
@@ -642,7 +657,7 @@ static TwmKeyword keytable[] = {
 	/* djhjr - 9/21/96 */
     { "buttoncolorisframe",	KEYWORD, kw0_ButtonColorIsFrame },
 
-    { "buttonindent",		NKEYWORD, kwn_ButtonIndent },
+    { "buttonindent",		SNKEYWORD, kwn_ButtonIndent },
     { "c",			CONTROL, 0 },
     { "center",			JKEYWORD, J_CENTER },
 
@@ -703,6 +718,11 @@ static TwmKeyword keytable[] = {
     { "f.autoraise",		FKEYWORD, F_AUTORAISE },
     { "f.backiconmgr",		FKEYWORD, F_BACKICONMGR },
     { "f.beep",			FKEYWORD, F_BEEP },
+
+    /* Submitted by Seth Robertson - 9/9/02 */
+    { "f.bindbuttons",		FKEYWORD, F_BINDBUTTONS },
+    { "f.bindkeys",		FKEYWORD, F_BINDKEYS },
+
     { "f.bottomzoom",		FKEYWORD, F_BOTTOMZOOM },
     { "f.circledown",		FKEYWORD, F_CIRCLEDOWN },
     { "f.circleup",		FKEYWORD, F_CIRCLEUP },
@@ -750,6 +770,10 @@ static TwmKeyword keytable[] = {
     { "f.panleft",		FSKEYWORD, F_PANLEFT },
     { "f.panright",		FSKEYWORD, F_PANRIGHT },
     { "f.panup",		FSKEYWORD, F_PANUP },
+
+    /* djhjr - 11/15/02 */
+    { "f.playsound",		FSKEYWORD, F_PLAYSOUND },
+
     { "f.previconmgr",		FKEYWORD, F_PREVICONMGR },
     { "f.quit",			FKEYWORD, F_QUIT },
     { "f.raise",		FKEYWORD, F_RAISE },
@@ -800,6 +824,11 @@ static TwmKeyword keytable[] = {
     { "f.title",		FKEYWORD, F_TITLE },
     { "f.topzoom",		FKEYWORD, F_TOPZOOM },
     { "f.twmrc",		FKEYWORD, F_RESTART },
+
+    /* Submitted by Seth Robertson - 9/9/02 */
+    { "f.unbindbuttons",	FKEYWORD, F_UNBINDBUTTONS },
+    { "f.unbindkeys",		FKEYWORD, F_UNBINDKEYS },
+
     { "f.unfocus",		FKEYWORD, F_UNFOCUS },
     { "f.upiconmgr",		FKEYWORD, F_UPICONMGR },
     { "f.version",		FKEYWORD, F_VERSION },
@@ -858,11 +887,18 @@ static TwmKeyword keytable[] = {
     { "iconmanagerforeground",	CLKEYWORD, kwcl_IconManagerForeground },
     { "iconmanagergeometry",	ICONMGR_GEOMETRY, 0 },
     { "iconmanagerhighlight",	CLKEYWORD, kwcl_IconManagerHighlight },
+
+    /* djhjr - 10/30/02 */
+    { "iconmanagerpixmap",	ICONMGRICONMAP, 0 },
+
     { "iconmanagers",		ICONMGRS, 0 },
     { "iconmanagershow",	ICONMGR_SHOW, 0 },
     { "iconmgr",		ICONMGR, 0 },
     { "iconregion",		ICON_REGION, 0 },
     { "icons",			ICONS, 0 },
+
+    /* djhjr - 9/10/03 */
+    { "ignoremodifiers",	IGNORE_MODS, 0 },
 
 	/* djhjr - 5/2/98 */
     { "infobevelwidth",	NKEYWORD, kwn_InfoBevelWidth },
@@ -887,6 +923,9 @@ static TwmKeyword keytable[] = {
 
     { "menufont",		SKEYWORD, kws_MenuFont },
     { "menuforeground",		CKEYWORD, kwc_MenuForeground },
+
+    /* djhjr - 10/30/02 */
+    { "menuiconpixmap",		MENUICONMAP, 0 },
 
 	/* djhjr - 5/22/00 */
     { "menuscrollborderwidth",	NKEYWORD, kwn_MenuScrollBorderWidth },
@@ -913,6 +952,9 @@ static TwmKeyword keytable[] = {
 
     /* submitted by Tim Wiess - 8/23/02 */
     { "noborder",		NO_BORDER, 0 },
+
+    /* djhjr - 10/20/02 */
+    { "noborderdecorations",	KEYWORD, kw0_NoBorderDecorations },
 
     { "nocasesensitive",	KEYWORD, kw0_NoCaseSensitive },
     { "nodefaultmouseorkeyboardbindings", KEYWORD,
@@ -951,6 +993,10 @@ static TwmKeyword keytable[] = {
     { "notitlehighlight",	NO_TITLE_HILITE, 0 },
     { "notvirtualgeometries",	KEYWORD, kw0_NotVirtualGeometries },
     { "noversion",		KEYWORD, kw0_NoVersion },
+
+    /* submitted by Jonathan Paisley - 10/27/02 */
+    { "nowindowring",		NO_WINDOW_RING, 0 },
+
 	{ "oldfashionedtwmwindowsmenu", KEYWORD,
 			kw0_OldFashionedTwmWindowsMenu },/*RFB*/
 
@@ -980,6 +1026,10 @@ static TwmKeyword keytable[] = {
 	{ "prettyzoom", KEYWORD, kw0_PrettyZoom }, /* DSE */
     { "r",			ROOT, 0 },
 	{ "raisedelay",       NKEYWORD, kwn_RaiseDelay },/*RAISEDELAY*/
+
+	/* djhjr - 11/3/03 */
+    { "raiseonstart",		KEYWORD, kw0_RaiseOnStart },
+
     { "randomplacement",	KEYWORD, kw0_RandomPlacement },
     { "realscreenbackground", CKEYWORD, kwc_RealScreenBackground },/*RFB 4/92*/
     { "realscreenborderwidth", NKEYWORD, kwn_RealScreenBorderWidth }, /* DSE */
@@ -1038,8 +1088,10 @@ static TwmKeyword keytable[] = {
     /* djhjr - 10/2/01 */
     { "stricticonmanager",	KEYWORD, kw0_StrictIconManager },
 
-	/* djhjr - 4/25/96 */
+/* obsoleted by the ":xpm:*" built-in pixmaps - djhjr - 10/26/02
+	* djhjr - 4/25/96 *
     { "sunkfocuswindowtitle",	KEYWORD, kw0_SunkFocusWindowTitle },
+*/
 
     { "t",			TITLE, 0 },
 
@@ -1060,7 +1112,10 @@ static TwmKeyword keytable[] = {
     { "titlehighlight",		TITLE_HILITE, 0 },
     { "titlepadding",		NKEYWORD, kwn_TitlePadding },
     { "unknownicon",		SKEYWORD, kws_UnknownIcon },
+/* djhjr - 9/24/02 
     { "usepposition",		SKEYWORD, kws_UsePPosition },
+*/
+    { "usepposition",		USE_PPOSITION, 0 },
 
 /* djhjr - 2/15/99 - this is dumb - if RealScreenBorderWidth is defined, use it!
 	{ "userealscreenborder", KEYWORD, kw0_UseRealScreenBorder }, *RFB*
@@ -1098,6 +1153,10 @@ static TwmKeyword keytable[] = {
 
     { "w",			WINDOW, 0 },
     { "wait",			WAIT, 0 },
+
+    /* djhjr - 10/16/02 */
+    { "warpcentered",		WARP_CENTERED, 0 },
+
     { "warpcursor",		WARP_CURSOR, 0 },
     { "warpsnug",		KEYWORD, kw0_WarpSnug }, /* DSE */
     { "warptotransients",	KEYWORD, kw0_WarpToTransients }, /* PF */
@@ -1367,10 +1426,12 @@ int do_single_keyword (keyword)
 		return 1;
 */
 
-	/* djhjr - 4/25/96 */
+/* obsoleted by the ":xpm:*" built-in pixmaps - djhjr - 10/26/02
+	* djhjr - 4/25/96 *
 	case kw0_SunkFocusWindowTitle:
 		Scr->SunkFocusWindowTitle = TRUE;
 		return 1;
+*/
 
 	/* djhjr - 9/21/96 */
 	case kw0_ButtonColorIsFrame:
@@ -1424,6 +1485,16 @@ int do_single_keyword (keyword)
 	case kw0_ZoomZoom: /* DSE */
 		Scr->ZoomZoom = TRUE;
 		return 1;
+
+	/* djhjr - 10/20/02 */
+	case kw0_NoBorderDecorations: /* DSE */
+		Scr->NoBorderDecorations = TRUE;
+		return 1;
+
+	/* djhjr - 11/3/03 */
+	case kw0_RaiseOnStart:
+		Scr->RaiseOnStart = TRUE;
+		return 1;
     }
 
     return 0;
@@ -1434,7 +1505,12 @@ int do_string_keyword (keyword, s)
     int keyword;
     char *s;
 {
+    /* idea from Seth Robertson - djhjr - 9/17/03 */
+    if (s == NULL || s[0] == '\0')
+	return 0;
+
     switch (keyword) {
+/* now in gram.y - djhjr - 9/24/02
       case kws_UsePPosition:
 	{
 	    int ppos = ParseUsePPosition (s);
@@ -1447,6 +1523,7 @@ int do_string_keyword (keyword, s)
 	    }
 	    return 1;
 	}
+*/
 
       case kws_IconFont:
 	if (!Scr->HaveFonts) Scr->IconFont.name = s;
@@ -1994,24 +2071,6 @@ void assign_var_savecolor()
   }
 }
 
-static int ParseUsePPosition (s)
-    register char *s;
-{
-    XmuCopyISOLatin1Lowered (s, s);
-
-    if (strcmp (s, "off") == 0) {
-	return PPOS_OFF;
-    } else if (strcmp (s, "on") == 0) {
-	return PPOS_ON;
-    } else if (strcmp (s, "non-zero") == 0 ||
-	       strcmp (s, "nonzero") == 0) {
-	return PPOS_NON_ZERO;
-    }
-
-    return -1;
-}
-
-
 /* added 'type' argument - djhjr - 10/20/01 */
 void do_squeeze_entry (list, name, type, justify, num, denom)
     name_list **list;			/* squeeze or dont-squeeze list */
@@ -2068,6 +2127,7 @@ void do_squeeze_entry (list, name, type, justify, num, denom)
 /* added support for user-defined parameters - djhjr - 2/20/99 */
 /* added support for sound - djhjr - 6/22/01 */
 /* added support for regex - djhjr - 10/20/01 */
+/* added support for i18n - djhjr - 9/14/03 */
 #ifndef NO_M4_SUPPORT
 char *make_m4_cmdline(display_name, cp, m4_option)
 char *display_name;
@@ -2077,14 +2137,14 @@ char *m4_option; /* djhjr - 2/20/99 */
   char *m4_lines[6] = {
       "m4 -DHOME='%s' -DWIDTH='%d' -DHEIGHT='%d' -DSOUND='%s' ",
       "-DPLANES='%d' -DBITS_PER_RGB='%d' -DCLASS='%s' -DXPM='%s' ",
-      "-DCOLOR='%s' -DX_RESOLUTION='%d' -DY_RESOLUTION='%d' ",
+      "-DI18N='%s' -DCOLOR='%s' -DX_RESOLUTION='%d' -DY_RESOLUTION='%d' ",
       "-DREGEX='%s' -DUSER='%s' -DSERVERHOST='%s' -DCLIENTHOST='%s' ",
       "-DHOSTNAME='%s' -DTWM_TYPE='vtwm' -DVERSION='%d' ",
       "-DREVISION='%d' -DVENDOR='%s' -DRELEASE='%d'"
   };
   char *client, *server, *hostname;
-  char *m4_cmdline, *colon, *vc;
-  char *is_sound, *is_xpm, *is_regex, *is_color, *env_username;
+  char *m4_cmdline, *colon, *vc, *env_username;
+  char *is_sound, *is_xpm, *is_regex, *is_color, *is_i18n;
   int i, client_len, opt_len = 0, cmd_len = 0, server_is_client = 0;
   struct hostent *hostname_ent;
 
@@ -2095,6 +2155,7 @@ char *m4_option; /* djhjr - 2/20/99 */
 
     /* this isn't likely ever needed, but you just never know... */
     if (m4_option[0] == '\'' || m4_option[0] == '"')
+    {
       if (m4_option[opt_len - 1] != '\'' && m4_option[opt_len - 1] != '"')
       {
         fprintf(stderr,"%s: badly formed user-defined m4 parameter\n", ProgramName);
@@ -2105,12 +2166,14 @@ char *m4_option; /* djhjr - 2/20/99 */
         m4_option++;
         opt_len -= 2;
       }
+    }
   }
 
   /* the sourcing of various hostnames is stolen from tvtwm */
+  /* pad for NULL terminator - submitted by Jonathan Paisley - 11/11/02 */
   for(client = NULL, client_len = 256; client_len < 1024; client_len *= 2){
-    if((client = malloc(client_len)) == NULL){
-      fprintf(stderr,"%s: cannot allocate %d bytes for m4\n", ProgramName, client_len);
+    if((client = malloc(client_len + 1)) == NULL){
+      fprintf(stderr,"%s: cannot allocate %d bytes for m4\n", ProgramName, client_len + 1);
       return (NULL);
     }
 
@@ -2170,6 +2233,11 @@ char *m4_option; /* djhjr - 2/20/99 */
 #else
   is_regex = "Yes";
 #endif
+#ifdef NO_I18N_SUPPORT
+  is_i18n = "No";
+#else
+  is_i18n = "Yes";
+#endif
 
   /* assume colour visual */
   is_color = "Yes";
@@ -2199,7 +2267,7 @@ char *m4_option; /* djhjr - 2/20/99 */
   cmd_len += M4_MAXDIGITS * 9 + HomeLen + strlen(vc) + strlen(is_xpm) +
       strlen(is_color) + strlen(env_username) + strlen(server) +
       strlen(client) + strlen(hostname) + strlen(ServerVendor(dpy)) +
-      strlen(is_sound) + strlen(is_regex) + strlen(cp) + 16;
+      strlen(is_sound) + strlen(is_regex) + strlen(is_i18n) + strlen(cp) + 16;
   if (opt_len) cmd_len += opt_len;
 
   if((m4_cmdline = malloc(cmd_len)) == NULL){
@@ -2217,7 +2285,7 @@ char *m4_option; /* djhjr - 2/20/99 */
   sprintf(m4_cmdline + cmd_len, m4_lines[1], Scr->d_depth,
       Scr->d_visual->bits_per_rgb, vc, is_xpm);
   cmd_len = strlen(m4_cmdline);
-  sprintf(m4_cmdline + cmd_len, m4_lines[2], is_color, 
+  sprintf(m4_cmdline + cmd_len, m4_lines[2], is_i18n, is_color, 
 	  Resolution(Scr->MyDisplayWidth, DisplayWidthMM(dpy, Scr->screen)),
 	  Resolution(Scr->MyDisplayHeight, DisplayHeightMM(dpy, Scr->screen)));
   cmd_len = strlen(m4_cmdline);

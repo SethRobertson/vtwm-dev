@@ -11,15 +11,233 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
         VTWM 5.4.6b (bugfix release) released for public consumption.
         vtwm-5.4.6a-to-5.4.6b.udiff patch file released.
 
-        [events.c]
-            Fixed a bug causing sporadic restarts when realizing
-            unmanaged windows.
+    March 9, 2004
+        [events.c] [menus.c]
+            Added checks for the number of rodent buttons and VTWM
+            Windows entries. Fixed a bug causing sporadic restarts
+            when realizing unmanaged windows.
 
-            From Seth Robertson <seth@baka.org> and Callum Gibson
-            <callum.gibson@db.com>:
-                Patch for the above.
+            From Jennifer Elaan <jen@elaan.com>, Seth Robertson
+            <seth@baka.org>, and Callum Gibson <callum.gibson@db.com>:
+                Patches for the above.
 
-    September 1, 2001
+    November 2 - 11, 2003
+        [applets.c] [desktop.c] [events.c] [menus.c] [parse.c] [resize.c]
+        [twm.c] [screen.h]
+            Fixed a vertical placement error in applet regions. The
+            f.movescreen function supports sound and honors cancels now
+            (moved functionality from event handlers to the function
+            itself). Fixed "raise window regardless of MoveDelta" bugs
+            introduced on May 23 - 27. Optionally preserve the previous
+            move and resize raise behaviour. Some shaping optimizations.
+            Depreciated the motion event handler. Reduced server grabs.
+
+            Added the following variable:
+                RaiseOnStart
+
+    September 21 & 22, 2003
+        Tweaked stuff all over the place for a cleaner compile.
+
+        [add_window.c] [events.c] [menus.c]
+            Fixed an UsePPosition bug, a restart bug, a sound bug, and
+            an instance of unfreed memory.
+
+    September 18, 2003
+        [*akefile*] [parse.c]
+            Let lexers track line numbers by default.
+
+    September 14 - 17, 2003
+        Moved the nexpm/ directory into contrib/. Moved the sample
+        resource files and directories in the contrib/ directory into
+        contrib/vtwmrc/.
+
+        [*akefile*] [add_window.c] [doors.c] [events.c] [gc.c] [icons.c]
+        [menus.c] [parse.c] [resize.c] [twm.c] [util.c] [twm.h] [util.h]
+            Added internationalization (I18N) support. Woo-woo!
+            Better handling of missing or empty string resources.
+
+    September 10, 2003
+        [add_window.c] [gram.y] [menus.c] [parse.c] [twm.c] [add_window.h]
+        [screen.h] [twm.h]
+            Added code to ignore "shift states" for bindings.
+
+            Added the following variable:
+                IgnoreModifiers k
+
+    June 3, 2003
+        [menus.c]
+            Better sound handling in the (de)iconify and warp functions.
+
+    May 27, 2003
+        [iconmgr.c] [events.c] [menus.c] [resize.c]
+            Fixed a bug when removing icon manager entries. Almost fixed
+            stacking order bugs when resizing windows (the raise still
+            occurs before the movement when opaque resizes are done on
+            windows with squeezed titlebars). Cancelled resizes now work
+            correctly, except for the above case.
+
+    May 23 & 24, 2003
+        [menus.c]
+            Fixed stacking order bugs when moving windows (the raise
+            now occurs after the movement). Cancelled moves now work
+            correctly.
+
+    November 15, 2002
+        [menus.c] [parse.c] [sound.c] [parse.h] [sound.h]
+            Allow sounds to be played "ad hoc".
+
+            Added the following function:
+                f.playsound s
+
+    November 8 & 11, 2002
+        [add_window.c] [events.c] [ parse.c] [twm.h]
+            Support for MWM hints (currently, honor "noborder" and
+            "notitle" hints). Fixed some off-by-clientborderwidth
+            window placement bugs, an off-by-one malloc(), a null
+            pointer reference, and a ConfigureNotify propogation bug.
+
+            From Jonathan Paisley <jp@dcs.gla.ac.uk>:
+                Patches for the above.
+
+    November 6 & 7, 2002
+        [*akefile*] [twm.c] [vtwm.man]
+            Reduced the size of the compiled-in system.vtwmrc array.
+            The command line can specify that no startup file be used.
+            Updated the man page to reflect the compiled-in defaults.
+
+    October 30 & 31, 2002
+        [system.vtwmrc*] [add_window.c] [events.c] [icons.c] [gram.y]
+        [iconmgr.c] [menus.c] [parse.c] [twm.c] [util.c] [iconmgr.h]
+        [menus.h] [screen.h] [twm.h]
+            Opened up icon managers and menus to user-specified images.
+            The interfaces to all the built-in pixmap drawing functions
+            have been made uniform.
+
+            Added the following keywords:
+                IconManagerPixmap s
+                MenuIconPixmap s
+            Changed the following variable:
+                ShallowReliefWindowButton
+
+    October 27, 2002
+        [add_window.c] [gram.y] [events.c] [menus.c] [parse.c] [twm.c]
+        [menus.h] [screen.h]
+            The f.warpto function accepts VTWM-style wildcards now.
+            The f.warpring function has been fixed. Again.
+            Prohibit windows from being added to the WindowRing list.
+
+            From Jonathan Paisley <jp@dcs.gla.ac.uk>:
+                Patches for NoWindowRing.
+
+            Added the following variable:
+                NoWindowRing l
+
+    October 25 & 26, 2002
+        [add_window.c] [events.c] [parse.c] [resize.c] [twm.c] [util.c]
+        [screen.h] [twm.h]
+            Obsoleted the SunkFocusHighlightWindow variable with new
+            built-in highlight pixmaps, :xpm:raisedbox, :xpm:sunkenbox,
+            :xpm:raisedlines, and :xpm:sunkenlines. Fixed some titlebar
+            highlight exposure bugs.
+
+            Changed the following keyword:
+                TitleHighlight s
+            Removed the following variable:
+                SunkFocusHighlightWindow
+
+    October 20, 2002
+        [parse.c] [twm.c] [util.c] [screen.h]
+            Chmod 0600 $(HOME)/vtwm.pid.
+            Allow the 3D borders of titled windows to be unadorned.
+            Fixed the 3D borders of titled windows when BeNiceToColormap
+            is set.
+
+            Added the following variable:
+                NoBorderDecorations
+
+    October 17 & 18, 2002
+        [system.vtwmrc*] [add_window.c] [gram.y] [menus.c] [twm.c]
+        [util.c]
+            Refinements to the titlebar: The title bevel can now frame
+            the entire titlebar when built-in 3D buttons are not full
+            height. Buttons can now "extend into" the title bevel and
+            frame padding. The highlight area (or absence of) is handled
+            correctly now. The built-in 3D highlight is now available
+            with or without a title bevel. Enabled signed-integer data
+            handling in the resource file parser.
+
+            Changed the following variables:
+                ButtonIndent n
+                FramePadding n
+                TitleBevelWidth n
+                TitlePadding n
+
+    October 16, 2002
+        [gram.y] [menus.c] [parse.c] [twm.c] [screen.h]
+            Allow warp functions to position the pointer at the center
+            of windows.
+
+            Added the following variable:
+                WarpCentered s
+
+    September 30, October 2 - 6, 2002
+        [desktop.c] [events.c] [menus.c] [resize.c] [events.h] [menus.h]
+        [resize.h]
+            Refinements to the f.resize and f.move functions: Both are
+            now single rodent button operations from any context, and both
+            warp the pointer back to the virtual desktop when started from
+            there. The wireframe is drawn immediately, ignoring MoveDelta.
+            MoveDelta is otherwise used consistantly now. Fixed some icon
+            move and resize bugs. Large chunks of relevant code changed,
+            moving operations from event handlers to the function itself
+            and merging/removing redundant code.
+
+            Changed the following functions:
+                f.move
+                f.resize
+
+    September 26, 2002
+        [menus.c]
+            Removed the limitations of the f.startwm argument.
+
+            Changed the following function:
+                f.startwm s
+
+    September 24, 2002
+        [add_window.c] [gram.y] [parse.c] [twm.c] [screen.h]
+            The UsePPosition variable accepts a list now.
+
+            Changed the following variable:
+                UsePPosition s l
+
+    September 17, 2002
+        [menus.c]
+            Fixed a race condition when f.squeeze* functions are invoked
+            from a window menu while Opaque* variables are set.
+            Prevent f.squeeze* functions when DontSqueezeTitle is set.
+
+    September 13, 2002
+        [resize.c]
+            Adjust the pointer back to the window at the end of window
+            resizes as required.
+            Constrain virtual desktop resizes to multiples of PanDistance
+            when SnapRealScreen is set.
+
+    September 9, 2002
+        [menus.c] [parse.c] [parse.h]
+            Fixed warp bugs when windows are borderless or shaped.
+
+            From Seth Robertson <seth@baka.org>:
+                Patches for passing raw key and rodent button events
+                to windows.
+
+            Added the following functions:
+                f.bindbuttons
+                f.bindkeys
+                f.unbindbuttons
+                f.unbindkeys
+
+    September 1, 2002
         VTWM 5.4.6a released for public consumption.
         vtwm-5.4.6-to-5.4.6a.udiff patch file released.
 
@@ -102,7 +320,7 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
 
         [*akefile*] [system.vtwmrc*] [add_window.c] [desktop.c]
         [iconmgr.c]
-            Ensure the built-in resources and build info are current.
+            Ensure the compiled-in resources and build info are current.
             Made the system default resource files a bit more useful
             and appealing. Fixed transposed default desktop foreground
             and background colors.
@@ -126,10 +344,12 @@ hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
         Added another build hint to the INSTALL file.
 
     June 22 & 23, 2001
+        Updated the doc and contrib directories.
+
         [*akefile*] [events.c] [gram.y] [iconmgr.c] [menus.c] [parse.c]
         [sound.c] [twm.c] [menus.h] [parse.h] [screen.h] [sound.h] [twm.h]
             Sound effects are now supported, by way of the rplay library
-            and daemon. Updated the doc and contrib directories.
+            and daemon.
 
             Added the following variables:
                 PauseOnExit n

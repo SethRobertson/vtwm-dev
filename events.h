@@ -48,7 +48,9 @@ extern void SimulateMapRequest();
 extern void AutoRaiseWindow();
 #define LastTimestamp() lastTimestamp
 extern Bool DispatchEvent();
+/* depreciated - djhjr - 10/6/02
 extern Bool DispatchEvent2();
+*/
 extern void HandleEvents();
 extern void HandleExpose();
 extern void HandleDestroyNotify();

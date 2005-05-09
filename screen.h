@@ -60,18 +60,6 @@ typedef struct _StdCmap {
 #define SIZE_VINDENT 5
 #endif
 
-typedef struct _TitlebarPixmaps {
-    Pixmap xlogo;
-    Pixmap resize;
-    Pixmap question;
-    Pixmap menu;
-    Pixmap delete;
-
-    /* djhjr - 6/4/00 */
-    Pixmap rarrow;
-    Pixmap darrow;
-} TitlebarPixmaps;
-
 typedef struct ScreenInfo
 {
     int screen;			/* the default screen */
@@ -123,9 +111,7 @@ typedef struct ScreenInfo
 
     name_list *ImageCache;  /* list of pixmaps */
     name_list *Icons;		/* list of icon pixmaps */
-    TitlebarPixmaps tbpm;	/* titlebar pixmaps */
-    Pixmap siconifyPm;		/* the icon manager iconify pixmap */
-    Pixmap pullPm;		/* pull right menu icon */
+
     int	pullW, pullH;		/* size of pull right menu icon */
 
 /* djhjr - 5/17/98 */
@@ -141,13 +127,19 @@ typedef struct ScreenInfo
     Pixmap RealScreenPm;		/* panner background pixmap RFB PIXMAP */
     int RealScreen_pm_width, RealScreen_pm_height; /* RFB PIXMAP */
 #else /* ORIGINAL_PIXMAPS */
-#ifdef NO_XPM_SUPPORT
-    Pixmap UnknownPm;		/* the unknown icon pixmap */
-    int UnknownWidth;		/* width of the unknown icon */
-    int UnknownHeight;		/* height of the unknown icon */
-#else
-    char *UnknownPm;		/* the unknown icon pixmap name */
-#endif
+    char *unknownName;		/* name of unknown icon pixmap */
+
+    /* djhjr - 10/25/02 */
+    char *hiliteName;		/* name of built-in focus highlight pixmap */
+    /* two more - djhjr - 10/30/02 */
+    char *iconMgrIconName;	/* name of built-in iconmgr iconify pixmap */
+    char *menuIconName;		/* name of built-in pull right menu pixmap */
+
+/* depreciated - djhjr - 10/30/02
+    Image *siconifyPm;		* the icon manager iconify pixmap *
+    Image *pullPm;		* pull right menu icon *
+*/
+
     Image *hilitePm;		/* focus highlight window image structure */
     Image *virtualPm;		/* panner background window image structure */
     Image *realscreenPm;	/* real screen window image structure */
@@ -269,6 +261,10 @@ typedef struct ScreenInfo
     name_list *SqueezeTitleL;		/* windows of which to squeeze title */
     name_list *DontSqueezeTitleL;	/* windows of which not to squeeze */
     name_list *WindowRingL;	/* windows in ring */
+
+    /* submitted by Jonathan Paisley - 10/27/02 */
+    name_list *NoWindowRingL;	/* windows not added to ring */
+
     name_list *WarpCursorL;	/* windows to warp cursor to on deiconify */
     name_list *NailedDown;      /* windows that are nailed down */
     name_list *VirtualDesktopColorFL;  /* color of representations on the vd display */
@@ -281,6 +277,9 @@ typedef struct ScreenInfo
 
     name_list *DoorForegroundL; /* doors foreground */
     name_list *DoorBackgroundL; /* doors background */
+
+    /* djhjr - 9/24/02 */
+    name_list *UsePPositionL;	/* windows with UsePPosition set */
 
     GC NormalGC;		/* normal GC for everything */
     GC MenuGC;			/* gc for menus */
@@ -375,7 +374,11 @@ typedef struct ScreenInfo
 
     short AutoRelativeResize;	/* start resize relative to position in quad */
     short FocusRoot;		/* is the input focus on the root ? */
-    short WarpCursor;		/* warp cursor on de-iconify ? */
+
+    /* djhjr - 10/16/02 */
+    short WarpCentered;		/* warp to center of windows? */
+
+    short WarpCursor;		/* warp cursor on de-iconify? */
     short ForceIcon;		/* force the icon to the user specified */
     short NoGrabServer;		/* don't do server grabs */
     short NoRaiseMove;		/* don't raise window following move */
@@ -470,8 +473,10 @@ typedef struct ScreenInfo
     short 	use3Dicons;
 */
 
-	/* djhjr - 4/25/96 */
+/* obsoleted by the ":xpm:*" built-in pixmaps - djhjr - 10/26/02
+	* djhjr - 4/25/96 *
 	short SunkFocusWindowTitle;
+*/
 
 	/* for rader - djhjr - 2/9/99 */
 	short NoPrettyTitles;
@@ -491,6 +496,12 @@ typedef struct ScreenInfo
 
 	/* djhjr - 10/11/01 */
 	short ZoomZoom;         /* fallback on random zooms on iconify */
+
+	/* djhjr - 10/20/02 */
+	short NoBorderDecorations;
+
+	/* djhjr - 11/3/03 */
+	short RaiseOnStart;
 #else
 	struct
 	{
@@ -505,6 +516,10 @@ typedef struct ScreenInfo
 
     	unsigned int AutoRelativeResize					: 1;
     	unsigned int FocusRoot							: 1;
+
+	/* djhjr - 10/16/02 */
+	unsigned int WarpCentered						: 2;
+
     	unsigned int WarpCursor							: 1;
     	unsigned int ForceIcon							: 1;
     	unsigned int NoGrabServer						: 1;
@@ -594,7 +609,10 @@ typedef struct ScreenInfo
 */
 
     	unsigned int BeNiceToColormap					: 1;
+
+/* obsoleted by the ":xpm:*" built-in pixmaps - djhjr - 10/26/02
 		unsigned int SunkFocusWindowTitle				: 1;
+*/
 
 		/* for rader - djhjr - 2/9/99 */
 		unsigned int NoPrettyTitles						: 1;
@@ -613,6 +631,12 @@ typedef struct ScreenInfo
 
 		/* djhjr - 10/11/01 */
 		unsigned int ZoomZoom					: 1;
+
+		/* djhjr - 10/20/02 */
+		unsigned int NoBorderDecorations			: 1;
+
+		/* djhjr - 11/3/03 */
+		unsigned int RaiseOnStart				: 1;
 	} userflags;
 #define NoDefaultMouseOrKeyboardBindings	userflags.NoDefaultMouseOrKeyboardBindings
 #define NoDefaultTitleButtons				userflags.NoDefaultTitleButtons
@@ -625,6 +649,10 @@ typedef struct ScreenInfo
 
 #define AutoRelativeResize					userflags.AutoRelativeResize
 #define FocusRoot							userflags.FocusRoot
+
+/* djhjr - 10/16/02 */
+#define WarpCentered							userflags.WarpCentered
+
 #define WarpCursor							userflags.WarpCursor
 #define ForceIcon							userflags.ForceIcon
 #define NoGrabServer						userflags.NoGrabServer
@@ -714,7 +742,10 @@ typedef struct ScreenInfo
 */
 
 #define BeNiceToColormap					userflags.BeNiceToColormap
+
+/* obsoleted by the ":xpm:*" built-in pixmaps - djhjr - 10/26/02
 #define SunkFocusWindowTitle				userflags.SunkFocusWindowTitle
+*/
 
 /* for rader - djhjr - 2/9/99 */
 #define NoPrettyTitles						userflags.NoPrettyTitles
@@ -733,7 +764,16 @@ typedef struct ScreenInfo
 
 /* djhjr - 10/11/01 */
 #define ZoomZoom					userflags.ZoomZoom
+
+/* djhjr - 10/20/02 */
+#define NoBorderDecorations				userflags.NoBorderDecorations
+
+/* djhjr - 11/3/03 */
+#define RaiseOnStart					userflags.RaiseOnStart
 #endif
+
+    /* djhjr - 9/10/03 */
+    int IgnoreModifiers;	/* binding modifiers to ignore */
 
     FuncKey FuncKeyRoot;
     TwmDoor *Doors;		/* a list of doors on this screen */
@@ -755,5 +795,11 @@ extern int FirstScreen;
 #define PPOS_NON_ZERO 2
 /* may eventually want an option for having the PPosition be the initial
    location for the drag lines */
+
+/* djhjr - 10/16/02 */
+#define WARPC_OFF	0
+#define WARPC_TITLED	1
+#define WARPC_UNTITLED	2
+#define WARPC_ON	3
 
 #endif /* _SCREEN_ */

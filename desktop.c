@@ -41,6 +41,9 @@ void SetRealScreenPixmap();
 /* djhjr - 4/27/98 */
 static int starting_x, starting_y;
 
+/* djhjr - 11/3/03 */
+static int original_x, original_y;
+
 static void GetDesktopWindowCoordinates(tmp_win, x, y, w, h)
 TwmWindow *tmp_win;
 int *x, *y, *w, *h;
@@ -1001,9 +1004,23 @@ XMotionEvent ev;
 			EventHandler[EnterNotify] = HandleUnknown;
 			EventHandler[LeaveNotify] = HandleUnknown;
 		}
+
+		/* djhjr - 10/2/02 */
+		if (Scr->VirtualSendsMotionEvents &&
+			(moving_window != Scr->VirtualDesktopDScreen && !moving_twindow->opaque_move))
+				MoveOutline(Scr->Root,
+					    JunkX, JunkY,
+					    moving_twindow->frame_width,
+					    moving_twindow->frame_height,
+					    moving_twindow->frame_bw,
+					    moving_twindow->title_height + moving_twindow->frame_bw3D);
+
 	}
 
-	DisplayPosition(JunkX + Scr->VirtualDesktopX, JunkY + Scr->VirtualDesktopY);
+	/* added 'original_? = ' - djhjr - 11/3/03 */
+	original_x = JunkX + Scr->VirtualDesktopX;
+	original_y = JunkY + Scr->VirtualDesktopY;
+	DisplayPosition(original_x, original_y);
 
 	/* get things going */
 	DoMoveWindowOnDesktop(ev.x, ev.y);
@@ -1102,25 +1119,34 @@ void EndMoveWindowOnDesktop()
 	UninstallRootColormap();
 
 	if (moving_window == Scr->VirtualDesktopDScreen) {
-		SetRealScreen(SCALE_U(moving_x),/* - moving_bw,*/
-			SCALE_U(moving_y) /*- moving_bw*/ );
+		/* added '(Cancel) ? ... :' - djhjr - 11/3/03 */
+		SetRealScreen((Cancel) ? original_x : SCALE_U(moving_x),/* - moving_bw,*/
+			(Cancel) ? original_y : SCALE_U(moving_y) /*- moving_bw*/ );
 	} else {
-		/* same little kludge as in the top of DoMoveWindowOnDesktop() - djhjr - 4/27/98 */
-		if (moving_x != starting_x || moving_y != starting_y)
-		{
-		/* djhjr - 4/17/98 */
-		if (Scr->VirtualSendsMotionEvents)
-			if (!moving_twindow->opaque_move)
+		/* djhjr - 4/17/98 10/2/02 */
+		if (Scr->VirtualSendsMotionEvents &&
+			(moving_window != Scr->VirtualDesktopDScreen && !moving_twindow->opaque_move))
 				/* erase the move outline */
 				MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
 
+		/* same little check as at the top of DoMoveWindowOnDesktop() - djhjr - 4/27/98 */
+		if (moving_x != starting_x || moving_y != starting_y)
+		{
 		/* move the window in virtual space */
-		moving_twindow->virtual_frame_x = SCALE_U(moving_x);
-		moving_twindow->virtual_frame_y = SCALE_U(moving_y);
+		/* added '(Cancel) ? ... :' - djhjr - 11/3/03 */
+		moving_twindow->virtual_frame_x =
+				(Cancel) ? original_x : SCALE_U(moving_x);
+		moving_twindow->virtual_frame_y =
+				(Cancel) ? original_y : SCALE_U(moving_y);
 
 		/* move it in real space */
 		moving_twindow->frame_x = V_TO_R_X(moving_twindow->virtual_frame_x);
 		moving_twindow->frame_y = V_TO_R_Y(moving_twindow->virtual_frame_y);
+
+		/* djhjr - 11/3/03 */
+		if (Cancel)
+			XMoveWindow(dpy, moving_window,
+				SCALE_D(original_x), SCALE_D(original_y));
 
 		XMoveWindow(dpy, moving_twindow->frame,
 			    moving_twindow->frame_x, moving_twindow->frame_y);
@@ -1144,8 +1170,8 @@ void EndMoveWindowOnDesktop()
 			EventHandler[LeaveNotify] = HandleLeaveNotify;
 		}
 
-		/* raise the window ? */
-		if(!Scr->NoRaiseMove) {
+		/* added '!Cancel &&' - djhjr - 11/3/03 */
+		if (!Cancel && !Scr->NoRaiseMove) {
 			XRaiseWindow(dpy, moving_twindow->frame);
 			XRaiseWindow(dpy, moving_twindow->VirtualDesktopDisplayWindow);
 

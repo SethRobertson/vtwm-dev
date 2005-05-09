@@ -49,6 +49,8 @@
 #include "screen.h"
 #include "parse.h"
 #include "doors.h"
+/* djhjr - 10/30/02 */
+#include "iconmgr.h"
 /* djhjr - 4/26/99 */
 #include "regions.h"
 #include <X11/Xos.h>
@@ -69,6 +71,10 @@ static MenuRoot *GetRoot();
 static char *RemoveDQuote();
 /* djhjr - 10/20/01 */
 static char *RemoveRESlash();
+/* djhjr - 10/16/02 */
+static int ParseWarpCentered();
+/* djhjr - 9/24/02 */
+static int ParseUsePPosition();
 void twmrc_error_prefix();
 
 /* djhjr - 4/30/96 */
@@ -84,6 +90,10 @@ static int cont = 0;
 static int color;
 int mods = 0;
 unsigned int mods_used = (ShiftMask | ControlMask | Mod1Mask);
+/* djhjr - 9/24/02 */
+static int ppos;
+/* djhjr - 10/16/02 */
+static int warpc;
 
 extern void SetHighlightPixmap();
 extern void SetVirtualPixmap(), SetVirtualDesktop(), SetRealScreenPixmap();
@@ -127,6 +137,10 @@ extern int yylineno;
 %token <num> ICONMGR_GEOMETRY ICONMGR_NOSHOW MAKE_TITLE
 %token <num> ICONIFY_BY_UNMAPPING DONT_ICONIFY_BY_UNMAPPING
 %token <num> NO_TITLE AUTO_RAISE NO_HILITE NO_ICONMGR_HILITE ICON_REGION
+/* djhjr - 10/16/02 */
+%token <num> WARP_CENTERED
+/* djhjr - 9/24/02 */
+%token <num> USE_PPOSITION
 /* submitted by Tim Wiess - 8/23/02 */
 %token <num> NO_BORDER
 /* djhjr - 4/26/99 */
@@ -140,19 +154,26 @@ extern int yylineno;
 %token <num> MOVE RESIZE WAIT SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON
 /* MKEYWORD - djhjr - 10/20/01 */
 %token <num> NUMBER KEYWORD MKEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD
-%token <num> SKEYWORD DKEYWORD JKEYWORD WINDOW_RING WARP_CURSOR ERRORTOKEN
-%token <num> NO_STACKMODE NAILEDDOWN VIRTUALDESKTOP NO_SHOW_IN_DISPLAY
+/* SNKEYWORD - djhjr - 10/18/02 */
+/* NO_WINDOW_RING submitted by Jonathan Paisley - 10/27/02 */
+%token <num> SNKEYWORD SKEYWORD DKEYWORD JKEYWORD WINDOW_RING NO_WINDOW_RING WARP_CURSOR
+%token <num> ERRORTOKEN NO_STACKMODE NAILEDDOWN VIRTUALDESKTOP NO_SHOW_IN_DISPLAY
 /* Submitted by Erik Agsjo <erik.agsjo@aktiedirekt.com> */
 %token <num> NO_SHOW_IN_TWMWINDOWS
 %token DOORS DOOR
 /*RFB PIXMAP:*/
 %token <num> VIRTUALMAP
 %token <num> REALSCREENMAP
+/* two pixmaps - djhjr - 10/30/02 */
+%token <num> ICONMGRICONMAP
+%token <num> MENUICONMAP
 /*<RFB PIXMAP*/
 /* djhjr - 6/22/01 */
 %token SOUNDS
 /* REGEXP - djhjr - 10/20/01 */
 %token <ptr> STRING REGEXP
+/* djhjr - 9/10/03 */
+%token <num> IGNORE_MODS
 %token SAVECOLOR
 %token LB
 %token RB
@@ -176,6 +197,7 @@ stmt		: error
 		| noarg
 		| sarg
 		| narg
+		| snarg
 		| squeeze
 		| doors
 		| ICON_REGION string DKEYWORD DKEYWORD number number
@@ -248,6 +270,9 @@ stmt		: error
 					}
 		| string fullkey	{ GotKey($1, $2); }
 		| button full		{ GotButton($1, $2); }
+		| IGNORE_MODS keys	{ Scr->IgnoreModifiers = mods;
+					  mods = 0;
+					}
 		| DONT_ICONIFY_BY_UNMAPPING { list = &Scr->DontIconify; }
 		  win_list
 		| ICONMGR_NOSHOW	{ list = &Scr->IconMgrNoShow; }
@@ -284,7 +309,26 @@ stmt		: error
 		  win_list
 		| AUTO_RAISE		{ list = &Scr->AutoRaise; }
 		  win_list
-		| AUTO_RAISE        { Scr->AutoRaiseDefault = TRUE; }/*RAISEDELAY*/
+		| AUTO_RAISE		{ Scr->AutoRaiseDefault = TRUE; }
+		| WARP_CENTERED string	{ if (Scr->FirstTime) {
+						if ((warpc = ParseWarpCentered($2)) != -1)
+							Scr->WarpCentered = warpc;
+					  }
+					}
+		| USE_PPOSITION string	{ if (Scr->FirstTime) {
+						if ((ppos = ParseUsePPosition($2)) != -1)
+							Scr->UsePPosition = ppos;
+					  }
+					}
+		| USE_PPOSITION		{ list = &Scr->UsePPositionL; }
+		  ppos_list
+		| USE_PPOSITION string	{ if (Scr->FirstTime) {
+						if ((ppos = ParseUsePPosition($2)) != -1)
+							Scr->UsePPosition = ppos;
+					  }
+					  list = &Scr->UsePPositionL;
+					}
+		  ppos_list
 		| MENU string LP string COLON string RP	{
 					root = GetRoot($2, $4, $6); }
 		  menu			{ root->real_menu = TRUE;}
@@ -334,6 +378,8 @@ stmt		: error
 		  win_list
 		| WINDOW_RING       {	if (Scr->FirstTime)
 						Scr->UseWindowRing = TRUE; }
+		| NO_WINDOW_RING	{ list = &Scr->NoWindowRingL; }
+		  win_list
 		| NAILEDDOWN		{ list = &Scr->NailedDown; }
 		  win_list
 		| VIRTUALDESKTOP string number
@@ -369,6 +415,17 @@ narg		: NKEYWORD number	{ if (!do_number_keyword ($1, $2)) {
 					    twmrc_error_prefix();
 					    fprintf (stderr,
 				"unknown numeric keyword %d (value %d)\n",
+						     $1, $2);
+					    ParseError = 1;
+					  }
+					}
+		;
+
+/* djhjr - 10/18/02 */
+snarg		: SNKEYWORD signed_number	{ if (!do_number_keyword ($1, $2)) {
+					    twmrc_error_prefix();
+					    fprintf (stderr,
+				"unknown signed keyword %d (value %d)\n",
 						     $1, $2);
 					    ParseError = 1;
 					  }
@@ -452,6 +509,8 @@ pixmap_entries	: /* Empty */
 pixmap_entry	: TITLE_HILITE string { SetHighlightPixmap ($2); }
 		| VIRTUALMAP string { SetVirtualPixmap ($2); }/*RFB PIXMAP*/
 		| REALSCREENMAP string { SetRealScreenPixmap ($2); }/*RFB PIXMAP*/
+		| ICONMGRICONMAP string { SetIconMgrPixmap($2); } /* djhjr - 10/30/02 */
+		| MENUICONMAP string { SetMenuIconPixmap($2); } /* djhjr - 10/30/02 */
 		;
 
 
@@ -667,6 +726,22 @@ icon_entry	: matcher string	{ if (Scr->FirstTime)
 					}
 		;
 
+/* djhjr - 9/24/02 */
+ppos_list	: LB ppos_entries RB
+		;
+
+ppos_entries	: /* Empty */
+		| ppos_entries ppos_entry
+		;
+
+/* 'matcher', mods to 'AddToList()' - djhjr - 10/20/01 */
+ppos_entry	: matcher string	{ if (Scr->FirstTime) {
+					    if ((ppos = ParseUsePPosition($2)) != -1)
+					      AddToList(list, $1.lval, $1.ltype, (char *)&ppos);
+					  }
+					}
+		;
+
 /* djhjr - 6/22/01 */
 sound_list	: LB sound_entries RB
 		;
@@ -842,6 +917,7 @@ number		: NUMBER		{ $$ = $1; }
 		;
 
 %%
+static void
 yyerror(s) char *s;
 {
     twmrc_error_prefix();
@@ -961,10 +1037,10 @@ char *str;
 static char *RemoveRESlash(str)
 char *str;
 {
-    int length = strlen(str);
     char *ptr = "";
-
 #ifndef NO_REGEX_SUPPORT
+    int length = strlen(str);
+
     if (length > 2)
     {
 	ptr = (char *)malloc(length - 1);
@@ -982,6 +1058,44 @@ char *str;
 #endif
 
     return (ptr);
+}
+
+/* was in parse.c - djhjr - 9/24/02 */
+static int ParseUsePPosition(s)
+char *s;
+{
+    XmuCopyISOLatin1Lowered (s, s);
+
+    if (strcmp(s, "off") == 0)
+	return PPOS_OFF;
+    else if (strcmp(s, "on") == 0)
+	return PPOS_ON;
+    else if (strcmp(s, "non-zero") == 0 || strcmp(s, "nonzero") == 0)
+	return PPOS_NON_ZERO;
+
+    twmrc_error_prefix();
+    fprintf(stderr, "ignoring invalid UsePPosition argument \"%s\"\n", s);
+    return -1;
+}
+
+/* djhjr - 10/16/02 */
+static int ParseWarpCentered(s)
+char *s;
+{
+    XmuCopyISOLatin1Lowered (s, s);
+
+    if (strcmp(s, "off") == 0)
+	return WARPC_OFF;
+    else if (strcmp(s, "on") == 0)
+	return WARPC_ON;
+    else if (strcmp(s, "titled") == 0)
+	return WARPC_TITLED;
+    else if (strcmp(s, "untitled") == 0)
+	return WARPC_UNTITLED;
+
+    twmrc_error_prefix();
+    fprintf(stderr, "ignoring invalid WarpCentered argument \"%s\"\n", s);
+    return -1;
 }
 
 static MenuRoot *GetRoot(name, fore, back)

@@ -1,4 +1,5 @@
-/*****************************************************************************//**       Copyright 1988 by Evans & Sutherland Computer Corporation,        **/
+/*****************************************************************************/
+/**       Copyright 1988 by Evans & Sutherland Computer Corporation,        **/
 /**                          Salt Lake City, Utah                           **/
 /**  Portions Copyright 1989 by the Massachusetts Institute of Technology   **/
 /**                        Cambridge, Massachusetts                         **/
@@ -122,8 +123,48 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 			 C_VIRTUAL_BIT | C_VIRTUAL_WIN_BIT | C_DOOR_BIT)
 
 /* modifiers for button presses */
-#define MOD_SIZE	((ShiftMask | ControlMask | Mod1Mask \
+/* added "LockMask" - djhjr - 9/10/03 */
+#define MOD_SIZE	((ShiftMask | LockMask | ControlMask | Mod1Mask \
 			  | Mod2Mask | Mod3Mask | Mod4Mask | Mod5Mask) + 1)
+
+/* definitions from MwmUtil.h - submitted by Jonathan Paisley - 11/8/02 */
+#define MWM_HINTS_FUNCTIONS     (1L << 0)
+#define MWM_HINTS_DECORATIONS   (1L << 1)
+#define MWM_HINTS_INPUT_MODE    (1L << 2)
+#define MWM_HINTS_STATUS        (1L << 3)
+
+#define MWM_FUNC_ALL            (1L << 0)
+#define MWM_FUNC_RESIZE         (1L << 1)
+#define MWM_FUNC_MOVE           (1L << 2)
+#define MWM_FUNC_MINIMIZE       (1L << 3)
+#define MWM_FUNC_MAXIMIZE       (1L << 4)
+#define MWM_FUNC_CLOSE          (1L << 5)
+
+#define MWM_DECOR_ALL           (1L << 0)
+#define MWM_DECOR_BORDER        (1L << 1)
+#define MWM_DECOR_RESIZEH       (1L << 2)
+#define MWM_DECOR_TITLE         (1L << 3)
+#define MWM_DECOR_MENU          (1L << 4)
+#define MWM_DECOR_MINIMIZE      (1L << 5)
+#define MWM_DECOR_MAXIMIZE      (1L << 6)
+
+#define MWM_INPUT_MODELESS 0
+#define MWM_INPUT_PRIMARY_APPLICATION_MODAL 1
+#define MWM_INPUT_SYSTEM_MODAL 2
+#define MWM_INPUT_FULL_APPLICATION_MODAL 3
+#define MWM_INPUT_APPLICATION_MODAL MWM_INPUT_PRIMARY_APPLICATION_MODAL
+
+#define MWM_TEAROFF_WINDOW      (1L<<0)
+
+/* submitted by Jonathan Paisley - 11/8/02 */
+typedef struct
+{
+    long flags;
+    long functions;
+    long decorations;
+    long input_mode;
+    long state;
+} MotifWmHints;
 
 #define TITLE_BAR_SPACE         1	/* 2 pixel space bordering chars */
 #define TITLE_BAR_FONT_HEIGHT   15	/* max of 15 pixel high chars */
@@ -132,11 +173,17 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 /* defines for zooming/unzooming */
 #define ZOOM_NONE 0
 
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+#define FBF(fix_fore, fix_back, fix_font)\
+    MyFont_ChangeGC(fix_fore, fix_back, &fix_font)
+#else
 #define FBF(fix_fore, fix_back, fix_font)\
     Gcv.foreground = fix_fore;\
     Gcv.background = fix_back;\
-    Gcv.font = fix_font;\
+    Gcv.font = fix_font.font->fid;\
     XChangeGC(dpy, Scr->NormalGC, GCFont|GCForeground|GCBackground,&Gcv)
+#endif
 
 #define FB(fix_fore, fix_back)\
     Gcv.foreground = fix_fore;\
@@ -149,8 +196,14 @@ typedef struct MyFont
 {
     char *name;			/* name of the font */
     XFontStruct *font;		/* font structure */
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+    XFontSet fontset;
+#endif
     int height;			/* height of the font */
     int y;			/* Y coordinate to draw characters */
+    int ascent;
+    int descent;
 } MyFont;
 
 typedef struct ColorPair
@@ -165,10 +218,12 @@ typedef struct _TitleButton {
     struct _TitleButton *next;		/* next link in chain */
     char *name;				/* bitmap name in case of deferal */
 
-	/* might not need 'bitmap anymore... djhjr - 4/19/96 */
-    Image *image;			/* image to display in button */
+/* don't need either anymore - djhjr - 10/30/02
+    * might not need 'bitmap anymore... djhjr - 4/19/96 *
+    Image *image;			* image to display in button *
+    *Pixmap bitmap;*			* image to display in button *
+*/
 
-/*    Pixmap bitmap;*/			/* image to display in button */
     int srcx, srcy;			/* from where to start copying */
     unsigned int width, height;		/* size of pixmap */
     int dstx, dsty;			/* to where to start copying */
@@ -181,8 +236,9 @@ typedef struct _TitleButton {
 typedef struct _TBWindow {
     Window window;			/* which window in this frame */
 
-	/* djhjr - 4/19/96 */
-    /*Image *image;*/			/* image to display in button */
+/* djhjr - 4/19/96
+    Image *image;			* image to display in button *
+*/
 
     TitleButton *info;			/* description of this window */
 } TBWindow;
@@ -281,6 +337,7 @@ typedef struct TwmWindow
     XWindowAttributes attr;	/* the child window attributes */
     XSizeHints hints;		/* normal hints */
     XWMHints *wmhints;		/* WM hints */
+    MotifWmHints mwmhints;	/* MWM hints - by Jonathan Paisley - 11/8/02 */
     Window group;		/* group ID */
     XClassHint class;
     struct WList *list;
@@ -413,6 +470,16 @@ typedef struct TwmWindow
 #define TBPM_3DRARROW ":xpm:rarrow"	/* name of right arrow pixmap */
 #define TBPM_3DDARROW ":xpm:darrow"	/* name of down arrow pixmap */
 
+/* djhjr - 10/25/02 */
+#define TBPM_3DRAISEDBOX ":xpm:raisedbox"	/* name of raised box highlight pixmap */
+#define TBPM_3DSUNKENBOX ":xpm:sunkenbox"	/* name of sunken box highlight pixmap */
+#define TBPM_3DRAISEDLINES ":xpm:raisedlines"	/* name of raised lines highlight pixmap */
+#define TBPM_3DSUNKENLINES ":xpm:sunkenlines"	/* name of sunken lines highlight pixmap */
+
+/* djhjr - 10/30/02 */
+#define TBPM_3DBOX ":xpm:box"		/* name of box pixmap */
+#define TBPM_3DLINES ":xpm:lines"	/* name of lines pixmap */
+
 #ifdef NEVER /* stay X11R4 compatable; X11R5,6 doesn't seem to mind! */
 #include <X11/Xosdefs.h>
 #endif
@@ -492,6 +559,11 @@ extern XErrorEvent LastErrorEvent;
 
 extern Bool RestartPreviousState;
 extern Bool GetWMState();
+
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+extern Bool use_fontset;
+#endif
 
 extern Atom _XA_MIT_PRIORITY_COLORS;
 extern Atom _XA_WM_CHANGE_STATE;

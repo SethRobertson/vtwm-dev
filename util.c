@@ -25,6 +25,32 @@
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
 
+/*
+
+Portions Copyright 1989, 1998  The Open Group
+
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Except as contained in this notice, the name of The Open Group shall not be
+used in advertising or otherwise to promote the sale, use or other dealings
+in this Software without prior written authorization from The Open Group.
+
+*/
+
 
 /***********************************************************************
  *
@@ -71,46 +97,39 @@ extern char *strdup(char *);
  * were a hard value of 2 - djhjr - 4/29/98
  */
 
-/* djhjr - 4/19/96 */
-/* was 'typedef' - djhjr - 1/15/98 */
-struct Colori {
-    Pixel color;
-    Pixmap pix;
-    struct Colori *next;
-};
+/* djhjr - 4/18/96 10/29/02 */
+static void Draw3DMenuImage();
+static void Draw3DDotImage();
+static void Draw3DResizeImage();
+static void Draw3DZoomImage();
+static void Draw3DBarImage();
 
-static Pixmap CreateXLogoPixmap(), CreateResizePixmap();
-static Pixmap CreateQuestionPixmap(), CreateMenuPixmap();
-static Pixmap CreateDotPixmap();
+/* djhjr - 6/4/00 10/29/02 */
+static void Draw3DRArrowImage();
+static void Draw3DDArrowImage();
 
-/* djhjr - 6/4/00 */
-static Pixmap CreateRArrowPixmap(), CreateDArrowPixmap();
-
-/* djhjr - 4/18/96 */
-static Image  *Create3DMenuImage ();
-static Image  *Create3DDotImage ();
-static Image  *Create3DResizeImage ();
-static Image  *Create3DZoomImage ();
-static Image  *Create3DBarImage ();
-
-/* djhjr - 6/4/00 */
-static Image *Create3DRArrowImage();
-static Image *Create3DDArrowImage();
-
-/* djhjr - 1/13/98 */
+/* djhjr - 1/13/98 10/20/02 */
 void setBorderGC();
 #ifdef USE_ORIGINAL_CORNERS
 void Draw3DCorner();
 #else
 GC setBevelGC();
 void Draw3DBevel();
+void Draw3DNoBevel();
 #endif
 
 /* djhjr - 4/19/96 */
 static GC     rootGC = (GC) 0;
-static int    reportfilenotfound = 1;
+
+/* for trying to clean up BeNiceToColormap - djhjr - 10/20/02 */
+static int borderdashoffset;
 
 int HotX, HotY;
+
+#define questionmark_width 8
+#define questionmark_height 8
+static unsigned char questionmark_bits[] = {
+   0x38, 0x7c, 0x64, 0x30, 0x18, 0x00, 0x18, 0x18};
 
 /***********************************************************************
  *
@@ -571,14 +590,14 @@ GetUnknownIcon(name)
 char *name;
 {
 /* djhjr - 8/13/98 */
-#if defined(NO_XPM_SUPPORT) || defined(ORIGINAL_PIXMAPS)
+#ifdef ORIGINAL_PIXMAPS
     if ((Scr->UnknownPm = GetBitmap(name)) != None)
     {
 	XGetGeometry(dpy, Scr->UnknownPm, &JunkRoot, &JunkX, &JunkY,
 	    (unsigned int *)&Scr->UnknownWidth, (unsigned int *)&Scr->UnknownHeight, &JunkBW, &JunkDepth);
     }
 #else
-	Scr->UnknownPm = strdup(name);
+	Scr->unknownName = name;
 #endif
 }
 
@@ -606,39 +625,6 @@ Pixmap FindBitmap (name, widthp, heightp)
     Pixmap pm;
 
     if (!name) return None;
-
-    /*
-     * Names of the form :name refer to hardcoded images that are scaled to
-     * look nice in title buttons.  Eventually, it would be nice to put in a
-     * menu symbol as well....
-     */
-    if (name[0] == ':') {
-	int i;
-	struct {
-	    char *name;
-	    Pixmap (*proc)();
-	} pmtab[] = {
-	    { TBPM_DOT,		CreateDotPixmap },
-	    { TBPM_ICONIFY,	CreateDotPixmap },
-	    { TBPM_RESIZE,	CreateResizePixmap },
-	    { TBPM_XLOGO,	CreateXLogoPixmap },
-	    { TBPM_DELETE,	CreateXLogoPixmap },
-	    { TBPM_MENU,	CreateMenuPixmap },
-	    { TBPM_QUESTION,	CreateQuestionPixmap },
-
-	    /* djhjr - 6/4/00 */
-	    { TBPM_RARROW,	CreateRArrowPixmap },
-	    { TBPM_DARROW,	CreateDArrowPixmap },
-	};
-
-	for (i = 0; i < sizeof (pmtab)/sizeof (pmtab[0]); i++) {
-	    if (XmuCompareISOLatin1 (pmtab[i].name, name) == 0)
-	      return (*pmtab[i].proc) (widthp, heightp);
-	}
-	fprintf (stderr, "%s:  no such built-in bitmap \"%s\"\n",
-		 ProgramName, name);
-	return None;
-    }
 
     /*
      * Generate a full pathname if any special prefix characters (such as ~)
@@ -1185,30 +1171,245 @@ ColorPair *cp;
     Scr->FirstTime = save;
 }
 
-void GetFont(font)
+/* 
+ * The following I18N-oriented functions are adapted from TWM
+ * as distributed with XFree86 4.2.0 - djhjr - 9/14/03
+ */
+
+/*
+ * The following functions are sensible to 'use_fontset'.
+ * When 'use_fontset' is True,
+ *  - XFontSet-related internationalized functions are used
+ *     so as multibyte languages can be displayed.
+ * When 'use_fontset' is False,
+ *  - XFontStruct-related conventional functions are used
+ *     so as 8-bit characters can be displayed even when
+ *     locale is not set properly.
+ */
+void
+GetFont(font)
 MyFont *font;
 {
-    char *deffontname = "fixed";
+#ifndef NO_I18N_SUPPORT
+    char **missing_charset_list_return;
+    int missing_charset_count_return;
+    char *def_string_return;
+    XFontSetExtents *font_extents;
+    XFontStruct **xfonts;
+    char **font_names;
+    register int i;
+    int ascent;
+    int descent;
+    int fnum;
+    char *basename2, *basename3 = NULL;
+
+    if (use_fontset)
+    {
+	if (font->fontset != NULL)
+	    XFreeFontSet(dpy, font->fontset);
+
+	if ((basename2 = (char *)malloc(strlen(font->name) + 3)))
+	    sprintf(basename2, "%s,*", font->name);
+	else
+	    basename2 = font->name;
+	if ((font->fontset = XCreateFontSet(dpy, basename2,
+					    &missing_charset_list_return,
+					    &missing_charset_count_return,
+					    &def_string_return)) == NULL)
+	{
+	    /* idea from Seth Robertson - djhjr - 9/17/03 */
+
+	    if ((basename3 = (char *)realloc(basename2,
+					strlen(Scr->DefaultFont.name) + 3)))
+		sprintf(basename3, "%s,*", Scr->DefaultFont.name);
+	    else
+	    {
+		basename3 = Scr->DefaultFont.name;
+		if (basename2 != font->name)
+		    free(basename2);
+	    }
+	    if ((font->fontset = XCreateFontSet(dpy, basename3,
+						&missing_charset_list_return,
+						&missing_charset_count_return,
+						&def_string_return)) == NULL)
+	    {
+		fprintf(stderr,
+			"%s: unable to open fontsets \"%s\" or \"%s\"\n",
+			ProgramName, font->name, Scr->DefaultFont.name);
+		if (basename3 != Scr->DefaultFont.name)
+		    free(basename3);
+		exit(1);
+	    }
+	    basename2 = basename3;
+	}
+
+	if (basename2 != ((basename3) ? Scr->DefaultFont.name : font->name))
+	    free(basename2);
+
+	for (i = 0; i < missing_charset_count_return; i++)
+	    fprintf(stderr, "%s: font for charset %s is lacking\n",
+		   ProgramName, missing_charset_list_return[i]);
+
+	font_extents = XExtentsOfFontSet(font->fontset);
+	fnum = XFontsOfFontSet(font->fontset, &xfonts, &font_names);
+	for (i = 0, ascent = 0, descent = 0; i<fnum; i++)
+	{
+	    if (ascent < (*xfonts)->ascent)
+		ascent = (*xfonts)->ascent;
+	    if (descent < (*xfonts)->descent)
+		descent = (*xfonts)->descent;
+	    xfonts++;
+	}
+
+	font->height = font_extents->max_logical_extent.height;
+	font->y = ascent;
+	font->ascent = ascent;
+	font->descent = descent;
+	return;
+    }
+#endif
 
     if (font->font != NULL)
 	XFreeFont(dpy, font->font);
 
     if ((font->font = XLoadQueryFont(dpy, font->name)) == NULL)
-    {
-	if (Scr->DefaultFont.name) {
-	    deffontname = Scr->DefaultFont.name;
-	}
-	if ((font->font = XLoadQueryFont(dpy, deffontname)) == NULL)
+	if ((font->font = XLoadQueryFont(dpy, Scr->DefaultFont.name)) == NULL)
 	{
-	    fprintf (stderr, "%s:  unable to open fonts \"%s\" or \"%s\"\n",
-		     ProgramName, font->name, deffontname);
+	    fprintf(stderr, "%s:  unable to open fonts \"%s\" or \"%s\"\n",
+		    ProgramName, font->name, Scr->DefaultFont.name);
 	    exit(1);
 	}
 
-    }
     font->height = font->font->ascent + font->font->descent;
     font->y = font->font->ascent;
+    font->ascent = font->font->ascent;
+    font->descent = font->font->descent;
 }
+
+#ifndef NO_I18N_SUPPORT
+int
+MyFont_TextWidth(font, string, len)
+    MyFont *font;
+    char *string;
+    int len;
+{
+    XRectangle ink_rect;
+    XRectangle logical_rect;
+
+    if (use_fontset) {
+	XmbTextExtents(font->fontset, string, len, &ink_rect, &logical_rect);
+	return logical_rect.width;
+    }
+    return XTextWidth(font->font, string, len);
+}
+
+void
+MyFont_DrawImageString(dpy, d, font, gc, x, y, string, len)
+    Display *dpy;
+    Drawable d;
+    MyFont *font;
+    GC gc;
+    int x,y;
+    char *string;
+    int len;
+{
+    if (use_fontset) {
+	XmbDrawImageString(dpy, d, font->fontset, gc, x, y, string, len);
+	return;
+    }
+    XDrawImageString (dpy, d, gc, x, y, string, len);
+}
+
+void
+MyFont_DrawString(dpy, d, font, gc, x, y, string, len)
+    Display *dpy;
+    Drawable d;
+    MyFont *font;
+    GC gc;
+    int x,y;
+    char *string;
+    int len;
+{
+    if (use_fontset) {
+	XmbDrawString(dpy, d, font->fontset, gc, x, y, string, len);
+	return;
+    }
+    XDrawString (dpy, d, gc, x, y, string, len);
+}
+
+void
+MyFont_ChangeGC(fix_fore, fix_back, fix_font)
+    unsigned long fix_fore, fix_back;
+    MyFont *fix_font;
+{
+    Gcv.foreground = fix_fore;
+    Gcv.background = fix_back;
+    if (use_fontset) {
+	XChangeGC(dpy, Scr->NormalGC, GCForeground|GCBackground, &Gcv);
+	return;
+    }
+    Gcv.font = fix_font->font->fid;
+    XChangeGC(dpy, Scr->NormalGC, GCFont|GCForeground|GCBackground,&Gcv);
+}
+
+/*
+ * The following functions are internationalized substitutions
+ * for XFetchName and XGetIconName using XGetWMName and
+ * XGetWMIconName.  
+ *
+ * Please note that the third arguments have to be freed using free(), 
+ * not XFree().
+ */
+Status
+I18N_FetchName(dpy, w, winname)
+    Display *dpy;
+    Window w;
+    char ** winname;
+{
+    int    status;
+    XTextProperty text_prop;
+    char **list;
+    int    num;
+    
+    status = XGetWMName(dpy, w, &text_prop);
+    if (!status || !text_prop.value || !text_prop.nitems) {
+	*winname = NULL;
+	return 0;
+    }
+    *winname = (char *)strdup(text_prop.value);
+    status = XmbTextPropertyToTextList(dpy, &text_prop, &list, &num);
+    if (status < Success || !num || !*list) {
+	*winname = NULL;      
+	return 0;
+    }
+    XFree(text_prop.value);
+    *winname = (char *)strdup(*list);
+    XFreeStringList(list);
+    return 1;
+}
+
+Status
+I18N_GetIconName(dpy, w, iconname)
+    Display *dpy;
+    Window w;
+    char ** iconname;
+{
+    int    status;
+    XTextProperty text_prop;
+    char **list;
+    int    num;
+	
+    status = XGetWMIconName(dpy, w, &text_prop);
+    if (!status || !text_prop.value || !text_prop.nitems) return 0;
+    *iconname = (char *)strdup(text_prop.value);
+    status = XmbTextPropertyToTextList(dpy, &text_prop, &list, &num);
+    if (status < Success || !num || !*list) return 0;
+    XFree(text_prop.value);
+    *iconname = (char *)strdup(*list);
+    XFreeStringList(list);
+    return 1;
+}
+#endif
 
 
 /*
@@ -1303,371 +1504,6 @@ const char *s;
 #endif /* NEED_PUTENV_F */
 
 
-static Pixmap CreateXLogoPixmap (widthp, heightp)
-    unsigned int *widthp, *heightp;
-{
-	/* added ButtonBevelWidth compensation - djhjr - 9/14/98 */
-    int h = Scr->TBInfo.width - Scr->TBInfo.border * 2 - Scr->ButtonBevelWidth * 2;
-    if (h < 0) h = 0;
-
-    *widthp = *heightp = (unsigned int) h;
-    if (Scr->tbpm.xlogo == None) {
-	GC gc, gcBack;
-
-	Scr->tbpm.xlogo = XCreatePixmap (dpy, Scr->Root, h, h, 1);
-	gc = XCreateGC (dpy, Scr->tbpm.xlogo, 0L, NULL);
-	XSetForeground (dpy, gc, 0);
-	XFillRectangle (dpy, Scr->tbpm.xlogo, gc, 0, 0, h, h);
-	XSetForeground (dpy, gc, 1);
-	gcBack = XCreateGC (dpy, Scr->tbpm.xlogo, 0L, NULL);
-	XSetForeground (dpy, gcBack, 0);
-
-	/*
-	 * draw the logo large so that it gets as dense as possible; then white
-	 * out the edges so that they look crisp
-	 */
-	XmuDrawLogo (dpy, Scr->tbpm.xlogo, gc, gcBack, -1, -1, h + 2, h + 2);
-	XDrawRectangle (dpy, Scr->tbpm.xlogo, gcBack, 0, 0, h - 1, h - 1);
-
-	/*
-	 * done drawing
-	 */
-	XFreeGC (dpy, gc);
-	XFreeGC (dpy, gcBack);
-    }
-    return Scr->tbpm.xlogo;
-}
-
-
-static Pixmap CreateResizePixmap (widthp, heightp)
-    unsigned int *widthp, *heightp;
-{
-	/* added ButtonBevelWidth compensation - djhjr - 9/14/98 */
-    int h = Scr->TBInfo.width - Scr->TBInfo.border * 2 - Scr->ButtonBevelWidth * 2;
-    if (h < 1) h = 1;
-
-    *widthp = *heightp = (unsigned int) h;
-    if (Scr->tbpm.resize == None) {
-	XPoint	points[3];
-	GC gc;
-	int wb, ws;
-	int lw;
-
-	/*
-	 * create the pixmap
-	 */
-	Scr->tbpm.resize = XCreatePixmap (dpy, Scr->Root, h, h, 1);
-	gc = XCreateGC (dpy, Scr->tbpm.resize, 0L, NULL);
-	XSetForeground (dpy, gc, 0);
-	XFillRectangle (dpy, Scr->tbpm.resize, gc, 0, 0, h, h);
-	XSetForeground (dpy, gc, 1);
-	lw = h / 16;
-	if (lw == 1)
-	    lw = 0;
-	XSetLineAttributes (dpy, gc, lw, LineSolid, CapButt, JoinMiter);
-
-	/*
-	 * draw the resize button,
-	 */
-#ifdef ORIGINAL_RESIZEPIXMAP
-	wb = (h * 2) / 3; /* bigger */
-	ws = wb / 2; /* smaller */
-	points[0].x = wb;
-	points[0].y = 0;
-	points[1].x = wb;
-	points[1].y = wb;
-	points[2].x = 0;
-	points[2].y = wb;
-#else
-	wb = h / 4; /* bigger */
-	ws = h / 2; /* smaller */
-	points[0].x = 0;
-	points[0].y = points[1].y = wb;
-	points[1].x = points[2].x = h - wb - 1;
-	points[2].y = h;
-#endif
-	XDrawLines (dpy, Scr->tbpm.resize, gc, points, 3, CoordModeOrigin);
-#ifdef ORIGINAL_RESIZEPIXMAP
-	points[0].x = ws;
-	points[0].y = 0;
-	points[1].x = ws;
-	points[1].y = ws;
-	points[2].x = 0;
-	points[2].y = ws;
-#else
-	points[0].x = 0;
-	points[0].y = points[1].y = ws;
-	points[1].x = points[2].x = ws;
-	points[2].y = h;
-#endif
-	XDrawLines (dpy, Scr->tbpm.resize, gc, points, 3, CoordModeOrigin);
-
-	/*
-	 * done drawing
-	 */
-	XFreeGC(dpy, gc);
-    }
-    return Scr->tbpm.resize;
-}
-
-
-static Pixmap CreateDotPixmap (widthp, heightp)
-    unsigned int *widthp, *heightp;
-{
-    int h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
-
-#ifdef ORIGINAL_DOTPIXMAP
-    h = h * 3 / 4;
-    if (h < 1) h = 1;
-    if (!(h & 1))
-	h--;
-#else
-    if (h < 1) h = 1;
-#endif
-    *widthp = *heightp = (unsigned int) h;
-    if (Scr->tbpm.delete == None) {
-	GC  gc;
-#ifndef ORIGINAL_DOTPIXMAP
-	XPoint	points[5];
-	int wb, ws;
-	int lw;
-#endif
-
-	Scr->tbpm.delete = XCreatePixmap (dpy, Scr->Root, h, h, 1);
-	gc = XCreateGC (dpy, Scr->tbpm.delete, 0L, NULL);
-	XSetForeground (dpy, gc, 0L);
-	XFillRectangle (dpy, Scr->tbpm.delete, gc, 0, 0, h, h);
-	XSetForeground (dpy, gc, 1L);
-#ifdef ORIGINAL_DOTPIXMAP
-	XSetLineAttributes (dpy, gc, h, LineSolid, CapRound, JoinRound);
-	XDrawLine (dpy, Scr->tbpm.delete, gc, h/2, h/2, h/2, h/2);
-#else
-	lw = h / 16;
-	if (lw == 1)
-	    lw = 0;
-	XSetLineAttributes (dpy, gc, lw, LineSolid, CapButt, JoinMiter);
-
-	wb = (h * 2) / 3; /* bigger */
-	ws = wb / 2; /* smaller */
-	points[0].x = points[0].y = points[1].y = points[3].x = points[4].x = points[4].y = ws;
-	points[1].x = points[2].x = points[2].y = points[3].y = wb;
-	XDrawLines (dpy, Scr->tbpm.delete, gc, points, 5, CoordModeOrigin);
-#endif
-
-	XFreeGC(dpy, gc);
-    }
-    return Scr->tbpm.delete;
-}
-
-#define questionmark_width 8
-#define questionmark_height 8
-static char questionmark_bits[] = {
-   0x38, 0x7c, 0x64, 0x30, 0x18, 0x00, 0x18, 0x18};
-
-static Pixmap CreateQuestionPixmap (widthp, heightp)
-    unsigned int *widthp, *heightp;
-{
-    *widthp = questionmark_width;
-    *heightp = questionmark_height;
-    if (Scr->tbpm.question == None) {
-	Scr->tbpm.question = XCreateBitmapFromData (dpy, Scr->Root,
-						    questionmark_bits,
-						    questionmark_width,
-						    questionmark_height);
-    }
-    /*
-     * this must succeed or else we are in deep trouble elsewhere
-     */
-    return Scr->tbpm.question;
-}
-
-
-static Pixmap CreateMenuPixmap (widthp, heightp)
-    int *widthp, *heightp;
-{
-	/* added ButtonBevelWidth compensation - djhjr - 9/14/98 */
-	int h = Scr->TBInfo.width - Scr->TBInfo.border * 2 - Scr->ButtonBevelWidth * 2;
-
-    return CreateMenuIcon(h, widthp, heightp);
-}
-
-Pixmap CreateMenuIcon (height, widthp, heightp)
-    int	height;
-    int	*widthp, *heightp;
-{
-    int h, w;
-    int ih, iw;
-    int	ix, iy;
-    int	mh, mw;
-    int	tw, th;
-    int	lw, lh;
-    int	lx, ly;
-    int	lines, dly;
-    int off;
-    int	bw;
-
-    h = height;
-    w = h * 7 / 8;
-    if (h < 1)
-	h = 1;
-    if (w < 1)
-	w = 1;
-    *widthp = w;
-    *heightp = h;
-    if (Scr->tbpm.menu == None) {
-	Pixmap  pix;
-	GC	gc;
-
-	pix = Scr->tbpm.menu = XCreatePixmap (dpy, Scr->Root, w, h, 1);
-	gc = XCreateGC (dpy, pix, 0L, NULL);
-	XSetForeground (dpy, gc, 0L);
-	XFillRectangle (dpy, pix, gc, 0, 0, w, h);
-	XSetForeground (dpy, gc, 1L);
-	ix = 1;
-	iy = 1;
-	ih = h - iy * 2;
-	iw = w - ix * 2;
-	off = ih / 8;
-	mh = ih - off;
-	mw = iw - off;
-	bw = mh / 16;
-	if (bw == 0 && mw > 2)
-	    bw = 1;
-	tw = mw - bw * 2;
-	th = mh - bw * 2;
-	XFillRectangle (dpy, pix, gc, ix, iy, mw, mh);
-	XFillRectangle (dpy, pix, gc, ix + iw - mw, iy + ih - mh, mw, mh);
-	XSetForeground (dpy, gc, 0L);
-	XFillRectangle (dpy, pix, gc, ix+bw, iy+bw, tw, th);
-	XSetForeground (dpy, gc, 1L);
-	lw = tw / 2;
-	if ((tw & 1) ^ (lw & 1))
-	    lw++;
-	lx = ix + bw + (tw - lw) / 2;
-
-	lh = th / 2 - bw;
-	if ((lh & 1) ^ ((th - bw) & 1))
-	    lh++;
-	ly = iy + bw + (th - bw - lh) / 2;
-
-	lines = 3;
-	if ((lh & 1) && lh < 6)
-	{
-	    lines--;
-	}
-	dly = lh / (lines - 1);
-	while (lines--)
-	{
-	    XFillRectangle (dpy, pix, gc, lx, ly, lw, bw);
-	    ly += dly;
-	}
-	XFreeGC (dpy, gc);
-    }
-    return Scr->tbpm.menu;
-}
-
-/* djhjr - 6/4/00 */
-static Pixmap CreateRArrowPixmap(widthp, heightp)
-unsigned int *widthp, *heightp;
-{
-	int h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
-
-	if (!(h & 1)) h--;
-	if (h < 1) h = 1;
-	*widthp = *heightp = (unsigned int) h;
-
-	if (Scr->tbpm.rarrow == None)
-	{
-		XPoint  points[4];
-		GC gc;
-		int lw, mw;
-
-		/*
-		 * create the pixmap
-		 */
-		Scr->tbpm.rarrow = XCreatePixmap(dpy, Scr->Root, h, h, 1);
-		gc = XCreateGC(dpy, Scr->tbpm.rarrow, 0L, NULL);
-		XSetForeground(dpy, gc, 0L);
-		XFillRectangle(dpy, Scr->tbpm.rarrow, gc, 0, 0, h, h);
-		XSetForeground(dpy, gc, 1L);
-		lw = h / 16;
-		if (lw == 1) lw = 0;
-		XSetLineAttributes (dpy, gc, lw, LineSolid, CapButt, JoinMiter);
-
-		/*
-		 * draw the right arrow button
-		 */
-		mw = h / 3;
-		points[0].x = h - mw;
-		points[0].y = h / 2;
-		points[1].x = mw - 1;
-		points[1].y = mw - 1;
-		points[2].x = mw - 1;
-		points[2].y = h - mw;
-		points[3] = points[0];
-
-		XDrawLines(dpy, Scr->tbpm.rarrow, gc, points, 4, CoordModeOrigin);
-
-		/*
-		 * done drawing
-		 */
-		XFreeGC(dpy, gc);
-	}
-
-    return Scr->tbpm.rarrow;
-}
-
-/* djhjr - 6/4/00 */
-static Pixmap CreateDArrowPixmap(widthp, heightp)
-unsigned int *widthp, *heightp;
-{
-	int h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
-
-	if (!(h & 1)) h--;
-	if (h < 1) h = 1;
-	*widthp = *heightp = (unsigned int) h;
-
-	if (Scr->tbpm.darrow == None)
-	{
-		XPoint points[4];
-		GC gc;
-		int lw, mw;
-
-		/*
-		 * create the pixmap
-		 */
-		Scr->tbpm.darrow = XCreatePixmap(dpy, Scr->Root, h, h, 1);
-		gc = XCreateGC(dpy, Scr->tbpm.darrow, 0L, NULL);
-		XSetForeground(dpy, gc, 0L);
-		XFillRectangle(dpy, Scr->tbpm.darrow, gc, 0, 0, h, h);
-		XSetForeground(dpy, gc, 1L);
-		lw = h / 16;
-		if (lw == 1) lw = 0;
-		XSetLineAttributes (dpy, gc, lw, LineSolid, CapButt, JoinMiter);
-
-		/*
-		 * draw the down arrow button
-		 */
-		mw = h / 3;
-		points[0].x = h / 2;
-		points[0].y = h - mw;
-		points[1].x = h - mw;
-		points[1].y = mw - 1;
-		points[2].x = mw - 1;
-		points[2].y = mw - 1;
-		points[3] = points[0];
-
-		XDrawLines(dpy, Scr->tbpm.darrow, gc, points, 4, CoordModeOrigin);
-
-		/*
-		 * done drawing
-		 */
-		XFreeGC(dpy, gc);
-	}
-
-    return Scr->tbpm.darrow;
-}
-
 /* Returns a blank cursor */
 Cursor NoCursor()
 {
@@ -1683,464 +1519,681 @@ Cursor NoCursor()
 	return(blank);
 }
 
-/* djhjr - 4/19/96 */
-static Image *Create3DDotImage (cp)
+/* djhjr - 10/30/02 */
+static void DrawDotImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
 ColorPair cp;
+int state;
 {
-    Image *image;
-    int	  h;
+    XPoint points[5];
+    int wb, hb, ws, hs, lw;
 
-    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
-    if (!(h & 1)) h--;
+    lw = (w > h) ? h / 16 : w / 16;
+    if (lw == 1) lw = 0;
+    XSetForeground(dpy, rootGC, cp.fore);
+    XSetLineAttributes(dpy, rootGC, lw, LineSolid, CapButt, JoinMiter);
 
-    image = (Image*) malloc (sizeof (struct _Image));
-    if (! image) return (None);
-    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
-    if (image->pixmap == None) return (None);
-
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->ButtonBevelWidth, cp, off, True, False);
-
-    Draw3DBorder (image->pixmap, (h / 2) - 2, (h / 2) - 2, 5, 5, Scr->ShallowReliefWindowButton, cp, off, True, False);
-
-    image->mask   = None;
-    image->width  = h;
-    image->height = h;
-    image->next   = None;
-    return (image);
+    ws = x + (w / 2) - 2;
+    hs = y + (h / 2) - 2;
+    wb = ws + 4;
+    hb = hs + 4;
+    
+    points[0].x = points[3].x = points[4].x = ws;
+    points[0].y = points[1].y = points[4].y = hs;
+    points[1].x = points[2].x = wb;
+    points[2].y = points[3].y = hb;
+    XDrawLines(dpy, d, rootGC, points, 5, CoordModeOrigin);
 }
 
-/* djhjr - 4/19/96 */
-static Image *Create3DBarImage (cp)
+/* djhjr - 10/30/02 */
+static void DrawResizeImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
 ColorPair cp;
+int state;
 {
-    Image *image;
-    int	  h;
+    XPoint points[3];
+    int wb, hb, ws, hs, lw;
 
-    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
-    if (!(h & 1)) h--;
+    lw = (w > h) ? h / 16 : w / 16;
+    if (lw == 1) lw = 0;
+    XSetForeground(dpy, rootGC, cp.fore);
+    XSetLineAttributes(dpy, rootGC, lw, LineSolid, CapButt, JoinMiter);
 
-    image = (Image*) malloc (sizeof (struct _Image));
-    if (! image) return (None);
-    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
-    if (image->pixmap == None) return (None);
+    y--;
+    wb = w / 4; /* bigger width */
+    hb = h / 4; /* bigger width */
+    ws = w / 2; /* smaller width */
+    hs = h / 2; /* smaller width */
 
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->ButtonBevelWidth, cp, off, True, False);
+    points[0].x = x;
+    points[0].y = points[1].y = y + hb;
+    points[1].x = points[2].x = x + w - wb - 1;
+    points[2].y = y + h;
+    XDrawLines(dpy, d, rootGC, points, 3, CoordModeOrigin);
 
-/* djhjr - 4/29/98
-    Draw3DBorder (image->pixmap, 4, (h / 2) - 2, h - 8, 5, Scr->ShallowReliefWindowButton, cp, off, True, False);
-*/
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-	Draw3DBorder (image->pixmap, Scr->ButtonBevelWidth + 2, (h / 2) - 2,
-		h - Scr->ButtonBevelWidth * 2 - 4, 5,
-		Scr->ShallowReliefWindowButton, cp, off, True, False);
-
-    image->mask   = None;
-    image->width  = h;
-    image->height = h;
-    image->next   = None;
-    return (image);
+    points[0].x = x;
+    points[0].y = points[1].y = y + hs;
+    points[1].x = points[2].x = x + ws;
+    points[2].y = y + h;
+    XDrawLines(dpy, d, rootGC, points, 3, CoordModeOrigin);
 }
 
-/* djhjr - 4/19/96 */
-static Image *Create3DMenuImage (cp)
+/* djhjr - 10/30/02 */
+static void DrawMenuImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
 ColorPair cp;
+int state;
 {
-    Image *image;
-    int	  h, i, j, k, l;
+    int ih, iw;
+    int	ix, iy;
+    int	mh, mw;
+    int	tw, th;
+    int	lw, lh;
+    int	lx, ly;
+    int	lines, dly;
+    /*int off;*/
+    int	bw;
 
-    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
-    if (!(h & 1)) h--;
+    if (h < 1) h = 1;
+    if (w < 1) w = 1;
 
-    image = (Image*) malloc (sizeof (struct _Image));
-    if (! image) return (None);
-    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
-    if (image->pixmap == None) return (None);
+    ix = iy = pad + 1;
+    ih = h - iy * 2;
+    iw = w - ix * 2;
+    /*off = ih / 8;*/
+    mh = ih - ih / 8/*off*/;
+    mw = iw - iw / 8/*off*/;
+    bw = mh / 16;
+    if (bw == 0 && mw > 2) bw = 1;
+    tw = mw - bw * 2;
+    th = mh - bw * 2;
+    ix += x;
+    iy += y;
+    XSetForeground(dpy, rootGC, cp.fore);
+    XFillRectangle(dpy, d, rootGC, ix, iy, mw, mh);
+    XFillRectangle(dpy, d, rootGC, ix + iw - mw, iy + ih - mh, mw, mh);
+    XSetForeground(dpy, rootGC, cp.back);
+    XFillRectangle(dpy, d, rootGC, ix + bw, iy + bw, tw, th);
 
-#ifdef ORIGINAL_MENUPIXMAP
-	/* ...why is this different than what's in Create3DMenuIcon()? */
-    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->TitleBevelWidth, cp, off, True, False);
-    for (i = 4; i < h - 7; i += 5) {
-	Draw3DBorder (image->pixmap, 4, i, h - 8, 4, 1, cp, off, True, False);
-#else
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->ButtonBevelWidth, cp, off, True, False);
-
-/* djhjr - 4/29/98
-    for (i = 3; i + 3 < h; i += 3) {
-	Draw3DBorder (image->pixmap, 4, i, h - 8, 3, 1, cp, off, True, False);
+    lw = tw / 2;
+    if ((tw & 1) ^ (lw & 1)) lw++;
+    lx = ix + bw + (tw - lw) / 2;
+    lh = th / 2 - bw;
+    if ((lh & 1) ^ ((th - bw) & 1)) lh++;
+    ly = iy + bw + (th - bw - lh) / 2;
+    lines = 3;
+    if ((lh & 1) && lh < 6) lines--;
+    dly = lh / (lines - 1);
+    XSetForeground(dpy, rootGC, cp.fore);
+    while (lines--)
+    {
+	XFillRectangle(dpy, d, rootGC, lx, ly, lw, bw);
+	ly += dly;
     }
-*/
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-	/* count the vertical pixels... */
-	for (i = Scr->ButtonBevelWidth + 2; i + 3 < h - Scr->ButtonBevelWidth - 2; i += 3)
-		;
-	/* ...center 'em... */
-	j = (h - i) / 2 + Scr->ButtonBevelWidth;
-	k = i;
-	l = h - Scr->ButtonBevelWidth * 2 - 4;
-	/* ...now draw 'em */
-	for (i = j; i < k; i += 3)
-		Draw3DBorder (image->pixmap,
-			Scr->ButtonBevelWidth + 2, i, l, 3, 1, cp, off, True, False);
-#endif
-
-    image->mask   = None;
-    image->width  = h;
-    image->height = h;
-    image->next   = None;
-    return (image);
 }
 
-/* djhjr - 4/19/96 */
-static Image *Create3DResizeImage (cp)
+/* djhjr - 10/30/02 */
+static void DrawXLogoImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
 ColorPair cp;
+int state;
 {
-    Image *image;
-    int	  h, i, j;
+    GC gcBack;
+    XGCValues gcvalues;
+    int lw;
 
-    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    gcBack = XCreateGC(dpy, Scr->Root, 0, &gcvalues);
+    gcvalues.background = cp.back;
+    gcvalues.foreground = cp.fore;
+    XChangeGC(dpy, gcBack, GCForeground | GCBackground, &gcvalues);
+
+    lw = (w > h) ? h / 16 : w / 16;
+    if (lw < 3) lw = 3;
+    XSetLineAttributes(dpy, gcBack, lw, LineSolid, CapButt, JoinMiter);
+
+    /*
+     * Draw the logo large so that it gets as dense as possible,
+     * then blank out the edges so that they look crisp.
+     */
+
+    x += pad;
+    y += pad;
+    w -= pad * 2;
+    h -= pad * 2;
+    XSetForeground(dpy, rootGC, cp.fore);
+    XSetForeground(dpy, gcBack, cp.back);
+    XmuDrawLogo(dpy, d, rootGC, gcBack, x - 1, y - 1, w + 2, h + 2);
+    XDrawRectangle(dpy, d, gcBack, x - 1, y - 1, w + 1, h + 1);
+
+    XFreeGC(dpy, gcBack);
+}
+
+/* djhjr - 10/30/02 */
+static void DrawQuestionImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
+ColorPair cp;
+int state;
+{
+    Pixmap p;
+
+    p = XCreateBitmapFromData(dpy, Scr->Root, questionmark_bits,
+			      questionmark_width, questionmark_height);
+
+    XSetForeground(dpy, rootGC, cp.fore);
+    XCopyPlane(dpy, p, d, rootGC, 0, 0,
+	       questionmark_width, questionmark_height,
+	       x + (w - questionmark_width) / 2,
+	       y + (h - questionmark_height) / 2,
+	       (unsigned long)1);
+
+    XFreePixmap(dpy, p);
+}
+
+/* djhjr - 10/30/02 */
+static void DrawRArrowImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
+ColorPair cp;
+int state;
+{
+    XPoint points[4];
+    int lw, mw, mh;
+
     if (!(h & 1)) h--;
+    if (h < 1) h = 1;
 
-	/* djhjr - 4/29/98 */
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-	i = h - Scr->ButtonBevelWidth * 2;
+    lw = (w > h) ? h / 16 : w / 16;
+    if (lw == 1) lw = 0;
+    XSetForeground(dpy, rootGC, cp.fore);
+    XSetLineAttributes(dpy, rootGC, lw, LineSolid, CapButt, JoinMiter);
 
-    image = (Image*) malloc (sizeof (struct _Image));
-    if (! image) return (None);
-    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
-    if (image->pixmap == None) return (None);
-
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->ButtonBevelWidth, cp, off, True, False);
-
-/* djhjr - 4/29/98
-    Draw3DBorder (image->pixmap, 0, h / 4, ((3 * h) / 4) + 1, ((3 * h) / 4) + 1,
-		Scr->ShallowReliefWindowButton, cp, off, True, False);
-    Draw3DBorder (image->pixmap, 0, h / 2, (h / 2) + 1, (h / 2) + 1,
-		Scr->ShallowReliefWindowButton, cp, off, True, False);
-*/
-	/*
-	 * extend the left and bottom "off-window" by the line width
-	 * for "thick" boxes on "thin" buttons
-	 */
-
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-	j = Scr->ButtonBevelWidth + (i / 4);
-    Draw3DBorder (image->pixmap,
-		-Scr->ShallowReliefWindowButton, j - 1,
-		h - j + 1 + Scr->ShallowReliefWindowButton,
-		h - j + 1 + Scr->ShallowReliefWindowButton,
-		Scr->ShallowReliefWindowButton, cp, off, True, False);
-	j = Scr->ButtonBevelWidth + (i / 2);
-    Draw3DBorder (image->pixmap,
-		-Scr->ShallowReliefWindowButton, j,
-		h - j + Scr->ShallowReliefWindowButton,
-		h - j + Scr->ShallowReliefWindowButton,
-		Scr->ShallowReliefWindowButton, cp, off, True, False);
-
-	/* djhjr - 6/25/96 ...redraw button edges without fill */
-/* redraw regardless - djhjr - 4/29/98
-	if (Scr->ShallowReliefWindowButton == 1)
-*/
-		/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-		Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->ButtonBevelWidth, cp, off, False, False);
-
-    image->mask   = None;
-    image->width  = h;
-    image->height = h;
-    image->next   = None;
-    return (image);
+    mw = w / 3;
+    mh = h / 3;
+    points[0].x = w - mw;
+    points[0].y = h / 2;
+    points[1].x = mw - 1;
+    points[1].y = mh - 1;
+    points[2].x = mw - 1;
+    points[2].y = h - mh;
+    points[3] = points[0];
+    XDrawLines(dpy, d, rootGC, points, 4, CoordModeOrigin);
 }
 
-/* djhjr - 4/19/96 */
-static Image *Create3DZoomImage (cp)
+/* djhjr - 10/30/02 */
+static void DrawDArrowImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
 ColorPair cp;
+int state;
 {
-    Image *image;
-    int		h, i;
+    XPoint points[4];
+    int lw, mw, mh;
 
-    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
     if (!(h & 1)) h--;
+    if (h < 1) h = 1;
 
-	/* djhjr - 4/29/98 */
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-	i = h - 2 * Scr->ButtonBevelWidth - 6;
+    lw = (w > h) ? h / 16 : w / 16;
+    if (lw == 1) lw = 0;
+    XSetForeground(dpy, rootGC, cp.fore);
+    XSetLineAttributes(dpy, rootGC, lw, LineSolid, CapButt, JoinMiter);
 
-    image = (Image*) malloc (sizeof (struct _Image));
-    if (! image) return (None);
-    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
-    if (image->pixmap == None) return (None);
-
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->ButtonBevelWidth, cp, off, True, False);
-
-/* djhjr - 4/29/98
-    Draw3DBorder (image->pixmap, h / 4, h / 4, (h / 2) + 2, (h / 2) + 2,
-		Scr->ShallowReliefWindowButton, cp, off, True, False);
-*/
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-	Draw3DBorder (image->pixmap,
-		Scr->ButtonBevelWidth + 3, Scr->ButtonBevelWidth + 3, i, i,
-		Scr->ShallowReliefWindowButton, cp, off, True, False);
-
-    image->mask   = None;
-    image->width  = h;
-    image->height = h;
-    image->next   = None;
-    return (image);
+    mw = h / 3;
+    mh = h / 3;
+    points[0].x = w / 2;
+    points[0].y = h - mh;
+    points[1].x = w - mw;
+    points[1].y = mh - 1;
+    points[2].x = mw - 1;
+    points[2].y = mh - 1;
+    points[3] = points[0];
+    XDrawLines(dpy, d, rootGC, points, 4, CoordModeOrigin);
 }
 
 /* djhjr - 4/19/96 */
-/* the first three args were of type 'unsigned int' - djhjr - 4/23/98 */
-Pixmap Create3DMenuIcon (height, widthp, heightp, cp)
-int height, *widthp, *heightp;
+/* added d, x, y, w, h, state - djhjr - 10/29/02 */
+static void Draw3DDotImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
 ColorPair cp;
+int state;
 {
-    unsigned int h, w;
-    int		i;
-    struct Colori *col;
-    static struct Colori *colori = NULL;
-
-    h = (unsigned int)height;
-    w = h * 7 / 8;
-    if (h < 1)
-	h = 1;
-    if (w < 1)
-	w = 1;
-    *widthp  = (int)w;
-    *heightp = (int)h;
-
-    for (col = colori; col; col = col->next) {
-	if (col->color == cp.back) break;
-    }
-    if (col != NULL) return (col->pix);
-    col = (struct Colori*) malloc (sizeof (struct Colori));
-    col->color = cp.back;
-    col->pix   = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
-    col->next = colori;
-    colori = col;
-    Draw3DBorder (col->pix, 0, 0, w, h, 1, cp, off, True, False);
-#ifdef ORIGINAL_MENUPIXMAP
-    for (i = 3; i + 5 < h; i += 5) {
-#else
-    for (i = 3; i + 3 < h; i += 3) {
-#endif
-	Draw3DBorder (col->pix, 4, i, w - 8, 3, 1, Scr->MenuC, off, True, False);
-    }
-    return (colori->pix);
+    Draw3DBorder(d, x + (w / 2) - 2, y + (h / 2) - 2, 5, 5,
+		 Scr->ShallowReliefWindowButton, cp, state, True, False);
 }
 
 /* djhjr - 4/19/96 */
-#include "siconify.xbm"
+/* added d, x, y, w, h, state - djhjr - 10/29/02 */
+static void Draw3DBarImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
+ColorPair cp;
+int state;
+{
+	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
+	Draw3DBorder (d, x + pad + 1, y + (h - 5) / 2,
+		w - pad * 2 - 2, 5,
+		Scr->ShallowReliefWindowButton, cp, state, True, False);
+}
 
 /* djhjr - 4/19/96 */
-Pixmap Create3DIconManagerIcon (cp)
+/* added d, x, y, w, h, state - djhjr - 10/29/02 */
+static void Draw3DMenuImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
 ColorPair cp;
+int state;
 {
-    unsigned int w, h;
-    struct Colori *col;
-    static struct Colori *colori = NULL;
+	int i, lines, width, height;
 
-    w = (unsigned int) siconify_width;
-    h = (unsigned int) siconify_height;
+	height = Scr->ShallowReliefWindowButton * 2;
 
-    for (col = colori; col; col = col->next) {
-	if (col->color == cp.back) break;
-    }
-    if (col != NULL) return (col->pix);
-    col = (struct Colori*) malloc (sizeof (struct Colori));
-    col->color = cp.back;
-    col->pix   = XCreatePixmap (dpy, Scr->Root, w, h, Scr->d_depth);
-#ifdef ORIGINAL_ICONMGRPIXMAP
-    Draw3DBorder (col->pix, 0, 0, w, h, 4, cp, off, True, False);
-#else
-    Draw3DBorder (col->pix, 0, 0, w, h, 1, cp, off, True, False);
-#ifdef DO_DOT
-    Draw3DBorder (col->pix, (w / 2) - 1, (h / 2) - 1, 3, 3, 1, cp, off, True, False);
-#endif
-#endif
-    col->next = colori;
-    colori = col;
+	/* count the menu lines */
+	lines = (h - pad * 2 - 2) / height;
+	/* center 'em */
+	y += (h - lines * height) / 2;
+	if (!(y & 1)) y += 1;
+	/* now draw 'em */
+	x += pad + 1;
+	lines = y + lines * height;
+	width = w - pad * 2 - 2;
+	for (i = y; i < lines; i += height)
+		Draw3DBorder(d, x, i, width, height,
+			     Scr->ShallowReliefWindowButton,
+			     cp, state, True, False);
+}
 
-    return (colori->pix);
+/* djhjr - 4/19/96 */
+/* added d, x, y, w, h, state - djhjr - 10/29/02 */
+static void Draw3DResizeImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
+ColorPair cp;
+int state;
+{
+    int	  i, j;
+
+    /* djhjr - 4/29/98 */
+    /* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
+    i = w - Scr->ButtonBevelWidth * 2;
+
+    /*
+     * Extend the left and bottom "off-window" by the
+     * line width for "thick" boxes on "thin" buttons.
+     */
+
+    /* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
+    j = Scr->ButtonBevelWidth + (i / 4);
+    Draw3DBorder(d,
+		x + -Scr->ShallowReliefWindowButton, y + j - 1,
+		x + w - j + 1 + Scr->ShallowReliefWindowButton,
+		y + h - j + 1 + Scr->ShallowReliefWindowButton,
+		Scr->ShallowReliefWindowButton, cp, state, True, False);
+
+    j = Scr->ButtonBevelWidth + (i / 2);
+    Draw3DBorder(d,
+		x + -Scr->ShallowReliefWindowButton, y + j,
+		x + w - j + Scr->ShallowReliefWindowButton,
+		y + h - j + Scr->ShallowReliefWindowButton,
+		Scr->ShallowReliefWindowButton, cp, state, True, False);
+}
+
+/* djhjr - 4/19/96 */
+/* added d, x, y, w, h, state - djhjr - 10/29/02 */
+static void Draw3DZoomImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
+ColorPair cp;
+int state;
+{
+	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
+	Draw3DBorder (d,
+		x + pad + 1, y + pad + 1,
+		w - 2 * pad - 2,
+		h - 2 * pad - 2,
+		Scr->ShallowReliefWindowButton, cp, state, True, False);
 }
 
 /* djhjr - 6/4/00 */
-static Image *Create3DRArrowImage(cp)
+/* added d, x, y, w, h, state - djhjr - 10/29/02 */
+static void Draw3DRArrowImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
 ColorPair cp;
+int state;
 {
-    Image *image;
-    int i, h, mw;
+    int i, mw, mh;
 
-    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
-    if (!(h & 1)) h--;
-	mw = h / 3;
-
-    image = (Image*) malloc (sizeof (struct _Image));
-    if (! image) return (None);
-    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
-    if (image->pixmap == None) return (None);
-
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->ButtonBevelWidth, cp, off, True, False);
+	mw = w / 3;
+	mh = h / 3;
 
 	if (Scr->Monochrome != COLOR)
 	{
 		/* draw highlights */
-		setBorderGC(1, Scr->GreyGC, cp, off, False);
+		setBorderGC(1, Scr->GreyGC, cp, state, False);
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
 		{
-			XDrawLine(dpy, image->pixmap, Scr->GreyGC,
-				h - mw - i, h / 2, mw - 1 + i, mw - 1 + i);
-			XDrawLine (dpy, image->pixmap, Scr->GreyGC,
-				mw - 1 + i, mw - 1 + i, mw - 1 + i, h - mw - i);
+			XDrawLine(dpy, d, Scr->GreyGC,
+				x + w - mw - i, y + h / 2,
+				x + mw - 1 + i, y + mh - 1 + i);
+			XDrawLine (dpy, d, Scr->GreyGC,
+				x + mw - 1 + i, y + mh - 1 + i,
+				x + mw - 1 + i, y + h - mh - i);
 		}
 
 		/* draw shadows */
-		setBorderGC(2, Scr->GreyGC, cp, off, False);
+		setBorderGC(2, Scr->GreyGC, cp, state, False);
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
-			XDrawLine (dpy, image->pixmap, Scr->GreyGC,
-				mw - 1 + i, h - mw - i, h - mw - i, h / 2);
+			XDrawLine (dpy, d, Scr->GreyGC,
+				x + mw - 1 + i, y + h - mh - i,
+				x + w - mw - i, y + h / 2);
     }
 	else if (Scr->BeNiceToColormap)
 	{
 		int dashoffset = 0;
 
-		setBorderGC(3, Scr->ShadGC, cp, off, False);
+		setBorderGC(3, Scr->ShadGC, cp, state, False);
 	    
 		/* draw highlights */
 		XSetForeground (dpy, Scr->ShadGC, Scr->White);
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
 		{
-			XDrawLine(dpy, image->pixmap, Scr->ShadGC,
-				h - mw - i, h / 2, mw - 1 + i, mw - 1 + i);
-			XDrawLine (dpy, image->pixmap, Scr->ShadGC,
-				mw - 1 + i, mw - 1 + i, mw - 1 + i, h - mw - i);
+			XDrawLine(dpy, d, Scr->ShadGC,
+				x + w - mw - i, y + h / 2,
+				x + mw - 1 + i, y + mh - 1 + i);
+			XDrawLine (dpy, d, Scr->ShadGC,
+				x + mw - 1 + i, y + mh - 1 + i,
+				x + mw - 1 + i, y + h - mh - i);
 		}
 
 		/* draw shadows */
 		XSetForeground (dpy, Scr->ShadGC, Scr->Black);
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
 		{
-			XDrawLine (dpy, image->pixmap, Scr->ShadGC,
-				mw - 1 + i, h - mw - i + dashoffset,
-				h - mw - i, h / 2 + dashoffset);
+			XDrawLine (dpy, d, Scr->ShadGC,
+				x + mw - 1 + i, y + h - mh - i + dashoffset,
+				x + w - mw - i, y + h / 2 + dashoffset);
 			dashoffset = 1 - dashoffset;
 		}
 	}
 	else
 	{
 		/* draw highlights */
-		FB (cp.shadc, cp.shadd);
+		if (state)
+		{ FB (cp.shadc, cp.shadd); }
+		else
+		{ FB (cp.shadd, cp.shadc); }
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
 		{
-			XDrawLine(dpy, image->pixmap, Scr->NormalGC,
-				h - mw - i, h / 2, mw - 1 + i, mw - 1 + i);
-			XDrawLine (dpy, image->pixmap, Scr->NormalGC,
-				mw - 1 + i, mw - 1 + i, mw - 1 + i, h - mw - i);
+			XDrawLine(dpy, d, Scr->NormalGC,
+				x + w - mw - i, y + h / 2,
+				x + mw - 1 + i, y + mh - 1 + i);
+			XDrawLine (dpy, d, Scr->NormalGC,
+				x + mw - 1 + i, y + mh - 1 + i,
+				x + mw - 1 + i, y + h - mh - i);
 		}
 
 		/* draw shadows */
-		FB (cp.shadd, cp.shadc);
+		if (state)
+		{ FB (cp.shadd, cp.shadc); }
+		else
+		{ FB (cp.shadc, cp.shadd); }
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
-			XDrawLine (dpy, image->pixmap, Scr->NormalGC,
-				mw - 1 + i, h - mw - i, h - mw - i, h / 2);
+			XDrawLine (dpy, d, Scr->NormalGC,
+				x + mw - 1 + i, y + h - mw - i,
+				x + w - mw - i, y + h / 2);
 	}
-
-    image->mask   = None;
-    image->width  = h;
-    image->height = h;
-    image->next   = None;
-    return (image);
 }
 
 /* djhjr - 6/4/00 */
-static Image *Create3DDArrowImage(cp)
+/* added d, x, y, w, h, state - djhjr - 10/29/02 */
+static void Draw3DDArrowImage(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
 ColorPair cp;
+int state;
 {
-    Image *image;
-    int i, h, mw;
+    int i, mw, mh;
 
-    h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
-    if (!(h & 1)) h--;
-	mw = h / 3;
-
-    image = (Image*) malloc (sizeof (struct _Image));
-    if (! image) return (None);
-    image->pixmap = XCreatePixmap (dpy, Scr->Root, h, h, Scr->d_depth);
-    if (image->pixmap == None) return (None);
-
-	/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-    Draw3DBorder (image->pixmap, 0, 0, h, h, Scr->ButtonBevelWidth, cp, off, True, False);
+	mw = w / 3;
+	mh = h / 3;
 
 	if (Scr->Monochrome != COLOR)
 	{
 		/* draw highlights */
-		setBorderGC(1, Scr->GreyGC, cp, off, False);
+		setBorderGC(1, Scr->GreyGC, cp, state, False);
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
 		{
-			XDrawLine(dpy, image->pixmap, Scr->GreyGC,
-				h - mw - i, mw - 1 + i, mw - 1 + i, mw - 1 + i);
-			XDrawLine (dpy, image->pixmap, Scr->GreyGC,
-				mw - 1 + i, mw - 1 + i, h / 2, mw - 1 - i + h / 2);
+			XDrawLine(dpy, d, Scr->GreyGC,
+				x + w - mw - i, y + mh - 1 + i,
+				x + mw - 1 + i, y + mh - 1 + i);
+			XDrawLine (dpy, d, Scr->GreyGC,
+				x + mw - 1 + i, y + mh - 1 + i,
+				x + w / 2, y + mh - 1 - i + h / 2);
 		}
 
 		/* draw shadows */
-		setBorderGC(2, Scr->GreyGC, cp, off, False);
+		setBorderGC(2, Scr->GreyGC, cp, state, False);
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
-			XDrawLine (dpy, image->pixmap, Scr->GreyGC,
-				h / 2, mw - 1 - i + h / 2, h - mw - i, mw + i);
+			XDrawLine (dpy, d, Scr->GreyGC,
+				x + w / 2, y + mh - 1 - i + h / 2,
+				x + w - mw - i, y + mh + i);
     }
 	else if (Scr->BeNiceToColormap)
 	{
 		int dashoffset = 0;
 
-		setBorderGC(3, Scr->ShadGC, cp, off, False);
+		setBorderGC(3, Scr->ShadGC, cp, state, False);
 	    
 		/* draw highlights */
 		XSetForeground (dpy, Scr->ShadGC, Scr->White);
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
 		{
-			XDrawLine(dpy, image->pixmap, Scr->ShadGC,
-				h - mw - i, mw - 1 + i, mw - 1 + i, mw - 1 + i);
-			XDrawLine (dpy, image->pixmap, Scr->ShadGC,
-				mw - 1 + i, mw - 1 + i + dashoffset,
-				h / 2, mw - 1 - i + h / 2 + dashoffset);
+			XDrawLine(dpy, d, Scr->ShadGC,
+				x + w - mw - i, y + mh - 1 + i,
+				x + mw - 1 + i, y + mh - 1 + i);
+			XDrawLine (dpy, d, Scr->ShadGC,
+				x + mw - 1 + i, y + mh - 1 + i + dashoffset,
+				x + w / 2, y + mh - 1 - i + h / 2 + dashoffset);
 			dashoffset = 1 - dashoffset;
 		}
 
 		/* draw shadows */
 		XSetForeground (dpy, Scr->ShadGC, Scr->Black);
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
-			XDrawLine (dpy, image->pixmap, Scr->ShadGC,
-				h / 2, mw - 1 - i + h / 2, h - mw - i, mw + i);
+			XDrawLine (dpy, d, Scr->ShadGC,
+				x + w / 2, y + mh - 1 - i + h / 2,
+				x + w - mw - i, y + mh + i);
 	}
 	else
 	{
 		/* draw highlights */
-		FB (cp.shadc, cp.shadd);
+		if (state)
+		{ FB (cp.shadc, cp.shadd); }
+		else
+		{ FB (cp.shadd, cp.shadc); }
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
 		{
-			XDrawLine(dpy, image->pixmap, Scr->NormalGC,
-				h - mw - i, mw - 1 + i, mw - 1 + i, mw - 1 + i);
-			XDrawLine (dpy, image->pixmap, Scr->NormalGC,
-				mw - 1 + i, mw - 1 + i, h / 2, mw - 1 - i + h / 2);
+			XDrawLine(dpy, d, Scr->NormalGC,
+				x + w - mw - i, y + mh - 1 + i,
+				x + mw - 1 + i, y + mh - 1 + i);
+			XDrawLine (dpy, d, Scr->NormalGC,
+				x + mw - 1 + i, y + mh - 1 + i,
+				x + w / 2, y + mh - 1 - i + h / 2);
 		}
 
 		/* draw shadows */
-		FB (cp.shadd, cp.shadc);
+		if (state)
+		{ FB (cp.shadd, cp.shadc); }
+		else
+		{ FB (cp.shadc, cp.shadd); }
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
-			XDrawLine (dpy, image->pixmap, Scr->NormalGC,
-				h / 2, mw - 1 - i + h / 2, h - mw - i, mw + i);
+			XDrawLine (dpy, d, Scr->NormalGC,
+				x + w / 2, y + mh - 1 - i + h / 2,
+				x + w - mw - i, y + mh + i);
 	}
+}
 
-    image->mask   = None;
-    image->width  = h;
-    image->height = h;
-    image->next   = None;
-    return (image);
+/* djhjr - 10/25/02 */
+static void Draw3DBoxHighlight(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
+ColorPair cp;
+int state;
+{
+	Draw3DBorder(d, x, y, w, h,
+		     Scr->ShallowReliefWindowButton, cp,
+		     state, True, False);
+}
+
+/* djhjr - 10/25/02 */
+static void Draw3DLinesHighlight(d, x, y, w, h, pad, cp, state)
+Drawable d;
+int x, y, w, h, pad;
+ColorPair cp;
+int state;
+{
+	int p;
+	
+	p = (Scr->ShallowReliefWindowButton & 1) ? 3 : 2;
+	p = (h - Scr->ShallowReliefWindowButton * p - 2) / 2;
+
+	y += h / 2 - 1;
+	y -= (Scr->ShallowReliefWindowButton & 1) ? 0 : 1;
+	y += (state == on) ? 0 : 1;
+
+	h = Scr->ShallowReliefWindowButton * 2;
+
+	Draw3DBorder(d, x, y - p, w, h,
+		     Scr->ShallowReliefWindowButton, cp,
+		     state, False, False);
+
+	if ((Scr->ShallowReliefWindowButton & 1))
+		Draw3DBorder(d, x, y, w, h,
+			     Scr->ShallowReliefWindowButton, cp,
+			     state, False, False);
+
+	Draw3DBorder(d, x, y + p, w, h,
+		     Scr->ShallowReliefWindowButton, cp,
+		     state, False, False);
+}
+
+/* ick - djhjr - 10/30/02 */
+static void DrawBackground(d, x, y, w, h, cp, use_rootGC)
+Drawable d;
+int x, y, w, h;
+ColorPair cp;
+int use_rootGC;
+{
+    XGCValues gcvalues;
+
+    if (use_rootGC)
+    {
+	if (rootGC == (GC)0)
+	    rootGC = XCreateGC(dpy, Scr->Root, 0, &gcvalues);
+
+	gcvalues.background = cp.back;
+	gcvalues.foreground = cp.fore;
+	XChangeGC(dpy, rootGC, GCForeground | GCBackground, &gcvalues);
+
+	XSetForeground(dpy, rootGC, cp.back);
+	XFillRectangle(dpy, d, rootGC, x, y, w, h);
+    }
+    else
+    {
+	FB(cp.back, cp.fore);
+	XFillRectangle(dpy, d, Scr->NormalGC, x, y, w, h);
+    }
+}
+
+/* djhjr - 10/25/02 */
+static void DrawTitleHighlight(t, state)
+TwmWindow *t;
+int state;
+{
+	static const struct {
+		char *name;
+		void (*proc)();
+		Bool use_rootGC;
+		int state;
+	} pmtab[] = {
+		/* djhjr - 10/30/02 */
+		{ TBPM_DOT,		DrawDotImage,		True, off  },
+		{ TBPM_ICONIFY,		DrawDotImage,		True, off  },
+		{ TBPM_RESIZE,		DrawResizeImage,	True, off  },
+		{ TBPM_MENU,		DrawMenuImage,		True, off  },
+		{ TBPM_XLOGO,		DrawXLogoImage,		True, off  },
+		{ TBPM_DELETE,		DrawXLogoImage,		True, off  },
+		{ TBPM_QUESTION,	DrawQuestionImage,	True, off  },
+
+		{ TBPM_3DDOT,		Draw3DDotImage,		False, off },
+		{ TBPM_3DRESIZE,	Draw3DResizeImage,	False, off },
+		{ TBPM_3DMENU,		Draw3DMenuImage,	False, off },
+		{ TBPM_3DZOOM,		Draw3DZoomImage,	False, off },
+		{ TBPM_3DBAR,		Draw3DBarImage,		False, off },
+
+		/* djhjr - 10/30/02 */
+		{ TBPM_3DBOX,		Draw3DBoxHighlight,	False, off },
+		{ TBPM_3DLINES,		Draw3DLinesHighlight,	False, off },
+
+		{ TBPM_3DRAISEDBOX,	Draw3DBoxHighlight,	False, off },
+		{ TBPM_3DSUNKENBOX,	Draw3DBoxHighlight,	False, on  },
+		{ TBPM_3DRAISEDLINES,	Draw3DLinesHighlight,	False, off },
+		{ TBPM_3DSUNKENLINES,	Draw3DLinesHighlight,	False, on  },
+	};
+
+	XGCValues gcvalues;
+	ColorPair cp;
+	register int i;
+	int h, w;
+	
+	cp = t->title;
+	w = ComputeHighlightWindowWidth(t);
+	h = Scr->TitleHeight - 2 * Scr->FramePadding - 2;
+		
+	for (i = 0; i < sizeof(pmtab) / sizeof(pmtab[0]); i++)
+	{
+		if (XmuCompareISOLatin1(pmtab[i].name, Scr->hiliteName) == 0)
+		{
+			if (state == off)
+			{
+				DrawBackground(t->title_w,
+					       t->highlightx,
+					       Scr->FramePadding + 1,
+					       w, h, cp,
+					       pmtab[i].use_rootGC | (Scr->Monochrome != COLOR));
+			}
+			else
+			{
+				/* ick - djhjr - 10/30/02 */
+				if (pmtab[i].use_rootGC)
+				{
+					if (rootGC == (GC)0)
+						rootGC = XCreateGC(dpy,
+								   Scr->Root,
+								   0,
+								   &gcvalues);
+
+					gcvalues.background = cp.back;
+					gcvalues.foreground = cp.fore;
+					XChangeGC(dpy, rootGC,
+						  GCForeground | GCBackground,
+						  &gcvalues);
+				}
+
+				(*pmtab[i].proc)(t->title_w,
+						 t->highlightx,
+						 Scr->FramePadding + 1,
+						 w, h, 0, cp, pmtab[i].state);
+			}
+
+			break;
+		}
+	}
 }
 
 /* djhjr - 1/13/98 */
@@ -2188,7 +2241,7 @@ ColorPair	cp;
 
 /* djhjr - 4/19/96 */
 void Draw3DBorder (w, x, y, width, height, bw, cp, state, fill, forcebw)
-Window		w;
+Drawable		w;
 int			x, y, width, height, bw;
 ColorPair	cp;
 int			state, fill, forcebw;
@@ -2238,8 +2291,6 @@ int			state, fill, forcebw;
 
 	if (Scr->BeNiceToColormap)
 	{
-		int dashoffset = 0;
-
 		setBorderGC(3, Scr->ShadGC, cp, state, forcebw);
 	    
 		/* draw highlights */
@@ -2249,11 +2300,13 @@ int			state, fill, forcebw;
 			XSetForeground (dpy, Scr->ShadGC, Scr->White);
 		for (i = 0; i < bw; i++)
 		{
-			XDrawLine (dpy, w, Scr->ShadGC, x + i, y + dashoffset,
+			XDrawLine (dpy, w, Scr->ShadGC,
+				x + i, y + borderdashoffset,
 				x + i, y + height - i - 1);
-			XDrawLine (dpy, w, Scr->ShadGC, x + dashoffset, y + i,
+			XDrawLine (dpy, w, Scr->ShadGC,
+				x + borderdashoffset, y + i,
 				x + width - i - 1, y + i);
-			dashoffset = 1 - dashoffset;
+			borderdashoffset = 1 - borderdashoffset;
 		}
 
 		/* draw shadows */
@@ -2373,7 +2426,7 @@ ColorPair	cp;
 
 /* djhjr - 1/12/98 */
 void Draw3DBevel (w, x, y, bw, cp, state, type)
-Window		w;
+Drawable		w;
 int			x, y, bw;
 ColorPair	cp;
 int			state, type;
@@ -2470,6 +2523,107 @@ int			state, type;
 			break;
 	}
 }
+
+/* djhjr - 10/20/02 */
+void Draw3DNoBevel(w, x, y, bw, cp, state, forcebw)
+Drawable	w;
+int		x, y, bw;
+ColorPair	cp;
+int		state, forcebw;
+{
+	int		i, upr, lwr;
+
+	if (bw < 1) return;
+
+	upr = y - 2 * Scr->BorderBevelWidth;
+	if ((upr & 1)) upr--;
+	lwr = y + 2 * Scr->BorderBevelWidth;
+	if ((lwr & 1)) lwr++;
+
+	if (Scr->Monochrome != COLOR)
+	{
+		/* set main color */
+		setBorderGC(0, Scr->GreyGC, cp, state, forcebw);
+		XFillRectangle (dpy, w, Scr->GreyGC,
+			x + Scr->BorderBevelWidth, upr,
+			(unsigned int)(bw - Scr->BorderBevelWidth * 2),
+			(unsigned int)(upr * 2));
+
+		/* draw highlight */
+		setBorderGC(1, Scr->GreyGC, cp, state, forcebw);
+		for (i = 0; i < Scr->BorderBevelWidth; i++)
+			XDrawLine (dpy, w, Scr->GreyGC,
+				x + i, upr, x + i, lwr);
+		
+		/* draw shadow */
+		setBorderGC(2, Scr->GreyGC, cp, state, forcebw);
+		for (i = bw - Scr->BorderBevelWidth; i < bw; i++)
+			XDrawLine (dpy, w, Scr->GreyGC,
+				x + i, upr, x + i, lwr);
+
+		return;
+	}
+
+	/* set main color */
+	FB (cp.back, cp.fore);
+	XFillRectangle (dpy, w, Scr->NormalGC,
+		x + Scr->BorderBevelWidth, upr,
+		(unsigned int)(bw - Scr->BorderBevelWidth * 2),
+		(unsigned int)(upr * 2));
+
+	if (Scr->BeNiceToColormap)
+	{
+		int dashoffset;
+
+		setBorderGC(3, Scr->ShadGC, cp, state, forcebw);
+	    
+		/* draw highlight */
+		if (state == on)
+			XSetForeground (dpy, Scr->ShadGC, Scr->Black);
+		else
+			XSetForeground (dpy, Scr->ShadGC, Scr->White);
+		dashoffset = 0;
+		for (i = 0; i < Scr->BorderBevelWidth; i++)
+		{
+			XDrawLine (dpy, w, Scr->ShadGC,
+				x + i, upr + dashoffset, x + i, lwr);
+			dashoffset = 1 - dashoffset;
+		}
+
+		/* draw shadow */
+		if (state == on)
+			XSetForeground (dpy, Scr->ShadGC, Scr->White);
+		else
+			XSetForeground (dpy, Scr->ShadGC, Scr->Black);
+		dashoffset = 0;
+		for (i = bw - Scr->BorderBevelWidth; i < bw; i++)
+		{
+			XDrawLine (dpy, w, Scr->ShadGC,
+				x + i, upr + dashoffset, x + i, lwr);
+			dashoffset = 1 - dashoffset;
+		}
+
+		return;
+	}
+
+	/* draw highlight */
+	if (state == on)
+		{ FB (cp.shadc, cp.shadd); }
+	else
+		{ FB (cp.shadd, cp.shadc); }
+	for (i = 0; i < Scr->BorderBevelWidth; i++)
+		XDrawLine (dpy, w, Scr->NormalGC,
+			x + i, upr, x + i, lwr);
+
+	/* draw shadow */
+	if (state == on)
+		{ FB (cp.shadd, cp.shadc); }
+	else
+		{ FB (cp.shadc, cp.shadd); }
+	for (i = bw - Scr->BorderBevelWidth; i < bw; i++)
+		XDrawLine (dpy, w, Scr->NormalGC,
+			x + i, upr, x + i, lwr);
+}
 #endif /* USE_ORIGINAL_CORNERS */
 
 /* djhjr - 4/19/96 */
@@ -2500,202 +2654,163 @@ ColorPair cp;
     return (image);
 }
 
-/* djhjr - 4/19/96 */
-static Image *GetBitmapImage (name, cp)
-char  *name;
-ColorPair cp;
+/* djhjr - 10/30/02 */
+static Image *CreateImagePixmap(name, w, h, depth)
+char *name;
+int w, h, depth;
 {
-    Image	*image, *r, *s;
-    char	path [128], pref [128];
-    char	*perc;
-    int		i;
-
-    if (! strchr (name, '%')) return (LoadBitmapImage (name, cp));
-    s = image = None;
-    strcpy (pref, name);
-    perc  = strchr (pref, '%');
-    *perc = '\0';
-    reportfilenotfound = 0;
-    for (i = 1;; i++) {
-	sprintf (path, "%s%d%s", pref, i, perc + 1);
-	r = LoadBitmapImage (path, cp);
-	if (r == None) break;
-	r->next = None;
-	if (image == None) s = image = r;
-	else {
-	    s->next = r;
-	    s = r;
-	}
-    }
-    reportfilenotfound = 1;
-    if (s != None) s->next = image;
-    if (image == None) {
-	fprintf (stderr, "Cannot open any %s bitmap file\n", name);
-    }
-    return (image);
-}
-
-#ifndef NO_XPM_SUPPORT
-/* djhjr - 3/20/98 */
-/* added color argument - djhjr - 9/28/99 */
-static Image *GetPixmapImage(name, color)
-char  *name;
-Pixel color;
-{
-    Image	*image, *r, *s;
-    char	path [128], pref [128];
-    char	*perc;
-    int		i;
-
-	/* added color argument - djhjr - 9/28/99 */
-    if (! strchr (name, '%')) return (FindImage(name, color));
-
-    s = image = None;
-    strcpy (pref, name);
-    perc  = strchr (pref, '%');
-    *perc = '\0';
-    reportfilenotfound = 0;
-    for (i = 1;; i++) {
-	sprintf (path, "%s%d%s", pref, i, perc + 1);
-
-	/* added color argument - djhjr - 9/28/99 */
-	r = FindImage(path, color);
-
-	if (r == None) break;
-	r->next = None;
-	if (image == None) s = image = r;
-	else {
-	    s->next = r;
-	    s = r;
-	}
-    }
-    reportfilenotfound = 1;
-    if (s != None) s->next = image;
-    if (image == None) {
-	fprintf (stderr, "Cannot open any %s pixmap file\n", name);
-    }
-    return (image);
-}
-#endif
-
-/* djhjr - 4/19/96 */
-Image *GetImage (name, cp)
-char      *name;
-ColorPair cp;
-{
-    name_list **list;
-    char fullname [256];
     Image *image;
 
-    if (name == NULL) return (None);
-    image = None;
+    image = (Image *)malloc(sizeof(struct _Image));
+    if (!image)
+    {
+	fprintf(stderr, "%s: cannot allocate %d bytes for Image \"%s\"\n",
+			ProgramName, sizeof(struct _Image), name);
+	return (None);
+    }
+
+    image->pixmap = XCreatePixmap(dpy, Scr->Root, w, h, depth);
+    if (image->pixmap == None)
+    {
+	fprintf(stderr, "%s: cannot allocate %d bytes for pixmap \"%s\"\n",
+			ProgramName, sizeof(image->pixmap), name);
+	free((void *)image);
+	return (None);
+    }
+
+    return (image);
+}
+
+/* djhjr - 4/19/96 10/30/02 */
+static Image *ReallyGetImage(name, w, h, pad, cp)
+char      *name;
+int       w, h, pad;
+ColorPair cp;
+{
+    static const struct {
+	char *name;
+	void (*proc)();
+	Bool use_rootGC;
+	int state;
+    } pmtab[] = {
+	{ TBPM_DOT,		DrawDotImage,		True, off  },
+	{ TBPM_ICONIFY,		DrawDotImage,		True, off  },
+	{ TBPM_RESIZE,		DrawResizeImage,	True, off  },
+	{ TBPM_MENU,		DrawMenuImage,		True, off  },
+	{ TBPM_XLOGO,		DrawXLogoImage,		True, off  },
+	{ TBPM_DELETE,		DrawXLogoImage,		True, off  },
+	{ TBPM_QUESTION,	DrawQuestionImage,	True, off  },
+
+	/* djhjr - 6/4/00 */
+	{ TBPM_RARROW,		DrawRArrowImage,	True, off  },
+	{ TBPM_DARROW,		DrawDArrowImage,	True, off  },
+
+	{ TBPM_3DDOT,		Draw3DDotImage,		False, off },
+	{ TBPM_3DRESIZE,	Draw3DResizeImage,	False, off },
+	{ TBPM_3DMENU,		Draw3DMenuImage,	False, off },
+	{ TBPM_3DZOOM,		Draw3DZoomImage,	False, off },
+	{ TBPM_3DBAR,		Draw3DBarImage,		False, off },
+
+	/* djhjr - 6/4/00 */
+	{ TBPM_3DRARROW,	Draw3DRArrowImage,	False, off },
+	{ TBPM_3DDARROW,	Draw3DDArrowImage,	False, off },
+
+	/* djhjr - 10/30/02 */
+	{ TBPM_3DBOX,		Draw3DBoxHighlight,	False, off },
+	{ TBPM_3DLINES,		Draw3DLinesHighlight,	False, off },
+    };
+	
+    Image *image = NULL;
+    name_list **list;
+    register int i;
+    char fullname [256];
+
+    if (name == NULL) return (NULL);
 
     list = &Scr->ImageCache;
 
-    if (strncmp (name, ":xpm:", 5) == 0) {
-		int    i;
+    if (name[0] == ':')
+    {
+	/* probably need '"%d", Scr->screen' - Caveh Frank Jalali */
+	sprintf(fullname, "%s.%dx%d.%Xx%X", name,
+		w, h, (int)cp.fore, (int)cp.back);
+	if ((image = (Image *)LookInNameList(*list, fullname)) == NULL)
+	{
+	    for (i = 0; i < sizeof(pmtab) / sizeof(pmtab[0]); i++)
+	    {
+		if (XmuCompareISOLatin1(pmtab[i].name, name) == 0)
+		{
+		    if (!(image = CreateImagePixmap(name, w, h, Scr->d_depth)))
+			return (None);
 
-/* Submitted by Caveh Frank Jalali
-		struct {
-*/
-		static const struct {
+		    DrawBackground(image->pixmap, 0, 0, w, h, cp,
+				pmtab[i].use_rootGC | (Scr->Monochrome != COLOR));
 
-	    	char *name;
-	    	Image* (*proc)();
-		} pmtab[] = {
-	    	{ TBPM_3DDOT,	Create3DDotImage },
-	    	{ TBPM_3DRESIZE,	Create3DResizeImage },
-	    	{ TBPM_3DMENU,	Create3DMenuImage },
-	    	{ TBPM_3DZOOM,	Create3DZoomImage },
-	    	{ TBPM_3DBAR,	Create3DBarImage },
-
-	    	/* djhjr - 6/4/00 */
-	    	{ TBPM_3DRARROW,	Create3DRArrowImage },
-	    	{ TBPM_3DDARROW,	Create3DDArrowImage },
-		};
-	
-		/* probably need '"%d", Scr->screen' - Caveh Frank Jalali */
-		sprintf (fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
-		if ((image = (Image*) LookInNameList (*list, fullname)) == None) {
-	    	for (i = 0; i < sizeof (pmtab) / sizeof (pmtab[0]); i++) {
-				if (XmuCompareISOLatin1 (pmtab[i].name, name) == 0) {
-		    		image = (*pmtab[i].proc) (cp);
-		    		break;
-				}
-	    	}
-
-		    if (image == None) {
-				fprintf (stderr, "%s:  no such built-in pixmap \"%s\"\n",
-					ProgramName, name);
-				return (None);
-	    	}
-
-		    /* added 'type' argument - djhjr - 10/20/01 */
-		    AddToList (list, fullname, LTYPE_EXACT_NAME, (char*) image);
-		}
-    }
-    else
-    if (name [0] == ':') {
-		int       width, height;
-		Pixmap    pm;
-		XGCValues gcvalues;
-
-		/* probably need '"%d", Scr->screen' - Caveh Frank Jalali */
-		sprintf (fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
-		if ((image = (Image*) LookInNameList (*list, fullname)) == None) {
-    		pm = FindBitmap (name, (unsigned int *) &width, (unsigned int *) &height);
-		    if (pm == None) {
-				fprintf (stderr, "%s:  no such built-in bitmap \"%s\"\n",
-					ProgramName, name);
-				return (None);
-	    	}
-
-		    image = (Image*) malloc (sizeof (struct _Image));
-		    image->pixmap = XCreatePixmap (dpy, Scr->Root, width, height, Scr->d_depth);
-
-		    if (rootGC == (GC) 0)
-				rootGC = XCreateGC (dpy, Scr->Root, 0, &gcvalues);
-
-		    gcvalues.background = cp.back;
-		    gcvalues.foreground = cp.fore;
-
-	    	XChangeGC   (dpy, rootGC, GCForeground | GCBackground, &gcvalues);
-		    XCopyPlane  (dpy, pm, image->pixmap, rootGC, 0, 0, width, height,
-				0, 0, (unsigned long) 1);
+		    /* added d, x, y, w, h, pad, state - djhjr - 10/29/02 */
+		    (*pmtab[i].proc)(image->pixmap, 0, 0, w, h, pad,
+				     cp, pmtab[i].state);
 
 		    image->mask   = None;
-		    image->width  = width;
-		    image->height = height;
+		    image->width  = w;
+		    image->height = h;
 		    image->next   = None;
-
-		    /* added 'type' argument - djhjr - 10/20/01 */
-		    AddToList (list, fullname, LTYPE_EXACT_NAME, (char*) image);
+		    break;
 		}
-    }
-    else {
-/*
- * Need screen number in fullname since screens may have different GCs.
- * Submitted by Caveh Frank Jalali
- *
-		sprintf (fullname, "%s%dx%d", name, (int) cp.fore, (int) cp.back);
-*/
-		sprintf (fullname, "%s%dx%d.%d",
-				name, (int) cp.fore, (int) cp.back, (int) Scr->screen);
+	    }
 
-		if ((image = (Image*) LookInNameList (*list, fullname)) == None)
-		    if ((image = GetBitmapImage (name, cp)) != None)
-				/* added 'type' argument - djhjr - 10/20/01 */
-				AddToList (list, fullname, LTYPE_EXACT_NAME,
-						(char*) image);
-#ifndef NO_XPM_SUPPORT
-			/* djhjr - 3/20/98 */
-			/* added color argument - djhjr - 9/28/99 */
-			else if ((image = GetPixmapImage (name, cp.back)) != None)
-				/* added 'type' argument - djhjr - 10/20/01 */
-				AddToList (list, fullname, LTYPE_EXACT_NAME,
-						(char*) image);
-#endif
+	    if (!image)
+	    {
+		fprintf(stderr, "%s:  no such built-in pixmap \"%s\"\n",
+				ProgramName, name);
+		return (NULL);
+	    }
+	}
+	else
+	    return (image);
     }
+    else
+    {
+	/*
+	 * Need screen number in fullname since screens may have different GCs.
+	 * Submitted by Caveh Frank Jalali
+	 */
+	sprintf(fullname, "%s.%Xx%X.%d",
+		name, (int)cp.fore, (int)cp.back, (int)Scr->screen);
+	if ((image = (Image *)LookInNameList(*list, fullname)) == NULL)
+	{
+	    if ((image = LoadBitmapImage(name, cp)) == NULL)
+#ifndef NO_XPM_SUPPORT
+		/* djhjr - 3/20/98 */
+		/* added color argument - djhjr - 9/28/99 */
+		image = FindImage(name, cp.back);
+#else
+		;
+#endif
+
+	    if (!image) return (NULL);
+	}
+	else
+	    return (image);
+    }
+
+    /* added 'type' argument - djhjr - 10/20/01 */
+    AddToList(list, fullname, LTYPE_EXACT_NAME, (char *)image);
+
+    return (image);
+}
+
+/*
+ * Wrapper to guarantee something is returned - djhjr - 10/30/02
+ */
+Image *GetImage(name, w, h, pad, cp)
+char *name;
+int w, h, pad;
+ColorPair cp;
+{
+    Image *image = NULL;
+
+    if (!(image = ReallyGetImage(name, w, h, pad, cp)))
+	image = ReallyGetImage(TBPM_QUESTION, w, h, pad, cp);
 
     return (image);
 }
@@ -2846,70 +2961,95 @@ Bool		focus;
 		tmp_win->frame_bw3D, Scr->BorderBevelWidth, cp, 1);
 #else /* USE_ORIGINAL_CORNERS */
 	/* client */
+	borderdashoffset = 1;
 	Draw3DBorder (tmp_win->frame,
 		0,
 		Scr->TitleHeight,
 		tmp_win->frame_width,
 		tmp_win->frame_height - Scr->TitleHeight,
 		Scr->BorderBevelWidth, cp, off, True, False);
+	borderdashoffset = 1;
 	Draw3DBorder (tmp_win->frame,
 		tmp_win->frame_bw3D - Scr->BorderBevelWidth,
 		Scr->TitleHeight + tmp_win->frame_bw3D - Scr->BorderBevelWidth,
 		tmp_win->frame_width  - 2 * tmp_win->frame_bw3D + 2 * Scr->BorderBevelWidth,
 		tmp_win->frame_height - 2 * tmp_win->frame_bw3D + 2 * Scr->BorderBevelWidth - Scr->TitleHeight,
 		Scr->BorderBevelWidth, cp, on, True, False);
+    if (!Scr->NoBorderDecorations)	/* djhjr - 10/20/02 */
+    {
 	/* upper left corner */
 	if (tmp_win->title_x == tmp_win->frame_bw3D)
 		Draw3DBevel (tmp_win->frame,
 			0, Scr->TitleHeight + tmp_win->frame_bw3D,
-			tmp_win->frame_bw3D, cp, off, 222);
+			tmp_win->frame_bw3D, cp,
+			(Scr->BeNiceToColormap) ? on : off, 222);
 	else
 	{
 		if (tmp_win->title_x > tmp_win->frame_bw3D + cwbw)
 			Draw3DBevel (tmp_win->frame,
 				cwbw, Scr->TitleHeight,
-				tmp_win->frame_bw3D, cp, off, 1);
+				tmp_win->frame_bw3D, cp,
+				(Scr->BeNiceToColormap) ? on : off, 1);
 		Draw3DBevel (tmp_win->frame,
 			0, Scr->TitleHeight + chbw,
-			tmp_win->frame_bw3D, cp, off, 2);
+			tmp_win->frame_bw3D, cp,
+			(Scr->BeNiceToColormap) ? on : off, 2);
 	}
+    }
 	/* upper right corner */
 	if ((i = tmp_win->title_x + tmp_win->title_width + tmp_win->frame_bw3D) == tmp_win->frame_width)
 		Draw3DBevel (tmp_win->frame,
 			tmp_win->frame_width - tmp_win->frame_bw3D, Scr->TitleHeight + tmp_win->frame_bw3D,
-			tmp_win->frame_bw3D, cp, off, 222);
+			tmp_win->frame_bw3D, cp,
+			(Scr->BeNiceToColormap) ? on : off, 222);
 	else
 	{
+	    if (!Scr->NoBorderDecorations)	/* djhjr - 10/20/02 */
+	    {
 		if (i < tmp_win->frame_width - cwbw)
 			Draw3DBevel (tmp_win->frame,
 				tmp_win->frame_width - cwbw, Scr->TitleHeight,
-				tmp_win->frame_bw3D, cp, off, 1);
+				tmp_win->frame_bw3D, cp,
+				(Scr->BeNiceToColormap) ? on : off, 1);
 		Draw3DBevel (tmp_win->frame,
-			tmp_win->frame_width - tmp_win->frame_bw3D, Scr->TitleHeight + chbw,
-			tmp_win->frame_bw3D, cp, off, 2);
+			tmp_win->frame_width - tmp_win->frame_bw3D,
+			Scr->TitleHeight + chbw,
+			tmp_win->frame_bw3D, cp,
+			(Scr->BeNiceToColormap) ? on : off, 2);
+	    }
 	}
+    if (!Scr->NoBorderDecorations)	/* djhjr - 10/20/02 */
+    {
 	/* lower left corner */
 	Draw3DBevel (tmp_win->frame,
 		cwbw, tmp_win->frame_height - tmp_win->frame_bw3D,
-		tmp_win->frame_bw3D, cp, off, 1);
+		tmp_win->frame_bw3D, cp,
+		(Scr->BeNiceToColormap) ? on : off, 1);
 	Draw3DBevel (tmp_win->frame,
 		0, tmp_win->frame_height - chbw,
-		tmp_win->frame_bw3D, cp, off, 2);
+		tmp_win->frame_bw3D, cp,
+		(Scr->BeNiceToColormap) ? on : off, 2);
 	/* lower right corner */
 	Draw3DBevel (tmp_win->frame,
-		tmp_win->frame_width - cwbw, tmp_win->frame_height - tmp_win->frame_bw3D,
-		tmp_win->frame_bw3D, cp, off, 1);
+		tmp_win->frame_width - cwbw,
+		tmp_win->frame_height - tmp_win->frame_bw3D,
+		tmp_win->frame_bw3D, cp,
+		(Scr->BeNiceToColormap) ? on : off, 1);
 	Draw3DBevel (tmp_win->frame,
-		tmp_win->frame_width - tmp_win->frame_bw3D, tmp_win->frame_height - chbw,
-		tmp_win->frame_bw3D, cp, off, 2);
-
+		tmp_win->frame_width - tmp_win->frame_bw3D,
+		tmp_win->frame_height - chbw,
+		tmp_win->frame_bw3D, cp,
+		(Scr->BeNiceToColormap) ? on : off, 2);
+    }
 	/* title */
+	borderdashoffset = 0;
 	Draw3DBorder (tmp_win->frame,
 		tmp_win->title_x - tmp_win->frame_bw3D,
 		tmp_win->title_y - tmp_win->frame_bw3D,
 		tmp_win->title_width + 2 * tmp_win->frame_bw3D,
 		Scr->TitleHeight + tmp_win->frame_bw3D,
 		Scr->BorderBevelWidth, cp, off, True, False);
+	borderdashoffset = 0;
 	Draw3DBorder (tmp_win->frame,
 		tmp_win->title_x - Scr->BorderBevelWidth,
 		tmp_win->title_y - Scr->BorderBevelWidth,
@@ -2919,6 +3059,17 @@ Bool		focus;
 	/* upper left corner */
 	if (tmp_win->title_x == tmp_win->frame_bw3D)
 	{
+	    /* this 'if (...) else' - djhjr - 10/20/02 */
+	    if (Scr->NoBorderDecorations)
+	    {
+		Draw3DNoBevel(tmp_win->frame,
+			tmp_win->title_x - tmp_win->frame_bw3D,
+			Scr->TitleHeight + tmp_win->frame_bw3D,
+			tmp_win->frame_bw3D, cp,
+			(Scr->BeNiceToColormap) ? off : on, False);
+	    }
+	    else
+	    {
 		gc = setBevelGC(2, (Scr->BeNiceToColormap) ? on : off, cp);
 
 /* djhjr - 4/29/98
@@ -2931,23 +3082,38 @@ Bool		focus;
 */
 		for (j = 1; j <= Scr->BorderBevelWidth; j++)
 			XDrawLine (dpy, tmp_win->frame, gc,
-				tmp_win->title_x - j, Scr->TitleHeight + tmp_win->frame_bw3D - 2 * Scr->BorderBevelWidth,
-				tmp_win->title_x - j, Scr->TitleHeight + tmp_win->frame_bw3D - Scr->BorderBevelWidth - 1);
+				tmp_win->title_x - j,
+				Scr->TitleHeight + tmp_win->frame_bw3D - 2 * Scr->BorderBevelWidth,
+				tmp_win->title_x - j,
+				Scr->TitleHeight + tmp_win->frame_bw3D - Scr->BorderBevelWidth - 1);
 
 		Draw3DBevel (tmp_win->frame,
 			tmp_win->title_x + cw, 0,
-			tmp_win->frame_bw3D, cp, off, 1);
+			tmp_win->frame_bw3D, cp,
+			(Scr->BeNiceToColormap) ? on : off, 1);
+	    }
 	}
 	else
+	{
 		Draw3DBevel (tmp_win->frame,
 			tmp_win->title_x - tmp_win->frame_bw3D, Scr->TitleHeight,
 			tmp_win->frame_bw3D, cp, off, 3);
+	}
 	/* upper right corner */
 	if (i == tmp_win->frame_width)
 	{
-		Draw3DBevel (tmp_win->frame,
-			tmp_win->title_x + tmp_win->title_width - cw, 0,
-			tmp_win->frame_bw3D, cp, off, 1);
+	    /* this 'if (...) else' - djhjr - 10/20/02 */
+	    if (Scr->NoBorderDecorations)
+	    {
+		Draw3DNoBevel(tmp_win->frame,
+			tmp_win->frame_width - tmp_win->frame_bw3D,
+			Scr->TitleHeight + tmp_win->frame_bw3D,
+			tmp_win->frame_bw3D, cp,
+			(Scr->BeNiceToColormap) ? off : on, False);
+	    }
+	    else
+	    {
+		gc = setBevelGC(1, (Scr->BeNiceToColormap) ? off : on, cp);
 
 /* djhjr - 4/29/98
 		gc = setBevelGC(1, on, cp);
@@ -2955,18 +3121,25 @@ Bool		focus;
 			tmp_win->title_x + tmp_win->title_width, Scr->TitleHeight + tmp_win->frame_bw3D - 2,
 			tmp_win->title_x + tmp_win->title_width, Scr->TitleHeight + tmp_win->frame_bw3D - 2);
 */
-		gc = setBevelGC(1, (Scr->BeNiceToColormap) ? off : on, cp);
 		for (j = 0; j < Scr->BorderBevelWidth; j++)
 			XDrawLine (dpy, tmp_win->frame, gc,
 				tmp_win->title_x + tmp_win->title_width - 1,
 				Scr->TitleHeight + tmp_win->frame_bw3D - Scr->BorderBevelWidth + j - 1,
 				tmp_win->title_x + tmp_win->title_width + Scr->BorderBevelWidth - j - 1,
 				Scr->TitleHeight + tmp_win->frame_bw3D - Scr->BorderBevelWidth + j - 1);
+
+		Draw3DBevel (tmp_win->frame,
+			tmp_win->title_x + tmp_win->title_width - cw, 0,
+			tmp_win->frame_bw3D, cp,
+			(Scr->BeNiceToColormap) ? on : off, 1);
+	    }
 	}
 	else
+	{
 		Draw3DBevel (tmp_win->frame,
 			tmp_win->title_x + tmp_win->title_width, Scr->TitleHeight,
 			tmp_win->frame_bw3D, cp, off, 4);
+	}
 #endif /* USE_ORIGINAL_CORNERS */
 }
 
@@ -2991,11 +3164,16 @@ TwmWindow *tmp_win;
 		Scr->IconBevelWidth, tmp_win->iconc, off, False, False);
     }
 
-    FBF(tmp_win->iconc.fore, tmp_win->iconc.back,
-	Scr->IconFont.font->fid);
+    /* font was font.font->fid - djhjr - 9/14/03 */
+    FBF(tmp_win->iconc.fore, tmp_win->iconc.back, Scr->IconFont);
 
-	XDrawString (dpy, tmp_win->icon_w, Scr->NormalGC,
-		tmp_win->icon_x, tmp_win->icon_y, 
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	MyFont_DrawString (dpy, tmp_win->icon_w, &Scr->IconFont,
+#else
+	XDrawString (dpy, tmp_win->icon_w,
+#endif
+		Scr->NormalGC, tmp_win->icon_x, tmp_win->icon_y, 
 		tmp_win->icon_name, strlen(tmp_win->icon_name));
 }
 
@@ -3007,14 +3185,23 @@ TwmWindow *tmp_win;
 	static int en = 0, dots = 0;
 
 	int bwidth = Scr->TBInfo.width + Scr->TBInfo.pad;
-	int left = Scr->TBInfo.nleft * bwidth;
-	int right = Scr->TBInfo.nright * bwidth;
+	int left = (Scr->TBInfo.nleft) ? Scr->TBInfo.leftx +
+		   (Scr->TBInfo.nleft * bwidth) - Scr->TBInfo.pad :
+		   0;
+	int right = (Scr->TBInfo.nright) ?
+		    (Scr->TBInfo.nright * bwidth) - Scr->TBInfo.pad :
+		    0;
 
 	/* djhjr - 3/29/98 */
 	int i, j, slen = strlen(tmp_win->name);
 	char *a = NULL;
 
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	if (!en) en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
+#else
 	if (!en) en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
+#endif
 
 	/*
 	 * clip the title a couple of characters less than the width of
@@ -3025,28 +3212,55 @@ TwmWindow *tmp_win;
 	 */
 	if (Scr->NoPrettyTitles == FALSE) /* for rader - djhjr - 2/9/99 */
 	{
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+		i = MyFont_TextWidth(&Scr->TitleBarFont, tmp_win->name, slen);
+#else
 		i = XTextWidth(Scr->TitleBarFont.font, tmp_win->name, slen);
+#endif
 
 /* DUH! - djhjr - 6/18/99
 		j = tmp_win->title_width - 2 * Scr->TBInfo.rightoff;
 */
+/* djhjr - 10/18/02
 		if (!dots) dots = XTextWidth(Scr->TitleBarFont.font, "...", 3) + en;
 		j = tmp_win->title_width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff - dots;
+*/
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+		if (!dots) dots = MyFont_TextWidth(&Scr->TitleBarFont, "...", 3);
+#else
+		if (!dots) dots = XTextWidth(Scr->TitleBarFont.font, "...", 3);
+#endif
+		j = tmp_win->title_width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff - en;
 
-		/* djhjr - 5/5/98 */
-		/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+/* djhjr - 10/18/02
+		* djhjr - 5/5/98 *
+		* was 'Scr->use3Dtitles' - djhjr - 8/11/98 *
 		if (Scr->TitleBevelWidth > 0)
 			j -= Scr->TitleBevelWidth;
-		if (en >= j)
+*/
+		/* reworked this stuff - djhjr - 10/18/02 */
+		if (dots >= j)
 			slen = 0;
-		else if (i >= j)
+		else if (i > j)
 		{
-			for (i = slen; i >= 0; i--)
-				if (XTextWidth(Scr->TitleBarFont.font, tmp_win->name, i) + en < j)
+			while (i >= 0)
+			{
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+				if (MyFont_TextWidth(&Scr->TitleBarFont,
+#else
+				if (XTextWidth(Scr->TitleBarFont.font,
+#endif
+						tmp_win->name, i) + dots < j)
 				{
 					slen = i;
 					break;
 				}
+
+				i--;
+			}
 
 			a = (char *)malloc(slen + 4);
 			memcpy(a, tmp_win->name, slen);
@@ -3055,41 +3269,48 @@ TwmWindow *tmp_win;
 		}
 	}
 
-    FBF(tmp_win->title.fore, tmp_win->title.back,
-	Scr->TitleBarFont.font->fid);
+    /* font was font.font->fid - djhjr - 9/14/03 */
+    FBF(tmp_win->title.fore, tmp_win->title.back, Scr->TitleBarFont);
 
+/* djhjr - 10/18/02 */
+#if 0
 	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
     if (Scr->TitleBevelWidth > 0)
 	{
-	    XDrawString (dpy, tmp_win->title_w, Scr->NormalGC,
-
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	    MyFont_DrawString (dpy, tmp_win->title_w, &Scr->TitleBarFont,
+#else
+	    XDrawString (dpy, tmp_win->title_w,
+#endif
+		 Scr->NormalGC,
 /* djhjr - 4/29/98
 		 Scr->TBInfo.titlex + en, Scr->TitleBarFont.y + 2, 
 */
 /* djhjr - 5/5/98
 		 Scr->TBInfo.titlex + en, Scr->TitleBarFont.y + Scr->TitleBevelWidth + 1, 
 */
-		 Scr->TBInfo.titlex + Scr->TitleBevelWidth + en, Scr->TitleBarFont.y + Scr->TitleBevelWidth + 1, 
+		 Scr->TBInfo.titlex + Scr->TitleBevelWidth + en, Scr->TitleBarFont.y, 
 
 		 (a) ? a : tmp_win->name, slen);
-
-		/*
-		** Ok, it's a kludge. The above code erases the
-		** sunken titlebar highlight, and I don't know how
-		** else to deal with it.
-		*/
-		PaintTitleHighlight(tmp_win, (Scr->Focus == tmp_win) ? on : off);
 	}
     else
-        XDrawString (dpy, tmp_win->title_w, Scr->NormalGC,
-		 Scr->TBInfo.titlex, Scr->TitleBarFont.y, 
+#endif
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+        MyFont_DrawString (dpy, tmp_win->title_w, &Scr->TitleBarFont,
+#else
+        XDrawString (dpy, tmp_win->title_w,
+#endif
+		 Scr->NormalGC, Scr->TBInfo.titlex, Scr->TitleBarFont.y,
 		 (a) ? a : tmp_win->name, slen);
 
 	/* free the clipped title - djhjr - 3/29/98 */
 	if (a) free(a);
 
 	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
-    if (Scr->TitleBevelWidth > 0)
+	if (Scr->TitleBevelWidth > 0)
+	{
 /*
 	    Draw3DBorder (tmp_win->title_w, Scr->TBInfo.titlex, 0,
 		tmp_win->title_width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff,
@@ -3100,85 +3321,64 @@ TwmWindow *tmp_win;
 		tmp_win->title_width - 2 * Scr->TBInfo.rightoff,
 		Scr->TitleHeight - 2 * Scr->FramePadding, Scr->TitleBevelWidth, tmp_win->title, off, True, False);
 */
+/* djhjr - 10/17/02
 	    Draw3DBorder (tmp_win->title_w, Scr->TBInfo.leftx + left,
 		Scr->FramePadding, tmp_win->title_width - (left + right),
 		Scr->TitleHeight - 2 * Scr->FramePadding, Scr->TitleBevelWidth, tmp_win->title, off, False, False);
+*/
+	    if (Scr->FramePadding + Scr->ButtonIndent > 0)
+	    {
+		Draw3DBorder(tmp_win->title_w, 0, 0,
+			     tmp_win->title_width, Scr->TitleHeight,
+			     Scr->TitleBevelWidth, tmp_win->title,
+			     off, False, False);
+	    }
+	    else
+	    {
+		Draw3DBorder(tmp_win->title_w, left, 0,
+			     tmp_win->title_width - (left + right),
+			     Scr->TitleHeight,
+			     Scr->TitleBevelWidth, tmp_win->title,
+			     off, False, False);
+	    }
+	}
 }
 
 /* djhjr - 11/17/97 */
 /* collapsed the two functions PTB() and PTBH() - djhjr - 8/10/98 */
+/* djhjr - 10/30/02 */
 void PaintTitleButton(tmp_win, tbw, onoroff)
 TwmWindow *tmp_win;
 TBWindow  *tbw;
 int onoroff; /* 0 = no hilite    1 = hilite off    2 = hilite on */
 {
-    TitleButton *tb = tbw->info;
-	/* djhjr - 11/19/97 */
-	Image *image;
-	/* djhjr - 5/23/98 8/10/98 */
-	ColorPair cp;
-	/* djhjr - 8/10/98 */
-    int h = Scr->TBInfo.width - Scr->TBInfo.border * 2, no_xpm = 0;
+    Image *image;
+    TitleButton *tb;
+    /* djhjr - 5/23/98 8/10/98 */
+    ColorPair cp;
 
-	/* djhjr - 5/23/98 8/10/98 */
-	if (Scr->ButtonColorIsFrame)
-		cp = (onoroff == 2) ? tmp_win->border : tmp_win->border_tile;
-	else
-		cp = tmp_win->title;
+    if (!tbw->window) return;
 
-	cp.fore = tmp_win->title.fore;
+    tb = tbw->info;
 
-	/* djhjr - 8/10/98 */
-    if (!(h & 1)) h--;
+    /* djhjr - 5/23/98 8/10/98 */
+    if (Scr->ButtonColorIsFrame)
+	cp = (onoroff == 2) ? tmp_win->border : tmp_win->border_tile;
+    else
+	cp = tmp_win->title;
+    cp.fore = tmp_win->title.fore;
 
-/* 5/23/98 - djhjr
-	if ((image = GetImage(tb->name, (onoroff) ? tmp_win->border : tmp_win->border_tile)))
-*/
-	if ((image = GetImage(tb->name, cp)))
-	{
-		tb->image = image;
+    image = GetImage(tb->name, tb->width, tb->height,
+		     Scr->ButtonBevelWidth * 2, cp);
 
-/* handled in FindImage() now - djhjr - 9/28/99
-* djhjr - 5/23/98 *
-#ifndef NO_XPM_SUPPORT
-		if (tbw->window)
-			SetPixmapsBackground(tb->image, tbw->window, cp.back);
-#endif
-*/
+    XCopyArea(dpy, image->pixmap, tbw->window, Scr->NormalGC,
+	      tb->srcx, tb->srcy, tb->width, tb->height, tb->dstx, tb->dsty);
 
-		/* added this 'if ()' - djhjr - 1/3/97 */
-		if (tbw->window)
-		{
-			/* djhjr - 8/18/98 */
-			if (strncmp(tb->name, ":xpm:", 5) != 0)
-			{
-				if (Scr->ButtonColorIsFrame)
-				{
-					FB(cp.back, cp.back);
-					XFillRectangle (dpy, tbw->window, Scr->NormalGC, 0, 0, h, h);
-				}
-
-				no_xpm = 1;
-			}
-
-			XCopyArea (dpy, tb->image->pixmap, tbw->window, Scr->NormalGC,
-				tb->srcx, tb->srcy, tb->width, tb->height,
-				tb->dstx, tb->dsty);
-
-			/* djhjr - 8/10/98 8/18/98 */
-			/* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
-			if (no_xpm && Scr->ButtonBevelWidth > 0)
-				Draw3DBorder (tbw->window, 0, 0, h, h, Scr->ButtonBevelWidth,
-					cp, off, False, False);
-		}
-	}
-#ifdef DEBUG
-	else
-		fprintf(stderr, "%s:  invalid button name \"%s\" in PaintTitleButton()\n",
-			ProgramName, tb->name);
-#endif
-
-	return;
+    /* djhjr - 8/10/98 8/18/98 */
+    /* was 'Scr->TitleBevelWidth' - djhjr - 8/11/98 */
+    if (Scr->ButtonBevelWidth > 0)
+	Draw3DBorder(tbw->window, 0, 0, tb->width, tb->height,
+		     Scr->ButtonBevelWidth, cp, off, False, False);
 }
 
 /* djhjr - 4/19/96 */
@@ -3197,72 +3397,21 @@ Bool onoroff;
 		else
 			XUnmapWindow (dpy, tmp_win->hilite_w);
 	}
-	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
-	else if (Scr->TitleBevelWidth > 0 && Scr->SunkFocusWindowTitle && tmp_win->title_height != 0)
-	{
-		ColorPair cp = tmp_win->title;
-		int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
-
-/* djhjr - 5/5/98
-		int w = Scr->TBInfo.titlex + tmp_win->name_width + 2 * en;
-*/
-		int w = Scr->TBInfo.titlex + tmp_win->name_width + Scr->TitleBevelWidth + 2 * en;
-
-/* djhjr - 4/29/98
-		int fp = Scr->FramePadding + 3;
-		int ht = (Scr->TitleHeight - 2 * Scr->FramePadding) - 6;
-*/
-		int fp = Scr->FramePadding + Scr->TitleBevelWidth + 1;
-		int ht = (Scr->TitleHeight - 2 * Scr->FramePadding) - 2 * Scr->TitleBevelWidth - 2;
-
-		/* djhjr - 6/25/96 */
-		if (Scr->ShallowReliefWindowButton == 1)
-		{
-			fp++;
-			ht -= 2;
-		}
-
-		if (onoroff == off)
-		{
-			/* djhjr - 8/27/98 */
-			if (Scr->BeNiceToColormap)
-			{
-				FB(cp.back, cp.fore);
-				XFillRectangle(dpy, tmp_win->title_w, Scr->NormalGC,
-						w, fp, ComputeHighlightWindowWidth(tmp_win), ht);
-
-				return;
-			}
-
-			cp.shadc = cp.shadd = tmp_win->title.back;
-		}
-
-	    Draw3DBorder (tmp_win->title_w,
-	    w, fp,
-/* djhjr - 3/12/97
-	    tmp_win->title_width - Scr->TBInfo.width - (w + 2 * en), ht,
-*/
-/* djhjr - 4/2/98
-		tmp_win->title_width - (left + right) - tmp_win->name_width - 3 * en, ht,
-*/
-		ComputeHighlightWindowWidth(tmp_win), ht,
-		Scr->ShallowReliefWindowButton, cp, on, True, False);
-	}
+	else if (Scr->hiliteName && tmp_win->title_height != 0)
+		DrawTitleHighlight(tmp_win, onoroff);	/* djhjr - 10/25/02 */
 }
 
-/* djhjr - 4/2/98 */
+/* djhjr - 4/2/98 10/18/02 */
 int ComputeHighlightWindowWidth(tmp_win)
 TwmWindow *tmp_win;
 {
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	int en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
+#else
 	int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
-	int bwidth = Scr->TBInfo.width + Scr->TBInfo.pad;
-	int left = Scr->TBInfo.nleft * bwidth;
-	int right = Scr->TBInfo.nright * bwidth;
+#endif
 
-/* djhjr - 5/5/98
-	return (tmp_win->title_width - (left + right) - tmp_win->name_width - 3 * en);
-*/
-	int pad = 2 * Scr->TitleBevelWidth + 3 * en;
-	return (tmp_win->title_width - (left + right) - tmp_win->name_width - pad);
+	return (tmp_win->rightx - tmp_win->highlightx - en);
 }
 

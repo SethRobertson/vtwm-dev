@@ -1,6 +1,6 @@
 
 #
-# DESCRIPTION FILE FOR vtwm - $(HOME)/vtwm/vtwmrc-TWM3d
+# DESCRIPTION FILE FOR vtwm - $(HOME)/vtwm/vtwmrc-NoBorder
 #
 # PRE-PROCESSED BY vtwm-5.4.6 USING m4
 # 
@@ -9,11 +9,14 @@
 # m4 Variables
 #
 
+define(WMname, `NoBorder')
+
 # Border width, autopan border width, desktop and door bevel widths...
-define(WMborder, 5) define(WMpanborder, 5)
+define(WMborder, 0) define(WMpanborder, 5)
 define(WMdesktopbevel, 1) define(WMdoorbevel, 1)
-# Title heights (must be set manually for the desktop, doors, or applets)...
-define(WMdesktoptitle, 0) define(WMdoortitle, 0) define(WMapplettitle, 0)
+# Title heights (must be set manually for VTWM windows and applets)...
+define(WMdesktoptitle, 0) define(WMdoortitle, 0)
+define(WMiconmgrtitle, 0) define(WMapplettitle, 0)
 
 #
 # Boolean Variables
@@ -22,10 +25,12 @@ define(WMdesktoptitle, 0) define(WMdoortitle, 0) define(WMapplettitle, 0)
 # Read in the variables file...
 include(HOME/vtwm/vtwmrc-bools)
 
-ShallowReliefWindowButton
-SunkFocusWindowTitle
+DecorateTransients
 
-#DecorateTransients
+NoIconManagerHighlight
+
+ShallowReliefWindowButton
+
 ButtonColorIsFrame
 
 #
@@ -35,35 +40,32 @@ ButtonColorIsFrame
 # Read in the variables file...
 include(HOME/vtwm/vtwmrc-parms)
 
-# See 'Lists' below...
-#IconManagerGeometry	"+5+5" 1
+# See also 'Lists' below...
+IconManagerGeometry		"+5+5" 1
 
-RealScreenBorderWidth	0
+RealScreenBorderWidth		0
 
-# These are nice when 3D built-in buttons are used on flat titlebars...
-FramePadding		2
-TitleButtonBorderWidth	0
-ButtonIndent		0
+# Gap between frame and titlebar titlebar font (titlebar changes)
+FramePadding			3
+# Gap between FramePadding and buttons (buttons change)
+ButtonIndent			-1
+# Gap between titlebar elements
+TitlePadding			2
+# Button border width (TitleForeground color)
+TitleButtonBorderWidth		0
 
-ClearBevelContrast	50
-DarkBevelContrast	60
+ClearBevelContrast		50
+DarkBevelContrast		60
 
-BorderBevelWidth		1
+BorderBevelWidth		0
 ButtonBevelWidth		1
 DoorBevelWidth			WMdoorbevel
 IconBevelWidth			1
 IconManagerBevelWidth		1
 InfoBevelWidth			1
 MenuBevelWidth			1
-TitleBevelWidth			0
+TitleBevelWidth			1
 VirtualDesktopBevelWidth	WMdesktopbevel
-
-# Windows are snappier if 'NoBackingStore' is not used when this is...
-RaiseDelay		80
-
-XorValue		255
-
-ResizeRegion		"NorthEast"
 
 UnknownIcon		"xlogo32"
 
@@ -75,7 +77,7 @@ IconFont		"-adobe-helvetica-medium-r-normal--*-100-*-*-*-*-*-*"
 InfoFont		"-adobe-helvetica-medium-r-normal--*-100-*-*-*-*-*-*"
 IconManagerFont		"-adobe-helvetica-medium-r-normal--*-100-*-*-*-*-*-*"
 DoorFont		"-adobe-helvetica-medium-r-normal--*-100-*-*-*-*-*-*"
-VirtualDesktopFont      "-adobe-helvetica-medium-r-normal--*-75-*-*-*-*-*-*"
+#VirtualDesktopFont      "-adobe-helvetica-medium-r-normal--*-75-*-*-*-*-*-*"
 
 #
 # Functions and Bindings
@@ -85,17 +87,13 @@ VirtualDesktopFont      "-adobe-helvetica-medium-r-normal--*-75-*-*-*-*-*-*"
 include(HOME/vtwm/vtwmrc-binds)
 
 # These are nice built-in 3D buttons...
-LeftTitleButton		":xpm:bar" = f.menu "ArrangeMenu"
+LeftTitleButton		":xpm:darrow" = f.menu "ArrangeMenu"
 RightTitleButton	":xpm:dot" = f.iconify
 RightTitleButton	":xpm:resize" = f.resize
-# These are the box-stock flat buttons...
-#LeftTitleButton	":xlogo" = f.menu "ArrangeMenu"
-#RightTitleButton	":dot" = f.iconify
-#RightTitleButton	":resize" = f.resize
 
 Function "decorate-virtual"
 {
-	f.exec "nexpm -vtwm -in vtwm/images/djhjr.xpm &"
+	f.exec "nexpm -vtwm -in HOME/vtwm/images/djhjr.xpm &"
 }
 
 Function "clear-virtual"
@@ -114,22 +112,21 @@ include(ifelse(SOUND, `Yes', `HOME/vtwm/vtwmrc-sound'))
 include(HOME/vtwm/vtwmrc-lists)
                 
 # Check 'BorderColor', as that's the highlight color...
-# This is a list variable, but borders flicker if braces are present!
 NoHighlight
 
-# Nice when 3D built-in buttons are used on flat titlebars...
-# This is a list variable, but won't work globally if braces are present!
 #NoTitleHighlight
 
-SqueezeTitle {}
-
-DontSqueezeTitle {}
+#SqueezeTitle
+#DontSqueezeTitle {}
 
 Pixmaps
 {
-	TitleHighlight			"eyesline.xpm"
+#	TitleHighlight			"eyesline.xpm"
 #	TitleHighlight			"byzantine.xpm"
+	TitleHighlight			":xpm:raisedlines"
 #	VirtualBackgroundPixmap		"djhjr.xpm"
+	MenuIconPixmap			":xpm:rarrow"
+	IconManagerPixmap		":xpm:zoom"
 }
 
 # Box-stock Background is, of course, "maroon"
@@ -137,19 +134,19 @@ Pixmaps
 # Box-stock MenuTitleBackground and BorderColor is "gray70"
 Color
 {
-	DefaultBackground		"gray67"
+	DefaultBackground		"gray73"
 	DefaultForeground		"black"
-	MenuBackground			"gray67"
+	MenuBackground			"gray73"
 	MenuForeground			"black"
-	MenuTitleBackground		"gray67"
+	MenuTitleBackground		"gray73"
 	MenuTitleForeground		"black"
 	RealScreenBackground		"gray57"
 	RealScreenForeground		"black"
 	VirtualBackground		"gray67"
 	VirtualForeground		"black"
-	BorderColor			"gray67" {}
-	BorderTileBackground		"gray67" {}
-	BorderTileForeground		"gray67" {}
+	BorderColor			"gray73"
+	BorderTileBackground		"gray67"
+	BorderTileForeground		"gray67"
 	TitleBackground			"DeepSkyBlue4"
 	{
 		"VTWM*"			"gray67"
@@ -158,7 +155,7 @@ Color
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
+		"*ftp:*"		"maroon"
 		"xbiff*"		"gray67"
 		"xcb"			"gray67"
 		"*clock"		"gray67"
@@ -182,7 +179,7 @@ Color
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
+		"*ftp:*"		"maroon"
 		"xbiff*"		"gray67"
 		"xcb"			"gray67"
 		"*clock"		"gray67"
@@ -206,7 +203,7 @@ Color
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
+		"*ftp:*"		"maroon"
 		"xbiff*"		"gray67"
 		"xcb"			"gray67"
 		"*clock"		"gray67"
@@ -221,7 +218,7 @@ Color
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
+		"*ftp:*"		"maroon"
 		"xbiff*"		"gray67"
 		"xcb"			"gray67"
 		"*clock"		"gray67"
@@ -237,9 +234,9 @@ Color
 		"xload"			"black"
 		"as*"			"black"
 	}
-	IconManagerHighlight		"gray90" {}
-	DoorBackground			"gray67" {}
-	DoorForeground			"black" {}
+	IconManagerHighlight		"gray90"
+	DoorBackground			"gray67"
+	DoorForeground			"black"
 	DesktopDisplayBackground	"DeepSkyBlue4"
 	{
 		"VTWM*"			"gray67"
@@ -248,7 +245,7 @@ Color
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
+		"*ftp:*"		"maroon"
 		"xbiff*"		"gray67"
 		"xcb"			"gray67"
 		"*clock"		"gray67"

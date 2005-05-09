@@ -62,6 +62,10 @@
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
 #include <X11/Xmu/Error.h>
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+#include <X11/Xlocale.h>
+#endif
 
 Display *dpy;			/* which display are we talking to */
 Window ResizeWindow;		/* the window we are resizing */
@@ -84,7 +88,9 @@ void InternUsefulAtoms();
 
 char Info[INFO_LINES][INFO_SIZE];		/* info strings to print */
 int InfoLines;
+
 char *InitFile = NULL;
+int parseInitFile = TRUE;	/* djhjr - 10/7/02 */
 
 Cursor UpperLeftCursor;		/* upper Left corner cursor */
 Cursor RightButt;
@@ -124,6 +130,11 @@ Bool RestartPreviousState = False;	/* try to restart in previous state */
 
 unsigned long black, white;
 
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+Bool use_fontset;
+#endif
+
 extern void assign_var_savecolor();
 
 /* djhjr - 4/26/99 */
@@ -160,6 +171,11 @@ main(argc, argv, environ)
 #ifndef NO_SOUND_SUPPORT
     int sound_state = 0;
 #endif
+    extern char *defTwmrc[];	/* djhjr - 10/7/02 */
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+    char *loc;
+#endif
 
     /* djhjr - 7/21/98 */
     SIGNAL_T QueueRestartVtwm();
@@ -179,9 +195,14 @@ main(argc, argv, environ)
 		if (++i >= argc) goto usage;
 		display_name = argv[i];
 		continue;
-	      case 'f':				/* -file initfile */
-		if (++i >= argc) goto usage;
-		InitFile = argv[i];
+	      case 'f':				/* -file [initfile] */
+		/* this isn't really right, but hey... - djhjr - 10/7/02 */
+		if (i + 1 < argc &&
+				(argv[i + 1][0] != '-' ||
+				(argv[i + 1][0] == '-' && !strchr("dfmpsv", argv[i + 1][1]))))
+			InitFile = argv[++i];
+		else
+			parseInitFile = FALSE;
 		continue;
 #ifndef NO_M4_SUPPORT
 	      case 'm':				/* -m4 [options] */
@@ -212,13 +233,27 @@ main(argc, argv, environ)
       usage:
 	fprintf (stderr,
 #ifndef NO_M4_SUPPORT
-		 "usage:  %s [-d display] [-f initfile] [-m [options]] [-p] [-s] [-v]\n",
+		 "usage:  %s [-d display] [-f [initfile]] [-m [options]] [-p] [-s] [-v]\n",
 #else
-		 "usage:  %s [-d display] [-f initfile] [-p] [-s] [-v]\n",
+		 "usage:  %s [-d display] [-f [initfile]] [-p] [-s] [-v]\n",
 #endif
 		 ProgramName);
 	exit (1);
     }
+
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+    loc = setlocale(LC_ALL, "");
+    if (!loc || !strcmp(loc, "C") || !strcmp(loc, "POSIX") ||
+		!XSupportsLocale())
+	use_fontset = False;
+    else
+	use_fontset = True;
+
+    if (PrintErrorMessages)
+	fprintf(stderr, "%s: I18N supported, L10N %sabled\n",
+		ProgramName, (use_fontset) ? "en" : "dis");
+#endif
 
 /* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
@@ -240,6 +275,7 @@ main(argc, argv, environ)
     donehandler (SIGABRT);
     donehandler (SIGFPE);
     donehandler (SIGSEGV);
+    donehandler (SIGILL);
     donehandler (SIGTSTP);
     donehandler (SIGPIPE);
 #undef sounddonehandler
@@ -375,6 +411,10 @@ main(argc, argv, environ)
 	Scr->SqueezeTitleL = NULL;
 	Scr->DontSqueezeTitleL = NULL;
 	Scr->WindowRingL = NULL;
+
+	/* submitted by Jonathan Paisley - 10/27/02 */
+	Scr->NoWindowRingL = NULL;
+
 	Scr->WarpCursorL = NULL;
 
 	/* djhjr - 4/22/96 */
@@ -388,6 +428,9 @@ main(argc, argv, environ)
 
 	/* djhjr - 5/2/98 */
 	Scr->NoBorder = NULL;
+
+	/* djhjr - 9/24/02 */
+	Scr->UsePPositionL = NULL;
 
 	/* remember to put an initialization in InitVariables also
 	 */
@@ -483,8 +526,15 @@ main(argc, argv, environ)
 
 	Scr->IconDirectory = NULL;
 
-	Scr->siconifyPm = None;
-	Scr->pullPm = None;
+	/* djhjr - 10/30/02 */
+	Scr->hiliteName = NULL;
+	Scr->menuIconName = TBPM_MENU;
+	Scr->iconMgrIconName = TBPM_XLOGO;
+
+/* djhjr - 10/30/02
+	Scr->siconifyPm = NULL;
+	Scr->pullPm = NULL;
+*/
 
 /* djhjr - 5/17/98 */
 #ifdef ORIGINAL_PIXMAPS
@@ -492,20 +542,13 @@ main(argc, argv, environ)
 	Scr->virtualPm = None; /* RFB PIXMAP */
 	Scr->RealScreenPm = None; /* RFB PIXMAP */
 #else /* ORIGINAL_PIXMAPS */
+	/* djhjr - 10/25/02 */
+	Scr->hiliteName = NULL;
+
 	Scr->hilitePm = NULL;
 	Scr->virtualPm = NULL;
 	Scr->realscreenPm = NULL;
 #endif /* ORIGINAL_PIXMAPS */
-
-	Scr->tbpm.xlogo = None;
-	Scr->tbpm.resize = None;
-	Scr->tbpm.question = None;
-	Scr->tbpm.menu = None;
-	Scr->tbpm.delete = None;
-
-	/* djhjr - 6/4/00 */
-	Scr->tbpm.darrow = None;
-	Scr->tbpm.rarrow = None;
 
 	if ( Scr->FirstTime )
 	{	/* retain max size on restart. */
@@ -516,13 +559,19 @@ main(argc, argv, environ)
 	InitVariables();
 	InitMenus();
 
-	/* Parse it once for each screen. */
+	/* added this 'if (...) else' - djhjr - 10/7/02 */
+	if (!parseInitFile)
+		ParseStringList(defTwmrc);
+	else
+	{
+		/* Parse it once for each screen. */
 #ifndef NO_M4_SUPPORT
-	/* added 'm4_option' - djhjr - 2/20/99 */
-	ParseTwmrc(InitFile, display_name, m4_preprocess, m4_option);
+		/* added 'm4_option' - djhjr - 2/20/99 */
+		ParseTwmrc(InitFile, display_name, m4_preprocess, m4_option);
 #else
-	ParseTwmrc(InitFile);
+		ParseTwmrc(InitFile);
 #endif
+	}
 
 /* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
@@ -541,10 +590,14 @@ main(argc, argv, environ)
 
 	assign_var_savecolor(); /* storeing pixels for twmrc "entities" */
 
+/* djhjr - 10/17/02 */
+#if 0
 	/* djhjr - 4/19/96 */
 	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
 	if (Scr->TitleBevelWidth > 0) {
+/* djhjr - 10/17/02
 	    if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 0;
+*/
 
 /* djhjr - 3/12/97
 	    if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 0;
@@ -561,17 +614,21 @@ main(argc, argv, environ)
 */
 	}
 	else {
-	    if (Scr->FramePadding  == -100) Scr->FramePadding  = 2; /* values that look */
-	    if (Scr->TitlePadding  == -100) Scr->TitlePadding  = 8; /* "nice" on */
-	    if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 1; /* 75 and 100dpi displays */
-	    if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 1;
-
 		/* djhjr - 4/5/98 */
 		Scr->SunkFocusWindowTitle = FALSE;
 	}
+#endif
+
+	/* was only if Scr->TitleBevelWidth == 0 - djhjr - 10/17/02 */
+	if (Scr->FramePadding  == -100) Scr->FramePadding  = 2; /* values that look */
+	if (Scr->TitlePadding  == -100) Scr->TitlePadding  = 8; /* "nice" on */
+	if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 1; /* 75 and 100dpi displays */
+	if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 1;
+
 	/* was 'Scr->use3D*' - djhjr - 8/11/98 */
-	if (Scr->TitleBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
-	if (Scr->MenuBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
+	/* rem'd 'Scr->*BevelWidth > 0' - djhjr - 10/30/02 */
+	if (/*Scr->TitleBevelWidth > 0 && */!Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
+	if (/*Scr->MenuBevelWidth > 0 && */!Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
 	if (Scr->MenuBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuTitleC);
 	if (Scr->BorderBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->BorderColorC);
 
@@ -608,6 +665,8 @@ main(argc, argv, environ)
 	CreateGCs();
 	MakeMenus();
 
+/* djhjr - 10/18/02 */
+#if 0
 	/*
 	 * Set titlebar height from font height and padding,
 	 * then adjust to titlebutton height - djhjr - 12/10/98
@@ -623,13 +682,29 @@ main(argc, argv, environ)
 		* djhjr - 4/19/96 *
 		if (Scr->use3Dtitles) Scr->TitleHeight += 4;
 */
-		/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+/* djhjr - 10/18/02
+		* was 'Scr->use3Dtitles' - djhjr - 8/11/98 *
 		if (Scr->TitleBevelWidth > 0)
 			Scr->TitleHeight += 2 * Scr->TitleBevelWidth + 2;
+*/
 
 		/* make title height be odd so buttons look nice and centered */
 		if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
 	} while ((i = InitTitlebarButtons()) > Scr->TitleHeight - Scr->FramePadding * 2);
+#else
+	/* set titlebar height to font height plus frame padding */
+	Scr->TitleHeight = Scr->TitleBarFont.height + Scr->FramePadding * 2;
+	if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
+
+	i = InitTitlebarButtons();	/* returns the button height */
+	
+ 	/* adjust titlebar height to button height */
+	if (i > Scr->TitleHeight) Scr->TitleHeight = i + Scr->FramePadding * 2;
+	if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
+
+	/* adjust font baseline */
+	Scr->TitleBarFont.y += ((Scr->TitleHeight - Scr->TitleBarFont.height) / 2);
+#endif
 
 	XGrabServer(dpy);
 	XSync(dpy, 0);
@@ -734,7 +809,12 @@ main(argc, argv, environ)
 					 (Visual *) CopyFromParent,
 					 valuemask, &attributes);
 
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	Scr->SizeStringWidth = MyFont_TextWidth (&Scr->SizeFont,
+#else
 	Scr->SizeStringWidth = XTextWidth (Scr->SizeFont.font,
+#endif
 /* djhjr - 5/9/96
 					   " 8888 x 8888 ", 13);
 */
@@ -844,10 +924,10 @@ main(argc, argv, environ)
 	int fd, err = 0;
 	char buf[10], *fn = malloc(HomeLen + strlen(PidName) + 2);
 
+	/* removed group and other permissions - djhjr - 10/20/02 */
 	sprintf(fn, "%s/%s", Home, PidName);
 	if ((fd = open(fn,
-		O_WRONLY|O_EXCL|O_CREAT|O_TRUNC,
-		S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) != -1)
+		O_WRONLY|O_EXCL|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)) != -1)
 	{
 	    sprintf(buf, "%d\n", getpid());
 	    err = write(fd, buf, strlen(buf));
@@ -905,6 +985,10 @@ void InitVariables()
     FreeList(&Scr->SqueezeTitleL);
     FreeList(&Scr->DontSqueezeTitleL);
     FreeList(&Scr->WindowRingL);
+
+    /* submitted by Jonathan Paisley - 10/27/02 */
+    FreeList(&Scr->NoWindowRingL);
+
     FreeList(&Scr->WarpCursorL);
     FreeList(&Scr->NailedDown);
     FreeList(&Scr->VirtualDesktopColorFL);
@@ -929,6 +1013,9 @@ void InitVariables()
 
 	/* djhjr - 5/2/98 */
 	FreeList(&Scr->NoBorder);
+
+	/* djhjr - 9/24/02 */
+	FreeList(&Scr->UsePPositionL);
 
     NewFontCursor(&Scr->FrameCursor, "top_left_arrow");
     NewFontCursor(&Scr->TitleCursor, "top_left_arrow");
@@ -1002,14 +1089,9 @@ void InitVariables()
 #ifdef ORIGINAL_PIXMAPS
     Scr->UnknownWidth = 0;
     Scr->UnknownHeight = 0;
-#else /* ORIGINAL_PIXMAPS */
-#ifdef NO_XPM_SUPPORT
-    Scr->UnknownWidth = 0;
-    Scr->UnknownHeight = 0;
 #else
-    Scr->UnknownPm = NULL;
+    Scr->unknownName = NULL;
 #endif
-#endif /* ORIGINAL_PIXMAPS */
 
     Scr->NumAutoRaises = 0;
 /*  Scr->NoDefaults = FALSE;  */
@@ -1019,6 +1101,13 @@ void InitVariables()
     Scr->FocusRoot = TRUE;
     Scr->Newest = NULL; /* PF */
     Scr->Focus = NULL;
+
+    /* djhjr - 9/10/03 */
+    Scr->IgnoreModifiers = 0;
+
+    /* djhjr - 10/16/02 */
+    Scr->WarpCentered = WARPC_OFF;
+
     Scr->WarpCursor = FALSE;
     Scr->ForceIcon = FALSE;
     Scr->NoGrabServer = FALSE;
@@ -1109,8 +1198,10 @@ void InitVariables()
     Scr->use3Dicons = FALSE;
 */
 
-	/* djhjr - 4/26/96 */
+/* obsoleted by the ":xpm:*" built-in pixmaps - djhjr - 10/26/02
+	* djhjr - 4/26/96 *
     Scr->SunkFocusWindowTitle = FALSE;
+*/
 
 	/* for rader - djhjr - 2/9/99 */
 	Scr->NoPrettyTitles = FALSE;
@@ -1241,6 +1332,9 @@ void InitVariables()
 	/* djhjr - 6/22/01 */
 	Scr->PauseOnExit = 0;
 	Scr->PauseOnQuit = 0;
+
+	/* djhjr - 11/3/03 */
+	Scr->RaiseOnStart = FALSE;
 }
 
 

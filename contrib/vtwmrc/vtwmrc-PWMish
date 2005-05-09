@@ -1,6 +1,6 @@
 
 #
-# DESCRIPTION FILE FOR vtwm - $(HOME)/vtwm/vtwmrc-95ish
+# DESCRIPTION FILE FOR vtwm - $(HOME)/vtwm/vtwmrc-PWMish
 #
 # PRE-PROCESSED BY vtwm-5.4.6 USING m4
 # 
@@ -9,11 +9,14 @@
 # m4 Variables
 #
 
+define(WMname, `PWMish')
+
 # Border width, autopan border width, desktop and door bevel widths...
 define(WMborder, 5) define(WMpanborder, 5)
 define(WMdesktopbevel, 1) define(WMdoorbevel, 1)
-# Title heights (must be set manually for the desktop, doors, or applets)...
-define(WMdesktoptitle, 0) define(WMdoortitle, 0) define(WMapplettitle, 0)
+# Title heights (must be set manually for VTWM windows and applets)...
+define(WMdesktoptitle, 0) define(WMdoortitle, 0)
+define(WMiconmgrtitle, 0) define(WMapplettitle, 0)
 
 #
 # Boolean Variables
@@ -22,11 +25,7 @@ define(WMdesktoptitle, 0) define(WMdoortitle, 0) define(WMapplettitle, 0)
 # Read in the variables file...
 include(HOME/vtwm/vtwmrc-bools)
 
-#ShallowReliefWindowButton
-#SunkFocusWindowTitle
-
-#DecorateTransients
-#ButtonColorIsFrame
+NoBorderDecorations
 
 #
 # Parametered Variables
@@ -35,18 +34,22 @@ include(HOME/vtwm/vtwmrc-bools)
 # Read in the variables file...
 include(HOME/vtwm/vtwmrc-parms)
 
-# See 'Lists' below...
-#IconManagerGeometry	"+5+5" 1
+# See also 'Lists' below...
+IconManagerGeometry		"+5+5" 1
 
-RealScreenBorderWidth	0
+RealScreenBorderWidth		0
 
-# These are nice when 3D built-in buttons are used on flat titlebars...
-FramePadding		2
-TitleButtonBorderWidth	0
-ButtonIndent		0
+# Gap between frame and titlebar font (titlebar changes)
+FramePadding			4
+# Gap between FramePadding and buttons (buttons change)
+ButtonIndent			-2
+# Gap between titlebar elements
+TitlePadding			3
+# Button border width (TitleForeground color)
+TitleButtonBorderWidth		0
 
-ClearBevelContrast	60
-DarkBevelContrast	60
+ClearBevelContrast		40
+DarkBevelContrast		40
 
 BorderBevelWidth		1
 ButtonBevelWidth		0
@@ -55,15 +58,8 @@ IconBevelWidth			1
 IconManagerBevelWidth		1
 InfoBevelWidth			1
 MenuBevelWidth			1
-TitleBevelWidth			0
+TitleBevelWidth			1
 VirtualDesktopBevelWidth	WMdesktopbevel
-
-# Windows are snappier if 'NoBackingStore' is not used when this is...
-RaiseDelay		80
-
-XorValue		255
-
-ResizeRegion		"NorthEast"
 
 UnknownIcon		"xlogo32"
 
@@ -75,7 +71,7 @@ IconFont		"-adobe-helvetica-medium-r-normal--*-100-*-*-*-*-*-*"
 InfoFont		"-adobe-helvetica-medium-r-normal--*-100-*-*-*-*-*-*"
 IconManagerFont		"-adobe-helvetica-medium-r-normal--*-100-*-*-*-*-*-*"
 DoorFont		"-adobe-helvetica-medium-r-normal--*-100-*-*-*-*-*-*"
-VirtualDesktopFont      "-adobe-helvetica-medium-r-normal--*-75-*-*-*-*-*-*"
+#VirtualDesktopFont      "-adobe-helvetica-medium-r-normal--*-75-*-*-*-*-*-*"
 
 #
 # Functions and Bindings
@@ -84,24 +80,18 @@ VirtualDesktopFont      "-adobe-helvetica-medium-r-normal--*-75-*-*-*-*-*-*"
 # Read in the bindings file...
 include(HOME/vtwm/vtwmrc-binds)
 
-# These are nice built-in 3D buttons...
-LeftTitleButton		"win95_menu.xpm" = f.menu "ArrangeMenu"
-RightTitleButton	"win95_minimize.xpm" = f.iconify
-RightTitleButton	"win95_zoom.xpm" = f.fullzoom
-RightTitleButton	"win95_close.xpm" = f.menu "CloseMenu"
-# These are the box-stock flat buttons...
-#LeftTitleButton	":xlogo" = f.menu "ArrangeMenu"
-#RightTitleButton	":dot" = f.iconify
-#RightTitleButton	":resize" = f.resize
+LeftTitleButton		"photon_menu.xpm" = f.menu "ArrangeMenu"
+RightTitleButton	"photon_minimize.xpm" = f.iconify
+RightTitleButton	"photon_maximize.xpm" = f.fullzoom
 
 Function "decorate-virtual"
 {
-	f.exec "nexpm -vtwm -in vtwm/images/djhjr.xpm &"
+	f.exec "nexpm -vtwm -in HOME/vtwm/images/djhjr.xpm &"
 }
 
 Function "clear-virtual"
 {
-	f.exec "nexpm -vtwm -solid gray67 &"
+	f.exec "nexpm -vtwm -solid gray75 &"
 }
 
 #
@@ -113,24 +103,21 @@ include(ifelse(SOUND, `Yes', `HOME/vtwm/vtwmrc-sound'))
 
 # Read in the lists file...
 include(HOME/vtwm/vtwmrc-lists)
-
+                
 # Check 'BorderColor', as that's the highlight color...
-# This is a list variable, but borders flicker if braces are present!
-NoHighlight
+#NoHighlight
 
-# Nice when 3D built-in buttons are used on flat titlebars...
-# This is a list variable, but won't work globally if braces are present!
-#NoTitleHighlight
+NoTitleHighlight
 
-SqueezeTitle {}
-
+#SqueezeTitle
 DontSqueezeTitle {}
 
 Pixmaps
 {
-	TitleHighlight			"eyesline.xpm"
+#	TitleHighlight			"eyesline.xpm"
 #	TitleHighlight			"byzantine.xpm"
 #	VirtualBackgroundPixmap		"djhjr.xpm"
+	MenuIconPixmap			"photon_rarrow.xpm"
 }
 
 # Box-stock Background is, of course, "maroon"
@@ -138,33 +125,33 @@ Pixmaps
 # Box-stock MenuTitleBackground and BorderColor is "gray70"
 Color
 {
-	DefaultBackground		"gray67"
+	DefaultBackground		"gray75"
 	DefaultForeground		"black"
-	MenuBackground			"gray67"
+	MenuBackground			"gray75"
 	MenuForeground			"black"
-	MenuTitleBackground		"gray67"
+	MenuTitleBackground		"gray75"
 	MenuTitleForeground		"black"
-	RealScreenBackground		"gray57"
+	RealScreenBackground		"gray65"
 	RealScreenForeground		"black"
-	VirtualBackground		"gray67"
+	VirtualBackground		"gray75"
 	VirtualForeground		"black"
-	BorderColor			"gray67" {}
-	BorderTileBackground		"gray67" {}
-	BorderTileForeground		"gray67" {}
+	BorderColor			"gray75"
+	BorderTileBackground		"gray60"
+	BorderTileForeground		"gray60"
 	TitleBackground			"DeepSkyBlue4"
 	{
-		"VTWM*"			"gray67"
+		"VTWM*"			"gray75"
 		"XTerm"			"SeaGreen"
 		"Xqsh"			"maroon"
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
-		"xbiff*"		"gray67"
-		"xcb"			"gray67"
-		"*clock"		"gray67"
-		"xload"			"gray67"
-		"as*"			"gray67"
+		"*ftp:*"		"maroon"
+		"xbiff*"		"gray75"
+		"xcb"			"gray75"
+		"*clock"		"gray75"
+		"xload"			"gray75"
+		"as*"			"gray75"
 	}
 	TitleForeground			"gray90"
 	{
@@ -177,18 +164,18 @@ Color
 	}
 	IconBackground			"DeepSkyBlue4"
 	{
-		"VTWM*"			"gray67"
+		"VTWM*"			"gray75"
 		"XTerm"			"SeaGreen"
 		"Xqsh"			"maroon"
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
-		"xbiff*"		"gray67"
-		"xcb"			"gray67"
-		"*clock"		"gray67"
-		"xload"			"gray67"
-		"as*"			"gray67"
+		"*ftp:*"		"maroon"
+		"xbiff*"		"gray75"
+		"xcb"			"gray75"
+		"*clock"		"gray75"
+		"xload"			"gray75"
+		"as*"			"gray75"
 	}
 	IconForeground			"gray90"
 	{
@@ -201,33 +188,33 @@ Color
 	}
 	IconBorderColor			"DeepSkyBlue4"
 	{
-		"VTWM*"			"gray67"
+		"VTWM*"			"gray75"
 		"XTerm"			"SeaGreen"
 		"Xqsh"			"maroon"
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
-		"xbiff*"		"gray67"
-		"xcb"			"gray67"
-		"*clock"		"gray67"
-		"xload"			"gray67"
-		"as*"			"gray67"
+		"*ftp:*"		"maroon"
+		"xbiff*"		"gray75"
+		"xcb"			"gray75"
+		"*clock"		"gray75"
+		"xload"			"gray75"
+		"as*"			"gray75"
 	}
 	IconManagerBackground		"DeepSkyBlue4"
 	{
-		"VTWM*"			"gray67"
+		"VTWM*"			"gray75"
 		"XTerm"			"SeaGreen"
 		"Xqsh"			"maroon"
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
-		"xbiff*"		"gray67"
-		"xcb"			"gray67"
-		"*clock"		"gray67"
-		"xload"			"gray67"
-		"as*"			"gray67"
+		"*ftp:*"		"maroon"
+		"xbiff*"		"gray75"
+		"xcb"			"gray75"
+		"*clock"		"gray75"
+		"xload"			"gray75"
+		"as*"			"gray75"
 	}
 	IconManagerForeground		"gray90"
 	{
@@ -238,23 +225,23 @@ Color
 		"xload"			"black"
 		"as*"			"black"
 	}
-	IconManagerHighlight		"gray90" {}
-	DoorBackground			"gray67" {}
-	DoorForeground			"black" {}
+	IconManagerHighlight		"gray90"
+	DoorBackground			"gray75"
+	DoorForeground			"black"
 	DesktopDisplayBackground	"DeepSkyBlue4"
 	{
-		"VTWM*"			"gray67"
+		"VTWM*"			"gray75"
 		"XTerm"			"SeaGreen"
 		"Xqsh"			"maroon"
 		"ssh:*"			"maroon"
 		"telnet:*"		"maroon"
 		"rlogin:*"		"maroon"
-		"ftp:*"			"maroon"
-		"xbiff*"		"gray67"
-		"xcb"			"gray67"
-		"*clock"		"gray67"
-		"xload"			"gray67"
-		"as*"			"gray67"
+		"*ftp:*"		"maroon"
+		"xbiff*"		"gray75"
+		"xcb"			"gray75"
+		"*clock"		"gray75"
+		"xload"			"gray75"
+		"as*"			"gray75"
 	}
 	DesktopDisplayForeground	"gray90"
 	{
@@ -273,11 +260,4 @@ Color
 
 # Read in the menus file...
 include(HOME/vtwm/vtwmrc-menus)
-
-menu "CloseMenu"
-{
-	"  Close  "		f.title
-	"Delete"		f.delete
-	"Destroy"		f.destroy
-}
 

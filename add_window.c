@@ -155,15 +155,24 @@ IconMgr *iconp;
     TwmWindow *tmp_win;			/* new twm window structure */
     unsigned long valuemask;		/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
+#ifdef NO_I18N_SUPPORT
     XTextProperty text_property;
+#endif
     Atom actual_type;
     int actual_format;
     unsigned long nitems, bytesafter;
     int ask_user;		/* don't know where to put the window */
+    int *ppos_ptr, ppos_on;		/* djhjr - 9/24/02 */
     int gravx, gravy;			/* gravity signs for positioning */
     int namelen;
     int bw2;
-	char *icon_name; /* djhjr - 2/20/99 */
+    char *icon_name; /* djhjr - 2/20/99 */
+#ifndef NO_I18N_SUPPORT
+    char *name;
+#endif
+    /* next two submitted by Jonathan Paisley - 11/8/02 */
+    Atom motifhints = XInternAtom( dpy, "_MOTIF_WM_HINTS", 0);
+    MotifWmHints *mwmhints;
 
 #ifdef DEBUG
     fprintf(stderr, "AddWindow: w = 0x%x\n", w);
@@ -186,13 +195,25 @@ IconMgr *iconp;
     XSelectInput(dpy, tmp_win->w, PropertyChangeMask);
     XGetWindowAttributes(dpy, tmp_win->w, &tmp_win->attr);
 
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	if (I18N_FetchName(dpy, tmp_win->w, &name))
+	{
+		tmp_win->name = strdup(name);
+		free(name);
+	}
+#else
 	/*
 	 * Ask the window manager for a name with "newer" R4 function -
 	 * it was 'XFetchName()', which apparently failed more often.
 	 * Submitted by Nicholas Jacobs
 	 */
 	if (XGetWMName(dpy, tmp_win->w, &text_property) != 0)
-		tmp_win->name = (char *)text_property.value;
+	{
+		tmp_win->name = (char *)strdup(text_property.value);
+		XFree(text_property.value);
+	}
+#endif
 	else
 		tmp_win->name = NoName;
 
@@ -214,6 +235,24 @@ IconMgr *iconp;
       tmp_win->group = tmp_win->wmhints->window_group;
     else
 	tmp_win->group = tmp_win->w/* NULL */;
+
+    /* submitted by Jonathan Paisley - 11/8/02 */
+    tmp_win->mwmhints.flags = 0;
+    if (motifhints != None)
+    {
+	if (XGetWindowProperty(dpy, tmp_win->w, motifhints,
+			       0L, sizeof(MotifWmHints), False,
+			       motifhints, &actual_type, &actual_format,
+			       &nitems, &bytesafter,
+			       (unsigned char**)&mwmhints) == Success && actual_type != None)
+	{
+	    if (mwmhints)
+	    {
+		tmp_win->mwmhints = *mwmhints;
+		XFree(mwmhints);
+	    }
+	}
+    }
 
     /*
      * The July 27, 1988 draft of the ICCCM ignores the size and position
@@ -285,18 +324,17 @@ IconMgr *iconp;
 		(LookInList(Scr->IconifyByUn, tmp_win->full_name,
 			&tmp_win->class) != (char *)NULL);
 
-    if ( Scr->UseWindowRing
-    || LookInList(Scr->WindowRingL, tmp_win->full_name, &tmp_win->class)) {
-	if (Scr->Ring) {
-	    tmp_win->ring.next = Scr->Ring->ring.next;
-	    if (Scr->Ring->ring.next->ring.prev)
-	      Scr->Ring->ring.next->ring.prev = tmp_win;
-	    Scr->Ring->ring.next = tmp_win;
-	    tmp_win->ring.prev = Scr->Ring;
-	} else {
-	    tmp_win->ring.next = tmp_win->ring.prev = Scr->Ring = tmp_win;
-	}
-    } else
+    /* Scr->NoWindowRingL submitted by Jonathan Paisley - 10/27/02 */
+    if ((Scr->UseWindowRing ||
+		LookInList(Scr->WindowRingL, tmp_win->full_name,
+			   &tmp_win->class)) &&
+		LookInList(Scr->NoWindowRingL, tmp_win->full_name,
+			     &tmp_win->class) == (char *)NULL)
+    {
+	/* in menus.c now - djhjr - 10/27/02 */
+	AddWindowToRing(tmp_win);
+    }
+    else
       tmp_win->ring.next = tmp_win->ring.prev = NULL;
 #ifdef ORIGINAL_WARPRINGCOORDINATES /* djhjr - 5/11/98 */
     tmp_win->ring.cursor_valid = False;
@@ -377,10 +415,35 @@ IconMgr *iconp;
 		}
 	}
 #endif
+
+    /* submitted by Jonathan Paisley - 11/8/02 */
+    if (tmp_win->mwmhints.flags & MWM_HINTS_DECORATIONS)
+    {
+	if (tmp_win->mwmhints.decorations & MWM_DECOR_ALL)
+	    tmp_win->mwmhints.decorations |= (MWM_DECOR_BORDER |
+			MWM_DECOR_RESIZEH | MWM_DECOR_TITLE |
+			MWM_DECOR_MENU | MWM_DECOR_MINIMIZE |
+			MWM_DECOR_MAXIMIZE);
+
+	if (!(tmp_win->mwmhints.decorations & MWM_DECOR_BORDER))
+	    tmp_win->frame_bw = tmp_win->frame_bw3D = 0;
+    }
+    if (tmp_win->mwmhints.flags & MWM_HINTS_FUNCTIONS)
+	if (tmp_win->mwmhints.functions & MWM_FUNC_ALL)
+	    tmp_win->mwmhints.functions |= (MWM_FUNC_RESIZE |
+			MWM_FUNC_MOVE | MWM_FUNC_MINIMIZE |
+			MWM_FUNC_MAXIMIZE | MWM_FUNC_CLOSE);
+
     bw2 = tmp_win->frame_bw * 2;
 
     /* moved MakeTitle under NoTitle - djhjr - 10/20/01 */
     tmp_win->title_height = Scr->TitleHeight + tmp_win->frame_bw;
+
+    /* submitted by Jonathan Paisley 11/8/02 */
+    if (tmp_win->mwmhints.flags & MWM_HINTS_DECORATIONS &&
+		!(tmp_win->mwmhints.decorations & MWM_DECOR_TITLE))
+	tmp_win->title_height = 0;
+
     if (Scr->NoTitlebar)
         tmp_win->title_height = 0;
     if (LookInList(Scr->NoTitle, tmp_win->full_name, &tmp_win->class))
@@ -444,28 +507,38 @@ IconMgr *iconp;
      *     o  a PPosition was requested and UsePPosition is ON or
      *        NON_ZERO if the window is at other than (0,0)
      */
+
+    /* djhjr - 9/24/02 */
+    if ((ppos_ptr = (int *)LookInList(Scr->UsePPositionL,
+				      tmp_win->full_name, &tmp_win->class)))
+	ppos_on = *ppos_ptr;
+    else
+	ppos_on = Scr->UsePPosition;
+    if (ppos_on == PPOS_NON_ZERO &&
+		(tmp_win->attr.x != 0 || tmp_win->attr.y != 0))
+	ppos_on = PPOS_ON;
+
     ask_user = TRUE;
     if (tmp_win->transient ||
-	(tmp_win->hints.flags & USPosition) ||
-        ((tmp_win->hints.flags & PPosition) && Scr->UsePPosition &&
-	 (Scr->UsePPosition == PPOS_ON ||
-	  tmp_win->attr.x != 0 || tmp_win->attr.y != 0)))
-      ask_user = FALSE;
+		(tmp_win->hints.flags & USPosition) ||
+        	((tmp_win->hints.flags & PPosition) && ppos_on == PPOS_ON))
+	ask_user = FALSE;
 
-	/* check for applet regions - djhjr - 4/26/99 */
-	if (PlaceApplet(tmp_win, tmp_win->attr.x, tmp_win->attr.y,
-			&tmp_win->attr.x, &tmp_win->attr.y))
-		ask_user = FALSE;
+    /* check for applet regions - djhjr - 4/26/99 */
+    if (PlaceApplet(tmp_win, tmp_win->attr.x, tmp_win->attr.y,
+		    &tmp_win->attr.x, &tmp_win->attr.y))
+	ask_user = FALSE;
 
     if (LookInList(Scr->NailedDown, tmp_win->full_name, &tmp_win->class))
 	    tmp_win->nailed = TRUE;
     else
 	    tmp_win->nailed = FALSE;
 
-    /* 25/09/90 - nailed windows should always be on the real screen,
-     * regardless of PPosition or UPosition */
-    /* if we are dealing with PPosition, then offset by the current real
-     * screen offset on the vd */
+    /*
+     * 25/09/90 - Nailed windows should always be on the real screen,
+     * regardless of PPosition or UPosition. If we are dealing with
+     * PPosition, then offset by the current real screen offset on the vd.
+     */
     if (tmp_win->nailed ||
 	((tmp_win->hints.flags & PPosition) && (ask_user == FALSE))) {
 	    tmp_win->attr.x = R_TO_V_X(tmp_win->attr.x);
@@ -481,19 +554,46 @@ IconMgr *iconp;
 /* djhjr - 4/19/96
 	int delta = tmp_win->attr.border_width - tmp_win->frame_bw;
 */
+/* submitted by Jonathan Paisley - 11/8/02
 	int delta = tmp_win->attr.border_width - tmp_win->frame_bw - tmp_win->frame_bw3D;
+*/
+	int delta = -(tmp_win->frame_bw + tmp_win->frame_bw3D);
 
 	tmp_win->attr.x += gravx * delta;
 	tmp_win->attr.y += gravy * delta;
+    }
+
+    /*
+     * For windows with specified non-northwest gravities.
+     * Submitted by Jonathan Paisley - 11/8/02
+     */
+    if (tmp_win->old_bw) {
+	if (!Scr->ClientBorderWidth) {
+	    JunkX = gravx + 1;
+	    JunkY = gravy + 1;
+	} else
+	    JunkX = JunkY = 1;
+
+	tmp_win->attr.x += JunkX * tmp_win->old_bw;
+	tmp_win->attr.y += JunkY * tmp_win->old_bw;
     }
 
     tmp_win->title_width = tmp_win->attr.width;
 
     if (tmp_win->old_bw) XSetWindowBorderWidth (dpy, tmp_win->w, 0);
 
-    tmp_win->name_width = XTextWidth(Scr->TitleBarFont.font, tmp_win->name,
-				     namelen);
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+    tmp_win->name_width = MyFont_TextWidth(&Scr->TitleBarFont,
+#else
+    tmp_win->name_width = XTextWidth(Scr->TitleBarFont.font,
+#endif
+				     tmp_win->name, namelen);
 
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	if (!I18N_GetIconName(dpy, tmp_win->w, &icon_name))
+#else
 	/* used to be a simple boolean test for success - djhjr - 1/10/98 */
 	if (XGetWindowProperty (dpy, tmp_win->w, XA_WM_ICON_NAME, 0L, 200L, False,
 			XA_STRING, &actual_type, &actual_format, &nitems, &bytesafter,
@@ -503,11 +603,17 @@ IconMgr *iconp;
 		tmp_win->icon_name = tmp_win->name;
 */
 			(unsigned char **)&icon_name) != Success || actual_type == None)
+#endif
 		tmp_win->icon_name = strdup(tmp_win->name);
 	else
 	{
 		tmp_win->icon_name = strdup(icon_name);
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+		free(icon_name);
+#else
 		XFree(icon_name);
+#endif
 	}
 
 /* redundant? - djhjr - 1/10/98
@@ -599,7 +705,8 @@ IconMgr *iconp;
 	if (!Scr->BeNiceToColormap)
 		GetShadeColors (&tmp_win->title);
 	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
-	if (Scr->ButtonColorIsFrame || (Scr->BorderBevelWidth > 0 && !Scr->BeNiceToColormap))
+	/* rearranged the parenthesis - djhjr - 10/30/02 */
+	if ((Scr->ButtonColorIsFrame || Scr->BorderBevelWidth > 0) && !Scr->BeNiceToColormap)
 	{
 		GetShadeColors (&tmp_win->border);
 		GetShadeColors (&tmp_win->border_tile);
@@ -1017,7 +1124,12 @@ int ask_user;
 		if (Scr->NoGrabServer) XUngrabServer(dpy);
 
 /* use initialized size... djhjr - 5/9/96
+* djhjr - 9/14/03 *
+#ifndef NO_I18N_SUPPORT
+	    width = (SIZE_HINDENT + MyFont_TextWidth (&Scr->SizeFont,
+#else
 	    width = (SIZE_HINDENT + XTextWidth (Scr->SizeFont.font,
+#endif
 						tmp_win->name, namelen));
 	    height = Scr->SizeFont.height + SIZE_VINDENT * 2;
 
@@ -1032,11 +1144,19 @@ int ask_user;
 	    InstallRootColormap();
 
 /* DisplayPosition overwrites it anyway... djhjr - 5/9/96
-	    FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
-		Scr->SizeFont.font->fid);
-	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
-			      SIZE_HINDENT,
+	    * font was font.font->fid - djhjr - 9/14/03 *
+	    FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont);
+* djhjr - 9/14/03 *
+#ifndef NO_I18N_SUPPORT
+	    MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
+#else
+	    XDrawImageString (dpy, Scr->SizeWindow,
+#endif
+			      Scr->NormalGC, SIZE_HINDENT,
+* djhjr - 9/14/03
 			      SIZE_VINDENT + Scr->SizeFont.font->ascent,
+*
+			      SIZE_VINDENT + Scr->SizeFont.ascent,
 			      tmp_win->name, namelen);
 */
 
@@ -1077,9 +1197,18 @@ int ask_user;
 		}
 
 /* DisplayPosition() overwrites it anyway... djhjr - 5/9/96
+* djhjr - 9/14/03 *
+#ifndef NO_I18N_SUPPORT
+	    MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
+#else
 		* djhjr - 4/27/96 *
-	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
+	    XDrawImageString (dpy, Scr->SizeWindow,
+#endif
+				Scr->NormalGC, width, 
+* djhjr - 9/14/03
 				SIZE_VINDENT + Scr->SizeFont.font->ascent, ": ", 2);
+*
+				SIZE_VINDENT + Scr->SizeFont.ascent, ": ", 2);
 */
 
 		/* djhjr - 4/27/96 */
@@ -1187,11 +1316,25 @@ int ask_user;
 
 /* AddStartResize() overwrites it anyway... djhjr - 5/9/96
 		Scr->SizeStringOffset = width +
+* djhjr - 9/14/03 *
+#ifndef NO_I18N_SUPPORT
+		  MyFont_TextWidth(&Scr->SizeFont, ": ", 2);
+#else
 		  XTextWidth(Scr->SizeFont.font, ": ", 2);
+#endif
 		XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
 			       Scr->SizeStringWidth, height);
-		XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
+* djhjr - 9/14/03 *
+#ifndef NO_I18N_SUPPORT
+		MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
+#else
+		XDrawImageString (dpy, Scr->SizeWindow,
+#endif
+				  Scr->NormalGC, width,
+* djhjr - 9/14/03
 				  SIZE_VINDENT + Scr->SizeFont.font->ascent,
+*
+				  SIZE_VINDENT + Scr->SizeFont.ascent,
 				  ": ", 2);
 */
 
@@ -1414,11 +1557,13 @@ Why?
 			tmp_win->frame_bw - tmp_win->frame_bw3D;
 	tmp_win->frame_y = tmp_win->attr.y - tmp_win->title_height -
 			tmp_win->frame_bw - tmp_win->frame_bw3D;
+/* Not needed? - submitted by Jonathan Paisley - 11/8/02
 	if (Scr->ClientBorderWidth || !ask_user)
 	{
 		tmp_win->frame_x += tmp_win->old_bw;
 		tmp_win->frame_y += tmp_win->old_bw;
 	}
+*/
 
 	tmp_win->frame_width = tmp_win->attr.width + 2 * tmp_win->frame_bw3D;
 	tmp_win->frame_height = tmp_win->attr.height + tmp_win->title_height +
@@ -1556,6 +1701,37 @@ TwmWindow *tmp_win;
  ***********************************************************************
  */
 
+/* djhjr - 9/10/03 */
+void
+GrabModKeys(w, k)
+Window w;
+FuncKey *k;
+{
+    int i;
+
+    XGrabKey(dpy, k->keycode, k->mods, w, True, GrabModeAsync, GrabModeAsync);
+
+    for (i = 1; i <= Scr->IgnoreModifiers; i++)
+        if ((Scr->IgnoreModifiers & i) == i)
+	    XGrabKey(dpy, k->keycode, k->mods | i, w, True,
+			GrabModeAsync, GrabModeAsync);
+}
+
+/* djhjr - 9/10/03 */
+void
+UngrabModKeys(w, k)
+Window w;
+FuncKey *k;
+{
+    int i;
+
+    XUngrabKey(dpy, k->keycode, k->mods, w);
+
+    for (i = 1; i <= Scr->IgnoreModifiers; i++)
+        if ((Scr->IgnoreModifiers & i) == i)
+	    XUngrabKey(dpy, k->keycode, k->mods | i, w);
+}
+
 void
 GrabKeys(tmp_win)
 TwmWindow *tmp_win;
@@ -1568,35 +1744,57 @@ TwmWindow *tmp_win;
 	switch (tmp->cont)
 	{
 	case C_WINDOW:
+/* djhjr - 9/10/03
 	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->w, True,
 		GrabModeAsync, GrabModeAsync);
+*/
+	    GrabModKeys(tmp_win->w, tmp);
 	    break;
 
 	case C_ICON:
 	    if (tmp_win->icon_w)
+/* djhjr - 9/10/03
 		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon_w, True,
 		    GrabModeAsync, GrabModeAsync);
+*/
+		GrabModKeys(tmp_win->icon_w, tmp);
 
 	case C_TITLE:
 	    if (tmp_win->title_w)
+/* djhjr - 9/10/03
 		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w, True,
 		    GrabModeAsync, GrabModeAsync);
+*/
+		GrabModKeys(tmp_win->title_w, tmp);
 	    break;
 
 	case C_NAME:
+/* djhjr - 9/10/03
 	    XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->w, True,
 		GrabModeAsync, GrabModeAsync);
+*/
+	    GrabModKeys(tmp_win->w, tmp);
 	    if (tmp_win->icon_w)
+/* djhjr - 9/10/03
 		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon_w, True,
 		    GrabModeAsync, GrabModeAsync);
+*/
+		GrabModKeys(tmp_win->icon_w, tmp);
 	    if (tmp_win->title_w)
+/* djhjr - 9/10/03
 		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w, True,
 		    GrabModeAsync, GrabModeAsync);
+*/
+		GrabModKeys(tmp_win->title_w, tmp);
 	    break;
+
 	/*
 	case C_ROOT:
+* djhjr - 9/10/03
 	    XGrabKey(dpy, tmp->keycode, tmp->mods, Scr->Root, True,
 		GrabModeAsync, GrabModeAsync);
+*
+	    GrabModKeys(Scr->Root, tmp);
 	    break;
 	*/
 	}
@@ -1607,7 +1805,10 @@ TwmWindow *tmp_win;
 	{
 	    for (p = &Scr->iconmgr; p != NULL; p = p->next)
 	    {
+/* djhjr - 9/10/03
 		XUngrabKey(dpy, tmp->keycode, tmp->mods, p->twm_win->w);
+*/
+		UngrabModKeys(p->twm_win->w, tmp);
 	    }
 	}
     }
@@ -1622,12 +1823,21 @@ static Window CreateHighlightWindow (tmp_win)
     XGCValues gcv;
     unsigned long valuemask;
 	unsigned int pm_numcolors;
-    int h = (Scr->TitleHeight - 2 * Scr->FramePadding);
+    /* added '- 2' - djhjr - 10/18/02 */
+    int h = (Scr->TitleHeight - 2 * Scr->FramePadding) - 2;
     Window w;
 
-	/* djhjr - 4/1/98 */
+/* djhjr - 9/14/03
+#ifndef NO_I18N_SUPPORT
+	int en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
+#else
+	* djhjr - 4/1/98 *
 	int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
+#endif
+*/
+/* djhjr - 10/18/02
 	int width = Scr->TBInfo.titlex + tmp_win->name_width + 2 * en;
+*/
 
     /*
      * If a special highlight pixmap was given, use that.  Otherwise,
@@ -1773,6 +1983,8 @@ static Window CreateHighlightWindow (tmp_win)
 	}
 #endif /* ORIGINAL_PIXMAPS */
 
+/* djhjr - 10/18/02 */
+#if 0
 	/* djhjr - 4/19/96 */
 	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
     if (Scr->TitleBevelWidth > 0)
@@ -1798,10 +2010,17 @@ static Window CreateHighlightWindow (tmp_win)
 */
 	w = XCreateWindow (dpy, tmp_win->title_w, width, Scr->FramePadding + 2,
 		       ComputeHighlightWindowWidth(tmp_win), (unsigned int) (h - 4),
-
 		       (unsigned int) 0,
 		       Scr->d_depth, (unsigned int) CopyFromParent,
 		       Scr->d_visual, valuemask, &attributes);
+#else
+	w = XCreateWindow (dpy, tmp_win->title_w,
+		       tmp_win->highlightx, Scr->FramePadding + 1,
+		       ComputeHighlightWindowWidth(tmp_win), (unsigned int) h,
+		       (unsigned int) 0,
+		       Scr->d_depth, (unsigned int) CopyFromParent,
+		       Scr->d_visual, valuemask, &attributes);
+#endif
 
     if (pm) XFreePixmap (dpy, pm);
 
@@ -1811,18 +2030,30 @@ static Window CreateHighlightWindow (tmp_win)
 
 void ComputeCommonTitleOffsets ()
 {
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+    int en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
+#else
+    /* djhjr - 10/18/02 */
+    int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
+#endif
+
     int buttonwidth = (Scr->TBInfo.width + Scr->TBInfo.pad);
 
     Scr->TBInfo.leftx = Scr->TBInfo.rightoff = Scr->FramePadding;
+
     if (Scr->TBInfo.nleft > 0)
       Scr->TBInfo.leftx += Scr->ButtonIndent;
+
+    /* 'en' was 'Scr->TitlePadding' - djhjr - 10/18/02 */
     Scr->TBInfo.titlex = (Scr->TBInfo.leftx +
-			  (Scr->TBInfo.nleft * buttonwidth) - Scr->TBInfo.pad +
-			  Scr->TitlePadding);
+			 (Scr->TBInfo.nleft * buttonwidth) - Scr->TBInfo.pad +
+			 en);
+
     if (Scr->TBInfo.nright > 0)
       Scr->TBInfo.rightoff += (Scr->ButtonIndent +
-			       ((Scr->TBInfo.nright * buttonwidth) -
-				Scr->TBInfo.pad));
+			      ((Scr->TBInfo.nright * buttonwidth) -
+			      Scr->TBInfo.pad));
     return;
 }
 
@@ -1831,44 +2062,47 @@ void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
 	int width;
     Bool squeeze;
 {
-    tmp_win->highlightx = (Scr->TBInfo.titlex + tmp_win->name_width);
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+    int en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
+#else
+    /* djhjr - 10/18/02 */
+    int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
+#endif
 
-	/* djhjr - 4/1/98 */
-	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+    /* added 'en' - djhjr - 10/18/02 */
+    tmp_win->highlightx = Scr->TBInfo.titlex + tmp_win->name_width + en;
+
+/* djhjr - 10/18/02
+	* djhjr - 4/1/98 *
+	* was 'Scr->use3Dtitles' - djhjr - 8/11/98 *
 	if (Scr->TitleBevelWidth > 0)
 	{
+* djhjr - 9/14/03 *
+#ifndef NO_I18N_SUPPORT
+		int en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
+#else
 		int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
+#endif
 		tmp_win->highlightx += en;
 
-		/* rem'd out - djhjr - 4/19/96 */
-		/* reinstated - djhjr - 4/1/98 */
+		* rem'd out - djhjr - 4/19/96 *
+		* reinstated - djhjr - 4/1/98 *
     	tmp_win->highlightx += 6;
 	}
 
     if (tmp_win->hilite_w || Scr->TBInfo.nright > 0)
       tmp_win->highlightx += Scr->TitlePadding;
+*/
 
     tmp_win->rightx = width - Scr->TBInfo.rightoff;
 
 	if (squeeze && tmp_win->squeeze_info)
 	{
-		int rx;
-
-		/* djhjr - 3/13/97 */
-		/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
-		if (Scr->TitleBevelWidth > 0)
-		{
-			rx = (tmp_win->highlightx + Scr->TBInfo.width * 2 +
-				(Scr->TBInfo.nright > 0 ? Scr->TitlePadding : 0) +
-				Scr->FramePadding);
-		}
-		else
-		{
-			rx = (tmp_win->highlightx +
-				(tmp_win->hilite_w ? Scr->TBInfo.width * 2 : 0) +
-				(Scr->TBInfo.nright > 0 ? Scr->TitlePadding : 0) +
-				Scr->FramePadding);
-		}
+		/* djhjr - 3/13/97 8/11/98 */
+		/* this used to care about title bevels - djhjr - 10/18/02 */
+		int rx = tmp_win->highlightx +
+			 ((tmp_win->titlehighlight) ? Scr->TitleHeight * 2 : 0);
 
 		if (rx < tmp_win->rightx) tmp_win->rightx = rx;
     }
@@ -1928,9 +2162,12 @@ static void CreateWindowTitlebarButtons (tmp_win)
 {
     unsigned long valuemask;		/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
-    int leftx, rightx, y;
     TitleButton *tb;
-    int nb;
+    TBWindow *tbw;
+    int boxwidth = Scr->TBInfo.width + Scr->TBInfo.pad;
+    unsigned int h = Scr->TBInfo.width - Scr->TBInfo.border * 2;
+    int x, y = Scr->FramePadding + Scr->ButtonIndent;	/* init - djhjr - 10/18/02 */
+    int nb, leftx, rightx;
 
     if (tmp_win->title_height == 0)
     {
@@ -1938,20 +2175,21 @@ static void CreateWindowTitlebarButtons (tmp_win)
 	return;
     }
 
-
     /*
      * create the title bar windows; let the event handler deal with painting
      * so that we don't have to spend two pixmaps (or deal with hashing)
      */
     ComputeWindowTitleOffsets (tmp_win, tmp_win->attr.width, False);
 
+/* djhjr - 10/18/02
     leftx = y = Scr->TBInfo.leftx;
+*/
+    leftx = Scr->TBInfo.leftx;
     rightx = tmp_win->rightx;
 
     attributes.background_pixel = tmp_win->title.back;
     attributes.border_pixel = tmp_win->title.fore;
-    attributes.event_mask = (ButtonPressMask | ButtonReleaseMask |
-			     ExposureMask);
+    attributes.event_mask = (ButtonPressMask | ButtonReleaseMask | ExposureMask);
     attributes.cursor = Scr->ButtonCursor;
 
     valuemask = (CWWinGravity | CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
@@ -1964,13 +2202,8 @@ static void CreateWindowTitlebarButtons (tmp_win)
 	    fprintf (stderr, "%s:  unable to allocate %d titlebuttons\n",
 		     ProgramName, nb);
 	} else {
-	    TBWindow *tbw;
-	    int boxwidth = (Scr->TBInfo.width + Scr->TBInfo.pad);
-	    unsigned int h = (Scr->TBInfo.width - Scr->TBInfo.border * 2);
-
 	    for (tb = Scr->TBInfo.head, tbw = tmp_win->titlebuttons; tb;
 		 tb = tb->next, tbw++) {
-		int x;
 		if (tb->rightside) {
 		    x = rightx;
 		    rightx += boxwidth;
@@ -2004,8 +2237,9 @@ static void CreateWindowTitlebarButtons (tmp_win)
 *
 	PaintTitleHighlight(tmp_win, off);
 */
+	/* was '!Scr->SunkFocusWindowTitle' - djhjr - 10/25/02 */
 	tmp_win->hilite_w =
-		(tmp_win->titlehighlight && !Scr->SunkFocusWindowTitle) ?
+		(tmp_win->titlehighlight && !Scr->hiliteName) ?
 		CreateHighlightWindow(tmp_win) : None;
 
     return;
@@ -2036,6 +2270,11 @@ void SetHighlightPixmap (filename)
 void SetHighlightPixmap (filename)
     char *filename;
 {
+	/* added this 'if (...) else' - djhjr - 10/25/02 */
+	if (filename[0] == ':')
+		Scr->hiliteName = filename;
+	else
+
 	if (!Scr->hilitePm) Scr->hilitePm = SetPixmapsPixmap(filename);
 }
 #endif /* ORIGINAL_PIXMAPS */
@@ -2151,8 +2390,8 @@ void FetchWmColormapWindows (tmp)
 
     number_cmap_windows = 0;
 
-    if (/* SUPPRESS 560 */previously_installed =
-       (Scr->cmapInfo.cmaps == &tmp->cmaps && tmp->cmaps.number_cwins)) {
+    if ((previously_installed =
+       (Scr->cmapInfo.cmaps == &tmp->cmaps) && tmp->cmaps.number_cwins)) {
 	cwins = tmp->cmaps.cwins;
 	for (i = 0; i < tmp->cmaps.number_cwins; i++)
 	    cwins[i]->colormap->state = 0;

@@ -150,6 +150,7 @@ extern MenuItem *ActiveItem;
 extern int MoveFunction;
 extern int WindowMoved;
 extern int ConstMove;
+/* private variables now - djhjr - 10/6/02
 extern int ConstMoveDir;
 extern int ConstMoveX;
 extern int ConstMoveY;
@@ -157,6 +158,7 @@ extern int ConstMoveXL;
 extern int ConstMoveXR;
 extern int ConstMoveYT;
 extern int ConstMoveYB;
+*/
 
 #define MAXMENUDEPTH	10	/* max number of nested menus */
 extern int MenuDepth;
@@ -176,6 +178,7 @@ extern int MenuDepth;
 extern int InitTitlebarButtons();
 extern void InitMenus();
 extern MenuRoot *NewMenuRoot();
+extern void SetMenuIconPixmap();
 extern MenuItem *AddToMenu();
 extern Bool PopUpMenu();
 extern MenuRoot *FindMenuRoot();
@@ -206,6 +209,10 @@ extern void DisplayPosition ();
 /* djhjr - 5/30/00 */
 extern void WarpWindowOrScreen();
 extern void WarpInIconMgr();
+
+/* djhjr - 10/27/02 */
+extern void AddWindowToRing();
+extern void RemoveWindowFromRing();
 
 /* djhjr - 6/22/01 */
 extern void DoAudible();

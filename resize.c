@@ -55,10 +55,10 @@ static int dragy;       /* in resize operations */
 static int dragWidth;
 static int dragHeight;
 
-static int origx;
-static int origy;
-static int origWidth;
-static int origHeight;
+int origx;
+int origy;
+int origWidth;
+int origHeight;
 
 static int clampTop;
 static int clampBottom;
@@ -72,7 +72,7 @@ static int last_height;
 
 static int resize_context;
 
-/* set in HandleMotionNotify(), cleared in *EndResize() - djhjr - 9/5/98 */
+/* set in menus.c:ExecuteFunction(), cleared in *EndResize() - djhjr - 9/5/98 */
 int resizing_window = 0;
 
 /* djhjr - 4/6/98 */
@@ -83,6 +83,10 @@ static void DoVirtualMoveResize();
 
 /* djhjr - 9/10/99 */
 void ResizeTwmWindowContents();
+
+/* djhjr - 9/13/02 */
+static void SetVirtualDesktopIncrs();
+static void EndResizeAdjPointer();
 
 static void do_auto_clamp (tmp_win, evp)
     TwmWindow *tmp_win;
@@ -154,6 +158,8 @@ int context;
 
     resize_context = context;
 
+    SetVirtualDesktopIncrs(tmp_win);	/* djhjr - 9/13/02 */
+
     if (context == C_VIRTUAL_WIN)
 	    ResizeWindow = tmp_win->VirtualDesktopDisplayWindow;
     else
@@ -206,7 +212,7 @@ int context;
 */
 
     XMapRaised(dpy, Scr->SizeWindow);
-    InstallRootColormap();
+    if (!tmp_win->opaque_resize) InstallRootColormap();
     last_width = 0;
     last_height = 0;
     DisplaySize(tmp_win, origWidth, origHeight);
@@ -247,6 +253,8 @@ int context;
 	/* djhjr - 2/22/99 */
 	resize_context = context;
 
+    SetVirtualDesktopIncrs(tmp_win);	/* djhjr - 9/13/02 */
+
 /* djhjr - 7/17/98
 	* djhjr - 4/15/98 *
 	if (!Scr->NoGrabServer)
@@ -278,6 +286,7 @@ int context;
 */
 
     XMapRaised(dpy, Scr->SizeWindow);
+    if (!tmp_win->opaque_resize) InstallRootColormap();
     DisplaySize(tmp_win, origWidth, origHeight);
 
 	/* added this 'if ... else' - djhjr - 4/6/98 */
@@ -318,6 +327,8 @@ int x, y, w, h;
 	/* djhjr - 2/22/99 */
 	resize_context = C_WINDOW;
 
+    SetVirtualDesktopIncrs(tmp_win);	/* djhjr - 9/13/02 */
+
 /* djhjr - 7/17/98
 	* djhjr - 4/15/98 *
 	if (!Scr->NoGrabServer)
@@ -352,6 +363,12 @@ int x, y, w, h;
 
 
 
+/*
+ * Functionally identical with DoResize(), except that this
+ * handles a virtual window differently, but it isn't used anyway.
+ * djhjr - 10/6/02
+ */
+#if 0
 void
 MenuDoResize(x_root, y_root, tmp_win)
 int x_root;
@@ -414,7 +431,9 @@ TwmWindow *tmp_win;
         dragHeight += delta;
         action = 1;
     }
-    else if (y_root >= dragy + dragHeight) {
+    else if (y_root >= dragy + dragHeight - 1/* ||
+           y_root == findRootInfo(root)->rooty
+           + findRootInfo(root)->rootheight - 1*/) {
         dragy = origy;
         dragHeight = 1 + y_root - dragy;
         clampTop = 0;
@@ -431,7 +450,9 @@ TwmWindow *tmp_win;
         dragWidth += delta;
         action = 1;
     }
-    else if (x_root >= dragx + dragWidth) {
+    else if (x_root >= dragx + dragWidth - 1/* ||
+             x_root == findRootInfo(root)->rootx +
+             findRootInfo(root)->rootwidth - 1*/) {
         dragx = origx;
         dragWidth = 1 + x_root - origx;
         clampLeft = 0;
@@ -508,7 +529,8 @@ TwmWindow *tmp_win;
 		PaintBorderAndTitlebar(tmp_win);
 
 		/* djhjr - 4/15/98 */
-		if (!Scr->NoGrabServer)
+		/* added '&& !resizing_window' - djhjr - 11/7/03 */
+		if (!Scr->NoGrabServer && !resizing_window)
 		{
 			/* these let the application window be drawn - djhjr - 4/14/98 */
 			XUngrabServer(dpy); XSync(dpy, 0); XGrabServer(dpy);
@@ -533,6 +555,7 @@ TwmWindow *tmp_win;
 
     DisplaySize(tmp_win, dragWidth, dragHeight);
 }
+#endif
 
 /***********************************************************************
  *
@@ -700,7 +723,8 @@ TwmWindow *tmp_win;
 			PaintBorderAndTitlebar(tmp_win);
 
 			/* djhjr - 4/15/98 */
-			if (!Scr->NoGrabServer)
+			/* added '&& !resizing_window' - djhjr - 11/7/03 */
+			if (!Scr->NoGrabServer && !resizing_window)
 			{
 				/* these let the application window be drawn - djhjr - 4/14/98 */
 				XUngrabServer(dpy); XSync(dpy, 0); XGrabServer(dpy);
@@ -723,6 +747,29 @@ TwmWindow *tmp_win;
     }
 
     DisplaySize(tmp_win, dragWidth, dragHeight);
+}
+
+/* djhjr - 9/13/02 */
+static void
+SetVirtualDesktopIncrs(tmp_win)
+TwmWindow *tmp_win;
+{
+    if (strcmp(tmp_win->class.res_class, VTWM_DESKTOP_CLASS) == 0)
+    {
+	if (Scr->snapRealScreen)
+	{
+	    Scr->VirtualDesktopDisplayTwin->hints.flags |= PResizeInc;
+	    Scr->VirtualDesktopDisplayTwin->hints.width_inc =
+			SCALE_D(Scr->VirtualDesktopPanDistanceX);
+	    Scr->VirtualDesktopDisplayTwin->hints.height_inc =
+			SCALE_D(Scr->VirtualDesktopPanDistanceY);
+	}
+	else
+	    Scr->VirtualDesktopDisplayTwin->hints.flags &= ~PResizeInc;
+
+	XSetWMNormalHints(dpy, tmp_win->w,
+			&Scr->VirtualDesktopDisplayTwin->hints);
+    }
 }
 
 /***********************************************************************
@@ -769,13 +816,16 @@ int height;
     /*
      * ICCCM says that PMinSize is the default is no PBaseSize is given,
      * and vice-versa.
+     * Don't adjust if window is the virtual desktop - djhjr - 9/13/02
      */
     if (tmp_win->hints.flags&(PMinSize|PBaseSize) && tmp_win->hints.flags & PResizeInc)
     {
-	if (tmp_win->hints.flags & PBaseSize) {
+	if (tmp_win->hints.flags & PBaseSize)
+	{
 	    dwidth -= tmp_win->hints.base_width;
 	    dheight -= tmp_win->hints.base_height;
-	} else {
+	} else if (strcmp(tmp_win->class.res_class, VTWM_DESKTOP_CLASS) != 0)
+	{
 	    dwidth -= tmp_win->hints.min_width;
 	    dheight -= tmp_win->hints.min_height;
 	}
@@ -796,19 +846,37 @@ int height;
     i = strlen (str);
 
     XRaiseWindow(dpy, Scr->SizeWindow);
-    FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);
-    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
+    /* font was font.font->fid - djhjr - 9/14/03 */
+    FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont);
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+    MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
+#else
+    XDrawImageString (dpy, Scr->SizeWindow,
+#endif
+			  Scr->NormalGC,
 
 /* djhjr - 5/9/96
 		      Scr->SizeStringOffset,
 */
-			  (Scr->SizeStringWidth - XTextWidth(Scr->SizeFont.font, str, i)) / 2,
+			  (Scr->SizeStringWidth -
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+			   MyFont_TextWidth(&Scr->SizeFont,
+#else
+			   XTextWidth(Scr->SizeFont.font,
+#endif
+					str, i)) / 2,
 
 /* djhjr - 4/29/98
 			Scr->SizeFont.font->ascent + SIZE_VINDENT,
 */
 			/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
-			Scr->SizeFont.font->ascent + SIZE_VINDENT +
+/* djhjr 9/14/03
+			Scr->SizeFont.font->ascent +
+*/
+			Scr->SizeFont.ascent +
+				 SIZE_VINDENT +
 				 ((Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth : 0),
 
 			str, i);
@@ -871,6 +939,8 @@ EndResize()
     SetupWindow (tmp_win, dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
 		 dragWidth, dragHeight, -1);
 
+    EndResizeAdjPointer(tmp_win);	/* djhjr - 9/13/02 */
+
 	/* added test for opaque resizing - djhjr - 2/28/99, 3/1/99 */
 	if (!tmp_win->opaque_resize)
 	{
@@ -878,6 +948,7 @@ EndResize()
 		ResizeTwmWindowContents(tmp_win, dragWidth, dragHeight);
 	}
 
+#if 0 /* done in menus.c:ExecuteFunction() - djhjr - 10/6/02 */
     if (!Scr->NoRaiseResize) {
         XRaiseWindow(dpy, tmp_win->frame);
         
@@ -894,7 +965,9 @@ EndResize()
 
     /* UpdateDesktop(tmp_win); Stig */
     MoveResizeDesktop(tmp_win, Scr->NoRaiseResize); /* Stig */
+#endif
 
+#if 0 /* done in menus.c:ExecuteFunction() - djhjr - 10/11/01 */
 	/* djhjr - 6/4/98 */
 	/* don't re-map if the window is the virtual desktop - djhjr - 2/28/99 */
 	if (Scr->VirtualReceivesMotionEvents &&
@@ -904,6 +977,7 @@ EndResize()
 		XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
 		XMapWindow(dpy, Scr->VirtualDesktopDisplay);
 	}
+#endif
 
     ResizeWindow = None;
 
@@ -911,9 +985,11 @@ EndResize()
 	resizing_window = 0;
 }
 
+/* added the passed 'context' - djhjr - 9/30/02 */
 void
-MenuEndResize(tmp_win)
+MenuEndResize(tmp_win, context)
 TwmWindow *tmp_win;
+int context;
 {
     /* added this 'if (...) ... else' - djhjr - 2/22/99 */
     if (resize_context == C_VIRTUAL_WIN)
@@ -923,15 +999,31 @@ TwmWindow *tmp_win;
     XUnmapWindow(dpy, Scr->SizeWindow);
 
     ConstrainSize (tmp_win, &dragWidth, &dragHeight);
+
+	/* djhjr - 9/19/96 */
+	if (dragWidth != tmp_win->frame_width || dragHeight != tmp_win->frame_height)
+		tmp_win->zoomed = ZOOM_NONE;
+
+/* djhjr - 10/6/02
     AddingX = dragx;
     AddingY = dragy;
     AddingW = dragWidth + (2 * tmp_win->frame_bw);
     AddingH = dragHeight + (2 * tmp_win->frame_bw);
     SetupWindow (tmp_win, AddingX, AddingY, AddingW, AddingH, -1);
+*/
+    SetupWindow (tmp_win, dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
+		 dragWidth, dragHeight, -1);
 
-	/* djhjr - 9/19/96 */
-	if (dragWidth != tmp_win->frame_width || dragHeight != tmp_win->frame_height)
-		tmp_win->zoomed = ZOOM_NONE;
+    /* djhjr - 9/13/02 9/30/02 */
+    if (context != C_VIRTUAL_WIN)
+	EndResizeAdjPointer(tmp_win);
+
+	/* added test for opaque resizing - djhjr - 2/28/99, 3/1/99 */
+	if (!tmp_win->opaque_resize)
+	{
+		/* was inline code - djhjr - 9/10/99 */
+		ResizeTwmWindowContents(tmp_win, dragWidth, dragHeight);
+	}
 
 #if 0 /* done in menus.c:ExecuteFunction() - djhjr - 10/11/01 */
 	/* djhjr - 6/4/98 */
@@ -978,6 +1070,8 @@ TwmWindow *tmp_win;
     AddingW = dragWidth + (2 * tmp_win->frame_bw);
     AddingH = dragHeight + (2 * tmp_win->frame_bw);
 
+    EndResizeAdjPointer(tmp_win);	/* djhjr - 9/13/02 */
+
 	/* djhjr - 9/19/96 */
 	if (dragWidth != tmp_win->frame_width || dragHeight != tmp_win->frame_height)
 		tmp_win->zoomed = ZOOM_NONE;
@@ -993,6 +1087,55 @@ TwmWindow *tmp_win;
 
 	/* djhjr - 9/5/98 */
 	resizing_window = 0;
+}
+
+/* djhjr - 9/13/02 */
+static void
+EndResizeAdjPointer(tmp_win)
+TwmWindow *tmp_win;
+{
+    int x, y, bw = tmp_win->frame_bw + tmp_win->frame_bw3D;
+
+    XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
+		  &JunkX, &JunkY, &JunkBW, &JunkBW, &JunkBW);
+    XTranslateCoordinates(dpy, Scr->Root, tmp_win->frame,
+			  JunkX, JunkY, &x, &y, &JunkChild);
+
+    /* for borderless windows */
+    if (bw == 0) bw = 4;
+
+    /* (tmp_win->frame_bw) == no 3D borders */
+    
+    if (x <= 0)
+    {
+	if (y < tmp_win->title_height)
+	    x = tmp_win->title_x + ((tmp_win->frame_bw) ? (bw / 2) : -(bw / 2));
+	else
+	    x = ((tmp_win->frame_bw) ? -(bw / 2) : (bw / 2));
+    }
+    if (x >= tmp_win->frame_width)
+    {
+	if (y < tmp_win->title_height)
+	    x = tmp_win->title_x + tmp_win->title_width + (bw / 2);
+	else
+	    x = tmp_win->frame_width + ((tmp_win->frame_bw) ? (bw / 2) : -(bw / 2));
+    }
+
+    if (y <= tmp_win->title_height)
+    {
+	if (x >= tmp_win->title_x - ((tmp_win->frame_bw) ? 0 : bw) &&
+		x < tmp_win->title_x + tmp_win->title_width + bw)
+	{
+	    if (y <= 0)
+		y = ((tmp_win->frame_bw) ? -(bw / 2) : (bw / 2));
+	}
+	else
+	    y = tmp_win->title_height + ((tmp_win->frame_bw) ? -(bw / 2) : (bw / 2));
+    }
+    if (y >= tmp_win->frame_height)
+	y = tmp_win->frame_height + ((tmp_win->frame_bw) ? (bw / 2) : -(bw / 2));
+
+    XWarpPointer(dpy, None, tmp_win->frame, 0, 0, 0, 0, x, y);
 }
 
 /***********************************************************************
@@ -1381,6 +1524,7 @@ TwmWindow *tmp_win;
 	}
 
 	PaintTitle(tmp_win);
+	PaintTitleHighlight(tmp_win, on);	/* djhjr - 10/25/02 */
 }
 
 
@@ -1400,7 +1544,10 @@ int x, y, w, h;
 		tmp_win->frame_height = h + 2 * tmp_win->frame_bw;
 	}
 
+/* djhjr - 5/27/03
 	MoveResizeDesktop(tmp_win, Scr->NoRaiseResize);
+*/
+	MoveResizeDesktop(tmp_win, TRUE);
 
 	tmp_win->frame_width = fw; tmp_win->frame_height = fh;
 }
@@ -1602,7 +1749,8 @@ void SetFrameShape (tmp)
 	if (tmp->squeeze_info) {
 	    XRectangle  newBounding[3];
 	    XRectangle  newClip[3];
-	    int fbw2 = 2 * tmp->frame_bw;
+	    int count = 3, order = YXSorted, fbw2 = 2 * tmp->frame_bw;
+	    int client_width = tmp->attr.width + fbw2 + 2 * tmp->frame_bw3D;
 
 	    /*
 	     * Build the border clipping rectangles; one around title, one
@@ -1612,12 +1760,12 @@ void SetFrameShape (tmp)
 	     * The frame_width and frame_height do *not* include borders.
 	     */
 	    /* border */
-	    newBounding[1].x = -tmp->frame_bw;
 /* djhjr - 4/24/96
 	    newBounding[0].x = tmp->title_x;
 	    newBounding[0].y = tmp->title_y;
 	    newBounding[0].width = tmp->title_width + fbw2;
 	    newBounding[0].height = tmp->title_height;
+	    newBounding[1].x = -tmp->frame_bw;
 	    newBounding[1].y = Scr->TitleHeight;
 	    newBounding[1].width = tmp->attr.width + fbw2;
 	    newBounding[1].height = tmp->attr.height + fbw2;
@@ -1626,57 +1774,71 @@ void SetFrameShape (tmp)
 	    newBounding[0].y = tmp->title_y - tmp->frame_bw3D;
 	    newBounding[0].width = tmp->title_width + fbw2 + 2 * tmp->frame_bw3D;
 	    newBounding[0].height = tmp->title_height + tmp->frame_bw3D;
-	    newBounding[1].y = Scr->TitleHeight + tmp->frame_bw3D;
-	    newBounding[1].width = tmp->attr.width + fbw2 + 2 * tmp->frame_bw3D;
-	    newBounding[1].height = tmp->attr.height + fbw2 + tmp->frame_bw3D;
 
-		/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
-		if (tmp->squeeze_info && Scr->BorderBevelWidth > 0)
-		{
-		    newBounding[2].x = -tmp->frame_bw3D;
-		    newBounding[2].y = tmp->title_height;
-	    	newBounding[2].width = tmp->attr.width + 3 * tmp->frame_bw3D;
-	    	newBounding[2].height = tmp->frame_bw3D;
-
-	    	XShapeCombineRectangles (dpy, tmp->frame, ShapeBounding, 0, 0,
-				     newBounding, 3, ShapeSet, Unsorted);
-		}
-		else
-		    XShapeCombineRectangles (dpy, tmp->frame, ShapeBounding, 0, 0,
-					     newBounding, 2, ShapeSet, YXBanded);
+	    /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+	    if (Scr->BorderBevelWidth > 0 &&
+			newBounding[0].width < client_width)
+	    {
+		/* re-ordered arrays for XYSorted - djhjr - 11/5/03 */
+		newBounding[1].x = -tmp->frame_bw3D;
+		newBounding[1].y = tmp->title_height;
+		newBounding[1].width = tmp->attr.width + 3 * tmp->frame_bw3D;
+		newBounding[1].height = tmp->frame_bw3D;
+		newBounding[2].x = -tmp->frame_bw;
+		newBounding[2].y = Scr->TitleHeight + tmp->frame_bw3D;
+		newBounding[2].width = client_width;
+		newBounding[2].height = tmp->attr.height + fbw2 + tmp->frame_bw3D;
+	    }
+	    else
+	    {
+		newBounding[1].x = -tmp->frame_bw;
+		newBounding[1].y = Scr->TitleHeight + tmp->frame_bw3D;
+		newBounding[1].width = client_width;
+		newBounding[1].height = tmp->attr.height + fbw2 + tmp->frame_bw3D;
+		count = 2;
+		order = YXBanded;
+	    }
 
 	    /* insides */
-	    newClip[0].y = 0;
-	    newClip[1].x = 0;
 /* djhjr - 4/24/96
 	    newClip[0].x = tmp->title_x + tmp->frame_bw;
+	    newClip[0].y = 0;
 	    newClip[0].width = tmp->title_width;
 	    newClip[0].height = Scr->TitleHeight;
+	    newClip[1].x = 0;
 	    newClip[1].y = tmp->title_height;
 	    newClip[1].width = tmp->attr.width;
 	    newClip[1].height = tmp->attr.height;
 */
 	    newClip[0].x = tmp->title_x + tmp->frame_bw - tmp->frame_bw3D;
+	    newClip[0].y = 0;
 	    newClip[0].width = tmp->title_width + 2 * tmp->frame_bw3D;
 	    newClip[0].height = Scr->TitleHeight + tmp->frame_bw3D;
-	    newClip[1].y = tmp->title_height + tmp->frame_bw3D;
-	    newClip[1].width = tmp->attr.width + 2 * tmp->frame_bw3D;
-	    newClip[1].height = tmp->attr.height + tmp->frame_bw3D;
 
-		/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
-		if (tmp->squeeze_info && Scr->BorderBevelWidth > 0)
-		{
-		    newClip[2].x = -tmp->frame_bw3D;
-		    newClip[2].y = tmp->title_height;
-	    	newClip[2].width = tmp->attr.width + 3 * tmp->frame_bw3D;
-		    newClip[2].height = tmp->frame_bw3D;
+	    if (count == 3)
+	    {
+		/* re-ordered arrays for XYSorted - djhjr - 11/5/03 */
+		newClip[1].x = newBounding[1].x;
+		newClip[1].y = newBounding[1].y;
+		newClip[1].width = newBounding[1].width;
+		newClip[1].height = newBounding[1].height;
+		newClip[2].x = 0;
+		newClip[2].y = tmp->title_height + tmp->frame_bw3D;
+		newClip[2].width = client_width;
+		newClip[2].height = tmp->attr.height + tmp->frame_bw3D;
+	    }
+	    else
+	    {
+		newClip[1].x = 0;
+		newClip[1].y = tmp->title_height + tmp->frame_bw3D;
+		newClip[1].width = client_width;
+		newClip[1].height = tmp->attr.height + tmp->frame_bw3D;
+	    }
 
-		    XShapeCombineRectangles (dpy, tmp->frame, ShapeClip, 0, 0,
-				     newClip, 3, ShapeSet, Unsorted);
-		}
-		else
-		    XShapeCombineRectangles (dpy, tmp->frame, ShapeClip, 0, 0,
-					     newClip, 2, ShapeSet, YXBanded);
+	    XShapeCombineRectangles (dpy, tmp->frame, ShapeBounding, 0, 0,
+				     newBounding, count, ShapeSet, order);
+	    XShapeCombineRectangles (dpy, tmp->frame, ShapeClip, 0, 0,
+				     newClip, count, ShapeSet, order);
 	} else {
 	    (void) XShapeCombineMask (dpy, tmp->frame, ShapeBounding, 0, 0,
  				      None, ShapeSet);

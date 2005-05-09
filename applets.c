@@ -62,10 +62,11 @@ int appletHeight(tmp_win)
 TwmWindow *tmp_win;
 {
 	/* submitted by Tim Wiess - 8/23/02 */
+	/* added 'tmp_win->title_height +' - djhjr - 11/11/03 */
 	if (Scr->NoBorders || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
-		return tmp_win->attr.height;
+		return tmp_win->title_height + tmp_win->attr.height;
 	else
-		return Scr->BorderWidth * 2 + tmp_win->attr.height;
+		return Scr->BorderWidth * 2 + tmp_win->title_height + tmp_win->attr.height;
 }
 
 int PlaceApplet(tmp_win, def_x, def_y, final_x, final_y)

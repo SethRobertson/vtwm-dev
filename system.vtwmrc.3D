@@ -31,11 +31,15 @@ FixTransientVirtualGeometries
 
 ButtonColorIsFrame
 ShallowReliefWindowButton
-SunkFocusWindowTitle
 
 MoveDelta			3
 
 ResizeRegion			"NorthEast"
+
+FramePadding			2
+ButtonIndent			-2
+TitlePadding			0
+TitleButtonBorderWidth		0
 
 BorderWidth			6
 BorderBevelWidth		2
@@ -71,6 +75,8 @@ VirtualDesktopFont	"-adobe-helvetica-medium-r-normal--*-75-*-*-*-*-*-*"
 # Lists
 #
 
+NoHighlight
+
 SqueezeTitle
 
 WarpCursor
@@ -101,6 +107,13 @@ IconManagerDontShow
 	"VTWM *"
 	"xclock"
 	"xload"
+}
+
+Pixmaps
+{
+	TitleHighlight		":xpm:sunkenlines"
+	MenuIconPixmap		":xpm:rarrow"
+	IconManagerPixmap	":xpm:box"
 }
 
 Color
@@ -159,21 +172,20 @@ Monochrome
 # Functions and Bindings
 #
 
-Function "move-or-lower" { f.move f.deltastop f.lower }
-Function "move-or-raise" { f.move f.deltastop f.raise }
 Function "move-or-iconify" { f.move f.deltastop f.iconify }
 
-LeftTitleButton ":xpm:bar" = f.menu "arrange"
+LeftTitleButton ":xpm:darrow" = f.menu "arrange"
 RightTitleButton ":xpm:dot" = f.iconify
 RightTitleButton ":xpm:resize" = f.resize
 
 Button1 = : root : f.version
 Button3 = : root : f.menu "main"
 
-Button1 = : title : f.function "move-or-raise"
-Button3 = : title : f.lower
+Button1 = : title : f.move
+Button2 = : title : f.resize
+Button3 = : title : f.raiselower
 
-Button1 = : frame : f.function "move-or-raise"
+Button1 = : frame : f.move
 Button2 = : frame : f.resize
 Button3 = : frame : f.iconify
 
