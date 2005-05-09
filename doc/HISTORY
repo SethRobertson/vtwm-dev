@@ -32,6 +32,7 @@ VTWM 5.4.7
           "noborder" and "notitle" hints).
         - Allow sounds to be played "ad hoc" (added the f.playsound
           function).
+	- Added PointerPlacement keyword.
     Changed Features
         - The UsePPosition variable accepts a list now.
         - The f.warpto function accepts VTWM-style wildcards now.
@@ -79,6 +80,7 @@ VTWM 5.4.7
           variable is set.
         - Reduced server grabs.
         - Better handling of missing or empty string resources.
+	- sound function referenced outside of ifdef.
     Misc.
         - Updated the man page, and the BUGS, INSTALL, SOUND, and WISHLIST
           files.
