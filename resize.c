@@ -682,7 +682,13 @@ int height;
         dheight /= tmp_win->hints.height_inc;
     }
 
+/*
+ * Non-SysV systems - specifically, BSD-derived systems - return a
+ * pointer to the string, not its length. Submitted by Goran Larsson
     i = sprintf (str, "%5d x %-5d", dwidth, dheight);
+ */
+    sprintf (str, "%5d x %-5d", dwidth, dheight);
+    i = strlen (str);
 
     XRaiseWindow(dpy, Scr->SizeWindow);
     FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);

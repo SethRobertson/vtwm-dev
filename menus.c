@@ -4825,7 +4825,13 @@ int x, y;
 
     i = sprintf (str, " %c%-4d %c%-4d ", signx, x, signy, y);
 */
+/*
+ * Non-SysV systems - specifically, BSD-derived systems - return a
+ * pointer to the string, not its length. Submitted by Goran Larsson
     i = sprintf (str, "%+6d %-+6d", x, y);
+ */
+    sprintf (str, "%+6d %-+6d", x, y);
+    i = strlen (str);
 
     XRaiseWindow (dpy, Scr->SizeWindow);
     FBF (Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);

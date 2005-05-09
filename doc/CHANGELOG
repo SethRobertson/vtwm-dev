@@ -7,6 +7,15 @@ IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 ============ vtwm-5.4.N.tar.gz =============
 hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
 
+    September 27, 1998
+        [menus.c] [resize.c]
+
+            From Goran Larsson (hoh@lorelei.approve.se)
+                Fixed text display bug in the size and position windows.
+
+        VTWM 5.4.5a released for public consumption.
+        vtwm-5.4.5-to-5.4.5a.txt patch file released.
+
     September 14, 1998
         Established a directory, doc, for all the documentation
         that has accumulated through time. The HINTS file is now

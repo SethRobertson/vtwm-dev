@@ -2122,6 +2122,7 @@ Caveh Frank Jalali <caveh@eng.sun.com>
 Erik Agsjo <erik.agsjo@aktiedirekt.com>,
 Nicholas Jacobs <nicholas_jacobs@hotmail.com>,
 Takeharu Kato <magician@maekawa.is.uec.ac.jp>,
+Goran Larsson <hoh@lorelei.approve.se>,
 acknowledging
 Claude Lecommandeur, SPIL (ctwm) <lecom@sic.epfl.ch>
 .\"==============================[The End]==============================
