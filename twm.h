@@ -42,16 +42,28 @@
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/extensions/shape.h>
+#ifdef NEVER /* stay X11R4 compatable; X11R5,6 doesn't seem to mind! */
 #include <X11/Xfuncs.h>
+#endif
+
+/*
+ * This accomodates systems that simply cannot handle the
+ * duplicate typedef declaration of 'Pixel'. On the other hand,
+ * if your make halts with complaints of an unknown datatype
+ * 'Pixel', add "EXTRA_DEFINES=-DNEED_PIXEL_T" to the make
+ * command. Submitted by Nelson H. F. Beebe
+ */
+#include <X11/Intrinsic.h>
+#ifdef NEED_PIXEL_T
+typedef unsigned long Pixel;
+#endif
+#define PIXEL_ALREADY_TYPEDEFED /* for Xmu/Drawing.h */
 
 #include "util.h"
 
 #ifndef WithdrawnState
 #define WithdrawnState 0
 #endif
-
-typedef unsigned long Pixel;
-#define PIXEL_ALREADY_TYPEDEFED		/* for Xmu/Drawing.h */
 
 #ifdef SIGNALRETURNSINT
 #define SIGNAL_T int
@@ -308,6 +320,11 @@ typedef struct TwmWindow
     short wShaped;		/* this window has a bounding shape */
     short nailed;		/* is this window nailed ? */
     short showindesktopdisplay; /* should i show this in the desktop display ? */
+
+    /* djhjr - 4/6/98 */
+    short opaque_move;
+    short opaque_resize;
+
 #else
 	struct
 	{
@@ -324,6 +341,11 @@ typedef struct TwmWindow
 		unsigned int wShaped					: 1;
 		unsigned int nailed						: 1;
 		unsigned int showindesktopdisplay		: 1;
+
+		/* djhjr - 4/6/98 */
+		unsigned int opaque_move				: 1;
+		unsigned int opaque_resize				: 1;
+
 	} twmflags;
 #define iconified					twmflags.iconified
 #define icon_on						twmflags.icon_on
@@ -338,6 +360,11 @@ typedef struct TwmWindow
 #define wShaped						twmflags.wShaped
 #define nailed						twmflags.nailed
 #define showindesktopdisplay		twmflags.showindesktopdisplay
+
+/* djhjr - 4/6/98 */
+#define opaque_move					twmflags.opaque_move
+#define opaque_resize				twmflags.opaque_resize
+
 #endif
 
     Window transientfor;	/* window contained in XA_XM_TRANSIENT_FOR */
@@ -352,8 +379,10 @@ typedef struct TwmWindow
     SqueezeInfo *squeeze_info;	/* should the title be squeezed? */
     struct {
 	struct TwmWindow *next, *prev;
+#ifdef ORIGINAL_WARPRINGCOORDINATES /* djhjr - 5/11/98 */
 	Bool cursor_valid;
 	int curs_x, curs_y;
+#endif
     } ring;
 } TwmWindow;
 
@@ -376,7 +405,9 @@ typedef struct TwmWindow
 #define TBPM_3DZOOM ":xpm:zoom"
 #define TBPM_3DBAR ":xpm:bar"
 
+#ifdef NEVER /* stay X11R4 compatable; X11R5,6 doesn't seem to mind! */
 #include <X11/Xosdefs.h>
+#endif
 #ifndef X_NOT_STDC_ENV
 #include <stdlib.h>
 #else
@@ -453,5 +484,8 @@ extern Atom _XA_WM_PROTOCOLS;
 extern Atom _XA_WM_TAKE_FOCUS;
 extern Atom _XA_WM_SAVE_YOURSELF;
 extern Atom _XA_WM_DELETE_WINDOW;
+
+/* djhjr - 7/31/98 */
+extern Atom _XA_TWM_RESTART;
 
 #endif /* _TWM_ */

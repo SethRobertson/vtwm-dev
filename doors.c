@@ -38,13 +38,21 @@ extern void SetMapStateProp();
 extern TwmDoor *door_add_internal();
 extern void twmrc_error_prefix();
 
+/* djhjr - 4/20/98 */
+extern void HandleExpose();
+extern void SetupWindow();
+
 TwmDoor *door_add(name, position, destination)
 char *name, *position, *destination;
 {
 	int px, py, pw, ph, dx, dy;
 
 	/* djhjr - 4/26/96 */
-	int	bw = (Scr->use3Dborders) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
+/* djhjr - 8/11/98
+	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
+	int	bw = (Scr->BorderBevelWidth > 0) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
+*/
+	int	bw = Scr->BorderWidth;
 
 	JunkMask = XParseGeometry (position, &JunkX, &JunkY,
 				   &JunkWidth, &JunkHeight);
@@ -119,7 +127,7 @@ int px, py, pw, ph, dx, dy;
 	/* this for getting colors */
 	new->class = XAllocClassHint();
 	new->class->res_name = new->name;
-	new->class->res_class = strdup(TWM_DOOR_CLASS);
+	new->class->res_class = strdup(VTWM_DOOR_CLASS);
 
 	new->x = px;
 	new->y = py;
@@ -144,7 +152,11 @@ TwmDoor *tmp_door;
 	Window w;
 
 	/* djhjr - 4/26/96 */
-	int	bw = (Scr->use3Dborders) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
+/* djhjr - 8/11/98
+	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
+	int	bw = (Scr->BorderBevelWidth > 0) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
+*/
+	int	bw = Scr->BorderWidth;
 
 	/* look up colours */
 	if (!GetColorFromList(Scr->DoorForegroundL,
@@ -278,6 +290,7 @@ TwmDoor *d;
 		d->prev->next = d->next;
 	if (d->next != NULL)
 		d->next->prev = d->prev;
+
 /* Must this be done here ? Is it do by XDestroyWindow, or by
 	HandleDestroyNotify() in events.c, or should it be done there...?
 
@@ -310,3 +323,44 @@ void door_new()
 
 	door_open(d);
 }
+
+/*
+ * rename a door from cut buffer 0
+ *
+ * adapted from VTWM-5.2b - djhjr - 4/20/98
+ */
+void
+door_paste_name(w, d)
+Window w;
+TwmDoor* d;
+{
+	int count;
+	char *ptr;
+/* djhjr - 8/11/98
+	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
+	int	bw = (Scr->BorderBevelWidth > 0) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
+*/
+	int bw = Scr->BorderWidth;
+ 
+	if (!d)
+		if (XFindContext(dpy, w, DoorContext, (caddr_t *)&d) == XCNOENT)
+            return;
+
+    ptr = XFetchBytes(dpy, &count);
+	if (count > 128) count = 128;
+
+	if (d->name)
+		d->name = realloc(d->name, count + 1);
+	else
+		d->name = malloc(count + 1);
+
+	sprintf(d->name, "%*s", count, ptr);
+	XFree(ptr);
+
+	SetupWindow(d->twin, d->twin->frame_x, d->twin->frame_y,
+		XTextWidth(Scr->DoorFont.font, d->name, count) + SIZE_HINDENT + 2 * bw,
+		d->height + 2 * bw, -1);
+
+    HandleExpose();
+}
+

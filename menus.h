@@ -39,10 +39,14 @@
 #ifndef _MENUS_
 #define _MENUS_
 
-#define TWM_ROOT	"bLoB_GoOp"	/* my private root menu */
-#define TWM_WINDOWS	"TwmWindows"	/* for f.menu "TwmWindows" */
+#define TWM_ROOT		"bLoB_GoOp" /* my private root menu */
 
-#define MAX_FILE_SIZE 4096	/* max chars to read from file for cut */
+#define TWM_WINDOWS		"TwmWindows" /* for f.menu "TwmWindows" */
+
+/* djhjr - 5/4/98 */
+#define VTWM_WINDOWS	"VTWM Windows" /* for f.menu "VTWM Windows" */
+
+#define MAX_FILE_SIZE	4096 /* max chars to read from file for cut */
 
 typedef struct MenuItem
 {

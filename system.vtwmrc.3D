@@ -1,0 +1,177 @@
+#
+# $XConsortium: system.twmrc,v 1.8 91/04/23 21:10:58 gildea Exp $
+# 
+# Default twm configuration file; needs to be kept small to conserve string
+# space in systems whose compilers don't handle medium-sized strings.
+#
+# Sites should tailor this file, providing any extra title buttons, menus, etc.
+# that may be appropriate for their environment.  For example, if most of the
+# users were accustomed to uwm, the defaults could be set up not to decorate
+# any windows and to use meta-keys.
+#
+
+#
+# Variables
+#
+
+NoGrabServer
+NoDefaults
+RestartPreviousState
+ShowIconManager
+SortIconManager
+IconifyByUnmapping
+RightHandSidePulldownMenus
+
+ButtonColorIsFrame
+ShallowReliefWindowButton
+SunkFocusWindowTitle
+
+BorderWidth				6
+
+BorderBevelWidth		2
+ButtonBevelWidth		1
+IconBevelWidth			2
+IconManagerBevelWidth	1
+InfoBevelWidth			2
+MenuBevelWidth			2
+TitleBevelWidth			1
+
+ClearBevelContrast		40
+DarkBevelContrast		40
+
+MoveDelta		3
+
+ResizeRegion	"NorthEast"
+VirtualDesktop	"5x2" 16
+
+TitleFont		"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+ResizeFont		"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+MenuFont		"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+MenuTitleFont	"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+IconFont		"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+InfoFont		"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+IconManagerFont	"-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+
+#
+# Lists
+#
+
+WarpCursor
+
+NailedDown
+{
+	"VTWM Icon Manager"
+	"VTWM Desktop"
+}
+
+NoTitle
+{
+	"VTWM Icon Manager"
+}
+
+DontShowInDisplay
+{
+	"VTWM Icon Manager"
+	"VTWM Desktop"
+}
+
+IconManagerDontShow
+{
+	"VTWM Icon Manager"
+	"VTWM Desktop"
+}
+
+Color
+{
+	BorderColor				"grey70"
+	BorderTileBackground	"gray60"
+	BorderTileForeground	"gray60"
+	DefaultBackground		"maroon"
+	DefaultForeground		"gray85"
+	TitleBackground			"maroon"
+	TitleForeground			"gray85"
+	MenuBackground			"maroon"
+	MenuForeground			"gray85"
+	MenuTitleBackground		"gray70"
+	MenuTitleForeground		"maroon"
+	IconBackground			"maroon"
+	IconForeground			"gray85"
+	IconBorderColor			"gray85"
+	IconManagerBackground	"maroon"
+	IconManagerForeground	"gray85"
+	VirtualBackground		"maroon"
+	VirtualForeground		"black"
+	DesktopDisplayBackground	"grey60"
+}
+
+#
+# Functions and Bindings
+#
+
+Function "move-or-lower" { f.move f.deltastop f.lower }
+Function "move-or-raise" { f.move f.deltastop f.raise }
+Function "move-or-iconify" { f.move f.deltastop f.iconify }
+
+LeftTitleButton ":xpm:bar" = f.menu "arrange"
+RightTitleButton ":xpm:dot" = f.iconify
+RightTitleButton ":xpm:resize" = f.resize
+
+Button1 = : root : f.version
+Button3 = : root : f.menu "main"
+
+Button1 = : title : f.function "move-or-raise"
+Button3 = : title : f.lower
+
+Button1 = : frame : f.function "move-or-raise"
+Button2 = : frame : f.resize
+Button3 = : frame : f.iconify
+
+Button1 = : icon : f.function "move-or-iconify"
+Button3 = : icon : f.menu "arrange"
+
+Button1 = : iconmgr : f.iconify
+Button3 = : iconmgr : f.warp
+
+Button1 = : virtual | desktop : f.movescreen
+
+#
+# Menus
+#
+
+menu "main"
+{
+	"  VTWM  "		f.title
+	"xclock"		f.exec "xclock &"
+	"xterm"			f.exec "xterm &"
+	""				f.separator
+	"Show Icon Mgr"	f.showiconmgr
+	"Hide Icon Mgr"	f.hideiconmgr
+	"Show Desktop"	f.showdesktopdisplay
+	"Hide Desktop"	f.hidedesktopdisplay
+	""				f.separator
+	"Restart"		f.restart
+	"Exit"			f.quit
+}
+
+menu "arrange"
+{
+	"  Arrange  "	f.title
+	"Autoraise"		f.autoraise
+	"Raise"			f.raise
+	"Lower"			f.lower
+	"Nail"			f.nail
+	""				f.separator
+	"Move"			f.move
+	"Size"			f.resize
+	"Iconify"		f.iconify
+	""				f.separator
+	"Fullzoom"		f.fullzoom
+	"Horizoom"		f.horizoom
+	"Vertzoom"		f.zoom
+	""				f.separator
+	"Identify"		f.identify
+	""				f.separator
+	"Delete"		f.delete
+	"Destroy"		f.destroy
+}
+

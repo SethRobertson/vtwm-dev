@@ -26,7 +26,7 @@
 /* djhjr - 4/27/96
 #define TWM_DOOR_CLASS "Twm Door"
 */
-#define TWM_DOOR_CLASS "VTWM Door"
+#define VTWM_DOOR_CLASS "VTWM Door"
 
 /*
  * the door structure
@@ -55,5 +55,8 @@ extern void door_open_all();
 extern void door_enter();
 extern void door_new();
 extern void door_delete();
+
+/* djhjr - 4/20/98 */
+extern void door_paste_name();
 
 #endif /* DOORS_H_INCLUDED */

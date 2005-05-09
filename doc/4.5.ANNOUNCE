@@ -1,0 +1,27 @@
+
+This is the announcement of VTWM 5.4.5, an upgrade of the three-year
+old 5.4 release of the window manager for the X Window System.
+
+The web page, www.visi.com/~hawkeyd/vtwm.html, has been updated, and
+the archive may be found via a link there, or directly via FTP at
+ftp.visi.com/users/hawkeyd/X/ and ftp.x.org/contrib/window_managers/
+(if and when they move it there from incoming/).
+
+Some of the major changes, in a nutshell:
+  - All the 3D features are now fully configurable.
+  - Complete color (XPM) image support.
+  - Improved and consistant warp functionality.
+  - Many new variables and functions.
+  - Better keyboarding support.
+  - Many more bug fixes.
+  - Better portability.
+
+And a newly-discovered capability:
+  - A subset of regex wildcarding for list resources.
+
+Visit the above web page for screen captures, installation notes, and
+complete histories of VTWM since version 5.1.
+
+D. J. Hawkey Jr. (hawkeyd@visi.com)
+September 19, 1998
+

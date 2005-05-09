@@ -71,9 +71,6 @@ extern void SetFocus();
 extern void LocateStandardColormaps();
 extern void GetFont();
 
-/* djhjr - 11/17/97 */
-extern void PaintTitleButtonHighlight();
-
 /* djhjr - 1/13/98 */
 void setBorderGC();
 #ifdef USE_ORIGINAL_CORNERS
@@ -85,6 +82,17 @@ void Draw3DBevel();
 
 /* djhjr - 4/25/96 */
 void PaintTitleHighlight();
+
+/* djhjr - 4/2/98 */
+int ComputeHighlightWindowWidth();
+
+/* djhjr - 5/17/98 */
+extern Image *SetPixmapsPixmap();
+
+/* djhjr - 5/23/98 */
+#ifndef NO_XPM_SUPPORT
+extern int SetPixmapsBackground();
+#endif
 
 extern int HotX, HotY;
 

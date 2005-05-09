@@ -1,0 +1,88 @@
+
+BUILDING VTWM-5.4.N
+===================
+
+  - Unpack the distribution. You've likely done that already.
+
+  - Determine if you have the XPM library installed:
+      - The library is usually found in /usr/X11/lib, /usr/local/lib,
+        or some such directory. It's usually called "libxpm.a".
+      - The header file is usually found in /usr/X11/include,
+        /usr/local/include, or some such directory. It's "xpm.h".
+
+  - Look over the Imakefile, and edit to taste.
+
+  - Issue 'xmkmf'. If that doesn't work (you'll know it), you'll
+    have to copy Makefile.QNX to Makefile, and edit the latter
+    to taste.
+
+  - Issue 'make'. While it's building, read the man page. Start
+    building up your $(HOME)/.vtwmrc. If the build breaks, check
+    further down in this file, and retry. If it still breaks, ask
+    a friend. If it _still_ breaks, write me.
+
+
+INSTALLING VTWM-5.4.N
+=====================
+
+  - If you trust whoever set up your build environment:
+      - As root, issue 'make install' and 'make install.man'.
+    If you don't:
+      - Issue 'make -n install' and 'make -n install.man' to see
+        what it'll do, without actually doing it.
+    If you want (or have) to set it up manually:
+      - As root, copy vtwm to /usr/X11/bin, or to wherever other X
+        window managers and binaries are.
+      - As root, copy system.vtwmrc to wherever it's spec'd in the
+        Makefile (this path is built into the VTWM binary).
+      - As root, copy vtwm.man to wherever other X window manager
+        man pages are (usually /usr/man/mann).
+
+  - Edit the script that starts your current X window manager to
+    start VTWM (mine is 'vtwm -display :0.0' in $(HOME)/.xinitrc).
+
+  - Exit X, and restart it.
+
+
+BUILD HINTS
+===========
+
+  - If, during the build, you get complaints of an undefined "yylineno",
+    remove the "extern" keyword from the declaration in gram.y. Likewise,
+    if "yywrap" turns up as undefined, add a line "yywrap() {return(1)};"
+    to lex.l. They're both expected to be defined and initialized in the
+    [f]lex skeleton file, but some systems seem to choke on these.
+
+  - If, during the build, you get complaints of undefined data types and
+    functions "Xpm" whatall, it's because you've built VTWM with XPM image
+    support and either you don't have the XPM library available, or it's
+    not a recent enough version (3.4h is the earliest I know of). Read the
+    comments in Imakefile and/or Makefile.QNX.
+
+  - If, during the build, you get complaints of an unknown data type
+    "Pixel", add "EXTRA_DEFINES=-DNEED_PIXEL_T" to the make command.
+
+  - If you expected HTML or Postscript man pages on build completion,
+    or VTWM doesn't fall back on system resource files on startup, read
+    the comments in Imakefile and/or Makefile.QNX.
+
+
+RUNTIME HINTS
+=============
+
+  - If you use any of the 3D resources from versions before 5.4.5, you
+    will find that they generate errors on startup. They no longer exist!
+    See the man page or the CHANGELOG file for the new resources (look
+    for the word "Bevel").
+
+  - If you use a SqueezeTitle list from versions before 5.4.4, you may
+    want to check the man page to see if the new enterpretation of the
+    resource's list parameters fouls your setup.
+
+  - It's mentioned all over the place, but bears repeating: The virtual
+    desktop just won't behave correctly if its geometries don't work out
+    to whole-number ratios of both itself and the physical display as
+    measured in pixels.
+
+  - See also the BUGS file.
+

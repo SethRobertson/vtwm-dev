@@ -39,6 +39,8 @@
 #ifndef _RESIZE_
 #define _RESIZE_
 
+extern int resizing_window;
+
 extern void StartResize();
 extern void AddStartResize();
 extern void DoResize();
@@ -52,6 +54,9 @@ extern void ConstrainSize();
 extern void MenuDoResize();
 extern void MenuStartResize();
 extern void MenuEndResize();
+
+/* djhjr - 4/6/98 */
+void PaintBorderAndTitlebar();
 
 extern void fullzoom();
 

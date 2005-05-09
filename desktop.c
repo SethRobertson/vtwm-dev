@@ -21,9 +21,13 @@
 #include "twm.h"
 #include "screen.h"
 #include "add_window.h"
+#include "menus.h"
 #include "parse.h"
 #include "events.h"
 #include "desktop.h"
+
+#define strdup Strdup /* avoid conflict with system header files */
+extern char *strdup(char *);
 
 extern void SetRealScreenInternal();
 extern void SetRealScreen();
@@ -34,10 +38,17 @@ extern void twmrc_error_prefix();
 void SetVirtualPixmap();
 void SetRealScreenPixmap();
 
+/* djhjr - 4/27/98 */
+static int starting_x, starting_y;
+
 static void GetDesktopWindowCoordinates(tmp_win, x, y, w, h)
 TwmWindow *tmp_win;
 int *x, *y, *w, *h;
-{	/* Stig Ostholm <ostholm%ce.chalmers.se@uunet> */
+{
+	/* djhjr - 4/27/98 */
+	int border = tmp_win->frame_bw + tmp_win->frame_bw3D;
+
+	/* Stig Ostholm <ostholm%ce.chalmers.se@uunet> */
 	if (tmp_win->nailed)
 	{	if (x)
 			*x = tmp_win->frame_x / Scr->VirtualDesktopDScale;
@@ -60,7 +71,12 @@ int *x, *y, *w, *h;
 	if (w)
 	{	*w = SCALE_D(
 			tmp_win->frame_width + Scr->VirtualDesktopDScale / 2
+
+/* djhjr - 4/27/98
 			+ tmp_win->frame_bw + tmp_win->frame_bw )
+*/
+			+ (2 * border) )
+
 			- 2;
 		if ( *w <= 0 ) *w = 1;  /* 4/92 RFB */
 	}
@@ -71,7 +87,12 @@ int *x, *y, *w, *h;
 /* #ifdef SHAPE */
 				/* + tmp_win->title_height  */
 /* #ifdef SHAPE */
+
+/* djhjr - 4/27/98
 			+ tmp_win->frame_bw + tmp_win->frame_bw ) - 2;
+*/
+			+ (2 * border) ) - 2;
+
 /* 4/92 RFB -- subtract borderwidth from windowwidth... */
 		if ( *h <= 0 ) *h = 1;  /* 4/92 RFB */
 	}
@@ -85,6 +106,16 @@ void CreateDesktopDisplay()
 {
 	int width, height;
 	int border;
+
+/* djhjr - 5/17/98 */
+#ifndef ORIGINAL_PIXMAPS
+	Pixmap pm = None;
+	GC gc;
+	XGCValues gcv;
+	XSetWindowAttributes attributes; /* attributes for create windows */
+	unsigned long valuemask;
+	unsigned int pm_numcolors;
+#endif
 
 	if (!Scr->Virtual)
 		return;
@@ -115,6 +146,12 @@ void CreateDesktopDisplay()
 		Scr->VirtualDesktopMaxHeight = height;
 /* vtwm 5.2: RFB growable but not unreasonable interior window! */
 
+/*
+ * re-written to use an Image structure for XPM support
+ *
+ * djhjr - 5/17/98
+ */
+#ifdef ORIGINAL_PIXMAPS
 	Scr->VirtualDesktopDisplay =
 		XCreateSimpleWindow(dpy, Scr->VirtualDesktopDisplayOuter,
 			0, 0,
@@ -154,13 +191,84 @@ void CreateDesktopDisplay()
 		}
 		XFreePixmap (dpy, pm);
 	}
+#else /* ORIGINAL_PIXMAPS */
+	pm_numcolors = 0;
+
+/* djhjr - 5/23/98 9/2/98 */
+#ifndef NO_XPM_SUPPORT
+	if (Scr->virtualPm)
+		pm_numcolors = SetPixmapsBackground(Scr->virtualPm, Scr->Root,
+				Scr->VirtualC.back);
+#endif
+
+	if (pm_numcolors > 2) /* not a bitmap */
+	{
+		valuemask = CWBackPixmap;
+		attributes.background_pixmap = Scr->virtualPm->pixmap;
+
+		Scr->VirtualDesktopDisplay = XCreateWindow(dpy,
+				Scr->VirtualDesktopDisplayOuter,
+				0, 0,
+				Scr->VirtualDesktopMaxWidth,
+				Scr->VirtualDesktopMaxHeight,
+				0,
+				Scr->d_depth, (unsigned int) CopyFromParent,
+				Scr->d_visual, valuemask, &attributes);
+	}
+	else
+	{
+		Scr->VirtualDesktopDisplay = XCreateSimpleWindow(dpy,
+				Scr->VirtualDesktopDisplayOuter,
+				0, 0,
+				Scr->VirtualDesktopMaxWidth,
+				Scr->VirtualDesktopMaxHeight,
+				0,
+				Scr->VirtualDesktopDisplayBorder,
+				Scr->VirtualC.back); /*RFB VCOLOR*/
+
+		if (Scr->virtualPm)
+		{
+			pm = XCreatePixmap( dpy, Scr->VirtualDesktopDisplay,
+					Scr->virtualPm->width, Scr->virtualPm->height,
+					Scr->d_depth);
+
+			gcv.foreground = Scr->VirtualC.fore;
+			gcv.background = Scr->VirtualC.back;
+			gcv.graphics_exposures = False;
+
+			gc = XCreateGC(dpy, Scr->Root,
+					(GCForeground | GCBackground | GCGraphicsExposures),
+					&gcv);
+
+			if (gc)
+			{
+				XCopyPlane(dpy, Scr->virtualPm->pixmap, pm, gc, 0, 0,
+						Scr->virtualPm->width, Scr->virtualPm->height,
+						0, 0, 1);
+
+				XFreeGC (dpy, gc);
+
+				XSetWindowBackgroundPixmap(dpy, Scr->VirtualDesktopDisplay, pm);
+
+				XClearWindow(dpy, Scr->VirtualDesktopDisplay);
+			}
+
+			XFreePixmap(dpy, pm);
+		}
+	}
+
+	XDefineCursor(dpy, Scr->VirtualDesktopDisplay, Scr->VirtualCursor); /*RFB CURSOR */
+#endif /* ORIGINAL_PIXMAPS */
 
 	XSetStandardProperties(dpy, Scr->VirtualDesktopDisplayOuter,
 
 /* djhjr - 4/27/96
 			       "Virtual Desktop", "Virtual Desktop",
 */
+/* djhjr - 5/19/98
 			       "VTWM Desktop", "VTWM Desktop",
+*/
+					VTWM_DESKTOP_CLASS, VTWM_DESKTOP_CLASS,
 
 			       None, NULL, 0, NULL);
 
@@ -173,6 +281,12 @@ void CreateDesktopDisplay()
 		border = Scr->RealScreenBorderWidth; /* DSE */
 		}
 
+/*
+ * re-written to use an Image structure for XPM support
+ *
+ * djhjr - 5/17/98
+ */
+#ifdef ORIGINAL_PIXMAPS
 	/* create the real screen display */
 	Scr->VirtualDesktopDScreen =
 		XCreateSimpleWindow(dpy, Scr->VirtualDesktopDisplay,
@@ -212,16 +326,88 @@ void CreateDesktopDisplay()
 		}
 		XFreePixmap (dpy, pm);
 	}
+#else /* ORIGINAL_PIXMAPS */
+	pm_numcolors = 0;
+
+/* djhjr - 5/23/98 9/2/98 */
+#ifndef NO_XPM_SUPPORT
+	if (Scr->realscreenPm)
+		pm_numcolors = SetPixmapsBackground(Scr->realscreenPm,
+				Scr->Root, Scr->RealScreenC.back);
+#endif
+
+	if (pm_numcolors > 2) /* not a bitmap */
+	{
+		valuemask = CWBackPixmap | CWBorderPixel;
+		attributes.background_pixmap = Scr->realscreenPm->pixmap;
+		attributes.border_pixel = Scr->VirtualDesktopDisplayBorder;
+
+		Scr->VirtualDesktopDScreen = XCreateWindow(dpy,
+				Scr->VirtualDesktopDisplay,
+				0, 0,
+				SCALE_D(Scr->MyDisplayWidth - 2 * border),
+				SCALE_D(Scr->MyDisplayHeight - 2 * border),
+				border,
+				Scr->d_depth, (unsigned int) CopyFromParent,
+				Scr->d_visual, valuemask, &attributes);
+	}
+	else
+	{
+		Scr->VirtualDesktopDScreen = XCreateSimpleWindow(dpy,
+				Scr->VirtualDesktopDisplay,
+				0, 0,
+				SCALE_D(Scr->MyDisplayWidth - 2 * border),
+				SCALE_D(Scr->MyDisplayHeight - 2 * border),
+				border, /* make it distinctive */
+/* RFB 4/92: make borderwidth 0 instead of 2 */
+/* RFB 5.2: some people need the border... */
+				Scr->VirtualDesktopDisplayBorder,
+				Scr->RealScreenC.back ); /* RFB 4/92 */
+
+		if (Scr->realscreenPm)
+		{
+			pm = XCreatePixmap(dpy, Scr->VirtualDesktopDScreen,
+					Scr->realscreenPm->width, Scr->realscreenPm->height,
+					Scr->d_depth);
+
+			gcv.foreground = Scr->RealScreenC.fore;
+			gcv.background = Scr->RealScreenC.back;
+			gcv.graphics_exposures = False;
+
+			gc = XCreateGC(dpy, Scr->Root,
+					(GCForeground | GCBackground | GCGraphicsExposures),
+					&gcv);
+
+			if (gc)
+			{
+				XCopyPlane(dpy, Scr->realscreenPm->pixmap, pm, gc, 0, 0,
+						Scr->realscreenPm->width, Scr->realscreenPm->height,
+						0, 0, 1);
+
+				XFreeGC(dpy, gc);
+
+				XSetWindowBackgroundPixmap(dpy, Scr->VirtualDesktopDScreen, pm);
+
+				XClearWindow(dpy, Scr->VirtualDesktopDScreen);
+			}
+
+			XFreePixmap(dpy, pm);
+		}
+	}
+#endif /* ORIGINAL_PIXMAPS */
 
 	/* declare our interest */
 	XSelectInput(dpy, Scr->VirtualDesktopDisplay, ButtonPressMask | ButtonReleaseMask |
 		     KeyPressMask | KeyReleaseMask );
 
-
-
 /* Stig Ostholm moved some lines to here: */
 	Scr->VirtualDesktopDisplayTwin =
 		AddWindow(Scr->VirtualDesktopDisplayOuter, FALSE, NULL);
+
+	/* djhjr - 5/19/98 */
+	Scr->VirtualDesktopDisplayTwin->class.res_name = strdup(VTWM_DESKTOP_CLASS);
+	Scr->VirtualDesktopDisplayTwin->class.res_class = strdup(VTWM_DESKTOP_CLASS);
+	XSetClassHint(dpy, Scr->VirtualDesktopDisplayOuter, &Scr->VirtualDesktopDisplayTwin->class);
 
 #ifdef GROSS_HACK
 	/* this is a gross hack, but people wanted it */
@@ -302,6 +488,12 @@ void CreateDesktopDisplay()
 	} /* end if Scr->AutoPan */
 }
 
+/*
+ * re-written to use an Image structure for XPM support
+ *
+ * djhjr - 5/17/98
+ */
+#ifdef ORIGINAL_PIXMAPS
 void SetVirtualPixmap (filename)
 char *filename;
 {/*RFB PIXMAP*/
@@ -316,7 +508,20 @@ char *filename;
 	Scr->virtual_pm_height = JunkHeight;
     }
 }
+#else /* ORIGINAL_PIXMAPS */
+void SetVirtualPixmap (filename)
+char *filename;
+{
+	if (!Scr->virtualPm) Scr->virtualPm = SetPixmapsPixmap(filename);
+}
+#endif /* ORIGINAL_PIXMAPS */
 
+/*
+ * re-written to use an Image structure for XPM support
+ *
+ * djhjr - 5/17/98
+ */
+#ifdef ORIGINAL_PIXMAPS
 void SetRealScreenPixmap (filename)
 char *filename;
 {/*RFB PIXMAP*/
@@ -331,6 +536,13 @@ char *filename;
 	Scr->RealScreen_pm_height = JunkHeight;
     }
 }
+#else /* ORIGINAL_PIXMAPS */
+void SetRealScreenPixmap (filename)
+char *filename;
+{
+	if (!Scr->realscreenPm) Scr->realscreenPm = SetPixmapsPixmap(filename);
+}
+#endif /* ORIGINAL_PIXMAPS */
 
 /*
  * add this window to the virtual desktop - aka nail it
@@ -632,9 +844,7 @@ int w, h;
 void StartMoveWindowInDesktop(ev)
 XMotionEvent ev;
 {
-	Window nowindow;
 	int xoff, yoff;
-	unsigned int d;
 #ifdef notdef
 	TwmWindow *Tmp_win;
 #endif /* notdef */
@@ -655,18 +865,23 @@ XMotionEvent ev;
 	moving_x = ev.x;
 	moving_y = ev.y;
 
+	/* djhjr - 4/27/98 */
+	starting_x = ev.x;
+	starting_y = ev.y;
+
 	/* find the window by looking at the context on the little window */
 	if ((moving_window != Scr->VirtualDesktopDScreen) &&
 	    (XFindContext(dpy, moving_window, VirtualContext,
 			  (caddr_t *) &moving_twindow) == XCNOENT)) {
 		/* i don't think that this should _ever_ happen */
-		moving_window = NULL;
+		moving_window = None;
 		moving_twindow = NULL;
 		return;
 	}
 
-	XGetGeometry(dpy, moving_window, &nowindow, &xoff, &yoff,
-		     &moving_w, &moving_h, &moving_bw, &d);
+	/* use Junk globals - djhjr - 4/28/98 */
+	XGetGeometry(dpy, moving_window, &JunkChild, &xoff, &yoff,
+			&moving_w, &moving_h, &moving_bw, &JunkMask);
 
 	moving_off_x = moving_off_y = 0;
 	if ( xoff <= moving_x && moving_x <= ( xoff + moving_w )
@@ -679,6 +894,17 @@ XMotionEvent ev;
 		moving_off_y = yoff - moving_y;
 		moving_bw = 0;
 	}
+
+	/* djhjr - 4/28/98 */
+	XMapRaised(dpy, Scr->SizeWindow);
+	InstallRootColormap();
+	if (moving_window == Scr->VirtualDesktopDScreen)
+		JunkX = JunkY = 0;
+	else
+		XGetGeometry(dpy, moving_twindow->frame, &JunkChild, &JunkX, &JunkY,
+				&JunkWidth, &JunkHeight, &JunkBW, &JunkMask);
+	DisplayPosition(JunkX + Scr->VirtualDesktopX, JunkY + Scr->VirtualDesktopY);
+
 	/* get things going */
 	DoMoveWindowOnDesktop(ev.x, ev.y);
 }
@@ -687,6 +913,13 @@ void DoMoveWindowOnDesktop(x, y)
 int x, y;
 {
 	if (!Scr->Virtual)
+		return;
+
+	/*
+	 * cancel the effects of scaling errors by skipping the code
+	 * if nothing is actually moved - djhjr - 4/27/98
+	 */
+	if (x == starting_x && y == starting_y)
 		return;
 
 	x += moving_off_x;
@@ -717,9 +950,28 @@ int x, y;
 	/* move the display window */
 	XMoveWindow(dpy, moving_window, x - moving_bw, y - moving_bw);
 
-	/* move the real window */
-	/* this is very difficult on anything not very powerful */
-	/* XMoveWindow(dpy, moving_twindow->frame, SCALE_U(x), SCALE_U(y)); */
+	/* djhjr - 4/28/98 */
+	DisplayPosition(SCALE_U(x), SCALE_U(y));
+
+/* nah... it's pretty easy! - djhjr - 4/17/98
+	* move the real window *
+	* this is very difficult on anything not very powerful *
+	* XMoveWindow(dpy, moving_twindow->frame, SCALE_U(x), SCALE_U(y)); *
+*/
+	if (Scr->VirtualSendsMotionEvents)
+		if (moving_window != Scr->VirtualDesktopDScreen)
+			if (moving_twindow->opaque_move)
+				XMoveWindow(dpy, moving_twindow->frame,
+					SCALE_U(x) - Scr->VirtualDesktopX,
+					SCALE_U(y) - Scr->VirtualDesktopY);
+			else
+				MoveOutline(Scr->Root,
+					SCALE_U(x) - Scr->VirtualDesktopX,
+					SCALE_U(y) - Scr->VirtualDesktopY,
+					moving_twindow->frame_width,
+					moving_twindow->frame_height,
+					moving_twindow->frame_bw,
+					moving_twindow->title_height + moving_twindow->frame_bw3D);
 }
 
 void EndMoveWindowOnDesktop()
@@ -727,10 +979,23 @@ void EndMoveWindowOnDesktop()
 	if (!Scr->Virtual)
 		return;
 
+	/* djhjr - 4/28/98 */
+	XUnmapWindow(dpy, Scr->SizeWindow);
+	UninstallRootColormap();
+
 	if (moving_window == Scr->VirtualDesktopDScreen) {
 		SetRealScreen(SCALE_U(moving_x),/* - moving_bw,*/
 			SCALE_U(moving_y) /*- moving_bw*/ );
 	} else {
+		/* same little kludge as in the top of DoMoveWindowOnDesktop() - djhjr - 4/27/98 */
+		if (moving_x != starting_x || moving_y != starting_y)
+		{
+		/* djhjr - 4/17/98 */
+		if (Scr->VirtualSendsMotionEvents)
+			if (!moving_twindow->opaque_move)
+				/* erase the move outline */
+				MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
+
 		/* move the window in virtual space */
 		moving_twindow->virtual_frame_x = SCALE_U(moving_x);
 		moving_twindow->virtual_frame_y = SCALE_U(moving_y);
@@ -744,6 +1009,7 @@ void EndMoveWindowOnDesktop()
 		/* notify the window */
 		SendConfigureNotify(moving_twindow,
 			    moving_twindow->frame_x, moving_twindow->frame_y);
+		}
 
 		/* raise the window ? */
 		if(!Scr->NoRaiseMove) {
@@ -752,6 +1018,13 @@ void EndMoveWindowOnDesktop()
 
 			RaiseStickyAbove(); /* DSE */
 			RaiseAutoPan();
+		}
+
+		/* djhjr - 6/4/98 */
+		if (Scr->VirtualSendsMotionEvents && !moving_twindow->opaque_move)
+		{
+			XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
+			XMapWindow(dpy, Scr->VirtualDesktopDisplay);
 		}
 
 		moving_window = None;

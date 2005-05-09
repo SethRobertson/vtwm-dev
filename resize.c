@@ -72,6 +72,15 @@ static int last_height;
 
 static int resize_context;
 
+/* set in HandleMotionNotify(), cleared in *EndResize() - djhjr - 9/5/98 */
+int resizing_window = 0;
+
+/* djhjr - 4/6/98 */
+void PaintBorderAndTitlebar();
+
+/* djhjr - 4/17/98 */
+static void DoVirtualMoveResize();
+
 static void do_auto_clamp (tmp_win, evp)
     TwmWindow *tmp_win;
     XEvent *evp;
@@ -146,7 +155,16 @@ int context;
 	    ResizeWindow = tmp_win->VirtualDesktopDisplayWindow;
     else
 	    ResizeWindow = tmp_win->frame;
-    XGrabServer(dpy);
+
+/* djhjr - 7/17/98
+	* djhjr - 4/15/98 *
+	if (!Scr->NoGrabServer)
+*/
+	{
+		/* added test - djhjr - 4/7/98 */
+		if (!tmp_win->opaque_resize)
+			XGrabServer(dpy);
+	}
     if (context == C_VIRTUAL_WIN)
 	    XGrabPointer(dpy, Scr->VirtualDesktopDisplay, True,
 			 ButtonPressMask | ButtonReleaseMask |
@@ -189,12 +207,22 @@ int context;
     last_width = 0;
     last_height = 0;
     DisplaySize(tmp_win, origWidth, origHeight);
+
     if (resize_context == C_VIRTUAL_WIN)
 	    MoveOutline (Scr->VirtualDesktopDisplay, dragx,
 			 dragy, dragWidth,
 			 dragHeight,
 			 tmp_win->frame_bw, 0);
     else
+	/* added this 'if ... else' - djhjr - 4/6/98 */
+	if (tmp_win->opaque_resize)
+	{
+		SetupWindow (tmp_win,
+			dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
+			dragWidth, dragHeight, -1);
+		PaintBorderAndTitlebar(tmp_win);
+	}
+	else
 	    MoveOutline (Scr->Root, dragx - tmp_win->frame_bw,
 			 dragy - tmp_win->frame_bw, dragWidth + 2 * tmp_win->frame_bw,
 			 dragHeight + 2 * tmp_win->frame_bw,
@@ -211,7 +239,15 @@ MenuStartResize(tmp_win, x, y, w, h)
 TwmWindow *tmp_win;
 int x, y, w, h;
 {
-    XGrabServer(dpy);
+/* djhjr - 7/17/98
+	* djhjr - 4/15/98 *
+	if (!Scr->NoGrabServer)
+*/
+	{
+		/* added test - djhjr - 4/7/98 */
+		if (!tmp_win->opaque_resize)
+			XGrabServer(dpy);
+	}
     XGrabPointer(dpy, Scr->Root, True,
         ButtonPressMask | ButtonMotionMask | PointerMotionMask,
         GrabModeAsync, GrabModeAsync,
@@ -235,6 +271,16 @@ int x, y, w, h;
 
     XMapRaised(dpy, Scr->SizeWindow);
     DisplaySize(tmp_win, origWidth, origHeight);
+
+	/* added this 'if ... else' - djhjr - 4/6/98 */
+	if (tmp_win->opaque_resize)
+	{
+		SetupWindow (tmp_win,
+			dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
+			dragWidth, dragHeight, -1);
+		PaintBorderAndTitlebar(tmp_win);
+	}
+	else
     MoveOutline (Scr->Root, dragx - tmp_win->frame_bw,
 		 dragy - tmp_win->frame_bw,
 		 dragWidth + 2 * tmp_win->frame_bw,
@@ -261,7 +307,16 @@ AddStartResize(tmp_win, x, y, w, h)
 TwmWindow *tmp_win;
 int x, y, w, h;
 {
-    XGrabServer(dpy);
+/* djhjr - 7/17/98
+	* djhjr - 4/15/98 *
+	if (!Scr->NoGrabServer)
+*/
+	{
+		/* added test - djhjr - 4/7/98 */
+		if (!tmp_win->opaque_resize)
+			XGrabServer(dpy);
+	}
+
     XGrabPointer(dpy, Scr->Root, True,
         ButtonReleaseMask | ButtonMotionMask | PointerMotionHintMask,
         GrabModeAsync, GrabModeAsync,
@@ -380,6 +435,7 @@ TwmWindow *tmp_win;
             dragx = origx + origWidth - dragWidth;
         if (clampTop)
             dragy = origy + origHeight - dragHeight;
+
 	if (resize_context == C_VIRTUAL_WIN)
 		MoveOutline(Scr->VirtualDesktopDisplay,
 			    dragx,
@@ -387,6 +443,15 @@ TwmWindow *tmp_win;
 			    dragWidth,
 			    dragHeight,
 			    tmp_win->frame_bw, 0);
+	else {
+	/* added this 'if ... else' - djhjr - 4/6/98 */
+	if (tmp_win->opaque_resize)
+	{
+		SetupWindow (tmp_win,
+			dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
+			dragWidth, dragHeight, -1);
+		PaintBorderAndTitlebar(tmp_win);
+	}
 	else
 		MoveOutline(Scr->Root,
 			    dragx - tmp_win->frame_bw,
@@ -398,6 +463,10 @@ TwmWindow *tmp_win;
 */
 	    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 
+		/* djhjr - 4/17/98 */
+		if (Scr->VirtualReceivesMotionEvents)
+			DoVirtualMoveResize(tmp_win, dragx, dragy, dragWidth, dragHeight);
+	}
     }
 
     DisplaySize(tmp_win, dragWidth, dragHeight);
@@ -515,6 +584,24 @@ TwmWindow *tmp_win;
             dragx = origx + origWidth - dragWidth;
         if (clampTop)
             dragy = origy + origHeight - dragHeight;
+
+		/* added this 'if() ... else' - djhjr - 4/6/98 */
+		if (tmp_win->opaque_resize)
+		{
+			SetupWindow(tmp_win,
+				dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
+				dragWidth, dragHeight, -1);
+
+			PaintBorderAndTitlebar(tmp_win);
+
+			/* djhjr - 4/15/98 */
+			if (!Scr->NoGrabServer)
+			{
+				/* these let the application window be drawn - djhjr - 4/14/98 */
+				XUngrabServer(dpy); XSync(dpy, 0); XGrabServer(dpy);
+			}
+		}
+		else
         MoveOutline(Scr->Root,
             dragx - tmp_win->frame_bw,
             dragy - tmp_win->frame_bw,
@@ -525,6 +612,9 @@ TwmWindow *tmp_win;
 */
 	    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 
+		/* djhjr - 4/17/98 */
+		if (Scr->VirtualReceivesMotionEvents)
+			DoVirtualMoveResize(tmp_win, dragx, dragy, dragWidth, dragHeight);
     }
 
     DisplaySize(tmp_win, dragWidth, dragHeight);
@@ -550,8 +640,7 @@ int width;
 int height;
 {
     char str[100];
-    int dwidth;
-    int dheight;
+    int i, dwidth, dheight;
 
     if (last_width == width && last_height == height)
         return;
@@ -593,7 +682,7 @@ int height;
         dheight /= tmp_win->hints.height_inc;
     }
 
-    (void) sprintf (str, "%5d x %-5d", dwidth, dheight);
+    i = sprintf (str, "%5d x %-5d", dwidth, dheight);
 
     XRaiseWindow(dpy, Scr->SizeWindow);
     FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);
@@ -602,16 +691,31 @@ int height;
 /* djhjr - 5/9/96
 		      Scr->SizeStringOffset,
 */
-			  (Scr->SizeStringWidth - XTextWidth(Scr->SizeFont.font, str, 13)) / 2,
+			  (Scr->SizeStringWidth - XTextWidth(Scr->SizeFont.font, str, i)) / 2,
 
-		      Scr->SizeFont.font->ascent + SIZE_VINDENT, str, 13);
+/* djhjr - 4/29/98
+			Scr->SizeFont.font->ascent + SIZE_VINDENT,
+*/
+			/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+			Scr->SizeFont.font->ascent + SIZE_VINDENT +
+				 ((Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth : 0),
+
+			str, i);
 
 	/* I know, I know, but the above code overwrites it... djhjr - 5/9/96 */
-	if (Scr->use3Dborders)
+	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+	if (Scr->InfoBevelWidth > 0)
 	    Draw3DBorder(Scr->SizeWindow, 0, 0,
 				Scr->SizeStringWidth,
+
+/* djhjr - 4/29/98
 				(unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2),
 				BW, Scr->DefaultC, off, False, False);
+*/
+				/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+				(unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2) +
+					((Scr->InfoBevelWidth > 0) ? 2 * Scr->InfoBevelWidth : 0),
+				Scr->InfoBevelWidth, Scr->DefaultC, off, False, False);
 }
 
 /***********************************************************************
@@ -692,7 +796,17 @@ EndResize()
     /* UpdateDesktop(tmp_win); Stig */
     MoveResizeDesktop(tmp_win, Scr->NoRaiseResize); /* Stig */
 
+	/* djhjr - 6/4/98 */
+	if (Scr->VirtualReceivesMotionEvents && !tmp_win->opaque_move)
+	{
+		XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
+		XMapWindow(dpy, Scr->VirtualDesktopDisplay);
+	}
+
     ResizeWindow = None;
+
+	/* djhjr - 9/5/98 */
+	resizing_window = 0;
 }
 
 void
@@ -711,6 +825,16 @@ TwmWindow *tmp_win;
 	/* djhjr - 9/19/96 */
 	if (dragWidth != tmp_win->frame_width || dragHeight != tmp_win->frame_height)
 		tmp_win->zoomed = ZOOM_NONE;
+
+	/* djhjr - 6/4/98 */
+	if (Scr->VirtualReceivesMotionEvents && !tmp_win->opaque_move)
+	{
+		XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
+		XMapWindow(dpy, Scr->VirtualDesktopDisplay);
+	}
+
+	/* djhjr - 9/5/98 */
+	resizing_window = 0;
 }
 
 
@@ -741,6 +865,16 @@ TwmWindow *tmp_win;
 	/* djhjr - 9/19/96 */
 	if (dragWidth != tmp_win->frame_width || dragHeight != tmp_win->frame_height)
 		tmp_win->zoomed = ZOOM_NONE;
+
+	/* djhjr - 6/4/98 */
+	if (Scr->VirtualReceivesMotionEvents && !tmp_win->opaque_move)
+	{
+		XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
+		XMapWindow(dpy, Scr->VirtualDesktopDisplay);
+	}
+
+	/* djhjr - 9/5/98 */
+	resizing_window = 0;
 }
 
 /***********************************************************************
@@ -1076,11 +1210,14 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 
     if (tmp_win->title_height && tmp_win->hilite_w)
     {
+/* djhjr - 4/2/98
 	xwc.width = (tmp_win->rightx - tmp_win->highlightx);
 	if (Scr->TBInfo.nright > 0) xwc.width -= Scr->TitlePadding;
 
-	/* djhjr - 4/24/96 */
+	* djhjr - 4/24/96 *
 	if (Scr->use3Dtitles) xwc.width -= 4;
+*/
+	xwc.width = ComputeHighlightWindowWidth(tmp_win);
 
         if (xwc.width <= 0) {
             xwc.x = Scr->MyDisplayWidth;	/* move offscreen */
@@ -1101,6 +1238,53 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     {
 	    SendConfigureNotify(tmp_win, x, y);
     }
+}
+
+/* djhjr - 4/6/98 */
+void
+PaintBorderAndTitlebar(tmp_win)
+TwmWindow *tmp_win;
+{
+	if (tmp_win->highlight)
+		SetBorder(tmp_win, True);
+	else
+	{
+		/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+		if (Scr->BorderBevelWidth > 0) PaintBorders(tmp_win, True);
+
+		if (tmp_win->titlebuttons)
+		{
+			int i, nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
+			TBWindow *tbw;
+
+			for (i = 0, tbw = tmp_win->titlebuttons; i < nb; i++, tbw++)
+				PaintTitleButton(tmp_win, tbw, 0);
+		}
+	}
+
+	PaintTitle(tmp_win);
+}
+
+
+/* djhjr - 4/17/98 */
+static void
+DoVirtualMoveResize(tmp_win, x, y, w, h)
+TwmWindow *tmp_win;
+int x, y, w, h;
+{
+	int fw = tmp_win->frame_width, fh = tmp_win->frame_height;
+
+	tmp_win->virtual_frame_x = R_TO_V_X(x - tmp_win->frame_bw);
+	tmp_win->virtual_frame_y = R_TO_V_Y(y - tmp_win->frame_bw);
+	if (!tmp_win->opaque_resize)
+	{
+		tmp_win->frame_width = w + 2 * tmp_win->frame_bw;
+		tmp_win->frame_height = h + 2 * tmp_win->frame_bw;
+	}
+
+	MoveResizeDesktop(tmp_win, Scr->NoRaiseResize);
+
+	tmp_win->frame_width = fw; tmp_win->frame_height = fh;
 }
 
 
@@ -1295,7 +1479,8 @@ void SetFrameShape (tmp)
 	    newBounding[1].width = tmp->attr.width + fbw2 + 2 * tmp->frame_bw3D;
 	    newBounding[1].height = tmp->attr.height + fbw2 + tmp->frame_bw3D;
 
-		if (tmp->squeeze_info && Scr->use3Dborders)
+		/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+		if (tmp->squeeze_info && Scr->BorderBevelWidth > 0)
 		{
 		    newBounding[2].x = -tmp->frame_bw3D;
 		    newBounding[2].y = tmp->title_height;
@@ -1327,7 +1512,8 @@ void SetFrameShape (tmp)
 	    newClip[1].width = tmp->attr.width + 2 * tmp->frame_bw3D;
 	    newClip[1].height = tmp->attr.height + tmp->frame_bw3D;
 
-		if (tmp->squeeze_info && Scr->use3Dborders)
+		/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+		if (tmp->squeeze_info && Scr->BorderBevelWidth > 0)
 		{
 		    newClip[2].x = -tmp->frame_bw3D;
 		    newClip[2].y = tmp->title_height;

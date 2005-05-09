@@ -469,8 +469,12 @@ Window win;
 
 	if ( XQueryTree( dpy, win, &dummy, &dummy2, &children, &n ))
 	{
-		win = *children;
-		XFree( children );
+		/* Test for children submitted by Steve Ratcliffe */
+		if (children)
+		{
+			win = *children;
+			XFree( children );
+		}
 	}
 /**********************************************************/
 /*                                                        */

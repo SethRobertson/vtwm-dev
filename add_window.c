@@ -38,8 +38,13 @@
  **********************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include "twm.h"
 #include <X11/Xatom.h>
+#ifndef NO_XPM_SUPPORT
+#include <X11/xpm.h>
+#endif
+
 #include "add_window.h"
 #include "util.h"
 #include "resize.h"
@@ -71,8 +76,12 @@ int AddingH;
 
 static int PlaceX = 50;
 static int PlaceY = 50;
+
 static void CreateWindowTitlebarButtons();
 void SetHighlightPixmap();
+
+/* djhjr - 4/14/98 */
+static void AddMoveAndResize();
 
 char NoName[] = "Untitled"; /* name if no name is specified */
 
@@ -140,8 +149,6 @@ int iconm;
 IconMgr *iconp;
 {
     TwmWindow *tmp_win;			/* new twm window structure */
-    int stat;
-    XEvent event;
     unsigned long valuemask;		/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
     XTextProperty text_property;
@@ -218,34 +225,57 @@ IconMgr *iconp;
     tmp_win->full_name = tmp_win->name;
     namelen = strlen (tmp_win->name);
 
-    tmp_win->highlight = Scr->Highlight &&
-	(!(short)(int) LookInList(Scr->NoHighlight, tmp_win->full_name,
-	    &tmp_win->class));
+	tmp_win->highlight = Scr->Highlight &&
+/* djhjr - 4/22/98
+		(!(short)(int) LookInList(Scr->NoHighlight, tmp_win->full_name,
+			&tmp_win->class));
+*/
+		(LookInList(Scr->NoHighlight, tmp_win->full_name,
+			&tmp_win->class) == (char *)NULL);
 
-    tmp_win->stackmode = Scr->StackMode &&
-	(!(short)(int) LookInList(Scr->NoStackModeL, tmp_win->full_name,
-	    &tmp_win->class));
+	tmp_win->stackmode = Scr->StackMode &&
+/* djhjr - 4/22/98
+		(!(short)(int) LookInList(Scr->NoStackModeL, tmp_win->full_name,
+			&tmp_win->class));
+*/
+		(LookInList(Scr->NoStackModeL, tmp_win->full_name,
+			&tmp_win->class) == (char *)NULL);
 
-    tmp_win->titlehighlight = Scr->TitleHighlight &&
-	(!(short)(int) LookInList(Scr->NoTitleHighlight, tmp_win->full_name,
-	    &tmp_win->class));
+	tmp_win->titlehighlight = Scr->TitleHighlight &&
+/* djhjr - 4/22/98
+		(!(short)(int) LookInList(Scr->NoTitleHighlight, tmp_win->full_name,
+			&tmp_win->class));
+*/
+		(LookInList(Scr->NoTitleHighlight, tmp_win->full_name,
+			&tmp_win->class) == (char *)NULL);
 
-    tmp_win->auto_raise =
-    	Scr->AutoRaiseDefault ||    /* RAISEDELAY */
-       		(short)(int) LookInList(Scr->AutoRaise,
-				tmp_win->full_name,
-					&tmp_win->class);
+	tmp_win->auto_raise = Scr->AutoRaiseDefault ||    /* RAISEDELAY */
+/* djhjr - 4/22/98
+		(short)(int) LookInList(Scr->AutoRaise, tmp_win->full_name,
+			&tmp_win->class);
+*/
+		(LookInList(Scr->AutoRaise, tmp_win->full_name,
+			&tmp_win->class) != (char *)NULL);
     if (tmp_win->auto_raise) Scr->NumAutoRaises++;
-    tmp_win->iconify_by_unmapping = Scr->IconifyByUnmapping;
-    if (Scr->IconifyByUnmapping)
-    {
+
+	tmp_win->iconify_by_unmapping = Scr->IconifyByUnmapping;
+	if (Scr->IconifyByUnmapping)
+	{
 	tmp_win->iconify_by_unmapping = iconm ? FALSE :
-	    !(short)(int) LookInList(Scr->DontIconify, tmp_win->full_name,
-		&tmp_win->class);
-    }
-    tmp_win->iconify_by_unmapping |=
-	(short)(int) LookInList(Scr->IconifyByUn, tmp_win->full_name,
-	    &tmp_win->class);
+/* djhjr - 4/22/98
+		!(short)(int) LookInList(Scr->DontIconify, tmp_win->full_name,
+			&tmp_win->class);
+*/
+		(LookInList(Scr->DontIconify, tmp_win->full_name,
+			&tmp_win->class) == (char *)NULL);
+	}
+	tmp_win->iconify_by_unmapping |=
+/* djhjr - 4/22/98
+		(short)(int) LookInList(Scr->IconifyByUn, tmp_win->full_name,
+			&tmp_win->class);
+*/
+		(LookInList(Scr->IconifyByUn, tmp_win->full_name,
+			&tmp_win->class) != (char *)NULL);
 
     if ( Scr->UseWindowRing
     || LookInList(Scr->WindowRingL, tmp_win->full_name, &tmp_win->class)) {
@@ -260,7 +290,9 @@ IconMgr *iconp;
 	}
     } else
       tmp_win->ring.next = tmp_win->ring.prev = NULL;
+#ifdef ORIGINAL_WARPRINGCOORDINATES /* djhjr - 5/11/98 */
     tmp_win->ring.cursor_valid = False;
+#endif
 
     if (LookInList(Scr->NailedDown, tmp_win->full_name, &tmp_win->class))
 	    tmp_win->nailed = TRUE;
@@ -293,24 +325,49 @@ IconMgr *iconp;
 
     tmp_win->old_bw = tmp_win->attr.border_width;
 
+#ifdef NEVER /* see the next '#ifdef NEVER's '#else' - C. F. Jalali */
 	/* djhjr - 4/19/96 */
-    tmp_win->frame_bw3D = Scr->ThreeDBorderWidth;
-    if (LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class)) {
-	tmp_win->frame_bw = 0;
-	tmp_win->frame_bw3D = 0;
+	/* was 'Scr->ThreeDBorderWidth' - djhjr - 8/11/98 */
+    tmp_win->frame_bw3D = Scr->BorderWidth;
+#endif
+    if (LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
+	{
+		tmp_win->frame_bw = 0;
+		tmp_win->frame_bw3D = 0;
     }
     else
-    if (tmp_win->frame_bw3D != 0) {
-	tmp_win->frame_bw = 0;
-	Scr->ClientBorderWidth = FALSE;
-    }
+#ifdef NEVER
+    if (tmp_win->frame_bw3D != 0)
+	{
+		tmp_win->frame_bw = 0;
+		Scr->ClientBorderWidth = FALSE;
+	}
     else
-
-    if (Scr->ClientBorderWidth) {
-    	tmp_win->frame_bw = tmp_win->old_bw;
-    } else {
-    	tmp_win->frame_bw = Scr->BorderWidth;
-    }
+	    if (Scr->ClientBorderWidth)
+    		tmp_win->frame_bw = tmp_win->old_bw;
+	    else
+    		tmp_win->frame_bw = Scr->BorderWidth;
+#else
+	/*
+	 * Submitted by Caveh Frank Jalali - 8/25/98
+	 */
+	{
+		if (Scr->BorderBevelWidth > 0)
+		{
+			tmp_win->frame_bw3D = Scr->BorderWidth;
+			tmp_win->frame_bw = 0;
+			Scr->ClientBorderWidth = FALSE;
+		}
+		else
+		{
+			tmp_win->frame_bw3D = 0;
+			if (Scr->ClientBorderWidth)
+				tmp_win->frame_bw = tmp_win->old_bw;
+			else
+				tmp_win->frame_bw = Scr->BorderWidth;
+		}
+	}
+#endif
     bw2 = tmp_win->frame_bw * 2;
 
     tmp_win->title_height = Scr->TitleHeight + tmp_win->frame_bw;
@@ -320,6 +377,28 @@ IconMgr *iconp;
         tmp_win->title_height = Scr->TitleHeight + tmp_win->frame_bw;
     if (LookInList(Scr->NoTitle, tmp_win->full_name, &tmp_win->class))
         tmp_win->title_height = 0;
+
+	/* djhjr - 4/7/98 */
+	if (LookInList(Scr->OpaqueMoveL, tmp_win->full_name, &tmp_win->class))
+		tmp_win->opaque_move = TRUE;
+	else
+	    tmp_win->opaque_move = Scr->OpaqueMove &&
+/* djhjr - 4/22/98
+		!(short)(int)LookInList(Scr->NoOpaqueMoveL, tmp_win->full_name, &tmp_win->class);
+*/
+		(LookInList(Scr->NoOpaqueMoveL, tmp_win->full_name,
+			&tmp_win->class) == (char *)NULL);
+
+	/* djhjr - 4/7/98 */
+	if (LookInList(Scr->OpaqueResizeL, tmp_win->full_name, &tmp_win->class))
+		tmp_win->opaque_resize = TRUE;
+	else
+	    tmp_win->opaque_resize = Scr->OpaqueResize &&
+/* djhjr - 4/22/98
+		!(short)(int)LookInList(Scr->NoOpaqueResizeL, tmp_win->full_name, &tmp_win->class);
+*/
+		(LookInList(Scr->NoOpaqueResizeL, tmp_win->full_name,
+			&tmp_win->class) == (char *)NULL);
 
     /* if it is a transient window, don't put a title on it */
     if (tmp_win->transient && !Scr->DecorateTransients)
@@ -372,358 +451,9 @@ IconMgr *iconp;
 	    tmp_win->attr.y = R_TO_V_Y(tmp_win->attr.y);
     }
 
-    /*
-     * do any prompting for position
-     */
-    if (HandlingEvents && ask_user) {
-      if (Scr->RandomPlacement) {	/* just stick it somewhere */
-	if ((PlaceX + tmp_win->attr.width) > Scr->MyDisplayWidth)
-	    PlaceX = 50;
-	if ((PlaceY + tmp_win->attr.height) > Scr->MyDisplayHeight)
-	    PlaceY = 50;
-
-	tmp_win->attr.x = PlaceX;
-	tmp_win->attr.y = PlaceY;
-	PlaceX += 30;
-	PlaceY += 30;
-      } else {				/* else prompt */
-	if (!(tmp_win->wmhints && tmp_win->wmhints->flags & StateHint &&
-	      tmp_win->wmhints->initial_state == IconicState))
-	{
-	    Bool firsttime = True;
-
-	    /* better wait until all the mouse buttons have been
-	     * released.
-	     */
-	    while (TRUE)
-	    {
-		XUngrabServer(dpy);
-		XSync(dpy, 0);
-		XGrabServer(dpy);
-
-		JunkMask = 0;
-		if (!XQueryPointer (dpy, Scr->Root, &JunkRoot,
-				    &JunkChild, &JunkX, &JunkY,
-				    &AddingX, &AddingY, &JunkMask))
-		  JunkMask = 0;
-
-		JunkMask &= (Button1Mask | Button2Mask | Button3Mask |
-			     Button4Mask | Button5Mask);
-
-		/*
-		 * watch out for changing screens
-		 */
-		if (firsttime) {
-		    if (JunkRoot != Scr->Root) {
-			register int scrnum;
-
-			for (scrnum = 0; scrnum < NumScreens; scrnum++) {
-			    if (JunkRoot == RootWindow (dpy, scrnum)) break;
-			}
-
-			if (scrnum != NumScreens) PreviousScreen = scrnum;
-		    }
-		    firsttime = False;
-		}
-
-		/*
-		 * wait for buttons to come up; yuck
-		 */
-		if (JunkMask != 0) continue;
-
-		/*
-		 * this will cause a warp to the indicated root
-		 */
-		stat = XGrabPointer(dpy, Scr->Root, False,
-		    ButtonPressMask | ButtonReleaseMask |
-		    PointerMotionMask | PointerMotionHintMask,
-		    GrabModeAsync, GrabModeAsync,
-		    Scr->Root, UpperLeftCursor, CurrentTime);
-
-		if (stat == GrabSuccess)
-		    break;
-	    }
-
-/* use initialized size... djhjr - 5/9/96
-	    width = (SIZE_HINDENT + XTextWidth (Scr->SizeFont.font,
-						tmp_win->name, namelen));
-	    height = Scr->SizeFont.height + SIZE_VINDENT * 2;
-
-* djhjr - 4/27/96
-	    XResizeWindow (dpy, Scr->SizeWindow, width + SIZE_HINDENT, height);
-*
-	    XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
-				Scr->SizeStringWidth, height);
+/* moved to after window prep and creation - djhjr - 4/14/98
+	AddMoveAndResize(tmp_win, ask_user);
 */
-
-	    XMapRaised(dpy, Scr->SizeWindow);
-	    InstallRootColormap();
-
-/* DisplayPosition overwrites it anyway... djhjr - 5/9/96
-	    FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
-		Scr->SizeFont.font->fid);
-	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
-			      SIZE_HINDENT,
-			      SIZE_VINDENT + Scr->SizeFont.font->ascent,
-			      tmp_win->name, namelen);
-*/
-
-/* djhjr - 4/19/96
-	    AddingW = tmp_win->attr.width + bw2;
-	    AddingH = tmp_win->attr.height + tmp_win->title_height + bw2;
-
-		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
-			    tmp_win->frame_bw, tmp_win->title_height);
-*/
-	    AddingW = tmp_win->attr.width + bw2 + 2 * tmp_win->frame_bw3D;
-	    AddingH = tmp_win->attr.height + tmp_win->title_height +
-				bw2 + 2 * tmp_win->frame_bw3D;
-		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
-			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
-
-/* DisplayPosition() overwrites it anyway... djhjr - 5/9/96
-		* djhjr - 4/27/96 *
-	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
-				SIZE_VINDENT + Scr->SizeFont.font->ascent, ": ", 2);
-*/
-
-		/* djhjr - 4/27/96 */
-	    DisplayPosition (tmp_win, AddingX, AddingY);
-
-	    while (TRUE)
-		{
-		XMaskEvent(dpy, ButtonPressMask | PointerMotionMask, &event);
-
-		if (Event.type == MotionNotify) {
-		    /* discard any extra motion events before a release */
-		    while(XCheckMaskEvent(dpy,
-			ButtonMotionMask | ButtonPressMask, &Event))
-			if (Event.type == ButtonPress)
-			    break;
-		}
-
-		if (event.type == ButtonPress) {
-		  AddingX = event.xbutton.x_root;
-		  AddingY = event.xbutton.y_root;
-
-		  /* DontMoveOff prohibits user form off-screen placement */
-		  if (Scr->DontMoveOff)
-  		    {
-		      int AddingR, AddingB;
-
-		      AddingR = AddingX + AddingW;
-		      AddingB = AddingY + AddingH;
-
-		      if (AddingX < 0)
-			AddingX = 0;
-		      if (AddingR > Scr->MyDisplayWidth)
-			AddingX = Scr->MyDisplayWidth - AddingW;
-
-		      if (AddingY < 0)
-			AddingY = 0;
-		      if (AddingB > Scr->MyDisplayHeight)
-			AddingY = Scr->MyDisplayHeight - AddingH;
-
- 		    }
-		  break;
-		}
-
-		if (event.type != MotionNotify) {
-		    continue;
-	    }
-
-		XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
-		    &JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
-
-		if (Scr->DontMoveOff)
-		{
-		    int AddingR, AddingB;
-
-		    AddingR = AddingX + AddingW;
-		    AddingB = AddingY + AddingH;
-
-		    if (AddingX < 0)
-		        AddingX = 0;
-		    if (AddingR > Scr->MyDisplayWidth)
-		        AddingX = Scr->MyDisplayWidth - AddingW;
-
-		    if (AddingY < 0)
-			AddingY = 0;
-		    if (AddingB > Scr->MyDisplayHeight)
-			AddingY = Scr->MyDisplayHeight - AddingH;
-		}
-
-/* djhjr - 4/19/96
-		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
-			    tmp_win->frame_bw, tmp_win->title_height);
-*/
-		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
-			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
-
-		/* djhjr - 4/27/96 */
-		DisplayPosition (tmp_win, AddingX, AddingY);
-
-	    }
-
-	    if (event.xbutton.button == Button2) {
-		int lastx, lasty;
-
-/* AddStartResize() overwrites it anyway... djhjr - 5/9/96
-		Scr->SizeStringOffset = width +
-		  XTextWidth(Scr->SizeFont.font, ": ", 2);
-		XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
-			       Scr->SizeStringWidth, height);
-		XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
-				  SIZE_VINDENT + Scr->SizeFont.font->ascent,
-				  ": ", 2);
-*/
-
-#if 0
-		if (0/*Scr->AutoRelativeResize*/)
-My R5 vtvwm came with this commented out, always 0.
-Why?
-#endif
-		if (Scr->AutoRelativeResize)
-		{
-		    int dx = (tmp_win->attr.width / 4);
-		    int dy = (tmp_win->attr.height / 4);
-
-#define HALF_AVE_CURSOR_SIZE 8		/* so that it is visible */
-		    if (dx < HALF_AVE_CURSOR_SIZE) dx = HALF_AVE_CURSOR_SIZE;
-		    if (dy < HALF_AVE_CURSOR_SIZE) dy = HALF_AVE_CURSOR_SIZE;
-#undef HALF_AVE_CURSOR_SIZE
-		    dx += (tmp_win->frame_bw + 1);
-		    dy += (bw2 + tmp_win->title_height + 1);
-		    if (AddingX + dx >= Scr->MyDisplayWidth)
-		      dx = Scr->MyDisplayWidth - AddingX - 1;
-		    if (AddingY + dy >= Scr->MyDisplayHeight)
-		      dy = Scr->MyDisplayHeight - AddingY - 1;
-		    if (dx > 0 && dy > 0)
-		      XWarpPointer (dpy, None, None, 0, 0, 0, 0, dx, dy);
-		} else {
-		    XWarpPointer (dpy, None, Scr->Root, 0, 0, 0, 0,
-				  AddingX + AddingW/2, AddingY + AddingH/2);
-		}
-		AddStartResize(tmp_win, AddingX, AddingY, AddingW, AddingH);
-
-		lastx = -10000;
-		lasty = -10000;
-		while (TRUE)
-		{
-		    XMaskEvent(dpy,
-			       ButtonReleaseMask | ButtonMotionMask, &event);
-
-		    if (Event.type == MotionNotify) {
-			/* discard any extra motion events before a release */
-			while(XCheckMaskEvent(dpy,
-			    ButtonMotionMask | ButtonReleaseMask, &Event))
-			    if (Event.type == ButtonRelease)
-				break;
-		    }
-
-		    if (event.type == ButtonRelease)
-		    {
-			AddEndResize(tmp_win);
-			break;
-		    }
-
-		    if (event.type != MotionNotify) {
-			continue;
-		    }
-
-		    /*
-		     * XXX - if we are going to do a loop, we ought to consider
-		     * using multiple GXxor lines so that we don't need to
-		     * grab the server.
-		     */
-		    XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
-			&JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
-
-		    if (lastx != AddingX || lasty != AddingY)
-		    {
-			DoResize(AddingX, AddingY, tmp_win);
-
-			lastx = AddingX;
-			lasty = AddingY;
-		    }
-
-		}
-	    } /* if (event.xbutton.button == Button2) */
-	    else if (event.xbutton.button == Button3)
-	    {
-		int maxw = Scr->MyDisplayWidth - AddingX - bw2;
-		int maxh = Scr->MyDisplayHeight - AddingY - bw2;
-
-		/*
-		 * Make window go to bottom of screen, and clip to right edge.
-		 * This is useful when popping up large windows and fixed
-		 * column text windows.
-		 */
-		if (AddingW > maxw) AddingW = maxw;
-		AddingH = maxh;
-
-		ConstrainSize (tmp_win, &AddingW, &AddingH);  /* w/o borders */
-		AddingW += bw2;
-		AddingH += bw2;
-	    }
-	    else
-	    {
-		XMaskEvent(dpy, ButtonReleaseMask, &event);
-	    }
-
-	    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
-	    XUnmapWindow(dpy, Scr->SizeWindow);
-	    UninstallRootColormap();
-	    XUngrabPointer(dpy, CurrentTime);
-
-	    tmp_win->attr.x = AddingX;
-	    tmp_win->attr.y = AddingY + tmp_win->title_height;
-
-/* djhjr - 4/19/96
-	    tmp_win->attr.width = AddingW - bw2;
-	    tmp_win->attr.height = AddingH - tmp_win->title_height - bw2;
-*/
-	    tmp_win->attr.width = AddingW - bw2 - 2 * tmp_win->frame_bw3D;
-	    tmp_win->attr.height = AddingH - tmp_win->title_height -
-				bw2 - 2 * tmp_win->frame_bw3D;
-
-	    XUngrabServer(dpy);
-	}
-      }
-    } else {				/* put it where asked, mod title bar */
-	    /* interpret the position specified as a virtual one if asked */
-#if 0
-	    if (Scr->GeometriesAreVirtual)
-#endif
-/* added 'FixManagedVirtualGeometries' - djhjr - 1/6/98 */
-		if (Scr->GeometriesAreVirtual ||
-			(!Scr->GeometriesAreVirtual &&
-				(tmp_win->nailed ||
-				(Scr->FixManagedVirtualGeometries && !tmp_win->transient ||
-				(Scr->FixTransientVirtualGeometries && tmp_win->transient))
-		)))
-
-		/* if NotVirtualGeometries is set, should also do this if it's
-		   a sticky or (it's a transient window and
-		   FixTransientVirtualGeometries is set -- this case is a
-		   bug workaround; any better ideas???????????) -- DSE */
-	    	{
-		    tmp_win->attr.x = V_TO_R_X(tmp_win->attr.x);
-		    tmp_win->attr.y = V_TO_R_Y(tmp_win->attr.y);
-		    }
-
-	/* if the gravity is towards the top, move it by the title height */
-	if (gravy < 0) tmp_win->attr.y -= gravy * tmp_win->title_height;
-    }
-
-
-#ifdef DEBUG
-	fprintf(stderr, "  position window  %d, %d  %dx%d\n",
-	    tmp_win->attr.x,
-	    tmp_win->attr.y,
-	    tmp_win->attr.width,
-	    tmp_win->attr.height);
-#endif
 
     if (!Scr->ClientBorderWidth) {	/* need to adjust for twm borders */
 
@@ -827,10 +557,16 @@ Why?
 			     &tmp_win->class, &tmp_win->virtual.back);
 
 	/* djhjr - 4/19/96 */
-    if (Scr->use3Dtitles  && !Scr->BeNiceToColormap) GetShadeColors (&tmp_win->title);
-    if (Scr->ButtonColorIsFrame || (Scr->use3Dborders && !Scr->BeNiceToColormap)) {
-	GetShadeColors (&tmp_win->border);
-	GetShadeColors (&tmp_win->border_tile);
+	/* loosened up for titlebar-colored 3D buttons - djhjr - 4/1/98
+	if (Scr->use3Dtitles  && !Scr->BeNiceToColormap)
+	*/
+	if (!Scr->BeNiceToColormap)
+		GetShadeColors (&tmp_win->title);
+	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+	if (Scr->ButtonColorIsFrame || (Scr->BorderBevelWidth > 0 && !Scr->BeNiceToColormap))
+	{
+		GetShadeColors (&tmp_win->border);
+		GetShadeColors (&tmp_win->border_tile);
     }
 
     /* create windows */
@@ -842,17 +578,21 @@ Why?
     tmp_win->frame_width = tmp_win->attr.width;
     tmp_win->frame_height = tmp_win->attr.height + tmp_win->title_height;
 */
+/* done in AddMoveAndResize() - djhjr - 4/14/98
     tmp_win->frame_x = tmp_win->attr.x + tmp_win->old_bw - tmp_win->frame_bw
 			- tmp_win->frame_bw3D;
     tmp_win->frame_y = tmp_win->attr.y - tmp_win->title_height +
 	tmp_win->old_bw - tmp_win->frame_bw - tmp_win->frame_bw3D;
+*/
     tmp_win->frame_width = tmp_win->attr.width + 2 * tmp_win->frame_bw3D;
     tmp_win->frame_height = tmp_win->attr.height + tmp_win->title_height +
 				2 * tmp_win->frame_bw3D;
+/* done in AddMoveAndResize() - djhjr - 4/14/98
     ConstrainSize (tmp_win, &tmp_win->frame_width, &tmp_win->frame_height);
 
     tmp_win->virtual_frame_x = R_TO_V_X(tmp_win->frame_x);
     tmp_win->virtual_frame_y = R_TO_V_Y(tmp_win->frame_y);
+*/
 
 /* djhjr - 4/19/96
     valuemask = CWBackPixmap | CWBorderPixel | CWCursor | CWEventMask;
@@ -949,7 +689,8 @@ Why?
     {
 
 	/* djhjr - 4/19/96 */
-	if (Scr->use3Dtitles && (Scr->Monochrome != COLOR))
+	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+	if (Scr->TitleBevelWidth > 0 && (Scr->Monochrome != COLOR))
 	    tmp_win->gray = XCreatePixmapFromBitmapData(dpy, Scr->Root, 
 		(char *)black_bits, gray_width, gray_height, 
 		tmp_win->border_tile.fore, tmp_win->border_tile.back,
@@ -965,7 +706,6 @@ Why?
     }
     else
 	tmp_win->gray = None;
-
 
     if (tmp_win->title_w) {
 	CreateWindowTitlebarButtons (tmp_win);
@@ -1024,13 +764,19 @@ Why?
      */
     tmp_win->mapped = FALSE;
 
+	/*
+	 * NOW do the move and resize - windows needed to be created
+	 * first to accomodate the opaque resources - djhjr - 4/14/98
+	 */
+	AddMoveAndResize(tmp_win, ask_user);
+
     SetupFrame (tmp_win, tmp_win->frame_x, tmp_win->frame_y,
 		tmp_win->frame_width, tmp_win->frame_height, -1, True);
 
     /* wait until the window is iconified and the icon window is mapped
      * before creating the icon window
      */
-    tmp_win->icon_w = NULL;
+    tmp_win->icon_w = None;
 
     if (!tmp_win->iconmgr)
     {
@@ -1070,7 +816,7 @@ Why?
     /* if we were in the middle of a menu activated function, regrab
      * the pointer
      */
-    if (RootFunction)
+    if (RootFunction != F_NOFUNCTION)
 	ReGrab();
 
 	Scr->Newest = tmp_win; /* PF */
@@ -1078,6 +824,519 @@ Why?
 		WarpToWindow(tmp_win); /* PF,DSE */
 
     return (tmp_win);
+}
+
+
+/*
+ * AddPaintRealWindows()
+ *
+ * a little helper for AddMoveAndResize() - djhjr - 4/15/98
+ */
+static void
+AddPaintRealWindows(tmp_win, x, y)
+TwmWindow *tmp_win;
+int x, y;
+{
+	XSetWindowAttributes attr;
+
+	attr.save_under = True;
+	XChangeWindowAttributes(dpy, tmp_win->frame, CWSaveUnder, &attr);
+
+	/* don't need to send a configure notify event */
+	SetupWindow(tmp_win, tmp_win->frame_x, tmp_win->frame_y,
+		tmp_win->frame_width, tmp_win->frame_height, -1);
+
+	XMoveWindow(dpy, tmp_win->frame, x, y);
+
+	XMapWindow(dpy, tmp_win->frame);
+	XMapSubwindows(dpy, tmp_win->frame);
+	XMapSubwindows(dpy, tmp_win->title_w);
+
+	PaintBorderAndTitlebar(tmp_win);
+
+	/* djhjr - 4/15/98 */
+	if (!Scr->NoGrabServer)
+	{
+		/* these allow the application window to be drawn */
+		XUngrabServer(dpy); XSync(dpy, 0); XGrabServer(dpy);
+	}
+}
+
+
+/*
+ * AddMoveAndResize()
+ *
+ * was inline in AddWindow() at first call to this function,
+ * now handles the opaque move and resize resources - djhjr - 4/14/98
+ */
+static void
+AddMoveAndResize(tmp_win, ask_user)
+TwmWindow *tmp_win;
+int ask_user;
+{
+    XEvent event;
+	XSetWindowAttributes attr;
+    int stat, gravx, gravy;
+    int bw2 = tmp_win->frame_bw * 2;
+
+    /*
+     * do any prompting for position
+     */
+    if (HandlingEvents && ask_user) {
+      if (Scr->RandomPlacement) {	/* just stick it somewhere */
+	if ((PlaceX + tmp_win->attr.width) > Scr->MyDisplayWidth)
+	    PlaceX = 50;
+	if ((PlaceY + tmp_win->attr.height) > Scr->MyDisplayHeight)
+	    PlaceY = 50;
+
+	tmp_win->attr.x = PlaceX;
+	tmp_win->attr.y = PlaceY;
+	PlaceX += 30;
+	PlaceY += 30;
+      } else {				/* else prompt */
+	if (!(tmp_win->wmhints && tmp_win->wmhints->flags & StateHint &&
+	      tmp_win->wmhints->initial_state == IconicState))
+	{
+	    Bool firsttime = True;
+
+	    /* better wait until all the mouse buttons have been
+	     * released.
+	     */
+	    while (TRUE)
+	    {
+		XUngrabServer(dpy);
+		XSync(dpy, 0);
+		XGrabServer(dpy);
+
+		JunkMask = 0;
+		if (!XQueryPointer (dpy, Scr->Root, &JunkRoot,
+				    &JunkChild, &JunkX, &JunkY,
+				    &AddingX, &AddingY, &JunkMask))
+		  JunkMask = 0;
+
+		JunkMask &= (Button1Mask | Button2Mask | Button3Mask |
+			     Button4Mask | Button5Mask);
+
+		/*
+		 * watch out for changing screens
+		 */
+		if (firsttime) {
+		    if (JunkRoot != Scr->Root) {
+			register int scrnum;
+
+			for (scrnum = 0; scrnum < NumScreens; scrnum++) {
+			    if (JunkRoot == RootWindow (dpy, scrnum)) break;
+			}
+
+			if (scrnum != NumScreens) PreviousScreen = scrnum;
+		    }
+		    firsttime = False;
+		}
+
+		/*
+		 * wait for buttons to come up; yuck
+		 */
+		if (JunkMask != 0) continue;
+
+		/*
+		 * this will cause a warp to the indicated root
+		 */
+		stat = XGrabPointer(dpy, Scr->Root, False,
+		    ButtonPressMask | ButtonReleaseMask |
+		    PointerMotionMask | PointerMotionHintMask,
+		    GrabModeAsync, GrabModeAsync,
+		    Scr->Root, UpperLeftCursor, CurrentTime);
+
+		if (stat == GrabSuccess)
+		    break;
+	    }
+
+		/* djhjr - 4/15/98 */
+		if (Scr->NoGrabServer) XUngrabServer(dpy);
+
+/* use initialized size... djhjr - 5/9/96
+	    width = (SIZE_HINDENT + XTextWidth (Scr->SizeFont.font,
+						tmp_win->name, namelen));
+	    height = Scr->SizeFont.height + SIZE_VINDENT * 2;
+
+* djhjr - 4/27/96
+	    XResizeWindow (dpy, Scr->SizeWindow, width + SIZE_HINDENT, height);
+*
+	    XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
+				Scr->SizeStringWidth, height);
+*/
+
+	    XMapRaised(dpy, Scr->SizeWindow);
+	    InstallRootColormap();
+
+/* DisplayPosition overwrites it anyway... djhjr - 5/9/96
+	    FBF(Scr->DefaultC.fore, Scr->DefaultC.back,
+		Scr->SizeFont.font->fid);
+	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC,
+			      SIZE_HINDENT,
+			      SIZE_VINDENT + Scr->SizeFont.font->ascent,
+			      tmp_win->name, namelen);
+*/
+
+/* djhjr - 4/19/96
+	    AddingW = tmp_win->attr.width + bw2;
+	    AddingH = tmp_win->attr.height + tmp_win->title_height + bw2;
+
+		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
+			    tmp_win->frame_bw, tmp_win->title_height);
+*/
+	    AddingW = tmp_win->attr.width + bw2 + 2 * tmp_win->frame_bw3D;
+	    AddingH = tmp_win->attr.height + tmp_win->title_height +
+				bw2 + 2 * tmp_win->frame_bw3D;
+
+		/* added this 'if ... else' - djhjr - 4/14/98 */
+		if (tmp_win->opaque_move)
+			AddPaintRealWindows(tmp_win, AddingX, AddingY);
+		else
+			MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
+			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+
+		/* djhjr - 4/17/98 */
+		if (Scr->VirtualReceivesMotionEvents)
+		{
+			tmp_win->virtual_frame_x = R_TO_V_X(AddingX);
+			tmp_win->virtual_frame_y = R_TO_V_Y(AddingY);
+			UpdateDesktop(tmp_win);
+		}
+
+/* DisplayPosition() overwrites it anyway... djhjr - 5/9/96
+		* djhjr - 4/27/96 *
+	    XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
+				SIZE_VINDENT + Scr->SizeFont.font->ascent, ": ", 2);
+*/
+
+		/* djhjr - 4/27/96 */
+	    DisplayPosition (AddingX, AddingY);
+
+	    while (TRUE)
+		{
+		XMaskEvent(dpy, ButtonPressMask | PointerMotionMask, &event);
+
+		if (Event.type == MotionNotify) {
+		    /* discard any extra motion events before a release */
+		    while(XCheckMaskEvent(dpy,
+			ButtonMotionMask | ButtonPressMask, &Event))
+			if (Event.type == ButtonPress)
+			    break;
+		}
+
+		if (event.type == ButtonPress) {
+		  AddingX = event.xbutton.x_root;
+		  AddingY = event.xbutton.y_root;
+
+		  /* DontMoveOff prohibits user form off-screen placement */
+		  if (Scr->DontMoveOff)
+  		    {
+		      int AddingR, AddingB;
+
+		      AddingR = AddingX + AddingW;
+		      AddingB = AddingY + AddingH;
+
+		      if (AddingX < 0)
+			AddingX = 0;
+		      if (AddingR > Scr->MyDisplayWidth)
+			AddingX = Scr->MyDisplayWidth - AddingW;
+
+		      if (AddingY < 0)
+			AddingY = 0;
+		      if (AddingB > Scr->MyDisplayHeight)
+			AddingY = Scr->MyDisplayHeight - AddingH;
+
+ 		    }
+		  break;
+		}
+
+		if (event.type != MotionNotify) {
+		    continue;
+	    }
+
+		XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
+		    &JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
+
+		if (Scr->DontMoveOff)
+		{
+		    int AddingR, AddingB;
+
+		    AddingR = AddingX + AddingW;
+		    AddingB = AddingY + AddingH;
+
+		    if (AddingX < 0)
+		        AddingX = 0;
+		    if (AddingR > Scr->MyDisplayWidth)
+		        AddingX = Scr->MyDisplayWidth - AddingW;
+
+		    if (AddingY < 0)
+			AddingY = 0;
+		    if (AddingB > Scr->MyDisplayHeight)
+			AddingY = Scr->MyDisplayHeight - AddingH;
+		}
+
+/* djhjr - 4/19/96
+		MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
+			    tmp_win->frame_bw, tmp_win->title_height);
+*/
+		/* added this 'if ... else' - djhjr - 4/14/98 */
+		if (tmp_win->opaque_move)
+		{
+			XMoveWindow(dpy, tmp_win->frame, AddingX, AddingY);
+			PaintBorderAndTitlebar(tmp_win);
+
+			/* djhjr - 4/15/98 */
+			if (!Scr->NoGrabServer)
+			{
+				/* these allow the application window to be drawn */
+				XUngrabServer(dpy); XSync(dpy, 0); XGrabServer(dpy);
+			}
+		}
+		else
+			MoveOutline(Scr->Root, AddingX, AddingY, AddingW, AddingH,
+			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+
+		/* djhjr - 4/17/98 */
+		if (Scr->VirtualReceivesMotionEvents)
+		{
+			tmp_win->virtual_frame_x = R_TO_V_X(AddingX);
+			tmp_win->virtual_frame_y = R_TO_V_Y(AddingY);
+			MoveResizeDesktop(tmp_win, Scr->NoRaiseResize);
+		}
+
+		/* djhjr - 4/27/96 */
+		DisplayPosition (AddingX, AddingY);
+
+	    }
+
+	    if (event.xbutton.button == Button2) {
+		int lastx, lasty;
+
+/* AddStartResize() overwrites it anyway... djhjr - 5/9/96
+		Scr->SizeStringOffset = width +
+		  XTextWidth(Scr->SizeFont.font, ": ", 2);
+		XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
+			       Scr->SizeStringWidth, height);
+		XDrawImageString (dpy, Scr->SizeWindow, Scr->NormalGC, width,
+				  SIZE_VINDENT + Scr->SizeFont.font->ascent,
+				  ": ", 2);
+*/
+
+		/* djhjr - 4/15/98 */
+		if (!tmp_win->opaque_move && tmp_win->opaque_resize)
+		{
+			/* erase the move outline */
+		    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
+
+			AddPaintRealWindows(tmp_win, AddingX, AddingY);
+		}
+
+#if 0
+		if (0/*Scr->AutoRelativeResize*/)
+My R5 vtvwm came with this commented out, always 0.
+Why?
+#endif
+		if (Scr->AutoRelativeResize)
+		{
+		    int dx = (tmp_win->attr.width / 4);
+		    int dy = (tmp_win->attr.height / 4);
+
+#define HALF_AVE_CURSOR_SIZE 8		/* so that it is visible */
+		    if (dx < HALF_AVE_CURSOR_SIZE) dx = HALF_AVE_CURSOR_SIZE;
+		    if (dy < HALF_AVE_CURSOR_SIZE) dy = HALF_AVE_CURSOR_SIZE;
+#undef HALF_AVE_CURSOR_SIZE
+		    dx += (tmp_win->frame_bw + 1);
+		    dy += (bw2 + tmp_win->title_height + 1);
+		    if (AddingX + dx >= Scr->MyDisplayWidth)
+		      dx = Scr->MyDisplayWidth - AddingX - 1;
+		    if (AddingY + dy >= Scr->MyDisplayHeight)
+		      dy = Scr->MyDisplayHeight - AddingY - 1;
+		    if (dx > 0 && dy > 0)
+		      XWarpPointer (dpy, None, None, 0, 0, 0, 0, dx, dy);
+		} else {
+		    XWarpPointer (dpy, None, Scr->Root, 0, 0, 0, 0,
+				  AddingX + AddingW/2, AddingY + AddingH/2);
+		}
+		AddStartResize(tmp_win, AddingX, AddingY, AddingW, AddingH);
+
+		lastx = -10000;
+		lasty = -10000;
+		while (TRUE)
+		{
+		    XMaskEvent(dpy,
+			       ButtonReleaseMask | ButtonMotionMask, &event);
+
+		    if (Event.type == MotionNotify) {
+			/* discard any extra motion events before a release */
+			while(XCheckMaskEvent(dpy,
+			    ButtonMotionMask | ButtonReleaseMask, &Event))
+			    if (Event.type == ButtonRelease)
+				break;
+		    }
+
+		    if (event.type == ButtonRelease)
+		    {
+			AddEndResize(tmp_win);
+
+			/* don't need to send a configure notify event - djhjr - 4/15/98 */
+			if (tmp_win->opaque_move && !tmp_win->opaque_resize)
+				SetupWindow(tmp_win, AddingX, AddingY, AddingW, AddingH, -1);
+
+			break;
+		    }
+
+		    if (event.type != MotionNotify) {
+			continue;
+		    }
+
+		    /*
+		     * XXX - if we are going to do a loop, we ought to consider
+		     * using multiple GXxor lines so that we don't need to
+		     * grab the server.
+		     */
+		    XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
+			&JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
+
+		    if (lastx != AddingX || lasty != AddingY)
+		    {
+			DoResize(AddingX, AddingY, tmp_win);
+
+			lastx = AddingX;
+			lasty = AddingY;
+		    }
+
+		}
+	    } /* if (event.xbutton.button == Button2) */
+	    else if (event.xbutton.button == Button3)
+	    {
+		int maxw = Scr->MyDisplayWidth - AddingX - bw2;
+		int maxh = Scr->MyDisplayHeight - AddingY - bw2;
+
+		/*
+		 * Make window go to bottom of screen, and clip to right edge.
+		 * This is useful when popping up large windows and fixed
+		 * column text windows.
+		 */
+		if (AddingW > maxw) AddingW = maxw;
+		AddingH = maxh;
+
+		ConstrainSize (tmp_win, &AddingW, &AddingH);  /* w/o borders */
+		AddingW += bw2;
+		AddingH += bw2;
+
+		/* don't need to send a configure notify event - djhjr - 4/15/98 */
+		SetupWindow(tmp_win, AddingX, AddingY, AddingW, AddingH, -1);
+	    }
+	    else
+	    {
+		XMaskEvent(dpy, ButtonReleaseMask, &event);
+	    }
+
+		/* erase the move outline */
+	    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
+
+	    XUnmapWindow(dpy, Scr->SizeWindow);
+	    UninstallRootColormap();
+	    XUngrabPointer(dpy, CurrentTime);
+
+/* djhjr - 4/15/98
+	    tmp_win->attr.x = AddingX;
+	    tmp_win->attr.y = AddingY + tmp_win->title_height;
+*/
+		tmp_win->attr.x = AddingX + tmp_win->frame_bw + tmp_win->frame_bw3D;
+		tmp_win->attr.y = AddingY + tmp_win->title_height +
+			tmp_win->frame_bw + tmp_win->frame_bw3D;
+
+/* djhjr - 4/19/96
+	    tmp_win->attr.width = AddingW - bw2;
+	    tmp_win->attr.height = AddingH - tmp_win->title_height - bw2;
+*/
+	    tmp_win->attr.width = AddingW - bw2 - 2 * tmp_win->frame_bw3D;
+	    tmp_win->attr.height = AddingH - tmp_win->title_height -
+				bw2 - 2 * tmp_win->frame_bw3D;
+
+/* un-grabbed in the caller AddWindow() on return - djhjr - 4/15/98
+	    XUngrabServer(dpy);
+*/
+	}
+      }
+
+		/* djhjr - 6/4/98 */
+		if (Scr->VirtualReceivesMotionEvents && !tmp_win->opaque_move)
+		{
+			XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
+			XMapWindow(dpy, Scr->VirtualDesktopDisplay);
+		}
+    } else {				/* put it where asked, mod title bar */
+	    /* interpret the position specified as a virtual one if asked */
+#if 0
+	    if (Scr->GeometriesAreVirtual)
+#endif
+/* added 'FixManagedVirtualGeometries' - djhjr - 1/6/98 */
+		if (Scr->GeometriesAreVirtual ||
+			(!Scr->GeometriesAreVirtual &&
+				(tmp_win->nailed ||
+				(Scr->FixManagedVirtualGeometries && !tmp_win->transient ||
+				(Scr->FixTransientVirtualGeometries && tmp_win->transient))
+		)))
+
+		/* if NotVirtualGeometries is set, should also do this if it's
+		   a sticky or (it's a transient window and
+		   FixTransientVirtualGeometries is set -- this case is a
+		   bug workaround; any better ideas???????????) -- DSE */
+	    	{
+		    tmp_win->attr.x = V_TO_R_X(tmp_win->attr.x);
+		    tmp_win->attr.y = V_TO_R_Y(tmp_win->attr.y);
+		    }
+
+    GetGravityOffsets (tmp_win, &gravx, &gravy);
+
+	/* if the gravity is towards the top, move it by the title height */
+	if (gravy < 0) tmp_win->attr.y -= gravy * tmp_win->title_height;
+    }
+
+	if (tmp_win->opaque_move)
+	{
+		attr.save_under = False;
+		XChangeWindowAttributes(dpy, tmp_win->frame, CWSaveUnder, &attr);
+	}
+
+/*
+ * consider client borderwidths based on the ClientBorderWidth and
+ * RandomPlacement resources, PPosition with the UsePPosition resource,
+ * and the USPosition spec - djhjr - 6/3/98
+ *
+	tmp_win->frame_x = tmp_win->attr.x + tmp_win->old_bw - tmp_win->frame_bw
+			- tmp_win->frame_bw3D;
+	tmp_win->frame_y = tmp_win->attr.y - tmp_win->title_height +
+			tmp_win->old_bw - tmp_win->frame_bw - tmp_win->frame_bw3D;
+*/
+	tmp_win->frame_x = tmp_win->attr.x -
+			tmp_win->frame_bw - tmp_win->frame_bw3D;
+	tmp_win->frame_y = tmp_win->attr.y - tmp_win->title_height -
+			tmp_win->frame_bw - tmp_win->frame_bw3D;
+	if (Scr->ClientBorderWidth || !ask_user)
+	{
+		tmp_win->frame_x += tmp_win->old_bw;
+		tmp_win->frame_y += tmp_win->old_bw;
+	}
+
+	tmp_win->frame_width = tmp_win->attr.width + 2 * tmp_win->frame_bw3D;
+	tmp_win->frame_height = tmp_win->attr.height + tmp_win->title_height +
+			2 * tmp_win->frame_bw3D;
+	ConstrainSize (tmp_win, &tmp_win->frame_width, &tmp_win->frame_height);
+
+	tmp_win->virtual_frame_x = R_TO_V_X(tmp_win->frame_x);
+	tmp_win->virtual_frame_y = R_TO_V_Y(tmp_win->frame_y);
+
+#ifdef DEBUG
+	fprintf(stderr, "  position window  %d, %d  %dx%d\n",
+	    tmp_win->attr.x,
+	    tmp_win->attr.y,
+	    tmp_win->attr.width,
+	    tmp_win->attr.height);
+#endif
 }
 
 
@@ -1174,7 +1433,7 @@ TwmWindow *tmp_win;
     {
 	for (j = 0; j < MOD_SIZE; j++)
 	{
-	    if (Scr->Mouse[i][C_WINDOW][j].func != NULL)
+	    if (Scr->Mouse[i][C_WINDOW][j].func != F_NOFUNCTION)
 	    {
 	        /* twm used to do this grab on the application main window,
                  * tmp_win->w . This was not ICCCM complient and was changed.
@@ -1264,9 +1523,13 @@ static Window CreateHighlightWindow (tmp_win)
     GC gc;
     XGCValues gcv;
     unsigned long valuemask;
+	unsigned int pm_numcolors;
     int h = (Scr->TitleHeight - 2 * Scr->FramePadding);
     Window w;
 
+	/* djhjr - 4/1/98 */
+	int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
+	int width = Scr->TBInfo.titlex + tmp_win->name_width + 2 * en;
 
     /*
      * If a special highlight pixmap was given, use that.  Otherwise,
@@ -1280,10 +1543,18 @@ static Window CreateHighlightWindow (tmp_win)
      * file.  If all else fails, use the foreground color to look like a
      * solid line.
      */
+
+/*
+ * re-written to use an Image structure for XPM support
+ *
+ * djhjr - 5/17/98
+ */
+#ifdef ORIGINAL_PIXMAPS
     if (!Scr->hilitePm) {
 
 	/* djhjr - 4/20/96 */
-	if (Scr->use3Dtitles && (Scr->Monochrome != COLOR))
+	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+	if (Scr->TitleBevelWidth > 0 && (Scr->Monochrome != COLOR))
 	    Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w, 
 					(char *)black_bits, gray_width, gray_height);
 	else
@@ -1320,27 +1591,122 @@ static Window CreateHighlightWindow (tmp_win)
 	valuemask = CWBackPixel;
 	attributes.background_pixel = tmp_win->title.fore;
     }
+#else /* ORIGINAL_PIXMAPS */
+	if (!Scr->hilitePm)
+	{
+		Scr->hilitePm = (Image *)malloc(sizeof(Image));
+		if (Scr->hilitePm)
+		{
+			Scr->hilitePm->width = gray_width;
+			Scr->hilitePm->height = gray_height;
+			Scr->hilitePm->mask = None;
+
+			/* djhjr - 4/20/96 */
+			/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+			if (Scr->TitleBevelWidth > 0 && (Scr->Monochrome != COLOR))
+				Scr->hilitePm->pixmap = XCreateBitmapFromData (dpy,
+						tmp_win->title_w, (char *)black_bits,
+						Scr->hilitePm->width, Scr->hilitePm->height);
+			else
+				Scr->hilitePm->pixmap = XCreateBitmapFromData (dpy,
+						tmp_win->title_w, gray_bits,
+						Scr->hilitePm->width, Scr->hilitePm->height);
+		}
+	}
+
+	pm_numcolors  = 0;
+
+/* djhjr - 5/23/98 9/2/98 */
+#ifndef NO_XPM_SUPPORT
+/* removed this for non-transparent pixmaps - djhjr - 5/26/98
+	if (Scr->hilitePm->mask != None)
+*/
+		pm_numcolors = SetPixmapsBackground(Scr->hilitePm, Scr->Root,
+				tmp_win->title.back);
+#endif
+
+	/*
+	 * Modified to handle non-transparent pixmaps - Jason Gloudon
+	 */
+	if (Scr->hilitePm->pixmap)
+	{
+		if (pm_numcolors > 2) /* not a bitmap */
+		{
+			valuemask = CWBackPixmap;
+			attributes.background_pixmap = Scr->hilitePm->pixmap;
+		}
+		else
+		{
+			pm = XCreatePixmap (dpy, tmp_win->title_w,
+					Scr->hilitePm->width, Scr->hilitePm->height,
+					Scr->d_depth);
+
+			gcv.foreground = tmp_win->title.fore;
+			gcv.background = tmp_win->title.back;
+			gcv.graphics_exposures = False;
+
+			gc = XCreateGC (dpy, pm,
+					(GCForeground | GCBackground | GCGraphicsExposures),
+					&gcv);
+
+			if (gc)
+			{
+				/* the copy plane works on color ! */
+				XCopyPlane (dpy, Scr->hilitePm->pixmap, pm, gc, 0, 0,
+						Scr->hilitePm->width, Scr->hilitePm->height,
+						0, 0, 1);
+
+				XFreeGC(dpy, gc);
+
+				valuemask = CWBackPixmap;
+				attributes.background_pixmap = pm;
+			}
+			else
+			{
+				valuemask = CWBackPixel;
+				attributes.background_pixel = tmp_win->title.fore;
+			}
+		}
+	}
+	else
+	{
+		valuemask = CWBackPixel;
+		attributes.background_pixel = tmp_win->title.fore;
+	}
+#endif /* ORIGINAL_PIXMAPS */
 
 	/* djhjr - 4/19/96 */
-    if (Scr->use3Dtitles)
+	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+    if (Scr->TitleBevelWidth > 0)
 /* djhjr - 4/25/96
 	w = XCreateWindow (dpy, tmp_win->title_w, 0, Scr->FramePadding + 2,
 		       (unsigned int) Scr->TBInfo.width, (unsigned int) (h - 4),
 */
+/* djhjr - 4/1/98
 	w = XCreateWindow (dpy, tmp_win->title_w, 0, Scr->FramePadding + 3,
 		       (unsigned int) Scr->TBInfo.width, (unsigned int) (h - 6),
+*/
+	w = XCreateWindow (dpy, tmp_win->title_w, width, Scr->FramePadding + 4,
+		       ComputeHighlightWindowWidth(tmp_win), (unsigned int) (h - 8),
 
 		       (unsigned int) 0,
 		       Scr->d_depth, (unsigned int) CopyFromParent,
 		       Scr->d_visual, valuemask, &attributes);
-    else
 
+    else
+/* djhjr - 4/1/98
     w = XCreateWindow (dpy, tmp_win->title_w, 0, Scr->FramePadding,
 		       (unsigned int) Scr->TBInfo.width, (unsigned int) h,
+*/
+	w = XCreateWindow (dpy, tmp_win->title_w, width, Scr->FramePadding + 2,
+		       ComputeHighlightWindowWidth(tmp_win), (unsigned int) (h - 4),
+
 		       (unsigned int) 0,
 		       Scr->d_depth, (unsigned int) CopyFromParent,
 		       Scr->d_visual, valuemask, &attributes);
+
     if (pm) XFreePixmap (dpy, pm);
+
     return w;
 }
 
@@ -1369,9 +1735,17 @@ void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
 {
     tmp_win->highlightx = (Scr->TBInfo.titlex + tmp_win->name_width);
 
-	/* djhjr - 4/19/96
-    if (Scr->use3Dtitles) tmp_win->highlightx += 6;
-	*/
+	/* djhjr - 4/1/98 */
+	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+	if (Scr->TitleBevelWidth > 0)
+	{
+		int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
+		tmp_win->highlightx += en;
+
+		/* rem'd out - djhjr - 4/19/96 */
+		/* reinstated - djhjr - 4/1/98 */
+    	tmp_win->highlightx += 6;
+	}
 
     if (tmp_win->hilite_w || Scr->TBInfo.nright > 0)
       tmp_win->highlightx += Scr->TitlePadding;
@@ -1383,7 +1757,8 @@ void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
 		int rx;
 
 		/* djhjr - 3/13/97 */
-		if (Scr->use3Dtitles)
+		/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+		if (Scr->TitleBevelWidth > 0)
 		{
 			rx = (tmp_win->highlightx + Scr->TBInfo.width * 2 +
 				(Scr->TBInfo.nright > 0 ? Scr->TitlePadding : 0) +
@@ -1514,64 +1889,37 @@ static void CreateWindowTitlebarButtons (tmp_win)
 					     (Visual *) CopyFromParent,
 					     valuemask, &attributes);
 
-		/* djhjr - 9/14/96 - moved from InitTitlebarButtons()... */
-		/* djhjr - 9/21/96 */
-		if (!(tb->image = GetImage (tb->name,
-			(Scr->ButtonColorIsFrame) ? tmp_win->border : tmp_win->title)))
-		    if (!(tb->image = GetImage (TBPM_QUESTION,
-				(Scr->ButtonColorIsFrame) ? tmp_win->border : tmp_win->title)))
-				fprintf (stderr, "%s:  unable to add titlebar button \"%s\"\n",
-					ProgramName, tb->name);
-
-		tb->width  = tb->image->width;
-		tb->height = tb->image->height;
-
-		tb->dstx = (h - tb->width + 1) / 2;
-		if (tb->dstx < 0) {		/* clip to minimize copying */
-	    	tb->srcx = -(tb->dstx);
-		    tb->width = h;
-		    tb->dstx = 0;
-		} else {
-		    tb->srcx = 0;
-		}
-		tb->dsty = (h - tb->height + 1) / 2;
-		if (tb->dsty < 0) {
-	    	tb->srcy = -(tb->dsty);
-		    tb->height = h;
-		    tb->dsty = 0;
-		} else {
-		    tb->srcy = 0;
-		}
-		/* ...end of moved */
-
-#ifndef NO_XPM_SUPPORT
-		/* djhjr - 3/21/98 */
-		if (tb->image != NULL)
-			if (tb->image->mask != None)
-				XShapeCombineMask(dpy, tbw->window, ShapeBounding, 0, 0,
-						tb->image->mask, ShapeSet);
-#endif
-
 		tbw->info = tb;
 	    } /* end for(...) */
 	}
     }
 
+/* djhjr - 4/5/98
     tmp_win->hilite_w = (tmp_win->titlehighlight
 			 ? CreateHighlightWindow (tmp_win) : None);
 
     XMapSubwindows(dpy, tmp_win->title_w);
 
-/* djhjr - 4/25/96
+* djhjr - 4/25/96
     if (tmp_win->hilite_w)
       XUnmapWindow(dpy, tmp_win->hilite_w);
-*/
+*
 	PaintTitleHighlight(tmp_win, off);
+*/
+	tmp_win->hilite_w =
+		(tmp_win->titlehighlight && !Scr->SunkFocusWindowTitle) ?
+		CreateHighlightWindow(tmp_win) : None;
 
     return;
 }
 
 
+/*
+ * re-written to use an Image structure for XPM support
+ *
+ * djhjr - 5/17/98
+ */
+#ifdef ORIGINAL_PIXMAPS
 void SetHighlightPixmap (filename)
     char *filename;
 {
@@ -1586,6 +1934,13 @@ void SetHighlightPixmap (filename)
 	Scr->hilite_pm_height = JunkHeight;
     }
 }
+#else /* ORIGINAL_PIXMAPS */
+void SetHighlightPixmap (filename)
+    char *filename;
+{
+	if (!Scr->hilitePm) Scr->hilitePm = SetPixmapsPixmap(filename);
+}
+#endif /* ORIGINAL_PIXMAPS */
 
 
 void FetchWmProtocols (tmp)

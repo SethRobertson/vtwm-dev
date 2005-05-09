@@ -44,6 +44,13 @@ extern int (*twmInputFunc)();
 extern void twmUnput();
 extern void TwmOutput();
 
+/*
+ * This is private to VTWM, to indicate no or invalid functions.
+ *
+ * djhjr - 4/20/98
+ */
+#define F_NOFUNCTION	0
+
 #define F_NOP			0
 #define F_BEEP			1
 #define F_RESTART		2
@@ -133,6 +140,12 @@ extern void TwmOutput();
 
 /* djhjr - 4/30/96 */
 #define F_SEPARATOR		115
+
+/* djhjr - 4/20/98 */
+#define F_NAMEDOOR		116
+
+/* djhjr - 7/15/98 */
+#define F_STARTWM		117
 
 #define D_NORTH			1
 #define D_SOUTH			2

@@ -35,12 +35,13 @@
  *
  ***********************************************************************/
 
-#ifndef NO_PUTENV
+#ifndef NEED_PUTENV_F
 #include <stdlib.h>
 #endif
 #include <stdio.h>
+#include <string.h>
 #include <signal.h>
-#ifdef HAVE_PROCESS_H
+#ifdef NEED_PROCESS_H
 #include <process.h>
 #else
 #include <unistd.h>
@@ -62,6 +63,9 @@
 #include <X11/Xmu/CharSet.h>
 #include "version.h"
 
+#define strdup Strdup /* avoid conflict with system header files */
+extern char *strdup(char *);
+
 extern void IconUp(), IconDown(), CreateIconWindow();
 
 extern char *Action;
@@ -70,7 +74,7 @@ extern TwmWindow *ButtonWindow, *Tmp_win;
 extern XEvent Event, ButtonEvent;
 extern char *InitFile;
 
-int RootFunction = NULL;
+int RootFunction = F_NOFUNCTION;
 MenuRoot *ActiveMenu = NULL;		/* the active menu */
 MenuItem *ActiveItem = NULL;		/* the active menu item */
 int MoveFunction;			/* either F_MOVE or F_FORCEMOVE */
@@ -85,6 +89,7 @@ void SendDeleteWindowMessage();
 void SendSaveYourselfMessage();
 void WarpClass();
 void WarpToScreen();
+int NeedToDefer();
 
 int ConstMove = FALSE;		/* constrained move variables */
 int ConstMoveDir;
@@ -94,6 +99,9 @@ int ConstMoveXL;
 int ConstMoveXR;
 int ConstMoveYT;
 int ConstMoveYB;
+
+/* for comparison against MoveDelta - djhjr - 9/5/98 */
+static int MenuOrigX, MenuOrigY;
 
 /* Globals used to keep track of whether the mouse has moved during
    a resize function. */
@@ -115,16 +123,32 @@ void Paint3DEntry();
 static void Identify();
 void PaintNormalEntry();
 
-#define MAX(x,y) ((x)>(y)?(x):(y))
+/* djhjr - 5/13/98 */
+static TwmWindow *next_by_class();
+static int warp_if_warpunmapped();
+
+/* djhjr - 7/31/98 */
+static void setup_restart();
+void RestartVtwm();
+
+/* djhjr */
+#undef MAX
 /* DSE */
+#define MAX(x,y) ((x)>(y)?(x):(y))
+
 
 #define SHADOWWIDTH 5			/* in pixels */
 
 #define EDGE_OFFSET 5 /* DSE */
 
+/* djhjr - 5/5/98
 #define PULLDOWNMENU_OFFSET ((Scr->RightHandSidePulldownMenus)?\
 	(ActiveMenu->width - EDGE_OFFSET * 2 - Scr->pullW):\
-	(ActiveMenu->width >> 1)) /* DSE */
+	(ActiveMenu->width >> 1)) * DSE *
+*/
+#define PULLDOWNMENU_OFFSET ((Scr->RightHandSidePulldownMenus)?\
+	(JunkWidth - EDGE_OFFSET * 2 - Scr->pullW):\
+	(JunkWidth >> 1))
 
 
 
@@ -146,12 +170,12 @@ InitMenus()
 	for (j = 0; j < NUM_CONTEXTS; j++)
 	    for (k = 0; k < MOD_SIZE; k++)
 	    {
-		Scr->Mouse[i][j][k].func = NULL;
+		Scr->Mouse[i][j][k].func = F_NOFUNCTION;
 		Scr->Mouse[i][j][k].item = NULL;
 	    }
 
-    Scr->DefaultFunction.func = NULL;
-    Scr->WindowFunction.func = NULL;
+    Scr->DefaultFunction.func = F_NOFUNCTION;
+    Scr->WindowFunction.func = F_NOFUNCTION;
 
     if (FirstScreen)
     {
@@ -326,7 +350,8 @@ void InitTitlebarButtons ()
 			 2 * (Scr->FramePadding + Scr->ButtonIndent));
 
 	/* djhjr - 4/19/96 */
-    if (Scr->use3Dtitles) 
+	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+    if (Scr->TitleBevelWidth > 0) 
 	Scr->TBInfo.pad = ((Scr->TitlePadding > 1)
 		       ? ((Scr->TitlePadding + 1) / 2) : 0);
     else
@@ -347,7 +372,8 @@ void InitTitlebarButtons ()
 		/* insert extra buttons */
 
 	/* djhjr - 4/19/96 */
-	if (Scr->use3Dtitles) {
+	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+	if (Scr->TitleBevelWidth > 0) {
 	    if (!CreateTitleButton (TBPM_3DDOT, F_ICONIFY, "", (MenuRoot *) NULL,
 				False, False))
 	        fprintf (stderr, "%s:  unable to add iconify button\n", ProgramName);
@@ -372,16 +398,17 @@ void InitTitlebarButtons ()
 
     ComputeCommonTitleOffsets ();
 
-/* djhjr - 9/14/96 - moved to CreateWindowTitlebarButtons()...
-    *
-    * load in images and do appropriate centering
-    *
+/* djhjr - 6/15/98 - moved it back to here... */
+/* djhjr - 9/14/96 - moved to CreateWindowTitlebarButtons()... */
+	/*
+	 * load in images and do appropriate centering
+	 */
     {
     TitleButton *tb;
 
     for (tb = Scr->TBInfo.head; tb; tb = tb->next) {
 
-* djhjr - 4/19/96
+/* djhjr - 4/19/96
 	tb->bitmap = FindBitmap (tb->name, &tb->width, &tb->height);
 	if (!tb->bitmap) {
 	    tb->bitmap = FindBitmap (TBPM_QUESTION, &tb->width, &tb->height);
@@ -391,7 +418,8 @@ void InitTitlebarButtons ()
 			 ProgramName, tb->name);
 	    }
 	}
-*
+*/
+/* djhjr - 9/21/96
 	tb->image = GetImage (tb->name, Scr->TitleC);
 	if (!tb->image) {
 	    tb->image = GetImage (TBPM_QUESTION, Scr->TitleC);
@@ -400,29 +428,37 @@ void InitTitlebarButtons ()
 			 ProgramName, tb->name);
 	    }
 	}
+*/
+	if (!(tb->image = GetImage (tb->name,
+		(Scr->ButtonColorIsFrame) ? Scr->BorderColorC : Scr->TitleC)))
+		if (!(tb->image = GetImage (TBPM_QUESTION,
+			(Scr->ButtonColorIsFrame) ? Scr->BorderColorC : Scr->TitleC)))
+			fprintf (stderr, "%s:  unable to add titlebar button \"%s\"\n",
+				ProgramName, tb->name);
+
 	tb->width  = tb->image->width;
 	tb->height = tb->image->height;
 
 	tb->dstx = (h - tb->width + 1) / 2;
-	if (tb->dstx < 0) {		* clip to minimize copying *
-	    tb->srcx = -(tb->dstx);
-	    tb->width = h;
-	    tb->dstx = 0;
+	if (tb->dstx < 0) {		/* clip to minimize copying */
+		tb->srcx = -(tb->dstx);
+		tb->width = h;
+		tb->dstx = 0;
 	} else {
-	    tb->srcx = 0;
+		tb->srcx = 0;
 	}
 	tb->dsty = (h - tb->height + 1) / 2;
 	if (tb->dsty < 0) {
-	    tb->srcy = -(tb->dsty);
-	    tb->height = h;
-	    tb->dsty = 0;
+		tb->srcy = -(tb->dsty);
+		tb->height = h;
+		tb->dsty = 0;
 	} else {
-	    tb->srcy = 0;
+		tb->srcy = 0;
 	}
-    } * for(...) *
-    }
-... end of moved */
 
+    } /* for(...) */
+    }
+/* ...end of moved */
 }
 
 
@@ -432,7 +468,8 @@ MenuRoot *mr;
 MenuItem *mi;
 int exposure;
 {
-    if (Scr->use3Dmenus)
+	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+    if (Scr->MenuBevelWidth > 0)
 	Paint3DEntry (mr, mi, exposure);
 
 	/* djhjr - 4/22/96 */
@@ -450,7 +487,10 @@ int exposure;
     int text_y;
     GC gc;
 
+/* djhjr - 4/29/98
     y_offset = mi->item_num * Scr->EntryHeight + 2;
+*/
+    y_offset = mi->item_num * Scr->EntryHeight + Scr->MenuBevelWidth;
 
 /* djhjr - 9/25/96
     text_y = y_offset + Scr->MenuFont.y + 2;
@@ -468,12 +508,19 @@ int exposure;
 			Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight, 1, 
 				mi->highlight, off, True, False);
 */
+/* djhjr - 4/29/98
 			Draw3DBorder (mr->w, 2, y_offset + 1, mr->width - 4, Scr->EntryHeight - 1, 1,
+				mi->highlight, off, True, False);
+*/
+			Draw3DBorder (mr->w, Scr->MenuBevelWidth, y_offset + 1, mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight - 1, 1,
 				mi->highlight, off, True, False);
 
 			FBF(mi->highlight.fore, mi->highlight.back, Scr->MenuFont.font->fid);
 
+/* djhjr - 4/29/98
 			XDrawImageString(dpy, mr->w, Scr->NormalGC, mi->x + 2, text_y, mi->item, mi->strlen);
+*/
+			XDrawImageString(dpy, mr->w, Scr->NormalGC, mi->x + Scr->MenuBevelWidth, text_y, mi->item, mi->strlen);
 
 			gc = Scr->NormalGC;
 		}
@@ -487,8 +534,12 @@ int exposure;
 				XFillRectangle (dpy, mr->w, Scr->NormalGC, 2, y_offset,
 					mr->width - 4, Scr->EntryHeight);
 */
+/* djhjr - 4/29/98
 				XFillRectangle (dpy, mr->w, Scr->NormalGC, 2, y_offset + 1,
 					mr->width - 4, Scr->EntryHeight - 1);
+*/
+				XFillRectangle (dpy, mr->w, Scr->NormalGC, Scr->MenuBevelWidth, y_offset + 1,
+					mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight - 1);
 
 				FBF (mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
 
@@ -499,7 +550,10 @@ int exposure;
 				gc = Scr->MenuGC;
 			}
 
+/* djhjr - 4/29/98
 			XDrawImageString (dpy, mr->w, gc, mi->x + 2, text_y, mi->item, mi->strlen);
+*/
+			XDrawImageString (dpy, mr->w, gc, mi->x + Scr->MenuBevelWidth, text_y, mi->item, mi->strlen);
 
 			if (mi->separated)
 			{
@@ -512,8 +566,12 @@ int exposure;
 					XDrawLine (dpy, mr->w, Scr->NormalGC, 1, y_offset + Scr->MenuFont.y + 5,
 						mr->width - 2, y_offset + Scr->MenuFont.y + 5);
 */
+/* djhjr - 4/29/98
 					XDrawLine (dpy, mr->w, Scr->NormalGC, 1, y_offset + Scr->EntryHeight - 1,
 						mr->width - 2, y_offset + Scr->EntryHeight - 1);
+*/
+					XDrawLine (dpy, mr->w, Scr->NormalGC, Scr->MenuBevelWidth + 1, y_offset + Scr->EntryHeight - 1,
+						mr->width - Scr->MenuBevelWidth - 3, y_offset + Scr->EntryHeight - 1);
 				}
 
 				FB (Scr->MenuC.shadc, Scr->MenuC.shadd);
@@ -522,8 +580,12 @@ int exposure;
 				XDrawLine (dpy, mr->w, Scr->NormalGC, 2, y_offset + Scr->MenuFont.y + 6,
 					mr->width - 3, y_offset + Scr->MenuFont.y + 6);
 */
+/* djhjr - 4/29/98
 				XDrawLine (dpy, mr->w, Scr->NormalGC, 2, y_offset + Scr->EntryHeight,
 					mr->width - 3, y_offset + Scr->EntryHeight);
+*/
+				XDrawLine (dpy, mr->w, Scr->NormalGC, Scr->MenuBevelWidth + 2, y_offset + Scr->EntryHeight,
+					mr->width - Scr->MenuBevelWidth - 2, y_offset + Scr->EntryHeight);
 			}
 		}
 
@@ -535,7 +597,11 @@ int exposure;
 				Scr->pullPm = Create3DMenuIcon (Scr->MenuFont.height, &Scr->pullW,
 					&Scr->pullH, Scr->MenuC);
 			}
+
+/* djhjr - 4/29/98
 			x = mr->width - Scr->pullW - 5;
+*/
+			x = mr->width - Scr->pullW - Scr->MenuBevelWidth - EDGE_OFFSET;
 
 /* djhjr - 9/25/96
 			y = y_offset + ((Scr->MenuFont.height - Scr->pullH) / 2) + 2;
@@ -552,7 +618,11 @@ int exposure;
 		Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight, 1, 
 			mi->normal, off, True, False);
 */
+/* djhjr - 4/29/98
 		Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight + 1, 1, 
+			mi->normal, off, True, False);
+*/
+		Draw3DBorder (mr->w, Scr->MenuBevelWidth, y_offset, mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight + 1, 1, 
 			mi->normal, off, True, False);
 
 /* djhjr - 4/29/96
@@ -641,7 +711,7 @@ int exposure;
 				Scr->pullPm = CreateMenuIcon (Scr->MenuFont.height,
 					&Scr->pullW, &Scr->pullH);
 			}
-			x = mr->width - Scr->pullW - 5;
+			x = mr->width - Scr->pullW - EDGE_OFFSET;
 
 /* djhjr - 9/26/96
 			y = y_offset + ((Scr->MenuFont.height - Scr->pullH) / 2);
@@ -690,8 +760,12 @@ XEvent *e;
     MenuItem *mi;
 
 	/* djhjr - 4/22/96 */
-    if (Scr->use3Dmenus) {
+	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+    if (Scr->MenuBevelWidth > 0) {
+/* djhjr - 4/29/98
 	Draw3DBorder (mr->w, 0, 0, mr->width, mr->height, 2, Scr->MenuC, off, False, False);
+*/
+	Draw3DBorder (mr->w, 0, 0, mr->width, mr->height, Scr->MenuBevelWidth, Scr->MenuC, off, False, False);
     }
 
     for (mi = mr->first; mi != NULL; mi = mi->next)
@@ -713,9 +787,8 @@ XEvent *e;
 
 
 static Bool fromMenu;
-extern int GlobalFirstTime; /* for StayUpMenus -- PF */
 
-#ifdef USE_VTWM53 /* start of vtwm-5.3 */
+extern int GlobalFirstTime; /* for StayUpMenus -- PF */
 
 void UpdateMenu()
 {
@@ -729,295 +802,197 @@ void UpdateMenu()
 
 	while (TRUE)
 	{	/* block until there is an event */
+#ifdef NEVER /* see the '#else' - Steve Ratcliffe */
 #if 0
-		if (!menuFromFrameOrWindowOrTitlebar
-		&& ! Scr->StayUpMenus) {
-	  XMaskEvent(dpy,
-			 ButtonPressMask | ButtonReleaseMask |
-			 EnterWindowMask | ExposureMask |
-			 VisibilityChangeMask | LeaveWindowMask |
-			 ButtonMotionMask, &Event);
-	}
-	if (Event.type == MotionNotify) {
-		/* discard any extra motion events before a release */
-		while(XCheckMaskEvent(dpy,
-		ButtonMotionMask | ButtonReleaseMask, &Event))
-		if (Event.type == ButtonRelease)
-			break;
-	}
+		if (!menuFromFrameOrWindowOrTitlebar && ! Scr->StayUpMenus) {
+			XMaskEvent(dpy,
+				ButtonPressMask | ButtonReleaseMask |
+				EnterWindowMask | ExposureMask |
+				VisibilityChangeMask | LeaveWindowMask |
+				ButtonMotionMask, &Event);
+		}
+		if (Event.type == MotionNotify) {
+			/* discard any extra motion events before a release */
+			while(XCheckMaskEvent(dpy,
+					ButtonMotionMask | ButtonReleaseMask, &Event))
+				if (Event.type == ButtonRelease)
+					break;
+		}
 #else
-	while (XCheckMaskEvent(dpy, ButtonPressMask | ButtonReleaseMask |
-		EnterWindowMask | ExposureMask, &Event))
-	{	/* taken from tvtwm */
-#endif
-	if (!DispatchEvent ()) continue;
+		while (XCheckMaskEvent(dpy, ButtonPressMask | ButtonReleaseMask |
+				EnterWindowMask | ExposureMask, &Event))
+		{	/* taken from tvtwm */
+#endif /* 0 */
+#else
+		/* Submitted by Steve Ratcliffe */
+		XNextEvent(dpy, &Event);
+#endif /* NEVER */
 
-	if (Event.type == ButtonRelease )
-	{	if (Scr->StayUpMenus)
-		{
-			if (firstTime == True)
-			{	/* it was the first release of the button */
-				firstTime = False;
+		if (!DispatchEvent ()) continue;
+
+		if (Event.type == ButtonRelease )
+		{	if (Scr->StayUpMenus)
+			{
+				if (firstTime == True)
+				{	/* it was the first release of the button */
+					firstTime = False;
+				}
+				else
+				{	/* thats the second we need to return now */
+					firstTime = True;
+					menuFromFrameOrWindowOrTitlebar = FALSE;
+					fromMenu = FALSE;
+					return;
+				}
 			}
 			else
-			{	/* thats the second we need to return now */
-				firstTime = True;
+			{	/* not stay-up */
 				menuFromFrameOrWindowOrTitlebar = FALSE;
 				fromMenu = FALSE;
 				return;
 			}
 		}
-		else
-		{	/* not stay-up */
-			menuFromFrameOrWindowOrTitlebar = FALSE;
-			fromMenu = FALSE;
-			return;
+
+		if (Cancel) return;
+
+#ifdef NEVER /* see the above - Steve Ratcliffe */
 		}
-	}
-	if ( Cancel) return;
-
-	}
-	/* if (Event.type != MotionNotify) */
-		/* continue; */
-	/* if we haven't received the enter notify yet, wait */
-	if (!ActiveMenu || !ActiveMenu->entered)
-		continue;
-
-	done = FALSE;
-	XQueryPointer( dpy, ActiveMenu->w, &JunkRoot, &JunkChild,
-		&x_root, &y_root, &x, &y, &JunkMask);
-
-#if 0
-	/* if we haven't recieved the enter notify yet, wait */
-	if (ActiveMenu && !ActiveMenu->entered)
-		continue;
 #endif
 
-	XFindContext(dpy, ActiveMenu->w, ScreenContext, (caddr_t *)&Scr);
+		/* re-instated - Steve Ratcliffe */
+		if (Event.type != MotionNotify)
+			continue;
 
-	if (x < 0 || y < 0 ||
-		x >= ActiveMenu->width || y >= ActiveMenu->height)
-	{
-		if (ActiveItem && ActiveItem->func != F_TITLE)
+		/* if we haven't received the enter notify yet, wait */
+		if (!ActiveMenu || !ActiveMenu->entered)
+			continue;
+
+		done = FALSE;
+		XQueryPointer( dpy, ActiveMenu->w, &JunkRoot, &JunkChild,
+				&x_root, &y_root, &x, &y, &JunkMask);
+
+		/* djhjr - 9/5/98 */
+		if (!ActiveItem)
+			if (abs(x_root - MenuOrigX) < Scr->MoveDelta &&
+					abs(y_root - MenuOrigY) < Scr->MoveDelta)
+				continue;
+
+#if 0
+		/* if we haven't recieved the enter notify yet, wait */
+		if (ActiveMenu && !ActiveMenu->entered)
+			continue;
+#endif
+
+		XFindContext(dpy, ActiveMenu->w, ScreenContext, (caddr_t *)&Scr);
+
+		JunkWidth = ActiveMenu->width;
+		JunkHeight = ActiveMenu->height;
+		/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+		if (Scr->MenuBevelWidth > 0)
 		{
-		ActiveItem->state = 0;
-		PaintEntry(ActiveMenu, ActiveItem, False);
+			x -= Scr->MenuBevelWidth;
+			y -= Scr->MenuBevelWidth;
+
+			JunkWidth -= 2 * Scr->MenuBevelWidth;
+			JunkHeight -= Scr->MenuBevelWidth;
 		}
-		ActiveItem = NULL;
-		continue;
-	}
 
-	/* look for the entry that the mouse is in */
-	entry = y / Scr->EntryHeight;
-	for (i = 0, mi = ActiveMenu->first; mi != NULL; i++, mi=mi->next)
-	{
-		if (i == entry)
-		break;
-	}
+		if (x < 0 || y < 0 || x >= JunkWidth || y >= JunkHeight)
+		{
+			if (ActiveItem && ActiveItem->func != F_TITLE)
+			{
+				ActiveItem->state = 0;
+				PaintEntry(ActiveMenu, ActiveItem, False);
+			}
+			ActiveItem = NULL;
+			continue;
+		}
 
-	/* if there is an active item, we might have to turn it off */
-	if (ActiveItem)
-	{
-		/* is the active item the one we are on ? */
-		if (ActiveItem->item_num == entry && ActiveItem->state)
-		done = TRUE;
+		/* look for the entry that the mouse is in */
+		entry = y / Scr->EntryHeight;
+		for (i = 0, mi = ActiveMenu->first; mi != NULL; i++, mi=mi->next)
+		{
+			if (i == entry)
+				break;
+		}
 
-		/* if we weren't on the active entry, let's turn the old
-		 * active one off
+		/* if there is an active item, we might have to turn it off */
+		if (ActiveItem)
+		{
+			/* is the active item the one we are on ? */
+			if (ActiveItem->item_num == entry && ActiveItem->state)
+				done = TRUE;
+
+			/* if we weren't on the active entry, let's turn the old
+			 * active one off
+			 */
+			if (!done && ActiveItem->func != F_TITLE)
+			{
+				ActiveItem->state = 0;
+				PaintEntry(ActiveMenu, ActiveItem, False);
+			}
+		}
+
+		/* if we weren't on the active item, change the active item and turn
+		 * it on
 		 */
-		if (!done && ActiveItem->func != F_TITLE)
+		if (!done)
 		{
-		ActiveItem->state = 0;
-		PaintEntry(ActiveMenu, ActiveItem, False);
-		}
-	}
+			ActiveItem = mi;
 
-	/* if we weren't on the active item, change the active item and turn
-	 * it on
-	 */
-	if (!done)
-	{
-		ActiveItem = mi;
-		if (ActiveItem->func != F_TITLE && !ActiveItem->state)
-		{
-		ActiveItem->state = 1;
-		PaintEntry(ActiveMenu, ActiveItem, False);
+/* djhjr - 5/20/98
+			if (ActiveItem->func != F_TITLE && !ActiveItem->state)
+*/
+			if (ActiveItem && ActiveItem->func != F_TITLE && !ActiveItem->state)
 
-		if (Scr->StayUpOptionalMenus)            /* PF */
-			GlobalFirstTime = firstTime = False; /* PF */
+			{
+				ActiveItem->state = 1;
+				PaintEntry(ActiveMenu, ActiveItem, False);
+
+				if (Scr->StayUpOptionalMenus)            /* PF */
+					GlobalFirstTime = firstTime = False; /* PF */
 		
-		}
-	}
-
-	/* now check to see if we were over the arrow of a pull right entry */
-	if (ActiveItem->func == F_MENU &&
-/*		((ActiveMenu->width - x) < (ActiveMenu->width >> 1))) */
-		( x > PULLDOWNMENU_OFFSET )) /* DSE */
-	{
-		MenuRoot *save = ActiveMenu;
-		int savex = MenuOrigins[MenuDepth - 1].x;
-		int savey = MenuOrigins[MenuDepth - 1].y;
-
-		if (MenuDepth < MAXMENUDEPTH) {
-		PopUpMenu (ActiveItem->sub,
-			   (savex + PULLDOWNMENU_OFFSET), /* DSE */
-			   (savey + ActiveItem->item_num * Scr->EntryHeight)
-			   /*(savey + ActiveItem->item_num * Scr->EntryHeight +
-				(Scr->EntryHeight >> 1))*/, False);
-		} else if (!badItem) {
-		XBell (dpy, 0);
-		badItem = ActiveItem;
+			}
 		}
 
-		/* if the menu did get popped up, unhighlight the active item */
-		if (save != ActiveMenu && ActiveItem->state)
+		/* now check to see if we were over the arrow of a pull right entry */
+
+/* djhjr - 5/20/98
+		if (ActiveItem->func == F_MENU &&
+*/
+		if (ActiveItem && ActiveItem->func == F_MENU && 
+
+/*			((ActiveMenu->width - x) < (ActiveMenu->width >> 1))) */
+			( x > PULLDOWNMENU_OFFSET )) /* DSE */
 		{
-		ActiveItem->state = 0;
-		PaintEntry(save, ActiveItem, False);
-		ActiveItem = NULL;
+			MenuRoot *save = ActiveMenu;
+			int savex = MenuOrigins[MenuDepth - 1].x;
+			int savey = MenuOrigins[MenuDepth - 1].y;
+
+			if (MenuDepth < MAXMENUDEPTH) {
+				PopUpMenu (ActiveItem->sub,
+				   (savex + PULLDOWNMENU_OFFSET), /* DSE */
+				   (savey + ActiveItem->item_num * Scr->EntryHeight)
+				   /*(savey + ActiveItem->item_num * Scr->EntryHeight +
+					(Scr->EntryHeight >> 1))*/, False);
+			} else if (!badItem) {
+				XBell (dpy, 0);
+				badItem = ActiveItem;
+			}
+
+			/* if the menu did get popped up, unhighlight the active item */
+			if (save != ActiveMenu && ActiveItem->state)
+			{
+				ActiveItem->state = 0;
+				PaintEntry(save, ActiveItem, False);
+				ActiveItem = NULL;
+			}
 		}
-	}
-	if (badItem != ActiveItem) badItem = NULL;
-	XFlush(dpy);
-	}
 
+		if (badItem != ActiveItem) badItem = NULL;
+		XFlush(dpy);
+	}
 }
-
-#else /* end of vtwm-5.3, start of ctwm-3.1 */
-
-void UpdateMenu()
-{
-    MenuItem *mi;
-    int i, x, y, x_root, y_root, entry;
-    int done;
-    MenuItem *badItem = NULL;
-
-    fromMenu = TRUE;
-
-    while (TRUE)
-    {
-	/* block until there is an event */
-        if (!menuFromFrameOrWindowOrTitlebar) {
-	  XMaskEvent(dpy,
-		     ButtonPressMask | ButtonReleaseMask |
-		     EnterWindowMask | ExposureMask |
-		     VisibilityChangeMask | LeaveWindowMask |
-		     ButtonMotionMask, &Event);
-	}
-	if (Event.type == MotionNotify) {
-	    /* discard any extra motion events before a release */
-	    while(XCheckMaskEvent(dpy,
-		ButtonMotionMask | ButtonReleaseMask, &Event))
-		if (Event.type == ButtonRelease)
-		    break;
-	}
-
-	if (!DispatchEvent ())
-	    continue;
-
-	if ((! ActiveMenu) || Cancel) {
-	  menuFromFrameOrWindowOrTitlebar = FALSE;
-	  fromMenu = FALSE;
-	  return;
-	}
-
-	if (Event.type != MotionNotify)
-	    continue;
-
-	done = FALSE;
-	XQueryPointer( dpy, ActiveMenu->w, &JunkRoot, &JunkChild,
-	    &x_root, &y_root, &x, &y, &JunkMask);
-
-	/* if we haven't recieved the enter notify yet, wait */
-	if (ActiveMenu && !ActiveMenu->entered)
-	    continue;
-
-	XFindContext(dpy, ActiveMenu->w, ScreenContext, (caddr_t *)&Scr);
-
-	if (x < 0 || y < 0 ||
-	    x >= ActiveMenu->width || y >= ActiveMenu->height)
-	{
-	    if (ActiveItem && ActiveItem->func != F_TITLE)
-	    {
-		ActiveItem->state = 0;
-		PaintEntry(ActiveMenu, ActiveItem, False);
-	    }
-	    ActiveItem = NULL;
-	    continue;
-	}
-
-	/* look for the entry that the mouse is in */
-	entry = y / Scr->EntryHeight;
-	for (i = 0, mi = ActiveMenu->first; mi != NULL; i++, mi=mi->next)
-	{
-	    if (i == entry)
-		break;
-	}
-
-	/* if there is an active item, we might have to turn it off */
-	if (ActiveItem)
-	{
-	    /* is the active item the one we are on ? */
-	    if (ActiveItem->item_num == entry && ActiveItem->state)
-		done = TRUE;
-
-	    /* if we weren't on the active entry, let's turn the old
-	     * active one off 
-	     */
-	    if (!done && ActiveItem->func != F_TITLE)
-	    {
-		ActiveItem->state = 0;
-		PaintEntry(ActiveMenu, ActiveItem, False);
-	    }
-	}
-
-	/* if we weren't on the active item, change the active item and turn
-	 * it on 
-	 */
-	if (!done)
-	{
-	    ActiveItem = mi;
-	    if (ActiveItem && ActiveItem->func != F_TITLE && !ActiveItem->state)
-	    {
-		ActiveItem->state = 1;
-		PaintEntry(ActiveMenu, ActiveItem, False);
-	    }
-	}
-
-	/* now check to see if we were over the arrow of a pull right entry */
-	if (ActiveItem && ActiveItem->func == F_MENU && 
-	   ((ActiveMenu->width - x) < (ActiveMenu->width / 3)))
-	{
-	    MenuRoot *save = ActiveMenu;
-	    int savex = MenuOrigins[MenuDepth - 1].x; 
-	    int savey = MenuOrigins[MenuDepth - 1].y;
-
-	    if (MenuDepth < MAXMENUDEPTH) {
-		PopUpMenu (ActiveItem->sub, 
-			   (savex + (((2 * ActiveMenu->width) / 3) - 1)), 
-			   (savey + ActiveItem->item_num * Scr->EntryHeight)
-			   /*(savey + ActiveItem->item_num * Scr->EntryHeight +
-			    (Scr->EntryHeight >> 1))*/, False);
-	    } else if (!badItem) {
-		XBell (dpy, 0);
-		badItem = ActiveItem;
-	    }
-
-	    /* if the menu did get popped up, unhighlight the active item */
-	    if (save != ActiveMenu && ActiveItem->state)
-	    {
-		ActiveItem->state = 0;
-		PaintEntry(save, ActiveItem, False);
-		ActiveItem = NULL;
-	    }
-	}
-	if (badItem != ActiveItem) badItem = NULL;
-	XFlush(dpy);
-    }
-
-}
-
-#endif /* end of ctwm-3.1 */
 
 
 
@@ -1082,7 +1057,10 @@ NewMenuRoot(name)
 	Scr->LastMenu->next = NULL;
 	}
 
+/* djhjr - 5/4/98
 	if (strcmp(name, TWM_WINDOWS) == 0)
+*/
+	if (strcmp(name, TWM_WINDOWS) == 0 || strcmp(name, VTWM_WINDOWS) == 0)
 	Scr->Windows = tmp;
 
 	return (tmp);
@@ -1181,7 +1159,8 @@ AddToMenu(menu, item, action, sub, func, fore, back)
 	GetColor(COLOR, &tmp->normal.back, back);
 
 	/* djhjr - 4/22/96 */
-	if (Scr->use3Dmenus && !Scr->BeNiceToColormap) GetShadeColors (&tmp->normal);
+	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+	if (Scr->MenuBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&tmp->normal);
 
 	Scr->FirstTime = save;
 	tmp->user_colors = TRUE;
@@ -1245,6 +1224,7 @@ MenuRoot *mr;
 		titleFont= &(Scr->MenuFont);
 		}
 
+
 	/* lets first size the window accordingly */
 	if (mr->mapped == NEVER_MAPPED)
 	{
@@ -1253,8 +1233,12 @@ MenuRoot *mr;
 		mr->width += 16 + 2 * EDGE_OFFSET; /* DSE */
 	}
 
-	/* djhjr - 9/18/96 */
+/* djhjr - 4/29/98
+	* djhjr - 9/18/96 *
 	if (Scr->use3Dmenus) mr->width += 4;
+*/
+	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+	if (Scr->MenuBevelWidth > 0) mr->width += 2 * Scr->MenuBevelWidth;
 
 	width = mr->width + 2 * EDGE_OFFSET; /* DSE */
 
@@ -1271,10 +1255,19 @@ MenuRoot *mr;
 	}
 	mr->height = mr->items * Scr->EntryHeight;
 
-	/* djhjr - 4/22/96 */
+/* djhjr - 4/29/98
+	* djhjr - 4/22/96 *
 	if (Scr->use3Dmenus) mr->height += 4;
+*/
+	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+	if (Scr->MenuBevelWidth > 0) mr->height += 2 * Scr->MenuBevelWidth;
 
-	mr->width += 10;
+	/* added this 'if () ... else' - djhjr - 4/29/98 */
+	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+	if (Scr->MenuBevelWidth > 0)
+		mr->width += 2 * Scr->MenuBevelWidth + 6;
+	else
+		mr->width += 10;
 
 	if (Scr->Shadow)
 	{
@@ -1313,7 +1306,8 @@ MenuRoot *mr;
 	}
 
 	/* djhjr - 4/22/96 */
-	borderwidth = Scr->use3Dmenus ? 0 : 1;
+	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+	borderwidth = (Scr->MenuBevelWidth > 0) ? 0 : 1;
 
 	mr->w = XCreateWindow (dpy, Scr->Root, 0, 0, (unsigned int) mr->width,
 
@@ -1333,7 +1327,8 @@ MenuRoot *mr;
 	mr->mapped = UNMAPPED;
 	}
 
-    if (Scr->use3Dmenus && (Scr->Monochrome == COLOR) &&  (mr->highlight.back == UNUSED_PIXEL)) {
+	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+    if (Scr->MenuBevelWidth > 0 && (Scr->Monochrome == COLOR) &&  (mr->highlight.back == UNUSED_PIXEL)) {
 	XColor xcol;
 	char colname [32];
 	short save;
@@ -1349,7 +1344,8 @@ MenuRoot *mr;
     }
 
 	/* djhjr - 4/22/96 */
-    if (Scr->use3Dmenus && (Scr->Monochrome == COLOR) && (mr->highlight.fore == UNUSED_PIXEL)) {
+	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+    if (Scr->MenuBevelWidth > 0 && (Scr->Monochrome == COLOR) && (mr->highlight.fore == UNUSED_PIXEL)) {
 	XColor xcol;
 	char colname [32];
 	short save;
@@ -1362,7 +1358,8 @@ MenuRoot *mr;
 	GetColor (Scr->Monochrome, &mr->highlight.fore, colname);
 	Scr->FirstTime = save;
     }
-    if (Scr->use3Dmenus && !Scr->BeNiceToColormap) GetShadeColors (&mr->highlight);
+	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+    if (Scr->MenuBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&mr->highlight);
 
 	/* get the default colors into the menus */
 	for (tmp = mr->first; tmp != NULL; tmp = tmp->next)
@@ -1409,7 +1406,8 @@ MenuRoot *mr;
 	    tmp->highlight.fore = tmp->normal.back;
 	    tmp->highlight.back = tmp->normal.fore;
 	}
-	if (Scr->use3Dmenus && !Scr->BeNiceToColormap) {
+	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+	if (Scr->MenuBevelWidth > 0 && !Scr->BeNiceToColormap) {
 	    if (tmp->func != F_TITLE)
 		GetShadeColors (&tmp->highlight);
 	    else
@@ -1544,9 +1542,13 @@ Bool PopUpMenu (menu, x, y, center)
 	int WindowNameOffset, WindowNameCount;
 	TwmWindow **WindowNames;
 	TwmWindow *tmp_win2,*tmp_win3;
+	int mask;
 	int i;
 	int (*compar)() =
 	  (Scr->CaseSensitive ? strcmp : XmuCompareISOLatin1);
+
+	/* djhjr - 9/5/98 */
+	int x_root, y_root;
 
 	if (!menu) return False;
 
@@ -1565,7 +1567,11 @@ Bool PopUpMenu (menu, x, y, center)
 	menu->items = 0;
 	menu->width = 0;
 	menu->mapped = NEVER_MAPPED;
+
+/* djhjr - 5/4/98
   	AddToMenu(menu, "TWM Windows", NULLSTR, (MenuRoot *)NULL, F_TITLE,NULLSTR,NULLSTR);
+*/
+  	AddToMenu(menu, "VTWM Windows", NULLSTR, (MenuRoot *)NULL, F_TITLE,NULLSTR,NULLSTR);
 
 		WindowNameOffset=(char *)Scr->TwmRoot.next->name -
 							   (char *)Scr->TwmRoot.next;
@@ -1580,6 +1586,13 @@ Bool PopUpMenu (menu, x, y, center)
 			tmp_win != NULL;
 			tmp_win = tmp_win->next,WindowNameCount++)
 		{
+			/* Submitted by Erik Agsjo <erik.agsjo@aktiedirekt.com> */
+			if (LookInList(Scr->DontShowInTWMWindows, tmp_win->full_name, &tmp_win->class))
+			{
+				WindowNameCount--;
+				continue;
+			}
+
 			tmp_win2 = tmp_win;
 			for (i=0;i<WindowNameCount;i++)
 			{
@@ -1595,7 +1608,7 @@ Bool PopUpMenu (menu, x, y, center)
 		for (i=0; i<WindowNameCount; i++)
 		{
 			AddToMenu(menu, WindowNames[i]->name, (char *)WindowNames[i],
-					  (MenuRoot *)NULL, F_POPUP,NULL,NULL);
+					  (MenuRoot *)NULL, F_POPUP,NULLSTR,NULLSTR);
 			if (!Scr->OldFashionedTwmWindowsMenu
 			&& Scr->Monochrome == COLOR)/*RFBCOLOR*/
 			{/*RFBCOLOR*/
@@ -1605,22 +1618,24 @@ Bool PopUpMenu (menu, x, y, center)
 				menu->last->fore =
 					WindowNames[i]->virtual.fore;*RFBCOLOR*
 */
+/* djhjr - 5/4/98
 				menu->last->normal.fore =
-					WindowNames[i]->virtual.fore;/*RFBCOLOR*/
-
+					WindowNames[i]->virtual.fore;*RFBCOLOR*
+*/
+				menu->last->normal.fore = Scr->MenuC.fore;
 
 /* djhjr - 4/22/96
 				menu->last->back =
 					WindowNames[i]->virtual.back;*RFBCOLOR*
 */
 				menu->last->normal.back =
-					WindowNames[i]->virtual.back;/*RFBCOLOR*/
+					WindowNames[i]->virtual.back;
 
 /**********************************************************/
 /*														  */
 /*	Okay, okay, it's a bit of a kludge.					  */
 /*														  */
-/*	On the other hand, it's nice to have the TWM-Windows  */
+/*	On the other hand, it's nice to have the VTWM Windows */
 /*	menu come up with "the right colors". And the colors  */
 /*	from the panner are not a bad choice...				  */
 /*														  */
@@ -1643,30 +1658,36 @@ Bool PopUpMenu (menu, x, y, center)
 	 */
 	menu->prev = ActiveMenu;
 
-	XGrabPointer(dpy, Scr->Root, True,
-	ButtonPressMask | ButtonReleaseMask |
-	ButtonMotionMask | PointerMotionHintMask,
-	GrabModeAsync, GrabModeAsync,
-	Scr->Root, Scr->MenuCursor, CurrentTime);
+	/*
+	 * Submitted by Steve Ratcliffe
+	 */
+	mask = ButtonPressMask | ButtonReleaseMask |
+	ButtonMotionMask | PointerMotionHintMask;
+	if (Scr->StayUpMenus)
+		mask |= PointerMotionMask;
+
+	XGrabPointer(dpy, Scr->Root, True, mask,
+		GrabModeAsync, GrabModeAsync,
+		Scr->Root, Scr->MenuCursor, CurrentTime);
 
 	ActiveMenu = menu;
 	menu->mapped = MAPPED;
 	menu->entered = FALSE;
 
 	if (center) {
-	x -= (menu->width / 2);
-	y -= (Scr->EntryHeight / 2);	/* sticky menus would be nice here */
+		x -= (menu->width / 2);
+		y -= (Scr->EntryHeight / 2);	/* sticky menus would be nice here */
 	}
 
 	/*
 	 * clip to screen
 	 */
 	if (x + menu->width > Scr->MyDisplayWidth) {
-	x = Scr->MyDisplayWidth - menu->width;
+		x = Scr->MyDisplayWidth - menu->width;
 	}
 	if (x < 0) x = 0;
 	if (y + menu->height > Scr->MyDisplayHeight) {
-	y = Scr->MyDisplayHeight - menu->height;
+		y = Scr->MyDisplayHeight - menu->height;
 	}
 	if (y < 0) y = 0;
 
@@ -1686,6 +1707,13 @@ Bool PopUpMenu (menu, x, y, center)
 	XMapWindow (dpy, menu->shadow);
 	}
 	XSync(dpy, 0);
+
+	/* djhjr - 9/5/98 */
+	XQueryPointer(dpy, menu->w, &JunkRoot, &JunkChild,
+			&x_root, &y_root, &JunkX, &JunkY, &JunkMask);
+	MenuOrigX = x_root;
+	MenuOrigY = y_root;
+
 	return True;
 }
 
@@ -1960,7 +1988,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	Bool fromtitlebar = False;
 	extern int ConstrainedMoveTime;
 
-	RootFunction = NULL;
+	RootFunction = F_NOFUNCTION;
 	if (Cancel)
 	return TRUE;			/* XXX should this be FALSE? */
 
@@ -2006,16 +2034,37 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	break;
 
 	case F_RESTART:
-	SetRealScreen(0,0);
-	XSync (dpy, 0);
-	Reborder (eventp->xbutton.time);
-	XSync (dpy, 0);
 
-	/* djhjr - 3/13/97 */
-	XCloseDisplay(dpy);
+	/* added this 'case' and 'if () ... else ' - djhjr - 7/15/98 */
+	case F_STARTWM:
+	if (func == F_STARTWM)
+	{
+		char *p, *delims = " \t";
+		char *my_argv[10] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+		int i;
 
-	execvp(*Argv, Argv);
-	fprintf (stderr, "%s:  unable to restart:  %s\n", ProgramName, *Argv);
+		p = strtok(action, delims);
+		i = 0;
+		while (p && i < 10)
+		{
+			my_argv[i++] = strdup(p);
+			p = strtok(NULL, delims);
+		}
+
+		/* djhjr - 7/31/98 */
+		setup_restart(eventp->xbutton.time);
+
+		execvp(*my_argv, my_argv);
+		fprintf (stderr, "%s:  unable to restart:  %s\n", ProgramName, *my_argv);
+
+		i = 0;
+		while (my_argv[i] && i < 10)
+			free(my_argv[i++]);
+	}
+	else
+		/* djhjr - 7/31/98 */
+		RestartVtwm(eventp->xbutton.time);
+
 	break;
 
 	case F_UPICONMGR:
@@ -2033,24 +2082,35 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
         break;
 
     case F_SHOWLIST:
-	if (Scr->NoIconManagers)
+
+	/* added the second condition - djhjr - 6/10/98 */
+	if (Scr->NoIconManagers || Scr->iconmgr.count == 0)
 	    break;
+
 	DeIconify(Scr->iconmgr.twm_win);
 	XRaiseWindow(dpy, Scr->iconmgr.twm_win->frame);
 	XRaiseWindow(dpy, Scr->iconmgr.twm_win->VirtualDesktopDisplayWindow);
-	
+
 	RaiseStickyAbove(); /* DSE */
 	RaiseAutoPan();
 	
 	break;
 
     case F_HIDELIST:
-	if (Scr->NoIconManagers)
+
+	/* added the second condition - djhjr - 6/10/98 */
+	if (Scr->NoIconManagers || Scr->iconmgr.count == 0)
 	    break;
+
 	HideIconManager ();
 	break;
 
     case F_SORTICONMGR:
+
+	/* djhjr - 6/10/98 */
+	if (Scr->NoIconManagers || Scr->iconmgr.count == 0)
+	    break;
+
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
 
@@ -2114,7 +2174,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 			/* don't change the order of execution! */
 		}
 		return TRUE;
-		break;
+		/* break; *//* NOT REACHABLE */
 
     case F_AUTORAISE:
 	if (DeferExecution(context, func, Scr->SelectCursor))
@@ -2131,7 +2191,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
     case F_POPUP:
 	tmp_win = (TwmWindow *)action;
-	if (Scr->WindowFunction.func != NULL)
+	if (Scr->WindowFunction.func != F_NOFUNCTION)
 	{
 	   ExecuteFunction(Scr->WindowFunction.func,
 			   Scr->WindowFunction.item->action,
@@ -2213,8 +2273,18 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	      if (!DispatchEvent ()) continue;
 
 	    } while (!(Event.type == ButtonRelease || Cancel));
+
+/* djhjr - 6/4/98
 	    return TRUE;
+*/
 	  }
+
+		/* djhjr - 6/4/98 */
+		if (Scr->VirtualReceivesMotionEvents && !tmp_win->opaque_resize)
+		{
+			XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
+			XMapWindow(dpy, Scr->VirtualDesktopDisplay);
+		}
 	}
 
 	break;
@@ -2255,9 +2325,13 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		EventHandler[EnterNotify] = HandleUnknown;
 		EventHandler[LeaveNotify] = HandleUnknown;
 
-		if (!Scr->NoGrabServer || !Scr->OpaqueMove)
-		{	XGrabServer(dpy);
-		}
+/* djhjr - 4/7/98
+		if (!Scr->NoGrabServer || !Scr->OpaqueMove) XGrabServer(dpy);
+*/
+/* djhjr - 7/17/98
+		if (!Scr->NoGrabServer) XGrabServer(dpy);
+*/
+		if (!tmp_win->opaque_move) XGrabServer(dpy);
 
 /* use initialized size... djhjr - 5/9/96
 		* djhjr - 4/27/96 *
@@ -2331,7 +2405,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		}
 		last_time = eventp->xbutton.time;
 
+/* djhjr - 4/7/98
 		if (!Scr->OpaqueMove)
+*/
+		if (!tmp_win->opaque_move)
+
 		{
 			InstallRootColormap();
 			if ( !Scr->MoveDelta )
@@ -2378,7 +2456,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		}
 
 		/* djhjr - 4/27/96 */
-		DisplayPosition (tmp_win, CurrentDragX, CurrentDragY);
+		DisplayPosition (CurrentDragX, CurrentDragY);
 
 		while (TRUE)
 		{
@@ -2419,7 +2497,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 			*/
 			if (!menuFromFrameOrWindowOrTitlebar &&  !MovedFromKeyPress)
 			{	if (Event.type == ButtonPress && DragWindow != None)
+/* djhjr - 4/7/98
 				{	if (Scr->OpaqueMove)
+*/
+				{	if (tmp_win->opaque_move)
+
 						XMoveWindow (dpy, DragWindow, origDragX, origDragY);
 					else
 						MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
@@ -2445,6 +2527,13 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 			{
 				WindowMoved = FALSE;
 				if (!Scr->OpaqueMove) UninstallRootColormap();
+
+/* djhjr - 7/17/98
+				* djhjr - 4/7/98 *
+				if (!Scr->NoGrabServer) XUngrabServer(dpy);
+*/
+				if (!tmp_win->opaque_move) XUngrabServer(dpy);
+
 				return TRUE;	/* XXX should this be FALSE? */
 			}
 			if ( Event.type == releaseEvent )
@@ -2456,12 +2545,16 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 				{	tmp_win->icon_moved = TRUE;
 				}
 
+/* djhjr - 4/7/98
 				if (!Scr->OpaqueMove && menuFromFrameOrWindowOrTitlebar)
+*/
+				if (!tmp_win->opaque_move && menuFromFrameOrWindowOrTitlebar)
+
 				{	XMoveWindow(dpy, DragWindow,
 						Event.xbutton.x_root - DragWidth / 2,
 						Event.xbutton.y_root - DragHeight / 2);
 				}
-				DragWindow=NULL;	/* SatyUpMenus */
+				DragWindow=None;	/* StayUpMenus */
 				break;
 			}
 
@@ -2480,7 +2573,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 			WindowMoved = TRUE;
 			DragWindow = w;
 
-			if (!Scr->NoRaiseMove && Scr->OpaqueMove)	/* can't restore... */
+/* djhjr - 4/7/98
+			if (!Scr->NoRaiseMove && Scr->OpaqueMove)	* can't restore... *
+*/
+			if (!Scr->NoRaiseMove && tmp_win->opaque_move)	/* can't restore... */
+
 				XRaiseWindow(dpy, DragWindow);
 
 			if (ConstMove)
@@ -2537,7 +2634,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 					}
 					CurrentDragX = xl;
 					CurrentDragY = yt;
+/* djhjr - 4/7/98
 					if (Scr->OpaqueMove)
+*/
+					if (tmp_win->opaque_move)
+
 						XMoveWindow(dpy, DragWindow, xl, yt);
 					else
 						MoveOutline(eventp->xmotion.root, xl, yt, w, h,
@@ -2547,10 +2648,21 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 */
 			    			moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
 
-					/* move the small representation window */
-					/* this knows a bit much about the internals i guess */
-					XMoveWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
-						SCALE_D(xl), SCALE_D(yt));
+/* djhjr - 4/17/98
+					* move the small representation window *
+					* this knows a bit much about the internals i guess *
+					* XMoveWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+						SCALE_D(xl), SCALE_D(yt)); *
+*/
+					if (Scr->VirtualReceivesMotionEvents)
+					{
+						tmp_win->virtual_frame_x = R_TO_V_X(xl);
+						tmp_win->virtual_frame_y = R_TO_V_Y(yt);
+						MoveResizeDesktop(tmp_win, Scr->NoRaiseResize);
+					}
+
+					/* djhjr - 4/15/98 */
+					DisplayPosition (xl, yt);
 				}
 			}
 			else if (DragWindow != None)
@@ -2586,7 +2698,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 				CurrentDragX = xl;
 				CurrentDragY = yt;
+/* djhjr - 4/7/98
 				if (Scr->OpaqueMove)
+*/
+				if (tmp_win->opaque_move)
+
 					XMoveWindow(dpy, DragWindow, xl, yt);
 				else
 					MoveOutline(eventp->xmotion.root, xl, yt, w, h,
@@ -2596,14 +2712,22 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 */
 						moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
 
-				/* move the small representation window */
-				/* this knows a bit much about the internals i guess */
-				/* left out at the minute */
-				/* XMoveWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
-					SCALE_D(xl), SCALE_D(yt)); */
+/* djhjr - 4/17/98
+				* move the small representation window *
+				* this knows a bit much about the internals i guess *
+				* left out at the minute *
+				* XMoveWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+					SCALE_D(xl), SCALE_D(yt)); *
+*/
+				if (Scr->VirtualReceivesMotionEvents)
+				{
+					tmp_win->virtual_frame_x = R_TO_V_X(xl);
+					tmp_win->virtual_frame_y = R_TO_V_Y(yt);
+					MoveResizeDesktop(tmp_win, Scr->NoRaiseResize);
+				}
 
 				/* djhjr - 4/27/96 */
-	    		DisplayPosition (tmp_win, CurrentDragX, CurrentDragY);
+	    		DisplayPosition (CurrentDragX, CurrentDragY);
 			}
 
 		}
@@ -2621,6 +2745,19 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		tmp_win->virtual_frame_y = Scr->VirtualDesktopY + tmp_win->frame_y;
 
 		UpdateDesktop(tmp_win);
+
+		/* djhjr - 6/4/98 */
+		if (Scr->VirtualReceivesMotionEvents && !tmp_win->opaque_move)
+		{
+			XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
+			XMapWindow(dpy, Scr->VirtualDesktopDisplay);
+		}
+
+/* djhjr - 7/17/98
+		* djhjr - 4/7/98 *
+		if (!Scr->NoGrabServer) XUngrabServer(dpy);
+*/
+		if (!tmp_win->opaque_move) XUngrabServer(dpy);
 
 		break;
 	}
@@ -2900,8 +3037,14 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		break;
 
     case F_WARPTONEWEST: /* PF */
-		if (Scr->Newest)
+		/* added '&& warp_if_warpunmapped()' - djhjr - 5/13/98 */
+		if (Scr->Newest && warp_if_warpunmapped(Scr->Newest))
+		{
+			RaiseStickyAbove();
+			RaiseAutoPan();
+
 		    WarpToWindow(Scr->Newest);
+		}
 		else
 	    	XBell (dpy, 0);
 		break;
@@ -2921,22 +3064,16 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	/* fall through */                                          /* PF */
                                                                 
     case F_WARP:                                                /* PF */
-	{                                                           /* PF */
 do_F_WARP:
-	    if (tmp_win) {                                          /* PF */
-		if (Scr->WarpUnmapped || tmp_win->mapped) {             /* PF */
-		    if (!tmp_win->mapped) DeIconify (tmp_win);          /* PF */
-                                                                
-		    if (!Scr->NoRaiseWarp) {                            
-			    XRaiseWindow (dpy, tmp_win->frame);             /* PF */
-		    }                                                   
-		    XRaiseWindow (dpy,                                  
-		              tmp_win->VirtualDesktopDisplayWindow);    /* PF */
-		    RaiseStickyAbove();                                 /* DSE */
-		    RaiseAutoPan();                                     
-			WarpToWindow (tmp_win);                             /* PF */
-		}                                                       
-	    } else {                                                
+	{                                                           /* PF */
+		/* added '&& warp_if_warpunmapped()' - djhjr - 5/13/98 */
+		if (tmp_win && warp_if_warpunmapped(tmp_win))           /* PF */
+		{
+			RaiseStickyAbove();                                 /* DSE */
+			RaiseAutoPan();                                     
+
+			WarpToWindow(tmp_win);                              /* PF */
+		} else {                                                
 		XBell (dpy, 0);                                         
 	    }                                                       
 	}                                                           /* PF */
@@ -2946,22 +3083,42 @@ do_F_WARP:
 	{
 	    TwmWindow *t;
 	    int len;
+
+/* djhjr - 5/13/98
 	    Window raisewin = None, iconwin = None;
+*/
+	    TwmWindow *raisewin = None;
+	    Window iconwin = None;
 
 	    len = strlen(action);
 	    if (len == 0) {
 		if (tmp_win && tmp_win->list) {
+
+/* djhjr - 5/13/98
 		    raisewin = tmp_win->list->iconmgr->twm_win->frame;
+*/
+		    raisewin = tmp_win->list->iconmgr->twm_win;
+
 		    iconwin = tmp_win->list->icon;
 		} else if (Scr->iconmgr.active) {
+
+/* djhjr - 5/13/98
 		    raisewin = Scr->iconmgr.twm_win->frame;
+*/
+		    raisewin = Scr->iconmgr.twm_win;
+
 		    iconwin = Scr->iconmgr.active->w;
 		}
 	    } else {
 		for (t = Scr->TwmRoot.next; t != NULL; t = t->next) {
 		    if (strncmp (action, t->icon_name, len) == 0) {
 			if (t->list && t->list->iconmgr->twm_win->mapped) {
+
+/* djhjr - 5/13/98
 			    raisewin = t->list->iconmgr->twm_win->frame;
+*/
+			    raisewin = t->list->iconmgr->twm_win;
+
 			    iconwin = t->list->icon;
 			    break;
 			}
@@ -2969,10 +3126,10 @@ do_F_WARP:
 		}
 	    }
 
-	    if (raisewin) {
-		XRaiseWindow (dpy, raisewin);
-		XWarpPointer (dpy, None, iconwin, 0,0,0,0,
-			EDGE_OFFSET, EDGE_OFFSET); /* DSE */
+		/* added '&& warp_if_warpunmapped()' - djhjr - 5/13/98 */
+		if (raisewin && warp_if_warpunmapped(raisewin)) {
+			XWarpPointer (dpy, None, iconwin, 0,0,0,0,
+					EDGE_OFFSET, EDGE_OFFSET); /* DSE */
 	    } else {
 		XBell (dpy, 0);
 	    }
@@ -3050,7 +3207,9 @@ do_F_WARP:
 		{	tmp_win->ring.next = tmp_win->ring.prev = Scr->Ring = tmp_win;
 		}
 	}
+#ifdef ORIGINAL_WARPRINGCOORDINATES /* djhjr - 5/11/98 */
     tmp_win->ring.cursor_valid = False;
+#endif
 	break;
 
     case F_WARPRING:
@@ -3336,6 +3495,17 @@ do_F_WARP:
  	door_new();
 	break;
 
+	/* djhjr - 4/20/98 */
+	case F_NAMEDOOR:
+	{
+		TwmDoor *d;
+
+		if (XFindContext(dpy, tmp_win->w, DoorContext,
+				(caddr_t *) &d) != XCNOENT)
+			door_paste_name(tmp_win->w, d);
+		break;
+	}
+
      case F_QUIT:
 /* djhjr - 9/14/96 - it's in Done()...
 	SetRealScreen(0,0);
@@ -3422,6 +3592,7 @@ void ReGrab()
  ***********************************************************************
  */
 
+int
 NeedToDefer(root)
 MenuRoot *root;
 {
@@ -3568,7 +3739,7 @@ TwmWindow *tmp_win;
 	{
 		if (tmp_win->icon_on)
 			Zoom(tmp_win->icon_w, tmp_win->frame);
-		else if (tmp_win->group != NULL)
+		else if (tmp_win->group != None)
 		{
 			for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
 			{
@@ -3671,7 +3842,7 @@ int def_x, def_y;
     iconify = ((!tmp_win->iconify_by_unmapping) || tmp_win->transient);
     if (iconify)
     {
-	if (tmp_win->icon_w == NULL)
+	if (tmp_win->icon_w == None)
 	    CreateIconWindow(tmp_win, def_x, def_y);
 	else
 	    IconUp(tmp_win);
@@ -3838,7 +4009,14 @@ TwmWindow *t;
     (void) sprintf(Info[n++], "Click to dismiss...");
 
     /* figure out the width and height of the info window */
-    height = (n * (Scr->InfoFont.height+2)) + 10; /* some padding */
+
+/* djhjr - 4/29/98
+    height = (n * (Scr->InfoFont.height+2)) + 10; * some padding *
+*/
+	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+	i = (Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth + 8 : 10;
+	height = (n * (Scr->InfoFont.height+2)) + i; /* some padding */
+
     width = 1;
     for (i = 0; i < n; i++)
     {
@@ -3849,15 +4027,35 @@ TwmWindow *t;
     }
     if (InfoLines) XUnmapWindow(dpy, Scr->InfoWindow);
 
-    width += 20; /* some padding */
+/* djhjr - 4/29/98
+    width += 20; * some padding *
+*/
+	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+	i = (Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth + 18 : 20;
+	width += i; /* some padding */
+
     if (XQueryPointer (dpy, Scr->Root, &JunkRoot, &JunkChild, &px, &py,
 		       &dummy, &dummy, &udummy)) {
 	px -= (width / 2);
 	py -= (height / 3);
-	if (px + width + BW2 >= Scr->MyDisplayWidth)
-	  px = Scr->MyDisplayWidth - width - BW2;
-	if (py + height + BW2 >= Scr->MyDisplayHeight)
-	  py = Scr->MyDisplayHeight - height - BW2;
+
+	/* added this 'if ()' - djhjr - 4/29/98 */
+	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+	if (Scr->InfoBevelWidth > 0)
+	{
+		if (px + width + 2 * Scr->InfoBevelWidth >= Scr->MyDisplayWidth)
+		  px = Scr->MyDisplayWidth - width - 2 * Scr->InfoBevelWidth;
+		if (py + height + 2 * Scr->InfoBevelWidth >= Scr->MyDisplayHeight)
+		  py = Scr->MyDisplayHeight - height - 2 * Scr->InfoBevelWidth;
+	}
+	else
+	{
+		if (px + width + BW2 >= Scr->MyDisplayWidth)
+		  px = Scr->MyDisplayWidth - width - BW2;
+		if (py + height + BW2 >= Scr->MyDisplayHeight)
+		  py = Scr->MyDisplayHeight - height - BW2;
+	}
+
 	if (px < 0) px = 0;
 	if (py < 0) py = 0;
     } else {
@@ -3866,14 +4064,20 @@ TwmWindow *t;
 
     XMoveResizeWindow(dpy, Scr->InfoWindow, px, py, width, height);
 
+/* done in HandleExpose() in events.c - djhjr - 4/30/98 */
+#ifdef NEVER
 	/* djhjr - 5/9/96 */
-	if (Scr->use3Dborders)
+	if (Scr->use3Dborders > 0)
 	{
 		XGetGeometry (dpy, Scr->InfoWindow, &JunkRoot, &JunkX, &JunkY,
 				&JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
 	    Draw3DBorder(Scr->InfoWindow, 0, 0, JunkWidth, JunkHeight,
+/* djhjr - 4/29/98
 			 BW, Scr->DefaultC, off, False, False);
+*/
+			 Scr->InfoBevelWidth, Scr->DefaultC, off, False, False);
 	}
+#endif
 
     XMapRaised(dpy, Scr->InfoWindow);
     InfoLines = n;
@@ -3922,47 +4126,6 @@ Bool GetWMState (w, statep, iwp)
     XFree ((char *) datap);
     return retval;
 }
-
-
-
-void WarpToScreen (n, inc)
-    int n, inc;
-{
-    Window dumwin;
-    int x, y, dumint;
-    unsigned int dummask;
-    ScreenInfo *newscr = NULL;
-
-    while (!newscr) {
-					/* wrap around */
-	if (n < 0)
-	  n = NumScreens - 1;
-	else if (n >= NumScreens)
-	  n = 0;
-
-	newscr = ScreenList[n];
-	if (!newscr) {			/* make sure screen is managed */
-	    if (inc) {			/* walk around the list */
-		n += inc;
-		continue;
-	    }
-	    fprintf (stderr, "%s:  unable to warp to unmanaged screen %d\n",
-		     ProgramName, n);
-	    XBell (dpy, 0);
-	    return;
-	}
-    }
-
-    if (Scr->screen == n) return;	/* already on that screen */
-
-    PreviousScreen = Scr->screen;
-    XQueryPointer (dpy, Scr->Root, &dumwin, &dumwin, &x, &y,
-		   &dumint, &dumint, &dummask);
-
-    XWarpPointer (dpy, None, newscr->Root, 0, 0, 0, 0, x, y);
-    return;
-}
-
 
 
 
@@ -4026,51 +4189,6 @@ void HideIconManager ()
     Scr->iconmgr.twm_win->icon = TRUE;
 }
 
-TwmWindow *
-next_by_class (t, class)
-TwmWindow *t;
-char *class;
-{
-    TwmWindow *tt;
-    int len = strlen(class);
-
-    if (t)
-	for (tt = t->next; tt != NULL; tt = tt->next)
-	    if (!strncmp(class, tt->class.res_class, len)) return tt;
-    for (tt = Scr->TwmRoot.next; tt != NULL; tt = tt->next)
-	if (!strncmp(class, tt->class.res_class, len)) return tt;
-    return NULL;
-}
-
-void WarpClass (next, t, class)
-    int next;
-    TwmWindow *t;
-    char *class;
-{
-    int len = strlen(class);
-
-    if (!strncmp(class, t->class.res_class, len))
-	t = next_by_class(t, class);
-    else
-	t = next_by_class((TwmWindow *)NULL, class);
-    if (t) {
-	if (Scr->WarpUnmapped || t->mapped) {
-	    if (!t->mapped) DeIconify (t);
-	    if (!Scr->NoRaiseWarp)
-		{
-		    XRaiseWindow (dpy, t->frame);
-		}
-	    XRaiseWindow (dpy, t->VirtualDesktopDisplayWindow);
-
-	    RaiseStickyAbove(); /* DSE */
-	    RaiseAutoPan();
-
-	    WarpToWindow (t);
-	}
-    }
-}
-
-
 
 void SetBorder (tmp, onoroff)
 TwmWindow	*tmp;
@@ -4079,7 +4197,8 @@ Bool		onoroff;
 	if (tmp->highlight)
 	{
 		/* djhjr - 4/22/96 */
-		if (Scr->use3Dborders)
+		/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+		if (Scr->BorderBevelWidth > 0)
 			PaintBorders (tmp, onoroff);
 		else
 		{
@@ -4117,8 +4236,9 @@ Bool		onoroff;
 			int i, nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
 			TBWindow *tbw;
 
+			/* collapsed two functions - djhjr - 8/10/98 */
 			for (i = 0, tbw = tmp->titlebuttons; i < nb; i++, tbw++)
-				PaintTitleButtonHighlight(tmp, tbw, onoroff);
+				PaintTitleButton(tmp, tbw, (onoroff) ? 2 : 1);
 		}
 	}
 }
@@ -4149,6 +4269,108 @@ void DestroyMenu (menu)
 /*
  * warping routines
  */
+
+/*
+ * substantially re-written and added passing 'next' to next_by_class()
+ *
+ * djhjr - 5/13/98 6/6/98 6/15/98
+ */
+#ifdef ORIGINAL_WARPCLASS
+void WarpClass (next, t, class)
+    int next;
+    TwmWindow *t;
+    char *class;
+{
+    int len = strlen(class);
+
+    if (!strncmp(class, t->class.res_class, len))
+	t = next_by_class(t, class);
+    else
+	t = next_by_class((TwmWindow *)NULL, class);
+    if (t) {
+	if (Scr->WarpUnmapped || t->mapped) {
+	    if (!t->mapped) DeIconify (t);
+	    if (!Scr->NoRaiseWarp)
+		{
+		    XRaiseWindow (dpy, t->frame);
+		}
+	    XRaiseWindow (dpy, t->VirtualDesktopDisplayWindow);
+
+	    RaiseStickyAbove(); /* DSE */
+	    RaiseAutoPan();
+
+	    WarpToWindow (t);
+	}
+    }
+}
+#else /* ORIGINAL_WARPCLASS */
+void WarpClass(next, t, class)
+    int next;
+    TwmWindow *t;
+    char *class;
+{
+    TwmWindow *tt;
+	XClassHint ch;
+	int i;
+
+	/*
+	 * if an empty class string
+	 *     if a TwmWindow
+	 *         class = the TwmWindow's class
+	 *     else if a window with focus
+	 *         if it's classed
+	 *             class = the focused window's class
+	 * if still an empty class string
+	 *     class = "VTWM"
+	 */
+	if (!strlen(class))
+		if (t)
+			class = t->class.res_class;
+		else if (Scr->Focus)
+		{
+			i = XGetClassHint(dpy, Scr->Focus->w, &ch);
+			if (i && !strncmp(class, ch.res_class, strlen(class)))
+				class = ch.res_class;
+		}
+	if (!strlen(class) || !strncmp(class, "VTWM", 4))
+		class = "VTWM";
+
+/* djhjr - 8/3/98
+	if (!(tt = next_by_class(next, t, class)))
+		if (t) tt = t;
+*/
+	tt = NULL;
+	do
+	{
+		if ((tt = next_by_class(next, t, class)))
+		{
+			/* multiple icon managers: gotta test for those without entries */
+			if (tt->iconmgr && tt->iconmgrp->count == 0)
+			{
+				t = tt;
+				tt = NULL;
+			}
+		}
+		else if (t)
+			tt = t;
+		else
+			break;
+	} while (!tt);
+
+	if (tt && warp_if_warpunmapped(tt))
+	{
+		RaiseStickyAbove(); /* DSE */
+		RaiseAutoPan();
+
+		WarpToWindow(tt);
+    }
+	else
+		XBell(dpy, 0);
+}
+#endif /* ORIGINAL_WARPCLASS */
+
+
+
 void WarpAlongRing (ev, forward)
     XButtonEvent *ev;
     Bool forward;
@@ -4160,22 +4382,39 @@ void WarpAlongRing (ev, forward)
     else if (!(head = Scr->Ring))
       return;
 
+	/* added this 'if () ... else' - djhjr - 5/11/98 */
+	if ((head->mapped || Scr->WarpUnmapped) && Scr->Focus == NULL && Scr->FocusRoot == TRUE)
+		r = head;
+	else
     if (forward) {
 	for (r = head->ring.next; r != head; r = r->ring.next) {
-	    if (!r || r->mapped) break;
+		/* added '|| Scr->WarpUnmapped' - djhjr - 5/13/98 */
+	    if (!r || (r->mapped || Scr->WarpUnmapped)) break;
 	}
     } else {
 	for (r = head->ring.prev; r != head; r = r->ring.prev) {
-	    if (!r || r->mapped) break;
+		/* added '|| Scr->WarpUnmapped' - djhjr - 5/13/98 */
+	    if (!r || (r->mapped || Scr->WarpUnmapped)) break;
 	}
     }
 
+/* djhjr - 5/15/98
     if (r && r != head) {
+*/
+	if (r && warp_if_warpunmapped(r)) {
+
+#ifdef ORIGINAL_WARPRINGCOORDINATES /* djhjr - 5/11/98 */
 	TwmWindow *p = Scr->RingLeader, *t;
+#endif
 
 	Scr->RingLeader = r;
+
+	RaiseStickyAbove();
+	RaiseAutoPan();
+
 	WarpToWindow (r);
 
+#ifdef ORIGINAL_WARPRINGCOORDINATES /* djhjr - 5/11/98 */
 	if (p && p->mapped &&
 	    XFindContext (dpy, ev->window, TwmContext, (caddr_t *)&t) == XCSUCCESS &&
 	    p == t) {
@@ -4191,14 +4430,58 @@ void WarpAlongRing (ev, forward)
 		p->ring.curs_y = p->frame_height / 2;
 	    }
 	}
+#endif
+
     }
+	/* djhjr - 5/13/98 */
+	else XBell(dpy, 0);
+}
+
+
+
+void WarpToScreen (n, inc)
+    int n, inc;
+{
+    Window dumwin;
+    int x, y, dumint;
+    unsigned int dummask;
+    ScreenInfo *newscr = NULL;
+
+    while (!newscr) {
+					/* wrap around */
+	if (n < 0)
+	  n = NumScreens - 1;
+	else if (n >= NumScreens)
+	  n = 0;
+
+	newscr = ScreenList[n];
+	if (!newscr) {			/* make sure screen is managed */
+	    if (inc) {			/* walk around the list */
+		n += inc;
+		continue;
+	    }
+	    fprintf (stderr, "%s:  unable to warp to unmanaged screen %d\n",
+		     ProgramName, n);
+	    XBell (dpy, 0);
+	    return;
+	}
+    }
+
+    if (Scr->screen == n) return;	/* already on that screen */
+
+    PreviousScreen = Scr->screen;
+    XQueryPointer (dpy, Scr->Root, &dumwin, &dumwin, &x, &y,
+		   &dumint, &dumint, &dummask);
+
+    XWarpPointer (dpy, None, newscr->Root, 0, 0, 0, 0, x, y);
+    return;
 }
 
 
 
 void WarpToWindow (t)
 TwmWindow *t;
-	{
+{
 	int x, y;
 	
 	/* 
@@ -4220,10 +4503,15 @@ TwmWindow *t;
 		if (Scr->WarpSnug || Scr->WarpWindows)
 			{ 
 			int right,left,up,down,dx,dy;
+
+			/*
+			 * Adjustment for border widths submitted by Steve Ratcliffe
+			 * Note: Do not include the 3D border width!
+			 */
 			right = t->frame_x;
-			left = t->frame_x + t->frame_width;
+			left = t->frame_x + t->frame_width + 2 * t->frame_bw;
 			up = t->frame_y;
-			down = t->frame_y + t->frame_height;
+			down = t->frame_y + t->frame_height + 2 * t->frame_bw;
 	
 			dx = 0;
 			if (left-right < Scr->MyDisplayWidth)
@@ -4280,26 +4568,190 @@ TwmWindow *t;
 
 	if (t->auto_raise || !Scr->NoRaiseWarp)
 		AutoRaiseWindow (t);
+
+#ifdef ORIGINAL_WARPRINGCOORDINATES /* djhjr - 5/11/98 */
 	if (t->ring.cursor_valid) {
 		x = t->ring.curs_x;
 		y = t->ring.curs_y;
 		}
 	else {
-#ifdef ORIGINAL_WARPCOORDINATES
 		x = t->frame_width / 2;
 		y = t->frame_height / 2;
+		}
 #else
+	/* added this 'if () ... else' - djhjr - 6/10/98 */
+	if (t->iconmgr)
+	{
+		if (t->iconmgrp->count > 0)
+			XWarpPointer(dpy, None, t->iconmgrp->first->icon, 0,0,0,0,
+					EDGE_OFFSET, EDGE_OFFSET);
+
+		return;
+	}
+	else
+	if (!t->title_w)
+	{
+		x = t->frame_width / 2;
+		y = (t->frame_bw3D + t->frame_bw) / 2;
+	}
+	else
+	{
 		/*
 		 * Added 't->title_x + ' to handle titlebars that aren't flush left
 		 * Submitted by Steve Ratcliffe
 		 */
-		x = t->title_x + t->title_width / 2 + ((Scr->use3Dborders) ? t->frame_bw3D : t->frame_bw);
-		y = t->title_height / 2 + ((Scr->use3Dborders) ? t->frame_bw3D : t->frame_bw);
+		x = t->title_x + t->title_width / 2 + (t->frame_bw3D + t->frame_bw);
+		y = t->title_height / 2 + (t->frame_bw3D + t->frame_bw);
+	}
+	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+	if (!Scr->BorderBevelWidth > 0) y -= t->frame_bw;
+#endif
+
+	XWarpPointer (dpy, None, t->frame, 0, 0, 0, 0, x, y);
+}
+
+
+
+/*
+ * substantially re-written and added receiving and using 'next'
+ *
+ * djhjr - 5/13/98 5/19/98 6/6/98 6/15/98
+ */
+#ifdef ORIGINAL_WARPCLASS
+TwmWindow *
+next_by_class (t, class)
+TwmWindow *t;
+char *class;
+{
+    TwmWindow *tt;
+    int len = strlen(class);
+
+    if (t)
+	for (tt = t->next; tt != NULL; tt = tt->next)
+	    if (!strncmp(class, tt->class.res_class, len)) return tt;
+    for (tt = Scr->TwmRoot.next; tt != NULL; tt = tt->next)
+	if (!strncmp(class, tt->class.res_class, len)) return tt;
+    return NULL;
+}
+#else /* ORIGINAL_WARPCLASS */
+static TwmWindow *
+next_by_class (next, t, class)
+int next;
+TwmWindow *t;
+char *class;
+{
+	static TwmWindow *tp = NULL;
+    TwmWindow *tt, *tl;
+    int i, len = strlen(class);
+	XClassHint ch;
+
+#ifdef DEBUG_WARPCLASS
+	fprintf(stderr, "class=\"%s\", next=%d, %s t, ", class, next, (t) ? "have" : "no");
+#endif
+
+	/* forward or backward from current */
+	tl = (next) ? ((tp) ? tp->next : Scr->TwmRoot.next) : ((tp) ? tp->prev : Scr->TwmRoot.prev);
+	for (tt = (next) ? ((t) ? t->next : tl) : ((t) ? t->prev : tl);
+			tt != NULL;
+			tt = (next) ? tt->next : tt->prev)
+		if (Scr->WarpUnmapped || tt->mapped)
+		{
+			i = XGetClassHint(dpy, tt->w, &ch);
+			if (i && !strncmp(class, ch.res_class, len))
+			{
+#ifdef DEBUG_WARPCLASS
+				fprintf(stderr, "matched \"%s\" \"%s\"\n", tt->class.res_class, tt->class.res_name);
+#endif
+				tp = tt;
+				return tp;
+			}
+			else
+			{
+#ifdef DEBUG_WARPCLASS
+				fprintf(stderr, "(1) skipping \"%s\"\n", (i) ? tt->class.res_class : "NO RES_CLASS!");
+#endif
+				if (i == 0) break;
+			}
+		}
+
+	/* no match, wrap and retry */
+	tp = tl = NULL;
+	for (tt = Scr->TwmRoot.next; tt != NULL; tt = tt->next)
+		if (Scr->WarpUnmapped || tt->mapped)
+		{
+			i = XGetClassHint(dpy, tt->w, &ch);
+			if (i && !strncmp(class, ch.res_class, len))
+			{
+				if (next)
+				{
+#ifdef DEBUG_WARPCLASS
+					fprintf(stderr, "next wrapped to \"%s\ \"%s\"\n", tt->class.res_class, tt->class.res_name);
+#endif
+					tp = tt;
+					return tp;
+				}
+				else
+					tl = tt;
+			}
+#ifdef DEBUG_WARPCLASS
+			else
+				fprintf(stderr, "(2) skipping \"%s\"\n", (i) ? tt->class.res_class : "NO RES_CLASS!");
 #endif
 		}
-	XWarpPointer (dpy, None, t->frame, 0, 0, 0, 0, x, y);
+
+#ifdef DEBUG_WARPCLASS
+	i = 0; if (tl) i = XGetClassHint(dpy, tl->w, &ch);
+	fprintf(stderr, "prev wrapped to \"%s\ \"%s\"\n", (i) ? ch.res_class : "NO RES_CLASS!", (i) ? ch.res_name : "NO RES_CLASS!");
+#endif
+	tp = tl;
+	return tp;
+}
+#endif /* ORIGINAL_WARPCLASS */
+
+/* this was inlined in many places, and even more now - djhjr - 5/13/98 */
+static int warp_if_warpunmapped(w)
+TwmWindow *w;
+{
+	if (Scr->WarpUnmapped || w->mapped)
+	{
+		if (!w->mapped) DeIconify(w);
+		if (!Scr->NoRaiseWarp) XRaiseWindow(dpy, w->frame);
+		XRaiseWindow(dpy, w->VirtualDesktopDisplayWindow);
+
+		return (1);
 	}
-
+
+	return (0);
+}
+
+
+/*
+ * Two functions to handle a restart from a SIGUSR1 signal
+ *
+ * adapted from TVTWM-pl11 - djhjr - 7/31/98
+ */
+
+static void setup_restart(time)
+	Time time;
+{
+	SetRealScreen(0,0);
+	XSync (dpy, 0);
+	Reborder (time);
+	XSync (dpy, 0);
+
+	/* djhjr - 3/13/97 */
+	XCloseDisplay(dpy);
+}
+
+void RestartVtwm(time)
+	Time time;
+{
+	setup_restart(time);
+
+	execvp(*Argv, Argv);
+	fprintf (stderr, "%s:  unable to restart:  %s\n", ProgramName, *Argv);
+}
+
 
 /*
  * ICCCM Client Messages - Section 4.2.8 of the ICCCM dictates that all
@@ -4312,6 +4764,7 @@ TwmWindow *t;
  *     data[0]		message atom
  *     data[1]		time stamp
  */
+
 static void send_clientmessage (w, a, timestamp)
     Window w;
     Atom a;
@@ -4342,7 +4795,6 @@ void SendSaveYourselfMessage (tmp, timestamp)
     send_clientmessage (tmp->w, _XA_WM_SAVE_YOURSELF, timestamp);
 }
 
-
 void SendTakeFocusMessage (tmp, timestamp)
     TwmWindow *tmp;
     Time timestamp;
@@ -4350,12 +4802,13 @@ void SendTakeFocusMessage (tmp, timestamp)
     send_clientmessage (tmp->w, _XA_WM_TAKE_FOCUS, timestamp);
 }
 
+
 /* djhjr - 4/27/96 */
-void DisplayPosition (tmp_win, x, y)
-TwmWindow *tmp_win;
+void DisplayPosition (x, y)
 int x, y;
 {
     char str [100];
+	int i;
 
 /* djhjr - 5/10/96
     char signx = '+';
@@ -4370,9 +4823,9 @@ int x, y;
 	signy = '-';
     }
 
-    (void) sprintf (str, " %c%-4d %c%-4d ", signx, x, signy, y);
+    i = sprintf (str, " %c%-4d %c%-4d ", signx, x, signy, y);
 */
-    (void) sprintf (str, "%+6d %-+6d", x, y);
+    i = sprintf (str, "%+6d %-+6d", x, y);
 
     XRaiseWindow (dpy, Scr->SizeWindow);
     FBF (Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont.font->fid);
@@ -4381,15 +4834,30 @@ int x, y;
 /* djhjr - 5/9/96
 		      Scr->SizeStringOffset,
 */
-			  (Scr->SizeStringWidth - XTextWidth(Scr->SizeFont.font, str, 13)) / 2,
+			  (Scr->SizeStringWidth - XTextWidth(Scr->SizeFont.font, str, i)) / 2,
 
-		      Scr->SizeFont.font->ascent + SIZE_VINDENT, str, 13);
+/* djhjr - 4/29/98
+			Scr->SizeFont.font->ascent + SIZE_VINDENT,
+*/
+			/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+			Scr->SizeFont.font->ascent + SIZE_VINDENT +
+				 ((Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth : 0),
+
+			str, i);
 
 	/* I know, I know, but the above code overwrites it... djhjr - 5/9/96 */
-	if (Scr->use3Dborders)
+	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+	if (Scr->InfoBevelWidth > 0)
 	    Draw3DBorder(Scr->SizeWindow, 0, 0,
 				Scr->SizeStringWidth,
+
+/* djhjr - 4/29/98
 				(unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2),
 				BW, Scr->DefaultC, off, False, False);
+*/
+				/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+				(unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2) +
+					((Scr->InfoBevelWidth > 0) ? 2 * Scr->InfoBevelWidth : 0),
+				Scr->InfoBevelWidth, Scr->DefaultC, off, False, False);
 }
 

@@ -10,36 +10,41 @@
 
 # =============== Start of common editables =====================
 
-# To omit XPM image support for icons and buttons, uncomment this
-# (version 3.4h of the XPM library is the earliest supported I know of)
+# To omit XPM image support, uncomment this
 #XPM_DEFINE = -DNO_XPM_SUPPORT
 # and comment this
 SYS_LIBRARIES = -lXpm
+# (version 3.4h of the XPM library is the earliest supported I know of)
 
 # To omit platform and build info in the version window, uncomment this
 #INFO_DEFINE = -DNO_BUILD_INFO
 
-# If your system has putenv(), comment this
-PUTENV_DEFINE = -DNO_PUTENV
+# If your system doesn't have putenv(), uncomment this
+PUTENV_DEFINE = -DNEED_PUTENV_F
 
-# If your system doesn't have sys/select.h, comment this
-SELECT_DEFINE = -DHAVE_SELECT_H
+# If your system requires sys/select.h, uncomment this
+SELECT_DEFINE = -DNEED_SELECT_H
 
-# If your system doesn't have process.h, comment this
-PROCESS_DEFINE = -DHAVE_PROCESS_H
+# If your system requires process.h, uncomment this
+PROCESS_DEFINE = -DNEED_PROCESS_H
 
 # For those systems that have TWM installed in locations other than
-# the "default" for the $(LIBDIR) macro, change this to match
+# the default for the $(LIBDIR) macro, change this to match
 VTWMDIR = $(LIBDIR)/twm
 
-CDEBUGFLAGS =
-CCOPTIONS = -Otx -zp1 -mf -b -j -Wc,-s -N32k -w4
+# For the traditional look of TWM as the system fallback,
+# change this to "2D"
+SYS_VTWMRC_LOOK = 3D
+
+CDEBUGFLAGS = -w4 -M
+CCOPTIONS = -Otx -zp1 -mf -b -j -Wc,-s -N32k
 
 # ================ End of common editables ======================
 
 # ============= Start of less common editables ==================
 
-MV = mv
+CP = cp -f
+MV = mv -f
 RM = rm -f
 CC = cc
 LEX = lex
@@ -123,16 +128,17 @@ gram.c: gram.y
 	$(MV) y.tab.c gram.c
 
 clean:
-	$(RM) $(PROGRAM) *.o *.b *.err y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c lastmake.c
+	$(RM) $(PROGRAM) *.o *.b *.err *.map y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c lastmake.c system.vtwmrc
 
 deftwmrc.o: deftwmrc.c
 	$(CC) -c $(CFLAGS) deftwmrc.c
 
-deftwmrc.c:  system.vtwmrc
+deftwmrc.c:  system.vtwmrc.$(SYS_VTWMRC_LOOK)
+	$(CP) system.vtwmrc.$(SYS_VTWMRC_LOOK) system.vtwmrc
 	$(RM) $@
 	echo '/* ' >>$@
 	echo ' * This file is generated automatically from the default' >>$@
-	echo ' * VTWM bindings file system.vtwmrc by the VTWM Imakefile.' >>$@
+	echo ' * VTWM bindings file system.vtwmrc.'$(SYS_VTWMRC_LOOK)' by the VTWM Makefile.' >>$@
 	echo ' */' >>$@
 	echo '' >>$@
 	echo 'char *defTwmrc[] = {' >>deftwmrc.c
@@ -145,7 +151,7 @@ lastmake.o: lastmake.c
 lastmake.c:
 	$(RM) $@
 	echo '/* ' >>$@
-	echo ' * This file is generated automatically by the VTWM Imakefile.' >>$@
+	echo ' * This file is generated automatically by the VTWM Makefile.' >>$@
 	echo ' */' >>$@
 	echo '' >>$@
 	echo 'char *lastmake[] = {' >>lastmake.c

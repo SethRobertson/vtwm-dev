@@ -38,14 +38,25 @@
 #include "screen.h"
 #include "resize.h"
 #include "add_window.h"
-#include "siconify.bm"
+#include "siconify.xbm"
 #include <X11/Xos.h>
 #include <X11/Xmu/CharSet.h>
+
 #ifdef macII
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif
 
+#define strdup Strdup /* avoid conflict with system header files */
+extern char *strdup(char *);
+
+/* djhjr - 5/2/98 */
+static int ComputeIconMgrWindowHeight();
+
+/* see AddIconManager() - djhjr - 5/5/98
 int iconmgr_textx = siconify_width+11;
+*/
+int iconmgr_iconx = 0, iconmgr_textx = 0;
+
 WList *Active = NULL;
 WList *DownIconManager = NULL;
 int iconifybox_width = siconify_width;
@@ -94,16 +105,28 @@ void CreateIconManagers()
 	    JunkX = Scr->MyDisplayWidth - p->width - 
 	      (2 * Scr->BorderWidth) + JunkX;
 */
+/* djhjr - 8/11/98
 	    JunkX += Scr->MyDisplayWidth - p->width - 
 	      (2 * (Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth));
+*/
+	    JunkX += Scr->MyDisplayWidth - p->width - 
+	      (2 * Scr->BorderWidth);
 
 	if (mask & YNegative)
 /* djhjr - 4/19/96
 	    JunkY = Scr->MyDisplayHeight - p->height -
 	      (2 * Scr->BorderWidth) + JunkY;
 */
+/* djhjr - 8/11/98
 	    JunkY += Scr->MyDisplayHeight - p->height -
 	      (2 * (Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth));
+*/
+	    JunkY += Scr->MyDisplayHeight - p->height -
+	      (2 * Scr->BorderWidth);
+
+	/* djhjr - 9/10/98 */
+	if (p->width  < 1) p->width  = 1;
+	if (p->height < 1) p->height = 1;
 
 	background = Scr->IconManagerC.back;
 	GetColorFromList(Scr->IconManagerBL, p->name, (XClassHint *)NULL,
@@ -123,6 +146,12 @@ void CreateIconManagers()
 	XSetStandardProperties(dpy, p->w, str, icon_name, None, NULL, 0, NULL);
 
 	p->twm_win = AddWindow(p->w, TRUE, p);
+
+	/* djhjr - 5/19/98 */
+	p->twm_win->class.res_name = strdup(str);
+	p->twm_win->class.res_class = strdup(VTWM_ICONMGR_CLASS);
+	XSetClassHint(dpy, p->w, &p->twm_win->class);
+
 	SetMapStateProp (p->twm_win, WithdrawnState);
     }
     for (p = &Scr->iconmgr; p != NULL; p = p->next)
@@ -465,14 +494,14 @@ WList *AddIconManager(tmp_win)
 	&tmp_win->class, &tmp->highlight);
 
     /* djhjr - 4/19/96 */
-    if (Scr->use3Diconmanagers) {
+	/* was 'Scr->use3Diconmanagers' - djhjr - 8/11/98 */
+    if (Scr->IconMgrBevelWidth > 0) {
 	if (!Scr->BeNiceToColormap) GetShadeColors (&tmp->cp);
 	tmp->iconifypm = Create3DIconManagerIcon (tmp->cp);
     }
 
-    h = Scr->IconManagerFont.height + 10;
-    if (h < (siconify_height + 4))
-	h = siconify_height + 4;
+	/* djhjr - 5/2/98 */
+	h = ComputeIconMgrWindowHeight();
 
     ip->height = h * ip->count;
     tmp->me = ip->count;
@@ -517,7 +546,20 @@ WList *AddIconManager(tmp_win)
     attributes.event_mask = (ButtonReleaseMask| ButtonPressMask |
 			     ExposureMask);
     attributes.cursor = Scr->ButtonCursor;
-    tmp->icon = XCreateWindow (dpy, tmp->w, 5, (int) (h - siconify_height)/2,
+
+	/* djhjr - 5/5/98 */
+	if (!iconmgr_iconx)
+	{
+		/* was 'Scr->use3Diconmanagers' - djhjr - 8/11/98 */
+		if (Scr->IconMgrBevelWidth > 0)
+			iconmgr_iconx = Scr->IconMgrBevelWidth + 5;
+		else
+			iconmgr_iconx = Scr->BorderWidth + 5;
+		iconmgr_textx = iconmgr_iconx + siconify_width + 5;
+	}
+
+	/* 'iconmgr_iconx' was '5' - djhjr - 5/5/98 */
+    tmp->icon = XCreateWindow (dpy, tmp->w, iconmgr_iconx, (int) (h - siconify_height)/2,
 			       (unsigned int) siconify_width,
 			       (unsigned int) siconify_height,
 			       (unsigned int) 0, CopyFromParent,
@@ -638,6 +680,19 @@ void RemoveIconManager(tmp_win)
 	return;
 
     tmp = tmp_win->list;
+
+	/*
+	 * Believe it or not, the kludge in events.c:HandleKeyPress() needs
+	 * this, or a window that's been destroyed still registers there,
+	 * even though the whole mess gets freed in just a few microseconds!
+	 *
+	 * djhjr - 6/5/98
+	 */
+#ifdef NEVER /* warps to icon managers uniquely handled in menus.c:WarpToWindow() */
+	tmp->active = FALSE;
+	tmp->iconmgr->active = NULL;
+#endif
+
     tmp_win->list = NULL;
     ip = tmp->iconmgr;
 
@@ -651,6 +706,12 @@ void RemoveIconManager(tmp_win)
     XDeleteContext(dpy, tmp->w, ScreenContext);
     XDestroyWindow(dpy, tmp->w);
     ip->count -= 1;
+
+#ifdef NEVER /* can't do this, else we lose the button entirely! */
+	/* about damn time I did this! - djhjr - 6/5/98 */
+	XFreePixmap(dpy, tmp->iconifypm);
+#endif
+
     free((char *) tmp);
 
     PackIconManager(ip);
@@ -694,10 +755,15 @@ void DrawIconManagerBorder(tmp, fill)
     WList *tmp;
     int fill;
 {
-    if (Scr->use3Diconmanagers) {
+	/* was 'Scr->use3Diconmanagers' - djhjr - 8/11/98 */
+    if (Scr->IconMgrBevelWidth > 0) {
 	int shadow_width;
 
+/* djhjr - 4/28/98
 	shadow_width = 2;
+*/
+	shadow_width = Scr->IconMgrBevelWidth;
+
 /* djhjr - 1/27/98
 	if (tmp->active && Scr->Highlight)
 */
@@ -798,9 +864,8 @@ void PackIconManager(ip)
     int savewidth;
     WList *tmp;
 
-    wheight = Scr->IconManagerFont.height + 10;
-    if (wheight < (siconify_height + 4))
-	wheight = siconify_height + 4;
+	/* djhjr - 5/2/98 */
+	wheight = ComputeIconMgrWindowHeight();
 
     wwidth = ip->width / ip->columns;
 
@@ -866,3 +931,34 @@ void PackIconManager(ip)
 
     ip->width = savewidth;
 }
+
+/*
+ * ComputeIconMgrWindowHeight()
+ * scale the icon manager window height to the font used
+ *
+ * djhjr - 5/2/98
+ */
+static int ComputeIconMgrWindowHeight()
+{
+	int h;
+
+	/* was 'Scr->use3Diconmanagers' - djhjr - 8/11/98 */
+	if (Scr->IconMgrBevelWidth > 0)
+	{
+		h = Scr->IconManagerFont.height + 2 * Scr->IconMgrBevelWidth + 4;
+		if (h < (siconify_height + 2 * Scr->IconMgrBevelWidth + 4))
+			h = siconify_height + 2 * Scr->IconMgrBevelWidth + 4;
+	}
+	else
+	{
+		h = Scr->IconManagerFont.height + 10;
+		if (h < (siconify_height + 4))
+			h = siconify_height + 4;
+	}
+
+	/* make height be odd so buttons look nice and centered */
+	if (!(h & 1)) h++;
+
+	return (h);
+}
+

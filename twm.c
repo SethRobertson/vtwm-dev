@@ -37,6 +37,7 @@
  ***********************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include <signal.h>
 #include <fcntl.h>
 #include "twm.h"
@@ -126,6 +127,7 @@ extern void assign_var_savecolor();
  ***********************************************************************
  */
 
+int
 main(argc, argv, environ)
     int argc;
     char **argv;
@@ -139,6 +141,9 @@ main(argc, argv, environ)
     XSetWindowAttributes attributes;	/* attributes for create windows */
     int numManaged, firstscrn, lastscrn, scrnum;
     extern ColormapWindow *CreateColormapWindow();
+
+    /* djhjr - 7/21/98 */
+    SIGNAL_T QueueRestartVtwm();
     
     ProgramName = argv[0];
     Argc = argc;
@@ -181,8 +186,10 @@ main(argc, argv, environ)
     newhandler (SIGHUP);
     newhandler (SIGQUIT);
     newhandler (SIGTERM);
-
 #undef newhandler
+
+    /* djhjr - 7/31/98 */
+    signal (SIGUSR1, QueueRestartVtwm);
 
     Home = getenv("HOME");
     if (Home == NULL)
@@ -316,6 +323,15 @@ main(argc, argv, environ)
 	/* djhjr - 4/22/96 */
 	Scr->ImageCache = NULL;
 
+	/* djhjr - 4/7/98 */
+	Scr->OpaqueMoveL = NULL;
+	Scr->NoOpaqueMoveL = NULL;
+	Scr->OpaqueResizeL = NULL;
+	Scr->NoOpaqueResizeL = NULL;
+
+	/* djhjr - 5/2/98 */
+	Scr->NoBorder = NULL;
+
 	/* remember to put an initialization in InitVariables also
 	 */
 
@@ -406,9 +422,18 @@ main(argc, argv, environ)
 
 	Scr->siconifyPm = None;
 	Scr->pullPm = None;
+
+/* djhjr - 5/17/98 */
+#ifdef ORIGINAL_PIXMAPS
 	Scr->hilitePm = None;
-	Scr->virtualPm = None;/*RFB PIXMAP*/
-	Scr->RealScreenPm = None;/*RFB PIXMAP*/
+	Scr->virtualPm = None; /* RFB PIXMAP */
+	Scr->RealScreenPm = None; /* RFB PIXMAP */
+#else /* ORIGINAL_PIXMAPS */
+	Scr->hilitePm = NULL;
+	Scr->virtualPm = NULL;
+	Scr->realscreenPm = NULL;
+#endif /* ORIGINAL_PIXMAPS */
+
 	Scr->tbpm.xlogo = None;
 	Scr->tbpm.resize = None;
 	Scr->tbpm.question = None;
@@ -429,7 +454,8 @@ main(argc, argv, environ)
 	assign_var_savecolor(); /* storeing pixels for twmrc "entities" */
 
 	/* djhjr - 4/19/96 */
-	if (Scr->use3Dtitles) {
+	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+	if (Scr->TitleBevelWidth > 0) {
 	    if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 0;
 
 /* djhjr - 3/12/97
@@ -441,24 +467,49 @@ main(argc, argv, environ)
 	    Scr->FramePadding  = 0;
 	    Scr->TitlePadding  = 0;
 
-		/* djhjr - 4/26/96 */
+/* djhjr - 4/3/98
+		* djhjr - 4/26/96 *
 		if (Scr->SunkFocusWindowTitle) Scr->TitleHighlight = FALSE;
+*/
 	}
 	else {
 	    if (Scr->FramePadding  == -100) Scr->FramePadding  = 2; /* values that look */
 	    if (Scr->TitlePadding  == -100) Scr->TitlePadding  = 8; /* "nice" on */
 	    if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 1; /* 75 and 100dpi displays */
 	    if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 1;
+
+		/* djhjr - 4/5/98 */
+		Scr->SunkFocusWindowTitle = FALSE;
 	}
-	if (Scr->use3Dtitles  && !Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
-	if (Scr->use3Dmenus   && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
-	if (Scr->use3Dmenus   && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuTitleC);
-	if (Scr->use3Dborders && !Scr->BeNiceToColormap) GetShadeColors (&Scr->BorderColorC);
-	if (! Scr->use3Dborders)
+	/* was 'Scr->use3D*' - djhjr - 8/11/98 */
+	if (Scr->TitleBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
+	if (Scr->MenuBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
+	if (Scr->MenuBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuTitleC);
+	if (Scr->BorderBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->BorderColorC);
+
+/* djhjr - 8/11/98
+	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
+	if (Scr->BorderBevelWidth == 0)
 		Scr->ThreeDBorderWidth = 0;
 	else
+*/
+	{
+/* djhjr - 8/11/98
+		* djhjr - 4/29/98 *
+		if (2 * Scr->BorderBevelWidth > Scr->ThreeDBorderWidth)
+			Scr->ThreeDBorderWidth = 2 * Scr->BorderBevelWidth;
+*/
+		if (2 * Scr->BorderBevelWidth > Scr->BorderWidth)
+			Scr->BorderWidth = 2 * Scr->BorderBevelWidth;
+
     	if (!Scr->BeNiceToColormap)
 			GetShadeColors(&Scr->DefaultC);
+	}
+
+	/* djhjr - 5/5/98 */
+	/* was 'Scr->use3Dicons' - djhjr - 8/11/98 */
+	if (Scr->IconBevelWidth > 0)
+		Scr->IconBorderWidth = 0;
 
 	if (Scr->SqueezeTitle == -1) Scr->SqueezeTitle = FALSE;
 	if (!Scr->HaveFonts) CreateFonts();
@@ -468,8 +519,12 @@ main(argc, argv, environ)
 	Scr->TitleBarFont.y += Scr->FramePadding;
 	Scr->TitleHeight = Scr->TitleBarFont.height + Scr->FramePadding * 2;
 
-	/* djhjr - 4/19/96 */
+/* djhjr - 4/29/98
+	* djhjr - 4/19/96 *
 	if (Scr->use3Dtitles) Scr->TitleHeight += 4;
+*/
+	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
+	if (Scr->TitleBevelWidth > 0) Scr->TitleHeight += 2 * Scr->TitleBevelWidth + 2;
 
 	/* make title height be odd so buttons look nice and centered */
 	if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
@@ -538,7 +593,8 @@ main(argc, argv, environ)
 	}
 
 	/* djhjr - 5/9/96 */
-	if (!Scr->use3Dborders)
+	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+	if (!Scr->BorderBevelWidth > 0)
 		attributes.border_pixel = Scr->DefaultC.fore;
 
 	attributes.background_pixel = Scr->DefaultC.back;
@@ -550,7 +606,8 @@ main(argc, argv, environ)
 	attributes.cursor = XCreateFontCursor (dpy, Scr->WaitCursor);
 
 	/* djhjr - 5/9/96 */
-	if (!Scr->use3Dborders)
+	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+	if (!Scr->BorderBevelWidth > 0)
 		valuemask = (CWBorderPixel | CWBackPixel | CWEventMask |
 			     CWBackingStore | CWCursor);
 	else
@@ -558,7 +615,8 @@ main(argc, argv, environ)
 #else
 
 	/* djhjr - 5/9/96 */
-	if (!Scr->use3Dborders)
+	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+	if (!Scr->BorderBevelWidth > 0)
 		valuemask = (CWBorderPixel | CWBackPixel | CWEventMask |
 			     CWBackingStore);
 	else
@@ -569,7 +627,8 @@ main(argc, argv, environ)
 					 (unsigned int) 5, (unsigned int) 5,
 
 					 /* djhjr - 5/9/96 */
-					 (unsigned int) (Scr->use3Dborders) ? 0 : BW, 0,
+					 /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+					 (unsigned int) (Scr->InfoBevelWidth > 0) ? 0 : BW, 0,
 
 					 (unsigned int) CopyFromParent,
 					 (Visual *) CopyFromParent,
@@ -579,10 +638,15 @@ main(argc, argv, environ)
 /* djhjr - 5/9/96
 					   " 8888 x 8888 ", 13);
 */
+/* djhjr - 4/29/98
 					   "nnnnnnnnnnnnn", 13);
+*/
+					   /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+					   "nnnnnnnnnnnnn", 13) + ((Scr->InfoBevelWidth > 0) ? 2 * Scr->InfoBevelWidth : 0);
 
 	/* djhjr - 5/9/96 */
-	if (!Scr->use3Dborders)
+	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+	if (!Scr->InfoBevelWidth > 0)
 		valuemask = (CWBorderPixel | CWBackPixel | CWBitGravity);
 	else
 		valuemask = (CWBackPixel | CWBitGravity);
@@ -621,10 +685,17 @@ main(argc, argv, environ)
 					 Scr->ResizeX, Scr->ResizeY,
 
 					 (unsigned int) Scr->SizeStringWidth,
+
+/* djhjr - 4/29/98
 					 (unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2),
+*/
+					 /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+					 (unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2) +
+						((Scr->InfoBevelWidth > 0) ? 2 * Scr->InfoBevelWidth : 0),
 
 					 /* djhjr - 5/9/96 */
-					 (unsigned int) (Scr->use3Dborders) ? 0 : BW, 0,
+					 /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+					 (unsigned int) (Scr->InfoBevelWidth > 0) ? 0 : BW, 0,
 
 					 (unsigned int) CopyFromParent,
 					 (Visual *) CopyFromParent,
@@ -657,11 +728,12 @@ main(argc, argv, environ)
 #define VTWM_PROFILE "VTWM Profile"
 	if (FindMenuRoot (VTWM_PROFILE)) {
 		ExecuteFunction (F_FUNCTION, VTWM_PROFILE, Event.xany.window,
-			Scr->TwmRoot, &Event, C_NO_CONTEXT, FALSE);
+			&Scr->TwmRoot, &Event, C_NO_CONTEXT, FALSE);
 	}
 
     HandleEvents();
 
+	return (0);
 }
 
 /***********************************************************************
@@ -707,8 +779,24 @@ void InitVariables()
     FreeList(&Scr->VirtualDesktopColorBL);
     FreeList(&Scr->VirtualDesktopColorBoL);
     FreeList(&Scr->DontShowInDisplay);
+
+	/* Submitted by Erik Agsjo <erik.agsjo@aktiedirekt.com> */
+    FreeList(&Scr->DontShowInTWMWindows);
+
     FreeList(&Scr->DoorForegroundL);
     FreeList(&Scr->DoorBackgroundL);
+
+	/* djhjr - 4/22/96 */
+	FreeList(&Scr->ImageCache);
+
+	/* djhjr - 4/7/98 */
+	FreeList(&Scr->OpaqueMoveL);
+	FreeList(&Scr->NoOpaqueMoveL);
+	FreeList(&Scr->OpaqueResizeL);
+	FreeList(&Scr->NoOpaqueResizeL);
+
+	/* djhjr - 5/2/98 */
+	FreeList(&Scr->NoBorder);
 
     NewFontCursor(&Scr->FrameCursor, "top_left_arrow");
     NewFontCursor(&Scr->TitleCursor, "top_left_arrow");
@@ -752,7 +840,10 @@ void InitVariables()
     Scr->FramePadding = -100;
     Scr->TitlePadding = -100;
     Scr->ButtonIndent = -100;
+
+/* djhjr - 8/11/98
     Scr->ThreeDBorderWidth = 6;
+*/
 
 	/* djhjr - 5/15/96 */
 	Scr->ResizeX = Scr->ResizeY = 0;
@@ -774,8 +865,20 @@ void InitVariables()
     Scr->SizeStringOffset = 0;
     Scr->BorderWidth = BW;
     Scr->IconBorderWidth = BW;
+
+/* djhjr - 8/13/98 */
+#ifdef ORIGINAL_PIXMAPS
     Scr->UnknownWidth = 0;
     Scr->UnknownHeight = 0;
+#else /* ORIGINAL_PIXMAPS */
+#ifdef NO_XPM_SUPPORT
+    Scr->UnknownWidth = 0;
+    Scr->UnknownHeight = 0;
+#else
+    Scr->UnknownPm = NULL;
+#endif
+#endif /* ORIGINAL_PIXMAPS */
+
     Scr->NumAutoRaises = 0;
 /*  Scr->NoDefaults = FALSE;  */
 	Scr->NoDefaultMouseOrKeyboardBindings = FALSE; /* DSE */
@@ -794,6 +897,10 @@ void InitVariables()
     Scr->DontMoveOff = FALSE;
     Scr->DoZoom = FALSE;
     Scr->TitleFocus = TRUE;
+
+	/* djhjr - 5/27/98 */
+	Scr->IconManagerFocus = TRUE;
+
     Scr->NoTitlebar = FALSE;
     Scr->DecorateTransients = FALSE;
     Scr->IconifyByUnmapping = FALSE;
@@ -803,6 +910,10 @@ void InitVariables()
     Scr->SaveUnder = TRUE;
     Scr->RandomPlacement = FALSE;
     Scr->OpaqueMove = FALSE;
+
+	/* djhjr - 4/6/98 */
+	Scr->OpaqueResize = FALSE;
+
     Scr->Highlight = TRUE;
 
 	/* djhjr - 1/27/98 */
@@ -832,18 +943,25 @@ void InitVariables()
 	/* djhjr - 6/25/96 */
     Scr->ShallowReliefWindowButton = 2;
 
-	/* djhjr - 4/19/96 */
+/* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
+	* djhjr - 4/19/96 *
     Scr->use3Diconmanagers = FALSE;
     Scr->use3Dmenus = FALSE;
     Scr->use3Dtitles = FALSE;
     Scr->use3Dborders = FALSE;
-    Scr->ClearShadowContrast = 50;
-    Scr->DarkShadowContrast  = 40;
+*/
+
+    Scr->ClearBevelContrast = 50;
+    Scr->DarkBevelContrast  = 40;
     Scr->BeNiceToColormap = FALSE;
+
+/* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
+	* djhjr - 5/5/98 *
+    Scr->use3Dicons = FALSE;
+*/
 
 	/* djhjr - 4/26/96 */
     Scr->SunkFocusWindowTitle = FALSE;
-
 
 	/* djhjr - 9/21/96 */
     Scr->ButtonColorIsFrame = FALSE;
@@ -901,6 +1019,9 @@ void InitVariables()
     Scr->VirtualDesktopPanDistanceX = 50;
     Scr->VirtualDesktopPanDistanceY = 50;
 
+	/* djhjr - 9/8/98 */
+	Scr->VirtualDesktopPanResistance = 0;
+
     /* default scale is 1:25 */
     Scr->VirtualDesktopDScale = 25;
 
@@ -929,6 +1050,21 @@ void InitVariables()
 
 	Scr->FixTransientVirtualGeometries = FALSE;    /* DSE */
 	Scr->WarpSnug = FALSE;                         /* DSE */
+
+	/* djhjr - 4/17/98 */
+	Scr->VirtualReceivesMotionEvents = FALSE;
+	Scr->VirtualSendsMotionEvents = FALSE;
+
+	/* djhjr - 5/2/98 */
+	Scr->BorderBevelWidth = 0;
+	Scr->TitleBevelWidth = 0;
+	Scr->MenuBevelWidth = 0;
+	Scr->IconMgrBevelWidth = 0;
+	Scr->InfoBevelWidth = 0;
+
+	/* djhjr - 8/11/98 */
+	Scr->IconBevelWidth = 0;
+	Scr->ButtonBevelWidth = 0;
 }
 
 
@@ -1058,6 +1194,22 @@ SIGNAL_T Done()
     SIGNAL_RETURN;
 }
 
+/* djhjr - 7/31/98 */
+SIGNAL_T
+QueueRestartVtwm()
+{
+    XClientMessageEvent ev;
+
+    ev.type = ClientMessage;
+    ev.window = Scr->Root;
+    ev.message_type = _XA_TWM_RESTART;
+    ev.format = 32;
+    ev.data.b[0] = (char)0;
+
+    XSendEvent (dpy, Scr->VirtualDesktopDisplay, False, 0L, (XEvent *) &ev);
+    XFlush(dpy);
+    SIGNAL_RETURN;
+}
 
 /*
  * Error Handlers.  If a client dies, we'll get a BadWindow error (except for
@@ -1104,6 +1256,9 @@ Atom _XA_WM_TAKE_FOCUS;
 Atom _XA_WM_SAVE_YOURSELF;
 Atom _XA_WM_DELETE_WINDOW;
 
+/* djhjr - 7/31/98 */
+Atom _XA_TWM_RESTART;
+
 void InternUsefulAtoms ()
 {
     /*
@@ -1117,4 +1272,7 @@ void InternUsefulAtoms ()
     _XA_WM_TAKE_FOCUS = XInternAtom (dpy, "WM_TAKE_FOCUS", False);
     _XA_WM_SAVE_YOURSELF = XInternAtom (dpy, "WM_SAVE_YOURSELF", False);
     _XA_WM_DELETE_WINDOW = XInternAtom (dpy, "WM_DELETE_WINDOW", False);
+
+    /* djhjr - 7/31/98 */
+    _XA_TWM_RESTART = XInternAtom (dpy, "_TWM_RESTART", False);
 }

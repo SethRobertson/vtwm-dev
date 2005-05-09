@@ -56,3 +56,6 @@ extern void RaiseAutoPan();
 /* how wide/high the autopan windows are */
 #define AP_SIZE (Scr->AutoPanBorderWidth) /* DSE */
 
+/* djhjr - 5/19/98 */
+#define VTWM_DESKTOP_CLASS "VTWM Desktop"
+

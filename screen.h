@@ -40,6 +40,11 @@
 #include "iconmgr.h"
 #include "doors.h"
 
+/* djhjr - 5/17/98 */
+#ifndef ORIGINAL_PIXMAPS
+#include "util.h" /* for Image structure */
+#endif
+
 typedef struct _StdCmap {
     struct _StdCmap *next;		/* next link in chain */
     Atom atom;				/* property from which this came */
@@ -99,6 +104,9 @@ typedef struct ScreenInfo
     Window VirtualDesktopAutoPan[4]; /* the autopan windows */
     				/* 0 = left, 1 = right, 2 = top, 3 = bottom */
 
+    /* djhjr - 9/8/98 */
+    int VirtualDesktopPanResistance;	/* how much effort it takes to pan */
+
     TwmWindow TwmRoot;		/* the head of the twm window list */
 
     Window Root;		/* the root window */
@@ -112,16 +120,34 @@ typedef struct ScreenInfo
     name_list *ImageCache;  /* list of pixmaps */
     name_list *Icons;		/* list of icon pixmaps */
     TitlebarPixmaps tbpm;	/* titlebar pixmaps */
-    Pixmap UnknownPm;		/* the unknown icon pixmap */
     Pixmap siconifyPm;		/* the icon manager iconify pixmap */
     Pixmap pullPm;		/* pull right menu icon */
     int	pullW, pullH;		/* size of pull right menu icon */
+
+/* djhjr - 5/17/98 */
+/* added the unknowns - djhjr - 8/13/98 */
+#ifdef ORIGINAL_PIXMAPS
+    Pixmap UnknownPm;		/* the unknown icon pixmap */
+    int UnknownWidth;		/* width of the unknown icon */
+    int UnknownHeight;		/* height of the unknown icon */
     Pixmap hilitePm;		/* focus highlight window background */
     int hilite_pm_width, hilite_pm_height;  /* cache the size */
-    Pixmap virtualPm;		/* panner background pixmap RFB PIXMAP*/
-    int virtual_pm_width, virtual_pm_height;/*RFB PIXMAP*/
-    Pixmap RealScreenPm;		/* panner background pixmap RFB PIXMAP*/
-    int RealScreen_pm_width, RealScreen_pm_height;/*RFB PIXMAP*/
+    Pixmap virtualPm;		/* panner background pixmap RFB PIXMAP */
+    int virtual_pm_width, virtual_pm_height; /* RFB PIXMAP */
+    Pixmap RealScreenPm;		/* panner background pixmap RFB PIXMAP */
+    int RealScreen_pm_width, RealScreen_pm_height; /* RFB PIXMAP */
+#else /* ORIGINAL_PIXMAPS */
+#ifdef NO_XPM_SUPPORT
+    Pixmap UnknownPm;		/* the unknown icon pixmap */
+    int UnknownWidth;		/* width of the unknown icon */
+    int UnknownHeight;		/* height of the unknown icon */
+#else
+    char *UnknownPm;		/* the unknown icon pixmap name */
+#endif
+    Image *hilitePm;		/* focus highlight window image structure */
+    Image *virtualPm;		/* panner background window image structure */
+    Image *realscreenPm;	/* real screen window image structure */
+#endif /* ORIGINAL_PIXMAPS */
 
     MenuRoot *MenuList;		/* head of the menu list */
     MenuRoot *LastMenu;		/* the last menu (mostly unused?) */
@@ -183,8 +209,8 @@ typedef struct ScreenInfo
     Pixel IconManagerHighlight;	/* icon manager highlight */
 
     /* djhjr - 4/19/96 */
-    short ClearShadowContrast;  /* The contrast of the clear shadow */
-    short DarkShadowContrast;   /* The contrast of the dark shadow */
+    short ClearBevelContrast;  /* The contrast of the clear shadow */
+    short DarkBevelContrast;   /* The contrast of the dark shadow */
 
     Cursor TitleCursor;		/* title bar cursor */
     Cursor FrameCursor;		/* frame cursor */
@@ -217,6 +243,12 @@ typedef struct ScreenInfo
 	/* djhjr - 4/19/96 */
     name_list *NoBorder;	/* list of window without borders          */
 
+	/* djhjr - 4/7/98 */
+	name_list *OpaqueMoveL;		/* list of windows moved as a solid */
+	name_list *NoOpaqueMoveL;	/* list of windows moved as an outline */
+	name_list *OpaqueResizeL;	/* list of windows resized as a solid */
+	name_list *NoOpaqueResizeL;	/* list of windows resized as an outline */
+
     name_list *NoTitle;		/* list of window names with no title bar */
     name_list *MakeTitle;	/* list of window names with title bar */
     name_list *AutoRaise;	/* list of window names to auto-raise */
@@ -239,6 +271,10 @@ typedef struct ScreenInfo
     name_list *VirtualDesktopColorBL;  /* color of representations on the vd display */
     name_list *VirtualDesktopColorBoL; /* color of representations on the vd display */
     name_list *DontShowInDisplay;      /* don't show these in the desktop display */
+
+	/* Submitted by Erik Agsjo <erik.agsjo@aktiedirekt.com> */
+    name_list *DontShowInTWMWindows;   /* don't show these in the TWMWindows menu */
+
     name_list *DoorForegroundL; /* doors foreground */
     name_list *DoorBackgroundL; /* doors background */
 
@@ -271,12 +307,23 @@ typedef struct ScreenInfo
     int SizeStringWidth;	/* minimum width of size window */
     int BorderWidth;		/* border width of twm windows */
 
-    /* djhjr - 4/18/96 */
-    int ThreeDBorderWidth;	/* 3D border width of twm windows */
+/* djhjr - 8/11/98
+    * djhjr - 4/18/96 *
+    int ThreeDBorderWidth;	* 3D border width of twm windows *
+*/
+
+    /* widths of the various 3D shadows - djhjr - 5/2/98 */
+    int BorderBevelWidth;
+    int TitleBevelWidth;
+    int MenuBevelWidth;
+    int IconMgrBevelWidth;
+    int InfoBevelWidth;
+
+    /* djhjr - 8/11/98 */
+    int IconBevelWidth;
+    int ButtonBevelWidth;
 
     int IconBorderWidth;	/* border width of icon windows */
-    int UnknownWidth;		/* width of the unknown icon */
-    int UnknownHeight;		/* height of the unknown icon */
     int TitleHeight;		/* height of the title bar window */
     TwmWindow *Focus;		/* the twm window that has focus */
     TwmWindow *Newest;		/* the most newly added twm window -- PF */
@@ -310,6 +357,10 @@ typedef struct ScreenInfo
     short DontMoveOff;		/* don't allow windows to be moved off */
     short DoZoom;		/* zoom in and out of icons */
     short TitleFocus;		/* focus on window in title bar ? */
+
+	/* djhjr - 5/27/98 */
+	short IconManagerFocus;		/* focus on window of the icon manager entry? */
+
     short NoTitlebar;		/* put title bars on windows */
     short DecorateTransients;	/* put title bars on transients */
     short IconifyByUnmapping;	/* simply unmap windows when iconifying */
@@ -320,6 +371,10 @@ typedef struct ScreenInfo
     short SaveUnder;		/* use save under's for menus */
     short RandomPlacement;	/* randomly place windows that no give hints */
     short OpaqueMove;		/* move the window rather than outline */
+
+	/* djhjr - 4/6/98 */
+	short OpaqueResize;		/* resize the window rather than outline */
+
     short Highlight;		/* should we highlight the window borders */
 
     /* djhjr - 1/27/98 */
@@ -363,18 +418,30 @@ typedef struct ScreenInfo
 	/* djhjr - 6/25/96 */
 	short	ShallowReliefWindowButton;
 
-    /* djhjr - 4/18/96 */
+/* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
+    * djhjr - 4/18/96 *
     short 	use3Dmenus;
     short 	use3Dtitles;
     short 	use3Diconmanagers;
     short 	use3Dborders;
+*/
+
     short	BeNiceToColormap;
+
+/* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
+    * djhjr - 5/5/98 *
+    short 	use3Dicons;
+*/
 
 	/* djhjr - 4/25/96 */
 	short SunkFocusWindowTitle;
 
 	/* djhjr - 9/21/96 */
 	short ButtonColorIsFrame;
+
+	/* djhjr - 4/17/98 */
+	short VirtualReceivesMotionEvents;
+	short VirtualSendsMotionEvents;
 #else
 	struct
 	{
@@ -395,6 +462,10 @@ typedef struct ScreenInfo
     	unsigned int DontMoveOff						: 1;
     	unsigned int DoZoom								: 1;
     	unsigned int TitleFocus							: 1;
+
+		/* djhjr - 5/27/98 */
+		unsigned int IconManagerFocus					: 1;
+
     	unsigned int NoTitlebar							: 1;
     	unsigned int DecorateTransients					: 1;
     	unsigned int IconifyByUnmapping					: 1;
@@ -405,6 +476,10 @@ typedef struct ScreenInfo
     	unsigned int SaveUnder							: 1;
     	unsigned int RandomPlacement					: 1;
     	unsigned int OpaqueMove							: 1;
+
+        /* djhjr - 4/6/98 */
+    	unsigned int OpaqueResize						: 1;
+
     	unsigned int Highlight							: 1;
 
     	/* djhjr - 1/27/98 */
@@ -445,13 +520,24 @@ typedef struct ScreenInfo
 		unsigned int FixTransientVirtualGeometries		: 1;
 		unsigned int WarpSnug							: 1;
 		unsigned int ShallowReliefWindowButton			: 2;
+
+/* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
 	    unsigned int use3Dmenus							: 1;
     	unsigned int use3Dtitles						: 1;
     	unsigned int use3Diconmanagers					: 1;
     	unsigned int use3Dborders						: 1;
+
+        * djhjr - 5/5/98 *
+    	unsigned int use3Dicons							: 1;
+*/
+
     	unsigned int BeNiceToColormap					: 1;
 		unsigned int SunkFocusWindowTitle				: 1;
 		unsigned int ButtonColorIsFrame					: 1;
+
+		/* djhjr - 4/17/98 */
+		unsigned int VirtualReceivesMotionEvents		: 1;
+		unsigned int VirtualSendsMotionEvents			: 1;
 	} userflags;
 #define NoDefaultMouseOrKeyboardBindings	userflags.NoDefaultMouseOrKeyboardBindings
 #define NoDefaultTitleButtons				userflags.NoDefaultTitleButtons
@@ -470,6 +556,10 @@ typedef struct ScreenInfo
 #define DontMoveOff							userflags.DontMoveOff
 #define DoZoom								userflags.DoZoom
 #define TitleFocus							userflags.TitleFocus
+
+/* djhjr - 5/27/98 */
+#define IconManagerFocus					userflags.IconManagerFocus
+
 #define NoTitlebar							userflags.NoTitlebar
 #define DecorateTransients					userflags.DecorateTransients
 #define IconifyByUnmapping					userflags.IconifyByUnmapping
@@ -480,6 +570,10 @@ typedef struct ScreenInfo
 #define SaveUnder							userflags.SaveUnder
 #define RandomPlacement						userflags.RandomPlacement
 #define OpaqueMove							userflags.OpaqueMove
+
+/* djhjr - 4/6/98 */
+#define OpaqueResize						userflags.OpaqueResize
+
 #define Highlight							userflags.Highlight
 
 /* djhjr - 1/27/98 */
@@ -520,13 +614,24 @@ typedef struct ScreenInfo
 #define FixTransientVirtualGeometries		userflags.FixTransientVirtualGeometries
 #define WarpSnug							userflags.WarpSnug
 #define ShallowReliefWindowButton			userflags.ShallowReliefWindowButton
+
+/* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
 #define use3Dmenus							userflags.use3Dmenus
 #define use3Dtitles							userflags.use3Dtitles
 #define use3Diconmanagers					userflags.use3Diconmanagers
 #define use3Dborders						userflags.use3Dborders
+
+* djhjr - 5/5/98 *
+#define use3Dicons							userflags.use3Dicons
+*/
+
 #define BeNiceToColormap					userflags.BeNiceToColormap
 #define SunkFocusWindowTitle				userflags.SunkFocusWindowTitle
 #define ButtonColorIsFrame					userflags.ButtonColorIsFrame
+
+/* djhjr - 4/17/98 */
+#define VirtualReceivesMotionEvents			userflags.VirtualReceivesMotionEvents
+#define VirtualSendsMotionEvents			userflags.VirtualSendsMotionEvents
 #endif
 
     FuncKey FuncKeyRoot;

@@ -90,5 +90,7 @@ extern void DrawIconManagerBorder();
 extern void SortIconManager();
 extern void PackIconManager();
 
+/* djhjr - 5/19/98 */
+#define VTWM_ICONMGR_CLASS "VTWM Icon Manager"
 
 #endif /* _ICONMGR_ */

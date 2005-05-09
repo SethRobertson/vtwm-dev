@@ -40,6 +40,7 @@
 
 %{
 #include <stdio.h>
+#include <string.h>
 #include <ctype.h>
 #include "twm.h"
 #include "menus.h"
@@ -50,6 +51,12 @@
 #include "doors.h"
 #include <X11/Xos.h>
 #include <X11/Xmu/CharSet.h>
+
+/* Submitted by Nelson H. F. Beebe */
+#ifdef __NeXT__
+#undef isascii
+#define isascii(c) ((0 <= (int)(c)) && ((int)(c) <= 127))
+#endif
 
 static char *Action = "";
 static char *Name = "";
@@ -98,25 +105,32 @@ extern int yylineno;
     char *ptr;
 };
 
-%token <num> LB RB LP RP MENUS MENU BUTTON DEFAULT_FUNCTION PLUS MINUS
-%token <num> ALL OR CURSORS PIXMAPS ICONS COLOR SAVECOLOR MONOCHROME FUNCTION
+%token <num> LP RP MENUS MENU BUTTON DEFAULT_FUNCTION PLUS MINUS
+%token <num> ALL OR CURSORS PIXMAPS ICONS COLOR MONOCHROME FUNCTION
 %token <num> ICONMGR_SHOW ICONMGR WINDOW_FUNCTION ZOOM ICONMGRS
 %token <num> ICONMGR_GEOMETRY ICONMGR_NOSHOW MAKE_TITLE
 %token <num> ICONIFY_BY_UNMAPPING DONT_ICONIFY_BY_UNMAPPING
 %token <num> NO_TITLE AUTO_RAISE NO_HILITE NO_ICONMGR_HILITE ICON_REGION
 %token <num> META SHIFT LOCK CONTROL WINDOW TITLE ICON ROOT FRAME VIRTUAL VIRTUAL_WIN
 %token <num> COLON EQUALS SQUEEZE_TITLE DONT_SQUEEZE_TITLE
+/* opaque stuff - djhjr - 4/7/98 */
+%token <num> OPAQUE_MOVE NO_OPAQUE_MOVE OPAQUE_RESIZE NO_OPAQUE_RESIZE
 %token <num> START_ICONIFIED NO_TITLE_HILITE TITLE_HILITE
 %token <num> MOVE RESIZE WAIT SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON
 %token <num> NUMBER KEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD
 %token <num> SKEYWORD DKEYWORD JKEYWORD WINDOW_RING WARP_CURSOR ERRORTOKEN
 %token <num> NO_STACKMODE NAILEDDOWN VIRTUALDESKTOP NO_SHOW_IN_DISPLAY
-%token <num> DOORS DOOR
+/* Submitted by Erik Agsjo <erik.agsjo@aktiedirekt.com> */
+%token <num> NO_SHOW_IN_TWMWINDOWS
+%token DOORS DOOR
 /*RFB PIXMAP:*/
 %token <num> VIRTUALMAP
 %token <num> REALSCREENMAP
 /*<RFB PIXMAP*/
 %token <ptr> STRING
+%token SAVECOLOR
+%token LB
+%token RB
 
 %type <ptr> string
 %type <num> action button number signed_number full fullkey
@@ -162,6 +176,20 @@ stmt		: error
 		  win_list
 		| ICONIFY_BY_UNMAPPING	{ if (Scr->FirstTime)
 		    Scr->IconifyByUnmapping = TRUE; }
+
+		| OPAQUE_MOVE { list = &Scr->OpaqueMoveL; }
+		  win_list
+		| OPAQUE_MOVE { if (Scr->FirstTime) Scr->OpaqueMove = TRUE; }
+		| NO_OPAQUE_MOVE { list = &Scr->NoOpaqueMoveL; }
+		  win_list
+		| NO_OPAQUE_MOVE { if (Scr->FirstTime) Scr->OpaqueMove = FALSE; }
+		| OPAQUE_RESIZE { list = &Scr->OpaqueResizeL; }
+		  win_list
+		| OPAQUE_RESIZE { if (Scr->FirstTime) Scr->OpaqueResize = TRUE; }
+		| NO_OPAQUE_RESIZE { list = &Scr->NoOpaqueResizeL; }
+		  win_list
+		| NO_OPAQUE_RESIZE { if (Scr->FirstTime) Scr->OpaqueResize = FALSE; }
+
 		| LEFT_TITLEBUTTON string EQUALS action {
 					  GotTitleButton ($2, $4, False);
 					}
@@ -275,6 +303,8 @@ stmt		: error
 		| VIRTUALDESKTOP string number
 					{ SetVirtualDesktop($2, $3); }
 		| NO_SHOW_IN_DISPLAY	{ list = &Scr->DontShowInDisplay; }
+		  win_list
+		| NO_SHOW_IN_TWMWINDOWS	{ list = &Scr->DontShowInTWMWindows; }
 		  win_list
 		;
 
