@@ -83,6 +83,7 @@ static MenuItem *lastmenuitem = (MenuItem*) 0;
 static Bool CheckWarpScreenArg(), CheckWarpRingArg();
 static Bool CheckColormapArg();
 static void GotButton(), GotKey(), GotTitleButton();
+static void yyerror();
 static name_list **list;
 /* djhjr - 4/26/99 */
 static RootRegion *ARlist;
