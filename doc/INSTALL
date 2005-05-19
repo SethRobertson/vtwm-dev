@@ -5,9 +5,9 @@ BUILDING VTWM 5.4
   - Unpack the distribution. You've likely done that already, no?
 
   - Determine if you have the XPM library installed:
-      - The library is usually found in /usr/X11/lib, /usr/local/lib,
+      - The library is usually found in /usr/X11R6/lib, /usr/local/lib,
         or some such directory. It's usually called "libxpm.a".
-      - The header file is usually found in /usr/X11/include,
+      - The header file is usually found in /usr/X11R6/include,
         /usr/local/include, or some such directory. It's "xpm.h".
 
   - Determine if you have regular expressions ("RE"s) support:
@@ -37,7 +37,11 @@ BUILDING VTWM 5.4
 
   - Look over Imakefile, and edit to taste. If you use a VNC client, or
     Cygwin under MS-Windows, you may want to make changes as described
-    further down in this file.
+    further down in this file. Or particular interest to some people
+    will be the installation path which can be changed by editing
+    VTWMBINDIR. See also VTWMLIBDIR and VTWMMANDIR. This will allow
+    installation to other than the system X11 directories where you don't
+    have root access.
 
   - Issue 'xmkmf'. If that doesn't work (you'll know it), you'll have
     to copy Makefile.QNX to Makefile, and edit the latter to taste.
@@ -55,19 +59,24 @@ BUILDING VTWM 5.4
 INSTALLING VTWM 5.4
 ===================
 
+1) Installation.
+    If you haven't modified VTWMBINDIR, et al, to point to a non-system
+    area in which you have write access, you will need to perform the
+    following install steps as root.
   - If you trust whoever set up your build environment:
-      - As root, issue 'make install'.
+      - issue 'make install'.
     If you don't:
       - Issue 'make -n install' to see what it'll do, without actually
-        doing it.
+	doing it.
   - If you want (or have) to set it up manually:
-      - As root, copy vtwm to /usr/X11/bin, or to wherever other X
-        window managers and binaries are.
-      - As root, copy system.vtwmrc to wherever it's spec'd in the
-        Makefile (this path is built into the VTWM binary).
-      - As root, copy vtwm.man to wherever other X window manager
-        man pages are (usually /usr/X11/man/mann).
+      - Copy vtwm to /usr/X11R6/bin, or to wherever other X
+	window managers and binaries are.
+      - Copy system.vtwmrc to wherever it's spec'd in the
+	Makefile (this path is built into the VTWM binary).
+      - Copy vtwm.man to wherever other X window manager
+	man pages are (usually /usr/X11R6/man/mann).
 
+2) Configuration.
   - Set up user resource files:
       - Copy system.vtwmrc to your home directory as .vtwmrc, and edit
         it to suit your immediate needs (you'll be editing it a lot more,
@@ -145,7 +154,7 @@ BUILD HINTS
 RUNTIME HINTS
 =============
 
-  - Prior to version 5.4.7, key and button bindings were dependant on
+  - Prior to version 5.4.7, key and button bindings were dependent on
     various "shift states". Version 5.4.7 can ignore these; check out
     the IgnoreModifiers variable.
 
