@@ -1208,6 +1208,8 @@ MyFont *font;
 	if (font->fontset != NULL)
 	    XFreeFontSet(dpy, font->fontset);
 
+	if (!font->name)
+	    font->name = Scr->DefaultFont.name;
 	if ((basename2 = (char *)malloc(strlen(font->name) + 3)))
 	    sprintf(basename2, "%s,*", font->name);
 	else
