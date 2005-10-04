@@ -152,7 +152,8 @@ typedef struct ScreenInfo
     TwmWindow *Ring;		/* one of the windows in window ring */
     TwmWindow *RingLeader;	/* current winodw in ring */
 
-    MouseButton Mouse[MAX_BUTTONS+1][NUM_CONTEXTS][MOD_SIZE];
+    MouseButton *Mouse;         // [MAX_BUTTONS+1][NUM_CONTEXTS][MOD_SIZE];
+#define MOUSELOC(but,con,siz) (but*NUM_CONTEXTS*MOD_SIZE+con*MOD_SIZE+siz)
     MouseButton DefaultFunction;
     MouseButton WindowFunction;
 

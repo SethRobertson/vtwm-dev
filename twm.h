@@ -86,8 +86,6 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 
 #define NULLSTR ((char *) NULL)
 
-#define MAX_BUTTONS	5	/* max mouse buttons supported */
-
 /* info stings defines */
 #define INFO_LINES 30
 #define INFO_SIZE 200
@@ -508,6 +506,7 @@ extern Window ResizeWindow;	/* the window we are resizing */
 extern int HasShape;		/* this server supports Shape extension */
 
 extern int PreviousScreen;
+extern int NumButtons;
 
 extern Cursor UpperLeftCursor;
 extern Cursor RightButt;

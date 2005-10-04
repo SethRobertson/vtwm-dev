@@ -72,6 +72,7 @@ Window ResizeWindow;		/* the window we are resizing */
 
 int MultiScreen = TRUE;		/* try for more than one screen? */
 int NumScreens;			/* number of screens in ScreenList */
+int NumButtons;			/* number of mouse buttons */
 int HasShape;			/* server supports shape extension? */
 int ShapeEventBase, ShapeErrorBase;
 ScreenInfo **ScreenList;	/* structures for each screen */
@@ -321,6 +322,10 @@ main(argc, argv, environ)
     /* Set up the per-screen global information. */
 
     NumScreens = ScreenCount(dpy);
+    {
+      unsigned char pmap[256];		/* there are 8 bits of buttons */
+      NumButtons = XGetPointerMapping(dpy, pmap, 256);
+    }
 
     if (MultiScreen)
     {
@@ -381,6 +386,14 @@ main(argc, argv, environ)
   		     ProgramName, scrnum);
   	    continue;
   	}
+        Scr->Mouse = calloc((NumButtons+1)*NUM_CONTEXTS*MOD_SIZE,sizeof(MouseButton));
+	if (!Scr->Mouse)
+	{
+	  fprintf (stderr, "%s: Unable to allocate memory for mouse buttons, exiting.\n",
+		   ProgramName);
+	  exit (1);
+	}
+
 
 	/* initialize list pointers, remember to put an initialization
 	 * in InitVariables also

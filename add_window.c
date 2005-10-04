@@ -1635,7 +1635,7 @@ static void do_add_binding (button, context, modifier, func)
     int button, context, modifier;
     int func;
 {
-    MouseButton *mb = &Scr->Mouse[button][context][modifier];
+    MouseButton *mb = &Scr->Mouse[MOUSELOC(button,context,modifier)];
 
     if (mb->func) return;		/* already defined */
 
@@ -1687,11 +1687,11 @@ TwmWindow *tmp_win;
 {
     int i, j;
 
-    for (i = 0; i < MAX_BUTTONS+1; i++)
+    for (i = 0; i < NumButtons+1; i++)
     {
 	for (j = 0; j < MOD_SIZE; j++)
 	{
-	    if (Scr->Mouse[i][C_WINDOW][j].func != F_NOFUNCTION)
+	    if (Scr->Mouse[MOUSELOC(i,C_WINDOW,j)].func != F_NOFUNCTION)
 	    {
 	        /* twm used to do this grab on the application main window,
                  * tmp_win->w . This was not ICCCM complient and was changed.

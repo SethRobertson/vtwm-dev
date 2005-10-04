@@ -208,12 +208,12 @@ InitMenus()
     int i, j, k;
     FuncKey *key, *tmp;
 
-    for (i = 0; i < MAX_BUTTONS+1; i++)
+    for (i = 0; i < NumButtons+1; i++)
 	for (j = 0; j < NUM_CONTEXTS; j++)
 	    for (k = 0; k < MOD_SIZE; k++)
 	    {
-		Scr->Mouse[i][j][k].func = F_NOFUNCTION;
-		Scr->Mouse[i][j][k].item = NULL;
+		Scr->Mouse[MOUSELOC(i,j,k)].func = F_NOFUNCTION;
+		Scr->Mouse[MOUSELOC(i,j,k)].item = NULL;
 	    }
 
     Scr->DefaultFunction.func = F_NOFUNCTION;
@@ -4378,9 +4378,9 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
          
 	    if (DeferExecution(context, func, Scr->SelectCursor))
 		return TRUE;
-	    for (i = 0; i < MAX_BUTTONS+1; i++)
+	    for (i = 0; i < NumButtons+1; i++)
 		for (j = 0; j < MOD_SIZE; j++)
-		    if (Scr->Mouse[i][C_WINDOW][j].func != F_NOFUNCTION)
+		    if (Scr->Mouse[MOUSELOC(i,C_WINDOW,j)].func != F_NOFUNCTION)
 			XGrabButton(dpy, i, j, tmp_win->frame,
 				    True, ButtonPressMask | ButtonReleaseMask,
 				    GrabModeAsync, GrabModeAsync, None,
@@ -4408,9 +4408,9 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 	    if (DeferExecution(context, func, Scr->SelectCursor))
 		return TRUE;
-	    for (i = 0; i < MAX_BUTTONS+1; i++)
+	    for (i = 0; i < NumButtons+1; i++)
 		for (j = 0; j < MOD_SIZE; j++)
-		    if (Scr->Mouse[i][C_WINDOW][j].func != F_NOFUNCTION)
+		    if (Scr->Mouse[MOUSELOC(i,C_WINDOW,j)].func != F_NOFUNCTION)
 			XUngrabButton(dpy, i, j, tmp_win->frame);
 	    break;
 	}
@@ -6573,7 +6573,7 @@ int func;
 			continue;
 		}
 
-		for (i = 0; i < MAX_BUTTONS + 1; i++)
+		for (i = 0; i < NumButtons + 1; i++)
 		{
 			l = 0;
 
@@ -6581,21 +6581,21 @@ int func;
 			{
 				if (mr)
 				{
-					if (Scr->Mouse[i][j][k].func == F_MENU)
-						l = FindMenuInMenus(Scr->Mouse[i][j][k].menu, mr);
+					if (Scr->Mouse[MOUSELOC(i,j,k)].func == F_MENU)
+						l = FindMenuInMenus(Scr->Mouse[MOUSELOC(i,j,k)].menu, mr);
 				}
 				else
 				{
-					if (Scr->Mouse[i][j][k].func == func)
+					if (Scr->Mouse[MOUSELOC(i,j,k)].func == func)
 						l = 1;
-					else if (Scr->Mouse[i][j][k].func == F_MENU)
-						l = FindFuncInMenus(Scr->Mouse[i][j][k].menu, func);
+					else if (Scr->Mouse[MOUSELOC(i,j,k)].func == F_MENU)
+						l = FindFuncInMenus(Scr->Mouse[MOUSELOC(i,j,k)].menu, func);
 				}
 
 				if (l)
 				{
 					found |= (1 << j);
-					i = MAX_BUTTONS + 1;
+					i = NumButtons + 1;
 					break;
 				}
 			}

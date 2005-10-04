@@ -2580,7 +2580,7 @@ HandleButtonPress()
 	TwmDoor *door = NULL;
 
 	/* Submitted by Jennifer Elaan */
-	if (Event.xbutton.button > MAX_BUTTONS)
+	if (Event.xbutton.button > NumButtons)
 		return;
 
 	if (Scr->StayUpMenus)
@@ -2946,25 +2946,25 @@ HandleButtonPress()
 	if (Context == C_NO_CONTEXT) return;
 
 	RootFunction = F_NOFUNCTION;
-	if (Scr->Mouse[Event.xbutton.button][Context][modifier].func == F_MENU)
+	if (Scr->Mouse[MOUSELOC(Event.xbutton.button,Context,modifier)].func == F_MENU)
 	{
-		do_menu (Scr->Mouse[Event.xbutton.button][Context][modifier].menu,
+		do_menu (Scr->Mouse[MOUSELOC(Event.xbutton.button,Context,modifier)].menu,
 		(Window) None);
 		if (Scr->StayUpMenus)
 		{
 			GlobalMenuButton = False;
 		}
 	}
-	else if (Scr->Mouse[Event.xbutton.button][Context][modifier].func != F_NOFUNCTION)
+	else if (Scr->Mouse[MOUSELOC(Event.xbutton.button,Context,modifier)].func != F_NOFUNCTION)
 	{
 		Action = Scr->Mouse
-			[Event.xbutton.button][Context][modifier].item
+			[MOUSELOC(Event.xbutton.button,Context,modifier)].item
 				? Scr->Mouse
-					[Event.xbutton.button][Context][modifier]
+					[MOUSELOC(Event.xbutton.button,Context,modifier)]
 						.item->action
 				: NULL;
 		ExecuteFunction( Scr->Mouse
-			[Event.xbutton.button][Context][modifier].func,
+			[MOUSELOC(Event.xbutton.button,Context,modifier)].func,
 			Action, Event.xany.window, Tmp_win, &Event, Context, FALSE);
 	}
 	else if (Scr->DefaultFunction.func != F_NOFUNCTION)

@@ -250,24 +250,28 @@ stmt		: error
 					  GotTitleButton ($2, $4, True);
 					}
 		| button string		{ root = GetRoot($2, NULLSTR, NULLSTR);
-					  Scr->Mouse[$1][C_ROOT][0].func = F_MENU;
-					  Scr->Mouse[$1][C_ROOT][0].menu = root;
+		                          if ($1 <= NumButtons) {
+					    Scr->Mouse[MOUSELOC($1,C_ROOT,0)].func = F_MENU;
+					    Scr->Mouse[MOUSELOC($1,C_ROOT,0)].menu = root;
+					  }
 					}
-		| button action		{ Scr->Mouse[$1][C_ROOT][0].func = $2;
-					  if ($2 == F_MENU)
-					  {
-					    pull->prev = NULL;
-					    Scr->Mouse[$1][C_ROOT][0].menu = pull;
-					  }
-					  else
-					  {
-					    root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
-					    Scr->Mouse[$1][C_ROOT][0].item =
-						AddToMenu(root,"x",Action,
-							  NULLSTR,$2,NULLSTR,NULLSTR);
-					  }
-					  Action = "";
-					  pull = NULL;
+		| button action		{ if ($1 <= NumButtons) {
+					    Scr->Mouse[MOUSELOC($1,C_ROOT,0)].func = $2;
+					    if ($2 == F_MENU)
+					    {
+					      pull->prev = NULL;
+					      Scr->Mouse[MOUSELOC($1,C_ROOT,0)].menu = pull;
+					    }
+					    else
+					    {
+					      root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
+					      Scr->Mouse[MOUSELOC($1,C_ROOT,0)].item =
+						  AddToMenu(root,"x",Action,
+							    NULLSTR,$2,NULLSTR,NULLSTR);
+					    }
+					    Action = "";
+					    pull = NULL;
+		                          }
 					}
 		| string fullkey	{ GotKey($1, $2); }
 		| button full		{ GotButton($1, $2); }
@@ -879,7 +883,7 @@ button		: BUTTON number		{ $$ = $2;
 					  if ($2 == 0)
 						yyerror("bad button 0");
 
-					  if ($2 > MAX_BUTTONS)
+					  if ($2 > NumButtons)
 					  {
 						$$ = 0;
 						yyerror("button number too large");
@@ -1134,24 +1138,27 @@ int butt, func;
 {
     int i;
 
+    if (butt > NumButtons)
+      return;
+
     for (i = 0; i < NUM_CONTEXTS; i++)
     {
 	if ((cont & (1 << i)) == 0)
 	    continue;
 
-	Scr->Mouse[butt][i][mods].func = func;
+	Scr->Mouse[MOUSELOC(butt,i,mods)].func = func;
 
 	if (func == F_MENU)
 	{
 	    pull->prev = NULL;
 
-	    Scr->Mouse[butt][i][mods].menu = pull;
+	    Scr->Mouse[MOUSELOC(butt,i,mods)].menu = pull;
 	}
 	else
 	{
 	    root = GetRoot(TWM_ROOT, NULLSTR, NULLSTR);
 
-	    Scr->Mouse[butt][i][mods].item = AddToMenu(root,"x",Action,
+	    Scr->Mouse[MOUSELOC(butt,i,mods)].item = AddToMenu(root,"x",Action,
 		    NULLSTR, func, NULLSTR, NULLSTR);
 
 	}
