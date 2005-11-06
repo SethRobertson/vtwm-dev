@@ -1,0 +1,21 @@
+vtwm (5.4.4-3) frozen unstable; urgency=medium, closes=20992
+
+  * Re-Upload as the last removed the .orig.tar.gz dependency
+    and executable of debian/rules (closes: Bug#20992)
+
+ -- Martin Schulze <joey@finlandia.infodrom.north.de>  Tue, 14 Apr 1998 01:51:23 +0200
+
+vtwm (5.4.4-2) froen unstable; urgency=medium
+
+  * Correct permissions for conffiles (lintian)
+  * Correct permissions for changelog (lintian)
+  * Correct permissions for manpage (lintian)
+
+ -- Martin Schulze <joey@finlandia.infodrom.north.de>  Tue, 24 Mar 1998 00:27:38 +0100
+
+vtwm (5.4.4-1) unstable; urgency=low
+
+  * New upstream source
+  * Re-packaged
+
+ -- Martin Schulze <joey@finlandia.infodrom.north.de>  Sun, 1 Mar 1998 10:56:10 +0100

@@ -1,0 +1,30 @@
+
+This is the announcement of VTWM 5.4.4, an upgrade of the recently released
+VTWM 5.4. The web page, http://www.visi.com/~hawkeyd/vtwm.html, has been
+updated, and the archive may be found via a link there, or directly via FTP
+at ftp://ftp.visi.com in the /users/hawkeyd/X directory, and ftp://ftp.x.org
+in the /contrib/window_managers directory (if and when they move it there
+from the /incoming directory).
+
+The major changes, in a nutshell:
+  - Squashed two big bugs, involving pan distances and monochrome GCs, that
+    would crash VTWM. Many other nuisances exterminated, too.
+  - The border drawing code [finally] renders the top segment of the border
+    when using 3D squeezed titles, and now correctly renders small windows.
+  - Enabled a resource to go easy on colormap allocations.
+  - Added a resource for highlighting icon manager entries, independant of
+    the border highlighting resource.
+  - Simplified parameter enterpretation for SqueezeTitle list entries.
+  - The startup sequence now searches for user and system .vtwmrc files,
+    then user and system .twmrc files, in this order.
+  - Color image (XPM) support for icons.
+  - An up-to-date man page, and support for HTML and Postscript conversions.
+  - Many additions and fixes to improve portability and operability.
+
+For those that may not know, VTWM 5.4 is an update of the venerable window
+manager that features a fully configurable 3D interface, as well as many
+other bells, whistles, and, of course, bug fixes.
+
+D. J. Hawkey Jr. (hawkeyd@visi.com)
+January 27, 1998
+

@@ -1,0 +1,102 @@
+ANNOUNCEMENT
+============
+
+vtwm 5.3 is available now via anonymous ftp at:
+
+    ftp.x.org:/contrib/vtwm-5.3.tar.gz
+
+A SUMMARY OF CHANGES FROM VTWM-5.2.2 TO VTWM-5.3
+================================================
+    
+    The file `CHANGELOG' in the vtwm-5.3 archive contains more detailed info
+    concerning changes made since version 5.0.
+
+    New Variables:
+    --------------
+        DontInterpolateTitles               (from tvtwm)
+        FixTransientVirtualGeometries       (BUG WORKAROUND!!)
+        MenuTitleFont                       (from tvtwm)
+        NailedAbove                         (aliased to StickyAbove)
+        NoDefaultMouseAndKeyboardBindings
+        NoDefaultTitleButtons
+        NoIconifyIconManagers               (from Paul Falstad)
+        StayUpOptionalMenus                 (from Paul Falstad)
+        StickyAbove                         (like the same feature in tvtwm)
+        WarpSnug
+        WarpToTransients                    (from Paul Falstad)
+
+    New Functions:
+    --------------
+        f.nail                              (aliased to f.stick)
+        f.stickyabove                       (or f.nailedabove)
+        f.warp                              (from Paul Falstad)
+        f.warpclassnext                     (from Paul Falstad)
+        f.warpclassprev                     (from Paul Falstad)
+        f.warptonewest                      (from Paul Falstad)
+
+    Other New Features:
+    -------------------
+        The window manager will now execute a special function called 
+        "VTWM Profile" upon the initial startup or restarting of the window
+        manager.  This may prove useful in certain situations.  For example,
+        say you want AutoPan to have a value but you want autopanning 
+	turned off initially:
+        
+            AutoPan 25
+            .
+            .
+            
+            function "VTWM Profile" {
+                .
+                .
+                
+                f.autopan # turns it off (you can turn it back on later)
+                .
+                .
+            }
+
+        The feature was created for this very specific purpose in mind, but 
+        the possibilities are endless.
+
+    Other fixes:
+    ------------
+        autopanning (wouldn't work when mouse was over a window on the edge
+            of the screen sometimes)
+        nailed windows will *always* go on the real screen, wherever the real
+            screen is on the virtual desktop.
+        small fix of an obvious bug in the source regarding nailed windows'
+            representations on the virtual desktop
+        patches to Imakefile
+
+    Undocumented functions now documented (please use these at your own risk):
+    --------------------------------------------------------------------------
+        f.cut
+        f.cutfile
+        f.file
+        f.movescreen
+        f.twmrc [same thing as f.restart anyway]
+        f.version
+
+WHAT IS VTWM?
+=============
+
+    vtwm (which stands for `Virtual Tab Window Manager') is based upon the
+    twm window manager, but adds extra functionality in the form of a
+    VIRTUAL DESKTOP.  The virtual desktop is an area larger than the
+    physical screen, where windows can be placed.  On the real screen, a
+    portion of the virtual desktop the size of the real screen can be seen. 
+    The `virtual desktop window', of course, facilitates navigation around
+    the desktop and manipulation of windows in the desktop.
+
+ACKNOWLEDGEMENTS
+================
+
+  * Paul Falstad <pf@z-code.z-code.com> for f.warp, one of the things I
+    really wanted to see, among other related things.
+  * kudos to Chris P. Ross <cross@eng.umd.edu> for letting me use some of
+    his code from tvtwm (MenuTitleFont and DontInterpolateTitles).
+  * Marty Leisner <leisner@eso.mc.xerox.com>, small patches to Imakefile.
+  * Kaur <kaur@stacken.kth.se> for pointing out f.movescreen to me, and
+    inspiring me to look for other undocumented stuff and take a stab at
+    documenting it.
+

@@ -1,0 +1,32 @@
+#!/usr/sbin/install-menu
+
+# $Id$
+
+compat="menu-1"
+
+!include menu.h
+
+compat="menu-2"
+
+# q($arg): backslash-escape double quotes in $arg
+function q($com) = esc($com,"\"");
+
+# apply($command, $action): run $command using window manager function $action
+function apply($com, $action) = "  \"" q(title()) "\" " $action " \"" q($com) " &\"\n";
+
+supported;
+    x11  = apply($command, "f.exec");
+    text = apply(term(), "f.exec");
+    wm   = apply($command, "f.startwm");
+endsupported;
+
+startmenu=   "menu \"" $section "\"\n{\n";
+endmenu=     "}\n";
+submenutitle="  \"" title() "\" f.menu \"" $section "\"\n";
+genmenu=      "menudefs.hook";
+rcfile=       "system.vtwmrc";
+examplercfile="system.vtwmrc-menu";
+rootprefix=   "/etc/X11/vtwm/";
+userprefix=   "/.vtwm/";
+
+# vim:set ai et sts=4 sw=4 tw=80:

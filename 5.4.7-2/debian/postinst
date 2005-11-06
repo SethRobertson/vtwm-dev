@@ -1,0 +1,24 @@
+#!/bin/sh
+# Debian vtwm package post-installation script
+# Copyright 1999 Branden Robinson.
+# Licensed under the GNU General Public License, version 2.  See the file
+# /usr/share/common-licenses/GPL or <http://www.gnu.org/copyleft/gpl.txt>.
+
+# $Id$
+
+set -e
+
+trap "echo ;\
+      echo 'Received signal.  Aborting configuration of vtwm package.' ;\
+      echo ;\
+      exit 1" 1 2 3 15
+
+#DEBHELPER#
+
+update-alternatives --install /usr/bin/x-window-manager x-window-manager \
+  /usr/bin/X11/vtwm 50 --slave /usr/share/man/man1/x-window-manager.1.gz \
+  x-window-manager.1.gz /usr/X11R6/man/man1/vtwm.1x.gz
+
+exit 0
+
+# vim:set ai et sts=4 sw=4 tw=80:

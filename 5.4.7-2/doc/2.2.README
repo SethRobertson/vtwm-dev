@@ -1,0 +1,15 @@
+Actually only one change from 5.2.1 to 5.2.2: A bug in my workaround from
+5.2.1 regarding supporting negative door geometries has been fixed.  I found
+this bug by trying to use a +0+0 geometry; it didn't exactly work.
+
+DISCLAIMER: I am not the official maintainer or central programmer of vtwm,
+but there isn't one anyway; I just made a few fixes, played with the code to
+make it a little bit more `configurable' in certain areas, and decided to see
+what *you* think of the changes I made.  I also don't know much about X
+programming, but the changes I made to vtwm haven't caused any major damage
+so far.
+
+--
+    letitflowletyourselfgos[   darren s. embry   ]lowandlowthatisthetempo
+                           [  dsembr01@starbase  ]
+beingashamedbecauseyouredif[ .spd.louisville.edu ]ferentisthesickestkindoflie

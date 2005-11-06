@@ -1,0 +1,223 @@
+
+# Here is a makefile for VTWM.
+#
+# It's a hand-tweaked version of the makefile made with xmkmf,
+# it may prove useful as a template for those who don't have xmkmf.
+#
+# This makefile guarantees that the build info is absolutely current.
+#
+# djhjr
+
+# =============== Start of common editables =====================
+
+# To omit XPM image support, uncomment this
+#XPM_DEFINE = -DNO_XPM_SUPPORT
+# and comment these
+XPMLIB = -lXpm
+XPMINC =
+# (version 3.4h of the XPM library is the earliest supported I know of)
+
+# To omit regular expressions ("RE"s) support, uncomment this
+#REGEX_DEFINE = -DNO_REGEX_SUPPORT
+# and comment these
+REGEXLIB =
+REGEXINC =
+# (the library must conform to the POSIX 1003.2 specification)
+
+# To omit sound support. uncomment this
+SOUND_DEFINE = -DNO_SOUND_SUPPORT
+# and comment these
+#SOUNDLIB = -L/usr/local/lib -lrplay
+#SOUNDINC = -I/usr/local/include
+# (sound is supported only by way of the rplay library)
+
+# To omit Internationalization support, uncomment this
+I18N_DEFINE = -DNO_I18N_SUPPORT
+
+# To omit m4 pre-processing of resource files, uncomment this
+#M4_DEFINE = -DNO_M4_SUPPORT
+
+# To omit platform and build info in the version window, uncomment this
+#INFO_DEFINE = -DNO_BUILD_INFO
+
+# For lexers that don't track line numbers, uncomment this
+YYLINENO_DEFINE = -DNEED_YYLINENO_V
+
+# For those systems that don't have putenv(), uncomment this
+PUTENV_DEFINE = -DNEED_PUTENV_F
+
+# For those systems that require sys/select.h, uncomment this
+SELECT_DEFINE = -DNEED_SELECT_H
+
+# For those systems that require process.h, uncomment this
+PROCESS_DEFINE = -DNEED_PROCESS_H
+
+# Installation path for the binary
+VTWMBINDIR = /usr/bin/X11
+
+# Installation path for the system resource file
+VTWMLIBDIR = /usr/lib/X11/twm
+
+# Installation path for the man page
+VTWMMANDIR = /usr/man/mann
+
+# For the traditional look of TWM as the system fallback,
+# change this to "2D"
+SYS_VTWMRC_LOOK = 3D
+
+CDEBUGFLAGS = -w4 -M
+CCOPTIONS = -Otx -zp1 -mf -b -j -Wc,-s -N32k
+
+# ================ End of common editables ======================
+
+# ============= Start of less common editables ==================
+
+CP = cp -f
+MV = mv -f
+RM = rm -f
+LN = ln -fs
+CC = cc
+LEX = lex
+YACC = yacc
+
+YFLAGS = -d
+
+USRLIBDIR = /usr/lib/X11
+
+# Handy for developers to check man page editions
+# (see the end of this file)
+DEROFF = deroff
+DW = dw
+SPELL = spell
+
+# Required to generate HTML or Postscript versions of the man page
+# (see the end of this file)
+MAN2HTML = man2html
+MAN2PS = man2ps
+
+# ============== End of less common editables ===================
+
+# ========= Editing below here should not be necessary ==========
+
+XMULIB = -lXmu
+XTOOLLIB =
+EXTENSIONLIB = -lXext
+XLIB = $(EXTENSIONLIB) -lX11_s
+
+LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB) $(XLIB) \
+                  $(XPMLIB) $(REGEXLIB) $(SOUNDLIB)
+EXTRA_LIBRARIES = -lXqnx -lsocket
+LDLIBS = $(LOCAL_LIBRARIES) $(EXTRA_LIBRARIES)
+
+INCLUDES =
+EXTRA_INCLUDES = $(XPMINC) $(REGEXINC) $(SOUNDINC)
+STD_INCLUDES =
+
+ALLINCLUDES = $(INCLUDES) $(EXTRA_INCLUDES) $(STD_INCLUDES)
+
+STD_DEFINES = -D__QNX__ -DMetroLink -DSTRINGS_ALIGNED -DNO_REGEX \
+              -DBOGUS_MB_MAX
+EXTRA_DEFINES = $(XPM_DEFINE) $(SOUND_DEFINE) $(REGEX_DEFINE) \
+                $(I18N_DEFINE) $(M4_DEFINE) $(INFO_DEFINE) \
+                $(YYLINENO_DEFINE) $(PUTENV_DEFINE) $(SELECT_DEFINE) \
+                $(PROCESS_DEFINE)
+PROTO_DEFINES =
+
+ALLDEFINES = $(ALLINCLUDES) $(STD_DEFINES) $(EXTRA_DEFINES) $(PROTO_DEFINES)
+
+CFLAGS = $(CDEBUGFLAGS) $(CCOPTIONS) $(ALLDEFINES) -L$(USRLIBDIR)
+
+SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c twm.c sound.c \
+	parse.c menus.c events.c resize.c util.c version.c iconmgr.c \
+	cursor.c regions.c applets.c icons.c desktop.c doors.c lastmake.c
+
+OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o twm.o sound.o \
+	parse.o menus.o events.o resize.o util.o version.o iconmgr.o \
+	cursor.o regions.o applets.o icons.o desktop.o doors.o lastmake.o
+
+PROGRAM = vtwm
+
+all: vtwm
+
+depend: lex.c gram.c deftwmrc.c lastmake.c
+
+install:
+	$(CP) $(PROGRAM) $(VTWMBINDIR)
+	$(CP) system.vtwmrc $(VTWMLIBDIR)
+	$(CP) doc/vtwm.man $(VTWMMANDIR)
+
+clean:
+	$(RM) $(PROGRAM) *.o *.b *.err *.map y.tab.h y.tab.c lex.yy.c \
+	gram.h gram.c lex.c deftwmrc.c lastmake.c system.vtwmrc \
+	vtwm.dw vtwm.ser vtwm.html vtwm.ps
+
+vtwm: $(OBJS)
+	$(RM) $@
+	$(CC) -o $@ $(OBJS) $(CFLAGS) $(LDLIBS)
+	$(RM) deftwmrc.* lastmake.*
+
+parse.o: gram.h
+	$(RM) $@
+	$(CC) -c $(CFLAGS) '-DSYSTEM_VTWMRC="'$(VTWMLIBDIR)'/system.vtwmrc"' \
+	'-DSYSTEM_TWMRC="'$(VTWMLIBDIR)'/system.twmrc"' parse.c
+
+add_window.o applets.o events.o icons.o list.o menus.o \
+regions.o sound.o twm.o util.o: gram.h
+	$(RM) $@
+	$(CC) -c $(CFLAGS) $*.c
+
+lex.o: gram.h
+
+gram.h gram.c: gram.y
+	$(YACC) $(YFLAGS) gram.y
+	$(MV) y.tab.c gram.c
+	$(MV) y.tab.h gram.h
+
+deftwmrc.c:  system.vtwmrc
+	$(RM) $@
+	echo '/* ' >>$@
+	echo ' * This file is generated automatically from the default' >>$@
+	echo ' * VTWM bindings file system.vtwmrc.'$(SYS_VTWMRC_LOOK)' by the VTWM Makefile.' >>$@
+	echo ' */' >>$@
+	echo '' >>$@
+	echo 'char *defTwmrc[] = {' >>deftwmrc.c
+	sed -e '/^$$/d' -e '/^#/d' -e 's/"/\\"/g' -e 's/^/"/' -e 's/$$/",/' -e 's/[	]\{1,\}/ /g' -e 's/^" /"/' system.vtwmrc >>$@
+	echo '(char *)0 };' >>$@
+
+lastmake.c:
+	$(RM) $@
+	echo '/* ' >>$@
+	echo ' * This file is generated automatically by the VTWM Makefile.' >>$@
+	echo ' */' >>$@
+	echo '' >>$@
+	echo 'char *lastmake[] = {' >>lastmake.c
+	echo '    "Platform:  '`uname -r -s`'",' >>$@
+	echo '    "Build:  '`date`'",' >>$@
+	echo '    "" };' >>$@
+
+system.vtwmrc:
+	$(RM) $@
+	$(CP) $@.$(SYS_VTWMRC_LOOK) $@
+
+# Handy for developers to check the man page
+dw vtwm.dw: doc/vtwm.man
+	$(DEROFF) doc/vtwm.man | $(DW) >vtwm.dw
+	@if test -s vtwm.dw ; \
+	then \
+	    echo Doubled words in vtwm.man ... ; \
+	    cat vtwm.dw ; \
+	fi
+spell vtwm.ser: doc/vtwm.man vtwm.sok
+	$(DEROFF) doc/vtwm.man | $(SPELL) +vtwm.sok >vtwm.ser
+	@if test -s vtwm.ser ; \
+	then \
+	    echo Spelling exceptions in vtwm.man ... ; \
+	    cat vtwm.ser ; \
+	fi
+
+# If you wish to generate HTML or Postscript versions of the man page,
+# enter 'make vtwm.html' or 'make vtwm.ps'
+vtwm.html: doc/vtwm.man
+	$(MAN2HTML) doc/vtwm.man
+vtwm.ps: doc/vtwm.man
+	$(MAN2PS) < $< >$@

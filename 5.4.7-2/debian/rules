@@ -1,0 +1,100 @@
+#!/usr/bin/make -f
+# Debian package build rules file for vtwm
+# Copyright 1997-1999 Joey Hess.
+# Copyright 1999 Branden Robinson.
+# Licensed under the GNU General Public License, version 2.  See the file
+# /usr/share/common-licenses/GPL or <http://www.gnu.org/copyleft/gpl.txt>.
+
+# $Id$
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+CDEBUGFLAGS=-g
+# Does DEB_BUILD_OPTIONS contain the "noopt" flag?
+ifeq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+# don't get rid of the space in the next line
+CDEBUGFLAGS+= -O2
+else
+CDEBUGFLAGS+= -O0
+endif
+export CDEBUGFLAGS
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+
+	xmkmf
+	$(MAKE) LIBDIR=/usr/X11R6/lib TWMDIR=/usr/X11R6/lib/X11/twm
+
+	>"$@"
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+
+	-$(MAKE) clean
+	rm -f Makefile
+
+	dh_clean debian/README.Debian
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	$(MAKE) DESTDIR=debian/vtwm install install.man
+	rm debian/vtwm/etc/X11/vtwm/system.vtwmrc
+	install -m 644 debian/system.vtwmrc-menu debian/vtwm/etc/X11/vtwm
+
+	sed -n '/^RUNTIME HINTS/,$$p' <doc/INSTALL >debian/README.Debian
+
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+# Do not ship the following files from the doc/ directory:
+#   doc/CHANGELOG (dh_installchangelog handles this)
+#   doc/INSTALL (handled above in install target)
+	dh_installdocs \
+	  doc/1.README \
+	  doc/2.1.ANNOUNCE \
+	  doc/2.1.README \
+	  doc/2.2.README \
+	  doc/2.README \
+	  doc/3.FUTURE \
+	  doc/3.README \
+	  doc/4.4.ANNOUNCE \
+	  doc/4.4.FUTURE \
+	  doc/4.4.README \
+	  doc/4.5.ANNOUNCE \
+	  doc/4.5.README \
+	  doc/4.6.ANNOUNCE \
+	  doc/4.6.README \
+	  doc/4.7.README \
+	  doc/4.ANNOUNCE \
+	  doc/4.FUTURE \
+	  doc/4.README \
+	  doc/BUGS \
+	  doc/DEVELOPERS \
+	  doc/HISTORY \
+	  doc/SOUND \
+	  doc/WISHLIST
+	dh_installexamples system.vtwmrc.2D system.vtwmrc.3D
+	dh_installmenu
+	dh_installchangelogs doc/CHANGELOG
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-arch
+.PHONY: build clean binary-arch binary install
+
+# vim:set ai noet sts=8 sw=8 tw=80:

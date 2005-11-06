@@ -1,0 +1,33 @@
+
+A FEW THOUGHTS TO FUTURE MAINTAINERS/DEVELOPERS/HACKERS
+=======================================================
+
+  - If you feel compelled to add more compile-time options (i.e., Java
+    support, etc.), please follow the "NO_" and "NEED_" conventions in the
+    make files. Also, add code as appropriate to menus.c:Identify() and
+    parse.c:make_m4_cmdline().
+
+  - Likewise, please follow what few coding conventions are in place. Don't
+    use C++'s double-slash comments, keep up with the K&R style functions,
+    etc.
+
+  - Keep VTWM portable. There are only two "#ifdef __PLATFORM__"s in this
+    code, yet it runs on platforms I've never seen. GNU isn't everywhere.
+    Neither is POSIX or ANSI. Seek out variety through beta-testers in the
+    X-related newsgroups. Finally, remember that it's X11R4 compliant.
+
+  - Just because you can't live without such-and-such doesn't mean everyone
+    can't. It's a window manager, not an environment. Help keep VTWM lean.
+
+  - Add no memory leaks! I haven't read every line of this code, but have
+    had to fix very few, and have seen that none have been introduced.
+    'Nuff said 'bout that.
+
+  - Document! The code is a long commentary on VTWM's evolution, and though
+    it does get hard to read, I've come to think it a Good Thing. Keep the
+    files in the in the doc directory current.
+
+Sorry if this reads a little belligerent. I'm just tired of fighting all
+sorts of platform-specific implementations and lazy coding practices while
+porting stuff. I'm sure you are too. VTWM should never be such. --- djhjr
+

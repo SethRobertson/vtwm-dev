@@ -1,0 +1,59 @@
+
+WISHES FOR THE FUTURE OF VTWM
+=============================
+
+    From vtwm-5.1 spawned two independent versions, vtwm-5.2 and vtwm-5.2b. 
+    The features added to 5.2b are different from the ones added to 5.2, and
+    I based my version(s) on 5.2 rather than 5.2b since in 5.2 the features
+    were, in my humble opinion, more useful, while in 5.2b the new stuff was
+    mostly `chrome' (e.g., XPM support, etc.).  I was seriously considering
+    adding the features from 5.2b into 5.3, but I didn't have enough time.
+
+    I would like to see most of the features from 5.2b merged into the next
+    version, especially the color XPM support and m4 pre-processing of the
+    *twmrc file.  See below for more info. --- DSE
+
+    [From the CHANGES-5.2 file in the vtwm-5.2b archive]
+    ---------------------------------------------------------------- begin file
+    Summary feature list for version 5.2:
+    
+    * Added m4 pre-processing of the *twmrc file. courtesy of Dave Edmondson.
+      DONE - jg
+    * Added :random color specification, which generates colors on the fly.
+    * Color XPM support for icons. DONE - jg, djhjr
+    * Color XPM support for buttons. DONE (the titlebar highlight, the
+      virtual desktop and it's real screen window, too!) - djhjr
+    * 3D appearance on menus, titles, icons. DONE (the window's borders, the
+      virtual desktop, info windows, doors, and icon managers, too!) - djhjr
+    * Moving in and out of desktop.
+    * Opaque resizing available. DONE - djhjr
+    * Both OpaqueResize and OpaqueMove may specify lists of windows as
+      opposed to being "global". DONE - djhjr
+    * Can direct focus through desktop at real windows. When enabled, the
+      desktop windows also indicate the focus highlight by using the border.
+    * regexps can be used for lists in the vtwmrc. DONE - djhjr
+    * Size information is displayed during both move and resize. DONE - djhjr
+    * Size information can be centered in the screen. DONE (any of the
+      screen corners, too!) - djhjr
+    * Desktop size may be specified in multiples of real screen. IT'S THERE
+      (see contrib/vtwmrc-parms) - djhjr
+    * Can "paste" a new name into a door. DONE - djhjr
+    * Places property on root window giving virtual coordinates, in case
+      other programs want to use this info. (e.g. xpostit).
+    * Now uses a blank/icon startup screen while initialising.
+    * Many bugfixes, especially to do with desktop stacking order and
+      iconification/deiconification of the desktop windows. ALMOST ALL
+      DONE - djhjr
+    ------------------------------------------------------------------ end file
+
+    * A better way of implementing StickyAbove and "VTWM Profile".
+
+    Here's the list of stuff I would like to see added to VTWM. --- djhjr
+
+    * Support for user-defined icons in menus and the icon manager. MOSTLY
+      DONE - djhjr
+    * More coherent/uniform handling of XPM images, particularly where
+      transparency is concerned.
+    * I18n support. This will break X11R4 compatability if not done right.
+      DONE - djhjr
+

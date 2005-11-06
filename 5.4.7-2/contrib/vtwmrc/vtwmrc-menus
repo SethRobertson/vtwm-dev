@@ -1,0 +1,266 @@
+
+#
+# DESCRIPTION FILE FOR vtwm - $(HOME)/vtwm/vtwmrc-menus
+#
+# PRE-PROCESSED BY vtwm-5.4.6 USING m4
+# 
+
+#
+# Menus
+#
+
+menu "XWindowsMenu"
+{
+	`"'SERVERHOST`"'	f.title
+	"Shells"		f.menu "ShellsMenu"
+	"Editors"		f.menu "EditorsMenu"
+	""			f.separator
+	"Desktop"		f.menu "DesktopMenu"
+	"Network"		f.menu "NetworkMenu"
+	"Toybox"		f.menu "ToyboxMenu"
+	"Wallpaper"		f.menu "WallpaperMenu"
+	""			f.separator
+	"Arrange"		f.menu "ArrangeMenu"
+	""			f.separator
+	"VTWM"			f.menu "VTWMMenu"
+}
+
+menu "ShellsMenu"
+{
+	"  Shells  "		f.title
+	"mc"			f.exec "HOME/bin/startxterm -g 80x43 -title 'mc' -name 'mc' -e mc &"
+	"rxvt"			f.exec "HOME/bin/startrxvt &"
+	"xterm"			f.exec "HOME/bin/startxterm &"
+}
+
+menu "EditorsMenu"
+{
+	"  Editors  "		f.title
+	"nedit"			f.exec "nedit &"
+	"ted"			f.exec "Ted 2>/dev/null &"
+	"tkhtml"		f.exec "tkHTML &"
+	"vi"			f.exec "HOME/bin/startxterm -title 'vi' -name 'vi' -e vi &"
+	"vile"			f.exec "HOME/bin/startxterm -title 'vile' -name 'vile' -e vile &"
+	"xcoral"		f.exec "xcoral &"
+	"xvile"			f.exec "xvile &"
+	""			f.separator
+	"bitmap"		f.exec "bitmap &"
+	"editres"		f.exec "editres &"
+	"gimp"			f.exec "gimp &"
+	"pixmap"		f.exec "pixmap &"
+	"xfig"			f.exec "xfig 2>/dev/null &"
+	"xpaint"		f.exec "xpaint 2>/dev/null &"
+	"xv"			f.exec "xv &"
+#	"xv +vsp"		f.exec "xv +vsp &"
+}
+
+menu "DesktopMenu"
+{
+	"  Desktop  "		f.title
+	"asbutton"		f.exec "asbutton -n 4 &"
+	"ghostview"		f.exec "ghostview &"
+	"gv"			f.exec "gv &"
+	"hexcalc"		f.exec "hexcalc &"
+	"jpilot"		f.exec "jpilot &"
+	"meltdown"		f.exec "meltdown -s &"
+	"tkman"			f.exec "tkman &"
+	"xbmbrowser"		f.exec "xbmbrowser &"
+	"xcb"			f.exec "xcb &"
+	"xcalc"			f.exec "xcalc &"
+	"xcalendar"		f.exec "xcalendar &"
+	"xload"			f.exec "xload -jumpscroll 20 -update 3 -g 96x93 &"
+	"xlock"			f.exec "xscreensaver-command -lock &"
+	"xmcd"			f.exec "xmcd &"
+	"xmmix"			f.exec "xmmix 2>/dev/null &"
+	"xpostit"		f.exec "xpostit -g 96x40 &"
+	"xtplaygizmo"		f.exec "xtplaygizmo &"
+	""			f.separator
+	"asclock"		f.exec "asclock -exe xcalendar -led grey85 &"
+	"oclock"		f.exec "oclock -g 96x93 -bd SeaGreen -fg SeaGreen -transparent &"
+	"mouseclock"		f.exec "mouseclock &"
+	"rclock"		f.exec "rclock &"
+	"sunclock"		f.exec "sunclock &"
+	"t3d"			f.exec "t3d -nice 2 &"
+	"xarclock"		f.exec "xarclock -g 97x93 -arabic -fg white -bg black -fn -adobe-helvetica-medium-r-normal--*-80-*-*-p-*-iso8859-* &"
+	"xclock"		f.exec "xclock &"
+#	"xdaliclock"		f.exec "xdaliclock -fg SeaGreen -transparent -fn -adobe-utopia-medium-i-normal-*-*-260-*-*-p-*-iso8859-* &"
+	"xdaliclock"		f.exec "xdaliclock -fg SeaGreen -transparent -fn -adobe-times-bold-i-normal-*-*-260-*-*-p-*-iso8859-* &"
+}
+
+menu "NetworkMenu"
+{
+	"  Network  "		f.title
+	"asmail"		f.exec "asmail &"
+	"chimera"		f.exec "chimera &"
+	"knews"			f.exec "knews &"
+#	"mosaic"		f.exec "Mosaic &"
+	"mozilla"		f.exec "mozilla &"
+	"mutt"			f.exec "HOME/bin/startxterm -title mutt -name mutt -e mutt &"
+	"netscape"		f.exec "netscape &"
+	"xarchie"		f.exec "xarchie &"
+	"xbiff++"		f.exec "xbiff++ -update 60 -g 96x93 &"
+	"xdir"			f.exec "xdir &"
+	"xgopher"		f.exec "xgopher &"
+	""			f.separator
+	"FTP"			f.menu "FTPMenu"
+	"Login"			f.menu "LoginMenu"
+	"SSH"			f.menu "SSHMenu"
+	"Telnet"		f.menu "TelnetMenu"
+}
+
+menu "FTPMenu"
+{
+	"  FTP  "		f.title
+	"host1"			f.exec "HOME/bin/startxterm -title 'ftp:host1' -name 'ftp:host1' -e ftp host1 &"
+	""			f.separator
+#	"host2"			f.exec "HOME/bin/startxterm -title 'ftp:host2' -name 'ftp:host2' -e ftp host2 &"
+	"host3"			f.exec "HOME/bin/startxterm -title 'ftp:host3' -name 'ftp:host3' -e ftp host3 &"
+#	"host4"			f.exec "HOME/bin/startxterm -title 'ftp:host4' -name 'ftp:host4' -e ftp host4 &"
+	""			f.separator
+	"host5"			f.exec "HOME/bin/startxterm -title 'ftp:host5' -name 'ftp:host5' -e ftp host5 &"
+}
+
+menu "LoginMenu"
+{
+	"  Remote Login  "	f.title
+#	"host1"			f.exec "HOME/bin/startxterm -title 'rlogin:host1' -name 'rlogin:host1' -e rlogin host1 &"
+#	""			f.separator
+#	"host2"			f.exec "HOME/bin/startxterm -title 'rlogin:host2' -name 'rlogin:host2' -e rlogin host2 &"
+	"host3"			f.exec "HOME/bin/startxterm -title 'rlogin:host3' -name 'rlogin:host3' -e rlogin host3 &"
+#	"host4"			f.exec "HOME/bin/startxterm -title 'rlogin:host4' -name 'rlogin:host4' -e rlogin host4 &"
+	""			f.separator
+	"host5"			f.exec "HOME/bin/startxterm -title 'rlogin:host5' -name 'rlogin:host5' -e rlogin host5 &"
+}
+
+menu "SSHMenu"
+{
+	"  SSH  "		f.title
+	"host1"			f.exec "HOME/bin/startxterm -title 'ssh:host1' -name 'ssh:host1' -e ssh -l username host1 &"
+	""			f.separator
+#	"host2"			f.exec "HOME/bin/startxterm -title 'ssh:host2' -name 'ssh:host2' -e ssh -l username host2 &"
+#	"host3"			f.exec "HOME/bin/startxterm -title 'ssh:host3' -name 'ssh:host3' -e ssh -l username host3 &"
+#	"host4"			f.exec "HOME/bin/startxterm -title 'ssh:host4' -name 'ssh:host4' -e ssh -l username -p 27 host4 &"
+#	""			f.separator
+#	"host5"			f.exec "HOME/bin/startxterm -title 'ssh:host5' -name 'ssh:host5' -e ssh host5 &"
+	"host6"			f.exec "HOME/bin/startxterm -title 'ssh:host6' -name 'ssh:host6' -e ssh host6 &"
+#	"host7"			f.exec "HOME/bin/startxterm -title 'ssh:host7' -name 'ssh:host7' -e ssh host7 &"
+}
+
+menu "TelnetMenu"
+{
+	"  Telnet  "		f.title
+	"host1"			f.exec "HOME/bin/startxterm -tn $TELTERM -title 'telnet:host1' -name 'telnet:host1' -e telnet host1 &"
+#	"host2"			f.exec "HOME/bin/startxterm -tn $TELTERM -title 'telnet:host2' -name 'telnet:host2' -e telnet -8 host2 &"
+	""			f.separator
+#	"host3"			f.exec "HOME/bin/startxterm -tn $TELTERM -title 'telnet:host3' -name 'telnet:host3' -e telnet host3 &"
+	"host4"			f.exec "HOME/bin/startxterm -tn $TELTERM -title 'telnet:host4' -name 'telnet:host4' -e telnet host4 &"
+#	"host5"			f.exec "HOME/bin/startxterm -tn $TELTERM -title 'telnet:host5' -name 'telnet:host5' -e telnet host5 &"
+	""			f.separator
+	"host6"			f.exec "HOME/bin/startxterm -title 'telnet:host6' -name 'telnet:host6' -e telnet -8 host6 &"
+}
+
+menu "ToyboxMenu"
+{
+	"  Toybox  "		f.title
+	"blast"			f.exec "blast &"
+	"xbl"			f.exec "xbl -draw 2 -keyboard 4 -buffer 2 -buttonheight 4 &"
+	"xboing"		f.exec "xboing -sound &"
+	"xeyes"			f.exec "xeyes &"
+	"xmine"			f.exec "xmine &"
+	"xneko"			f.exec "xneko -t 0.07 &"
+	"xoids"			f.exec "xoids &"
+	"xtetris"		f.exec "xtetris &"
+}
+
+menu "WallpaperMenu"
+{
+	"  Wallpaper  "		f.title
+	"ico"			f.exec "HOME/bin/stopxroot; nice -2 ico -softdbl -faces -colors green blue yellow red white -delta +10+10 -r &"
+	"pyro"			f.exec "HOME/bin/stopxroot; pyro -root &"
+	"xcursor"		f.exec "xcursor &"
+	"xearth"		f.exec "HOME/bin/stopxroot; xearth &"
+	"xfishtank"		f.exec "HOME/bin/stopxroot; xfishtank -m 25 -C 25 -c black -r 0.08 -i 0.04 -b 20 &"
+	"xneko"			f.exec "HOME/bin/stopxroot; xneko -t 0.07 -r &"
+	"xroach"		f.exec "HOME/bin/stopxroot; xroach -rc grey -speed 8 &"
+	""			f.separator
+	"logo"			f.exec "xsetbg -grey -border black -center /home/hawkeyd/vtwm/vtwm.gif &"
+	"none"			f.exec "HOME/bin/stopxroot &"
+}
+
+menu "ArrangeMenu"
+{
+	"  Arrange  "		f.title
+	"Auto Raise"		f.autoraise
+	"Raise"			f.raise
+	"Lower"			f.lower
+# I just never use this...
+#	"Raise Lower"		f.raiselower
+	"Nail"			f.nail
+	"Ring"			f.ring
+	""			f.separator
+	"Focus"			f.focus
+	"Unfocus"		f.unfocus
+	""			f.separator
+	"Move"			f.move
+	"Size"			f.resize
+	"Iconify"		f.iconify
+	""			f.separator
+	"Full Zoom"		f.fullzoom
+	"Horiz Zoom"		f.horizoom
+	"Vert Zoom"		f.zoom
+	""			f.separator
+	"Left Title"		f.squeezeleft
+	"Center Title"		f.squeezecenter
+	"Right Title"		f.squeezeright
+	""			f.separator
+	"Bind Buttons"		f.bindbuttons
+	"Unbind Buttons"	f.unbindbuttons
+	"Bind Keys"		f.bindkeys
+	"Unbind Keys"		f.unbindkeys
+	""			f.separator
+	"Identify"		f.identify
+	""			f.separator
+	"Delete"		f.delete
+	"Destroy"		f.destroy
+}
+
+menu "VTWMMenu"
+{
+	"  VTWM  "		f.title
+# These are dependant on the virtual screen counts...
+#	"Virtual 1"		f.setrealscreen "+eval(WIDTH * 0)+0"
+#	"Virtual 2"		f.setrealscreen "+eval(WIDTH * 1)+0"
+#	"Virtual 3"		f.setrealscreen "+eval(WIDTH * 2)+0"
+#	"Virtual 4"		f.setrealscreen "+eval(WIDTH * 3)+0"
+#	"Virtual 5"		f.setrealscreen "+eval(WIDTH * 4)+0"
+#	""			f.separator
+	"Auto Pan"		f.autopan
+	"New Door"		f.newdoor
+	"Snap Screen"		f.snaprealscreen
+ifelse(SOUND, `Yes', `"Sounds" f.sounds')
+	"Static Icons"		f.staticiconpositions
+	"Strict Icon Mgr"	f.stricticonmgr
+	"Warp Snug"		f.warpsnug
+	"Warp Visible"		f.warpvisible
+	""			f.separator
+	"Icon Mgr"		f.showiconmgr
+	"Virtual Mgr"		f.showdesktopdisplay
+	""			f.separator
+#	"VTWM Windows"		f.menu "VTWM Windows"
+#	""			f.separator
+	"Refresh"		f.refresh
+	"Restart 95ish"		f.startwm "vtwm -d :0.0 -s -m -p -f vtwm/vtwmrc-95ish"
+	"Restart MWMish"	f.startwm "vtwm -d :0.0 -s -m -p -f vtwm/vtwmrc-MWMish"
+	"Restart PWMish"	f.startwm "vtwm -d :0.0 -s -m -p -f vtwm/vtwmrc-PWMish"
+	"Restart TWMish"	f.startwm "vtwm -d :0.0 -s -m -p -f vtwm/vtwmrc-TWMish"
+	"Restart TWM3d"		f.startwm "vtwm -d :0.0 -s -m -p -f vtwm/vtwmrc-TWM3d"
+	"Restart borderless"	f.startwm "vtwm -d :0.0 -s -m -p -f vtwm/vtwmrc-NoBorder"
+	"Start MWM"		f.startwm "mwm -display :0.0"
+	"Start TVTWM"		f.startwm "tvtwm -display :0.0"
+	"Start TWM"		f.startwm "twm -display :0.0"
+	""			f.separator
+changequote(%, %)
+	"Exit"			f.exec "HOME/bin/stopxroot; kill `cat HOME/vtwm.pid`"
+changequote(,)
+}
+

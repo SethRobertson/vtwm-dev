@@ -1,0 +1,22 @@
+/* XPM */
+static char *byzantine[] = {
+/* width height num_colors chars_per_pixel */
+"32 13 3 1",
+/* colors */
+" 	s None	c None",
+".	c grey75",
+"X	c grey35",
+/* pixels */
+" ..............X ..............X",
+" .XXXXXXXXXXXX.X .XXXXXXXXXXXX.X",
+" .X           .X .X           .X",
+" .X ........X .X .X ........X .X",
+" .X .XXXXXX.X .X .X .XXXXXX.X .X",
+" .X .X     .X .X .X .X     .X .X",
+" .X .....X .X .X .X .X .....X .X",
+" .X XXXX.X .X .X .X .X .XXXXX .X",
+" .X     .X .X .X .X .X .X     .X",
+" ........X .X .X .X .X ........X",
+" XXXXXXXXX .X .X .X .X XXXXXXXXX",
+"           .X .X .X .X          ",
+"............X ....X ............"};

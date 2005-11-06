@@ -1,0 +1,245 @@
+vtwm (5.4.7-2) unstable; urgency=low
+
+  * Add build-dependency on librplay3-dev to fix FTBFS (librplay3-dev does not
+    depend on libc6-dev for some reason, so I didn't catch this when scrubbing
+    my chroot.  Sigh.)
+
+ -- Branden Robinson <branden@debian.org>  Sun,  6 Nov 2005 09:44:15 -0500
+
+vtwm (5.4.7-1) unstable; urgency=low
+
+  * Merge new upstream release.
+    + This release is dedicated to the memory of David J. Hawkey, Jr., who
+      passed away in 2004.  VTWM is now team-developed by the VTWM hackers at
+      http://www.vtwm.org/, and Callum Gibson is the release manager.
+    + See /usr/share/doc/vtwm/HISTORY for a comprehensive list of new
+      features, behavior changes, and bug fixes.
+  * Bump Debian standards version to 3.6.2; no changes necessary.
+  * Update URL in package description.
+  * Tweak Debian rules file:
+    + Explicitly set optimization to -O0 if DEB_BUILD_OPTS contains "noopt".
+    + Export the CDEBUGFLAGS variable instead of manually passing it to Make.
+    + Make shell style tweaks.
+  * Remove Debian patch to remove increment of yylineno variable from parse.c;
+    upstream has "#ifdef"ed it out so that it can be restored for systems
+    where lex doesn't define and use this variable for itself.
+  * Ship more upstream documentation files: 4.6.ANNOUNCE, 4.6.README,
+    4.7.README, DEVELOPERS, HISTORY, and SOUND.
+  * Remove "SunkFocusWindowTitle" configuration parameter from
+    debian/system.vtwmrc-menu, since it is no longer supported.
+  * Fix menu-method file to background launched apps, so the window manager
+    doesn't wedge.  Whoops.  Thanks to Matthew A. Micholson for the patch!
+    (Closes: #319510)
+
+ -- Branden Robinson <branden@debian.org>  Sat,  5 Nov 2005 19:35:41 -0500
+
+vtwm (5.4.6b-1) unstable; urgency=low
+
+  * Update to new upstream version.  (Closes: #193695)
+    + Fixes problem where certain window types (often transient dialogs) cause
+      VTWM to restart itself.  (Closes: #286951)
+    + The "VirtualDesktopFont" configuration variable is now documented under
+      that name, instead of the incorrect "VirtualFont".  (Closes: #201738)
+  * Resync Debian patches with new version.
+    + Fix for gram.y is now upstream.
+    + Replace VTWMLIBDIR symbol with VTWMCONFDIR since all we use it for is
+      installation of the configuration file.  Create a new TWMCONFDIR symbol,
+      which we use to locate twm's configration file.  If Imake defines
+      EtcX11Directory, use a subdirectory of ETCX11DIR for vtwm's
+      configuration; otherwise, use a subdirectory of LIBDIR.  (This is an
+      improved -- and hopefully upstream-tolerable -- version of a patch
+      previously applied.)
+  * Update copyright information:
+    + Update URL to new source version and hosting location.
+    + Update list of copyright holders, authors and contributors based on
+      current version of manual page.
+    + Undocument Martin "Joey" Schulze as a Debian package author, as he
+      wasn't responsible for *this* packaging (which has been done at least 3
+      times from scratch in the past 10 years, most recently by me).
+      Acknowledge Joey's previous packaging.
+    + Update my copyright notice.  I have never signed a written instrument
+      assigning my copyright in the packaging desiderata to Software in the
+      Public Interest, Inc., so it's probably misleading to claim the
+      copyright belongs to them.
+  * Rewrite package's extended description based on current information from
+    upstream.
+  * Update build-dependencies to depend on real X protocol header and library
+    development packages, rather than xlibs-dev, which is a dummy package
+    nowadays.
+  * Update menu item quoting functions in vtwm's menu-method file to align
+    them with twm's, which are a little easier to understand.
+  * Add support for launching other window managers to menu-method file, using
+    VTWM's f.startwm function.  Add 10 points to vtwm command's alternatives
+    priority per Debian Policy section 11.8.4.  (Closes: #194158)
+  * Re-case VTWM's name in its menu entry per upstream usage.
+  * Use a debian/compat file instead of the DH_COMPAT variable in the rules
+    file, per debhelper(7).
+  * Add "FixManagedVirtualGeometries" and "FixTransientVirtualGeometries" to
+    system.vtwmrc-menu file per suggestion from Neil Stewart; this should fix
+    various problems with placement of transient and pop-up dialog windows.
+    (Closes: #194110, #225945)
+  * Grab fix to twm's parse.c from XFree86 CVS (revision 1.9, 2001/04/23) that
+    fixes line numbers in error messages about the vtwmrc file from being
+    double their correct value.  (Closes: #201741)
+  * Bump Standards-Version to 3.6.1; no changes necessary.
+  * Quote strings in menu file, per Lintian.
+  * Tidy up the manual page in several respects:
+    + Add copyright notice to the manual page itself, copied from the
+      copyright information on twm's source files in X11R4, from which VTWM
+      was forked.
+    + Fix up the .TH directive:
+      - Downcase the command name (rendering a command's name in full caps is
+        a presentation decision).
+      - Change the date to reflect my modifications.
+      - Indicate the source as "VTWM 5.4.6b", not "X11R4-6", since this
+        manual page is independently maintained by the VTWM hackers.
+    + Fix up the NAME section:
+      - Remove spurious paragraph break at the beginning of the section.
+      - Use \- instead of - to separate the manpage's name and summary and so
+        that mkwhatis is less easily confused.  (See man(7).)
+    + Rename the SYNTAX section to SYNOPSIS.  (See man(7).)
+    + Use an macros for type face selection in the SYNOPSIS section.
+    + Use \- instead of - in the SYNOPSIS section to notate literal dashes
+      that the user will type (e.g., when specifying command-line options).
+    + Rename the SIGNALS section to ASYNCHRONOUS EVENTS (after SUSv3
+      manpages).
+    + Rename the ENVIRONMENT VARIABLES section to ENVIRONMENT.  (See
+      man(7).)
+    + Use "an" typeface macros instead of roff \f escapes for font changes
+      where practical in the ASYNCHRONOUS EVENTS, BUGS, FILES,
+      ENVIRONMENT, COPYRIGHT, and SEE ALSO sections.
+    + Quote multi-word arguments to the .SH macro in the ASYNCHRONOUS
+      EVENTS and AUTHORS AND CONTRIBUTORS sections.
+    + Use \(oq and \(cq named characters instead of literal double-quotes
+      in the BUGS section.
+    + Italicize signal names in the ASYNCHRONOUS EVENTS section.
+    + Put a newline at the ends of sentences per the GNU Roff info
+      documentation.
+    + Move the SEE ALSO section to the end of the page.
+    + Update COPYRIGHT section based on the information I gathered from
+      trawling the source tree.
+
+ -- Branden Robinson <branden@debian.org>  Thu, 30 Dec 2004 23:20:05 -0500
+
+vtwm (5.4.5a-12) unstable; urgency=medium
+
+  * Fix FTBFS bug caused by GNU Bison 1.50 and later, hence urgency.
+
+  * gram.y: fix syntax error (thanks, Matt Kraai) (Closes: #166271)
+
+  * debian/conffiles: deleted; debhelper takes care of this
+  * debian/control: incremented Standards-Version to 3.5.8 (no changes
+    necessary)
+  * debian/patches: regenerated; include new patch to gram.y
+
+ -- Branden Robinson <branden@debian.org>  Mon, 25 Nov 2002 01:11:30 -0500
+
+vtwm (5.4.5a-11) unstable; urgency=low
+
+  * debian/rules: s/CFLAGS/CDEBUGFLAGS/; Imake-using packages should use
+    CDEBUGFLAGS instead of CFLAGS.  Using CFLAGS didn't hurt vtwm but it
+    doesn't work in the general case.
+
+ -- Branden Robinson <branden@debian.org>  Thu,  3 Oct 2002 01:42:38 -0500
+
+vtwm (5.4.5a-10) unstable; urgency=low
+
+  * debian/changelog.Debian.old: move Martin Schulze's asyntactic old
+    changelog entries from 3+ years ago into this file; they cause the Vim
+    syntax highlighter to glow red, and that annoys me
+  * debian/copyright: updated
+  * debian/control:
+    - add versioning to build-dependency on debhelper (>= 4.0)
+    - correct improper case in Standards-Version, and increment it to 3.5.7
+  * debian/patches:
+    - new file containing all changes to upstream source, referenced by
+      debian/copyright
+  * debian/rules:
+    - use debhelper version 4 compatibility
+    - support "noopt" flag in DEB_BUILD_OPTIONS
+    - clean up paths in install rule
+    - miscellaneous cosmetic cleanups
+
+ -- Branden Robinson <branden@debian.org>  Thu,  3 Oct 2002 01:18:40 -0500
+
+vtwm (5.4.5a-9) unstable; urgency=low
+
+  * debian/conffiles: mark /etc/menu-methods/vtwm as a conffile
+    (Closes: #132203)
+  * lintian 1.20.17 clean
+
+ -- Branden Robinson <branden@debian.org>  Sun,  3 Feb 2002 15:16:10 -0500
+
+vtwm (5.4.5a-8) unstable; urgency=low
+
+  * debian/control: add debhelper to Build-Depends
+  * debian/rules: don't ship upstream INSTALL file anymore; instead do some
+    seddage to extract the "RUNTIME HINTS" section and write it out as
+    README.Debian
+  * lintian 1.20.11 clean
+
+ -- Branden Robinson <branden@debian.org>  Fri, 30 Mar 2001 03:06:57 -0500
+
+vtwm (5.4.5a-7) unstable; urgency=low
+
+  * debian/prerm: update-alternatives should only be called on remove or
+    deconfigure
+
+ -- Branden Robinson <branden@debian.org>  Thu, 22 Feb 2001 22:31:54 -0500
+
+vtwm (5.4.5a-6) unstable; urgency=low
+
+  * debian/control:
+    - changed build dependencies to xutils, xlibs-dev, flex, bison
+    - bumped Standards-Version to 3.5.2 (no changes required)
+
+ -- Branden Robinson <branden@debian.org>  Thu, 22 Feb 2001 13:03:34 -0500
+
+vtwm (5.4.5a-5) unstable; urgency=low
+
+  * added bison and xpm4g-dev to Build-Depends (Closes: #54601)
+
+ -- Branden Robinson <branden@debian.org>  Thu, 13 Jan 2000 00:49:58 -0500
+
+vtwm (5.4.5a-4) unstable; urgency=low
+
+  * correct menu-method with respect to menu entries with embedded quotes
+
+ -- Branden Robinson <branden@debian.org>  Thu,  6 Jan 2000 14:58:49 -0500
+
+vtwm (5.4.5a-3) unstable; urgency=low
+
+  * made compliant with Standards Version 3.1.1
+  * made compliant with new proposed X Window System policies
+  * debian/control:
+    - added Build-Depends
+    - Provides: x-window-manager
+  * debian/postinst: stepped alternative priority down to 40
+
+ -- Branden Robinson <branden@debian.org>  Sun,  2 Jan 2000 14:40:49 -0500
+
+vtwm (5.4.5a-2) unstable; urgency=low
+
+  * debian/postinst: whack /etc/X11/vtwm on purge (Closes: #49213)
+
+ -- Branden Robinson <branden@debian.org>  Sat,  6 Nov 1999 03:14:28 -0500
+
+vtwm (5.4.5a-1) unstable; urgency=medium
+
+  * New maintainer.
+  * New upstream source.
+  * Repackaged from scratch.
+  * Integrated with Debian menu system.
+  * Imakefile: looks in correct place for rc files (Closes: #43474)
+  * {util.c,list.c,doors.c,desktop.c,iconmgr.c,menus.c}: remove
+    declarations and definitions of strdup to suppress compiler warnings;
+    just use libc's strdup instead
+
+ -- Branden Robinson <branden@debian.org>  Sat, 30 Oct 1999 17:42:31 -0400
+
+  See /usr/share/doc/vtwm/changelog.Debian.old.gz for the remainder of this
+  changelog.
+
+  $Id$
+
+  vim:set ai et sts=2 sw=2 tw=78:

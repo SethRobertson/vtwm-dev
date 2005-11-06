@@ -1,0 +1,321 @@
+
+----------------------------------------------------------------------------
+
+`grep -n 3D *.[ch] > 3Ddiffs.lst` of CTWM-3.1.
+This is where VTWM-5.4 began. The exclamation marks denote what I ported.
+This is not inclusive or exhaustive. RTSL for the signature 'djhjr'.
+
+!	add_window.c:276:    tmp_win->frame_bw3D = Scr->ThreeDBorderWidth;
+!	add_window.c:279:	tmp_win->frame_bw3D = 0;
+!	add_window.c:282:    if (tmp_win->frame_bw3D != 0) {
+!	add_window.c:446:	    AddingW = tmp_win->attr.width + bw2 + 2 * tmp_win->frame_bw3D;
+!	add_window.c:448:				bw2 + 2 * tmp_win->frame_bw3D;
+!	add_window.c:451:			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+!	add_window.c:521:			    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+!	add_window.c:634:	    tmp_win->attr.width = AddingW - bw2 - 2 * tmp_win->frame_bw3D;
+!	add_window.c:636:				bw2 - 2 * tmp_win->frame_bw3D;
+!	add_window.c:655:	int delta = tmp_win->attr.border_width - tmp_win->frame_bw - tmp_win->frame_bw3D;
+!	add_window.c:725:    if (Scr->use3Dtitles  && !Scr->BeNiceToColormap) GetShadeColors (&tmp_win->title);
+!	add_window.c:726:    if (Scr->use3Dborders && !Scr->BeNiceToColormap) {
+!	add_window.c:733:			- tmp_win->frame_bw3D;
+!	add_window.c:735:	tmp_win->old_bw - tmp_win->frame_bw - tmp_win->frame_bw3D;
+!	add_window.c:736:    tmp_win->frame_width = tmp_win->attr.width + 2 * tmp_win->frame_bw3D;
+!	add_window.c:738:				2 * tmp_win->frame_bw3D;
+!	add_window.c:776:					  tmp_win->frame_bw3D - tmp_win->frame_bw,
+!	add_window.c:777:					  tmp_win->frame_bw3D - tmp_win->frame_bw,
+!	add_window.c:793:	if (Scr->use3Dtitles && (Scr->Monochrome != COLOR))
+!	add_window.c:818:	tmp_win->title_x = tmp_win->frame_bw3D - tmp_win->frame_bw;
+!	add_window.c:819:	tmp_win->title_y = tmp_win->frame_bw3D - tmp_win->frame_bw;
+!	add_window.c:851:    XReparentWindow(dpy, tmp_win->w, tmp_win->frame, tmp_win->frame_bw3D,
+!	add_window.c:852:		tmp_win->title_height + tmp_win->frame_bw3D);
+!	add_window.c:1103:	if (Scr->use3Dtitles && (Scr->Monochrome != COLOR))
+!	add_window.c:1138:    if (Scr->use3Dtitles)
+!	add_window.c:1177:    if (Scr->use3Dtitles) tmp_win->highlightx += 6;
+!	add_window.c:1201:    tmp->title_x = tmp->frame_bw3D - tmp->frame_bw;
+!	add_window.c:1202:    tmp->title_y = tmp->frame_bw3D - tmp->frame_bw;
+!	add_window.c:1244:	tmp->title_x = basex - tmp->frame_bw + tmp->frame_bw3D;
+!	add_window.c:1589:		tmp->title_height + 2 * tmp->frame_bw3D) ? 0 : 2) |
+!	add_window.c:1591:		tmp->title_height + 2 * tmp->frame_bw3D) ? 0 : 1)];
+
+!	ctwm.c:423:	Scr->TBInfo.border = -100; /* trick to have different default value if ThreeDTitles
+!	ctwm.c:499:	if (Scr->use3Dtitles) {
+!	ctwm.c:512:	if (Scr->use3Dtitles  && !Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
+!	ctwm.c:513:	if (Scr->use3Dmenus   && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
+!	ctwm.c:514:	if (Scr->use3Dmenus   && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuTitleC);
+!	ctwm.c:515:	if (Scr->use3Dborders && !Scr->BeNiceToColormap) GetShadeColors (&Scr->BorderColorC);
+!	ctwm.c:516:	if (! Scr->use3Dborders) Scr->ThreeDBorderWidth = 0;
+!	ctwm.c:526:	if (Scr->use3Dtitles) Scr->TitleHeight += 4;
+!	ctwm.c:732:    Scr->FramePadding = -100;	/* trick to have different default value if ThreeDTitles
+!	ctwm.c:737:    Scr->ThreeDBorderWidth = 6;
+!	ctwm.c:797:    Scr->use3Diconmanagers = FALSE;
+!	ctwm.c:798:    Scr->use3Dmenus = FALSE;
+!	ctwm.c:799:    Scr->use3Dtitles = FALSE;
+!	ctwm.c:800:    Scr->use3Dborders = FALSE;
+!	ctwm.c:854:	xwc.x += gravx * tmp->frame_bw3D;
+!	ctwm.c:855:	xwc.y += gravy * tmp->frame_bw3D;
+
+!	events.c:1367:	if (Scr->use3Dborders && (Event.xany.window == Tmp_win->frame)) {
+!	events.c:1415:		if (Scr->use3Diconmanagers && (Scr->Monochrome != COLOR))
+!	events.c:1428:		if (Scr->use3Diconmanagers && Tmp_win->list->iconifypm) {
+!	events.c:2172:	    Event.xbutton.x = JunkX - Tmp_win->frame_bw3D;
+!	events.c:2173:	    Event.xbutton.y = JunkY - Tmp_win->title_height - Tmp_win->frame_bw3D;
+!	events.c:2202:              Event.xbutton.x -= Tmp_win->frame_bw3D;
+!	events.c:2203:              Event.xbutton.y -= (Tmp_win->title_height + Tmp_win->frame_bw3D);
+!	events.c:2533:			if (Scr->use3Dtitles && Scr->SunkFocusWindowTitle &&
+!	events.c:2535:			    Draw3DBorder (Tmp_win->title_w, Scr->TBInfo.titlex, 0,
+!	events.c:2557:			if (Scr->use3Dtitles && Scr->SunkFocusWindowTitle &&
+!	events.c:2559:			    Draw3DBorder (Tmp_win->title_w, Scr->TBInfo.titlex, 0,
+!	events.c:2748:		    if (Scr->use3Dtitles && Scr->SunkFocusWindowTitle &&
+!	events.c:2750:			Draw3DBorder (Tmp_win->title_w, Scr->TBInfo.titlex, 0,
+!	events.c:2882:	x -= ((gravx < 0) ? 0 : Tmp_win->frame_bw3D);
+!	events.c:2886:	y -= ((gravy < 0) ? 0 : Tmp_win->frame_bw3D);
+!	events.c:2890:	width = cre->width + 2 * Tmp_win->frame_bw3D;
+!	events.c:2893:	height = cre->height + Tmp_win->title_height + 2 * Tmp_win->frame_bw3D;
+
+!	iconmgr.c:101:	      (2 * (Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth));
+!	iconmgr.c:105:	      (2 * (Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth));
+!	iconmgr.c:475:    if (Scr->use3Diconmanagers) {
+!	iconmgr.c:477:	tmp->iconifypm = Create3DIconManagerIcon (tmp->cp);
+!	iconmgr.c:712:    if (Scr->use3Diconmanagers) {
+!	iconmgr.c:717:	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
+!	iconmgr.c:720:	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
+!	iconmgr.c:857:    bw   = ip->twm_win->frame_bw3D ? ip->twm_win->frame_bw3D : ip->twm_win->frame_bw;
+!	iconmgr.c:869:		   newwidth + 2 * ip->twm_win->frame_bw3D,
+!	iconmgr.c:870:		   ip->height + ip->twm_win->title_height + 2 * ip->twm_win->frame_bw3D, -1);
+
+!	icons.c:405:    if (Scr->use3Diconmanagers && !Scr->BeNiceToColormap) GetShadeColors (&icon->iconc);
+
+!	menus.c:344:    if (Scr->use3Dtitles) 
+!	menus.c:358:	if (Scr->use3Dtitles) {
+!	menus.c:359:	    if (!CreateTitleButton (TBPM_3DDOT, F_ICONIFY, "", (MenuRoot *) NULL,
+!	menus.c:363:	    if (!CreateTitleButton (TBPM_3DRESIZE, F_RESIZE, "", (MenuRoot *) NULL,
+!	menus.c:422:    if (Scr->use3Dmenus) {
+!	menus.c:423:	Paint3DEntry (mr, mi, exposure);
+!	menus.c:428:void Paint3DEntry(mr, mi, exposure)
+!	menus.c:444:	    Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight, 1, 
+!	menus.c:476:		Scr->pullPm = Create3DMenuIcon (Scr->MenuFont.height, &Scr->pullW,
+!	menus.c:486:	Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight, 1, 
+!	menus.c:594:    if (Scr->use3Dmenus) {
+!	menus.c:595:	Draw3DBorder (mr->w, 0, 0, mr->width, mr->height, 2, Scr->MenuC, off, False, False);
+!	menus.c:890:	if (Scr->use3Dmenus && !Scr->BeNiceToColormap) GetShadeColors (&tmp->normal);
+!	menus.c:956:	if (Scr->use3Dmenus) mr->height += 4;
+!	menus.c:1004:	borderwidth = Scr->use3Dmenus ? 0 : 1;
+!	menus.c:1018:    if (Scr->use3Dmenus && (Scr->Monochrome == COLOR) &&  (mr->highlight.back == UNUSED_PIXEL)) {
+!	menus.c:1033:    if (Scr->use3Dmenus && (Scr->Monochrome == COLOR) && (mr->highlight.fore == UNUSED_PIXEL)) {
+!	menus.c:1047:    if (Scr->use3Dmenus && !Scr->BeNiceToColormap) GetShadeColors (&mr->highlight);
+!	menus.c:1072:	if (Scr->use3Dmenus && !Scr->BeNiceToColormap) {
+!	menus.c:1447:  AddingW = tmp_win->attr.width + bw2 + 2 * tmp_win->frame_bw3D;
+!	menus.c:1448:  AddingH = tmp_win->attr.height + tmp_win->title_height + bw2 + 2 * tmp_win->frame_bw3D;
+!	menus.c:1476:	      tmp_win->title_height + tmp_win->frame_bw3D);
+!	menus.c:2006:		    moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
+!	menus.c:2182:			    moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
+!	menus.c:2224:			moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
+!	menus.c:3368:	if (Scr->use3Dborders) PaintBorders (tmp, onoroff);
+
+!	parse.c:467:#define kw0_Use3DMenus			33
+!	parse.c:468:#define kw0_Use3DTitles			34
+!	parse.c:469:#define kw0_Use3DIconManagers		35
+!	parse.c:470:#define kw0_Use3DBorders		36
+!	parse.c:512:#define kwn_ThreeDBorderWidth		21
+!	parse.c:772:    { "threedborderwidth",	NKEYWORD, kwn_ThreeDBorderWidth },
+!	parse.c:784:    { "usethreedborders",	KEYWORD, kw0_Use3DBorders },
+!	parse.c:785:    { "usethreediconmanagers",	KEYWORD, kw0_Use3DIconManagers },
+!	parse.c:786:    { "usethreedmenus",		KEYWORD, kw0_Use3DMenus },
+!	parse.c:787:    { "usethreedtitles",	KEYWORD, kw0_Use3DTitles },
+!	parse.c:948:      case kw0_Use3DBorders:
+!	parse.c:949:	Scr->use3Dborders = TRUE;
+!	parse.c:952:      case kw0_Use3DIconManagers:
+!	parse.c:953:	Scr->use3Diconmanagers = TRUE;
+!	parse.c:956:      case kw0_Use3DMenus:
+!	parse.c:957:	Scr->use3Dmenus = TRUE;
+!	parse.c:960:      case kw0_Use3DTitles:
+!	parse.c:961:	Scr->use3Dtitles = TRUE;
+!	parse.c:1131:      case kwn_ThreeDBorderWidth:
+!	parse.c:1132:	if (Scr->FirstTime) Scr->ThreeDBorderWidth = num;
+
+!	resize.c:179:		 tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+!	resize.c:214:		 tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+!	resize.c:361:	    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+!	resize.c:488:	    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
+!	resize.c:523:    dheight = height - tmp_win->title_height - 2 * tmp_win->frame_bw3D;
+!	resize.c:524:    dwidth = width - 2 * tmp_win->frame_bw3D;
+!	resize.c:592:	tmp_win->iconmgrp->width = (int) (((dragWidth - 2 * tmp_win->frame_bw3D) *
+!	resize.c:669:    dwidth  -= 2 * tmp_win->frame_bw3D;
+!	resize.c:670:    dheight -= (tmp_win->title_height + 2 * tmp_win->frame_bw3D);
+!	resize.c:777:    *widthp = dwidth + 2 * tmp_win->frame_bw3D;
+!	resize.c:778:    *heightp = dheight + tmp_win->title_height + 2 * tmp_win->frame_bw3D;
+!	resize.c:840:	tmp_win->iconmgrp->width = w - (2 * tmp_win->frame_bw3D);
+!	resize.c:841:        h = tmp_win->iconmgrp->height + tmp_win->title_height + (2 * tmp_win->frame_bw3D);
+!	resize.c:855:    title_width  = xwc.width = w - (2 * tmp_win->frame_bw3D);
+!	resize.c:885:	    tmp_win->title_x = xwc.x = tmp_win->frame_bw3D - bw;
+!	resize.c:886:	    tmp_win->title_y = xwc.y = tmp_win->frame_bw3D - bw;
+!	resize.c:893:    tmp_win->attr.width  = w - (2 * tmp_win->frame_bw3D);
+!	resize.c:894:    tmp_win->attr.height = h - tmp_win->title_height - (2 * tmp_win->frame_bw3D);
+!	resize.c:911:    XMoveResizeWindow (dpy, tmp_win->w, tmp_win->frame_bw3D,
+!	resize.c:912:			tmp_win->title_height + tmp_win->frame_bw3D,
+!	resize.c:922:	if (Scr->use3Dtitles) xwc.width -= 4;
+!	resize.c:937:    WMapSetupWindow (tmp_win, x + tmp_win->frame_bw3D,
+!	resize.c:938:		y + tmp_win->title_height + tmp_win->frame_bw3D,
+!	resize.c:948:					+ tmp_win->frame_bw3D);
+!	resize.c:951:					+ tmp_win->frame_bw3D);
+!	resize.c:1100:			    tmp->frame_bw3D, tmp->title_height + tmp->frame_bw3D, tmp->w,
+!	resize.c:1126:	    newBounding[0].x = tmp->title_x - tmp->frame_bw3D;
+!	resize.c:1127:	    newBounding[0].y = tmp->title_y - tmp->frame_bw3D;
+!	resize.c:1128:	    newBounding[0].width = tmp->title_width + fbw2 + 2 * tmp->frame_bw3D;
+!	resize.c:1129:	    newBounding[0].height = tmp->title_height + tmp->frame_bw3D;
+!	resize.c:1131:	    newBounding[1].y = Scr->TitleHeight + tmp->frame_bw3D;
+!	resize.c:1132:	    newBounding[1].width = tmp->attr.width + fbw2 + 2 * tmp->frame_bw3D;
+!	resize.c:1133:	    newBounding[1].height = tmp->attr.height + fbw2 + tmp->frame_bw3D;
+!	resize.c:1137:	    newClip[0].x = tmp->title_x + tmp->frame_bw - tmp->frame_bw3D;
+!	resize.c:1139:	    newClip[0].width = tmp->title_width + 2 * tmp->frame_bw3D;
+!	resize.c:1140:	    newClip[0].height = Scr->TitleHeight + tmp->frame_bw3D;
+!	resize.c:1142:	    newClip[1].y = tmp->title_height + tmp->frame_bw3D;
+!	resize.c:1143:	    newClip[1].width = tmp->attr.width + 2 * tmp->frame_bw3D;
+!	resize.c:1144:	    newClip[1].height = tmp->attr.height + tmp->frame_bw3D;
+
+!	util.c:91:static Image  *Create3DMenuImage ();
+!	util.c:92:static Image  *Create3DDotImage ();
+!	util.c:93:static Image  *Create3DResizeImage ();
+!	util.c:94:static Image  *Create3DZoomImage ();
+!	util.c:95:static Image  *Create3DBarImage ();
+	util.c:96:static Image  *Create3DResizeAnimation ();
+!	util.c:1341:static Image *Create3DDotImage (cp)
+!	util.c:1355:    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+!	util.c:1356:    Draw3DBorder (image->pixmap, (h / 2) - 2, (h / 2) - 2, 5, 5, 2, cp, off, True, False);
+!	util.c:1364:static Image *Create3DBarImage (cp)
+!	util.c:1378:    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+!	util.c:1379:    Draw3DBorder (image->pixmap, 4, (h / 2) - 2, h - 8, 5, 2, cp, off, True, False);
+!	util.c:1387:static Image *Create3DMenuImage (cp)
+!	util.c:1401:    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+!	util.c:1403:	Draw3DBorder (image->pixmap, 4, i, h - 8, 4, 2, cp, off, True, False);
+!	util.c:1412:static Image *Create3DResizeImage (cp)
+!	util.c:1426:    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+!	util.c:1427:    Draw3DBorder (image->pixmap, 0, h / 4, ((3 * h) / 4) + 1, ((3 * h) / 4) + 1, 2,
+!	util.c:1429:    Draw3DBorder (image->pixmap, 0, h / 2, (h / 2) + 1, (h / 2) + 1, 2, cp, off, True, False);
+!	util.c:1437:static Image *Create3DZoomImage (cp)
+!	util.c:1451:    Draw3DBorder (image->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+!	util.c:1452:    Draw3DBorder (image->pixmap, h / 4, h / 4, (h / 2) + 2, (h / 2) + 2, 2, cp, off, True, False);
+!	util.c:1466:Pixmap Create3DMenuIcon (height, widthp, heightp, cp)
+!	util.c:1493:    Draw3DBorder (col->pix, 0, 0, w, h, 1, cp, off, True, False);
+!	util.c:1495:	Draw3DBorder (col->pix, 4, i, w - 8, 3, 1, Scr->MenuC, off, True, False);
+!	util.c:1502:Pixmap Create3DIconManagerIcon (cp)
+!	util.c:1519:    Draw3DBorder (col->pix, 0, 0, w, h, 4, cp, off, True, False);
+	util.c:1526:static Image *Create3DResizeAnimation (cp)
+	util.c:1539:	Draw3DBorder (im->pixmap, 0, 0, h, h, 2, cp, off, True, False);
+	util.c:1540:	Draw3DBorder (im->pixmap, i, i, h - (2 * i), h - (2 * i), 2, cp, off, True, False);
+!	util.c:1663:void Draw3DBorder (w, x, y, width, height, bw, cp, state, fill, forcebw)
+!	util.c:1775:void Draw3DCorner (w, x, y, width, height, thick, bw, cp, type)
+!	util.c:1781:    Draw3DBorder (w, x, y, width, height, bw, cp, off, True, False);
+!	util.c:1784:	    Draw3DBorder (w, x + thick - bw, y + thick - bw,
+!	util.c:1789:	    Draw3DBorder (w, x - bw, y + thick - bw,
+!	util.c:1794:	    Draw3DBorder (w, x - bw, y - bw,
+!	util.c:1799:	    Draw3DBorder (w, x + thick - bw, y - bw,
+	util.c:1813:	    if (tmp_win->frame_bw3D)
+!	util.c:1839:	Draw3DBorder (tmp_win->frame,
+!	util.c:1845:	Draw3DBorder (tmp_win->frame,
+!	util.c:1846:	    tmp_win->frame_bw3D - 2,
+!	util.c:1847:	    tmp_win->frame_bw3D - 2,
+!	util.c:1848:	    tmp_win->frame_width  - 2 * tmp_win->frame_bw3D + 4,
+!	util.c:1849:	    tmp_win->frame_height - 2 * tmp_win->frame_bw3D + 4,
+!	util.c:1853:    Draw3DBorder (tmp_win->frame,
+!	util.c:1857:		tmp_win->frame_bw3D,
+!	util.c:1859:    Draw3DBorder (tmp_win->frame,
+!	util.c:1860:		tmp_win->frame_bw3D + Scr->TitleHeight,
+!	util.c:1861:		tmp_win->frame_height - tmp_win->frame_bw3D,
+!	util.c:1862:		tmp_win->frame_width - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
+!	util.c:1863:		tmp_win->frame_bw3D,
+!	util.c:1865:    Draw3DBorder (tmp_win->frame,
+!	util.c:1867:		Scr->TitleHeight + tmp_win->frame_bw3D,
+!	util.c:1868:		tmp_win->frame_bw3D,
+!	util.c:1869:		tmp_win->frame_height - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
+!	util.c:1871:    Draw3DBorder (tmp_win->frame,
+!	util.c:1872:		tmp_win->frame_width  - tmp_win->frame_bw3D,
+!	util.c:1873:		Scr->TitleHeight + tmp_win->frame_bw3D,
+!	util.c:1874:		tmp_win->frame_bw3D,
+!	util.c:1875:		tmp_win->frame_height - 2 * (Scr->TitleHeight + tmp_win->frame_bw3D),
+!	util.c:1877:    Draw3DCorner (tmp_win->frame,
+!	util.c:1878:		tmp_win->title_x - tmp_win->frame_bw3D,
+!	util.c:1880:		Scr->TitleHeight + tmp_win->frame_bw3D,
+!	util.c:1881:		Scr->TitleHeight + tmp_win->frame_bw3D,
+!	util.c:1882:		tmp_win->frame_bw3D, 2, cp, 0);
+!	util.c:1883:    Draw3DCorner (tmp_win->frame,
+!	util.c:1886:		Scr->TitleHeight + tmp_win->frame_bw3D,
+!	util.c:1887:		Scr->TitleHeight + tmp_win->frame_bw3D,
+!	util.c:1888:		tmp_win->frame_bw3D, 2, cp, 1);
+!	util.c:1889:    Draw3DCorner (tmp_win->frame,
+!	util.c:1890:		tmp_win->frame_width  - (Scr->TitleHeight + tmp_win->frame_bw3D),
+!	util.c:1891:		tmp_win->frame_height - (Scr->TitleHeight + tmp_win->frame_bw3D),
+!	util.c:1892:		Scr->TitleHeight + tmp_win->frame_bw3D,
+!	util.c:1893:		Scr->TitleHeight + tmp_win->frame_bw3D,
+!	util.c:1894:		tmp_win->frame_bw3D, 2, cp, 2);
+!	util.c:1895:    Draw3DCorner (tmp_win->frame,
+!	util.c:1897:		tmp_win->frame_height - (Scr->TitleHeight + tmp_win->frame_bw3D),
+!	util.c:1898:		Scr->TitleHeight + tmp_win->frame_bw3D,
+!	util.c:1899:		Scr->TitleHeight + tmp_win->frame_bw3D,
+!	util.c:1900:		tmp_win->frame_bw3D, 2, cp, 3);
+!	util.c:1906:    if (Scr->use3Dtitles)
+!	util.c:1909:	    Draw3DBorder (tmp_win->title_w, Scr->TBInfo.titlex, 0,
+!	util.c:1914:	    Draw3DBorder (tmp_win->title_w, Scr->TBInfo.titlex, 0,
+!	util.c:1922:    if (Scr->use3Dtitles) {
+!	util.c:1942:    if (Scr->use3Diconmanagers) {
+!	util.c:1943:	Draw3DBorder (tmp_win->icon->w, 0, tmp_win->icon->height,
+!	util.c:2095:	    { TBPM_3DDOT,	Create3DDotImage },
+!	util.c:2096:	    { TBPM_3DRESIZE,	Create3DResizeImage },
+!	util.c:2097:	    { TBPM_3DMENU,	Create3DMenuImage },
+!	util.c:2098:	    { TBPM_3DZOOM,	Create3DZoomImage },
+!	util.c:2099:	    { TBPM_3DBAR,	Create3DBarImage },
+	util.c:2123:	    { "%xpm:resize", Create3DResizeAnimation }
+	util.c:2128:	    if ((image = Create3DResizeAnimation (cp)) != None) {
+
+	workmgr.c:1137:    Draw3DBorder (Scr->workSpaceMgr.workspaceWindow.w, 0, 0, width, height, 2,
+	workmgr.c:1294:    Draw3DBorder (Scr->workSpaceMgr.occupyWindow.w, 0, 0, width, height, 2,
+	workmgr.c:1347:	Draw3DBorder (w, 0, 0, bwidth, bheight, Scr->WMgrButtonShadowDepth,
+	workmgr.c:1353:	Draw3DBorder (w, 0, 0, bwidth, bheight, Scr->WMgrButtonShadowDepth,
+
+!	screen.h:167:    short 	use3Dmenus;
+!	screen.h:168:    short 	use3Dtitles;
+!	screen.h:169:    short 	use3Diconmanagers;
+!	screen.h:170:    short 	use3Dborders;
+!	screen.h:236:    int ThreeDBorderWidth;	/* 3D border width of twm windows */
+
+!	twm.h:250:    int frame_bw3D;		/* 3D borderwidth of frame */
+!	twm.h:323:#define TBPM_3DDOT ":xpm:dot"		/* name of titlebar pixmap for dot */
+!	twm.h:324:#define TBPM_3DRESIZE ":xpm:resize"	/* name of titlebar pixmap for resize button */
+!	twm.h:325:#define TBPM_3DMENU ":xpm:menu"	/* name of titlebar pixmap for menus */
+!	twm.h:326:#define TBPM_3DZOOM ":xpm:zoom"
+!	twm.h:327:#define TBPM_3DBAR ":xpm:bar"
+!	twm.h:381:extern Pixmap Create3DMenuIcon();
+
+!	util.h:65:void Draw3DBorder ();
+!	util.h:66:void Draw3DCorner ();
+
+!	protos:137:extern void Paint3DEntry(struct MenuRoot *,struct MenuItem *,int );
+!		...in menus.c
+!	protos:232:extern unsigned long Create3DMenuIcon(unsigned int ,unsigned int *,unsigned int *,struct ColorPair );
+!		...in twm.h
+!	protos:234:extern unsigned long Create3DIconManagerIcon(struct ColorPair );
+!		...in twm.h
+!	protos:237:extern void Draw3DBorder(unsigned long ,int ,int ,int ,int ,int ,struct ColorPair ,int ,int ,int );
+!		...in twm.h
+!	protos:239:extern void Draw3DCorner(unsigned long ,int ,int ,int ,int ,int ,int ,struct ColorPair ,int );
+!		...in util.c
+
+----------------------------------------------------------------------------
+
+`grep -in separator *.[chy] > separator.lst` of CTWM-3.1.
+This is what it took for menu separators. The exclamation marks denote
+what I ported. RTSL for the signature 'djhjr'.
+
+!	gram.y:741:			if ($2 == F_SEPARATOR) {
+!	gram.y:751:			if ($7 == F_SEPARATOR) {
+!	parse.c:633:    { "f.separator",		FKEYWORD, F_SEPARATOR },
+!	parse.h:105:#define F_SEPARATOR		58
+
+----------------------------------------------------------------------------
+
+See the files 4.ANNOUNCE, BUGS and CHANGELOG for a summary of these and
+other changes - djhjr -
+
+----------------------------------------------------------------------------
+
+

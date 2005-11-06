@@ -1,0 +1,80 @@
+
+A LISTING OF BUGS
+=================
+
+This is the bug list as distributed with VTWM 5.3.
+
+  * Behavior of transients on the virtual desktop, when the real screen is
+    not at (0,0), is almost unpredictable.  Hence the
+    FixTransientVirtualGeometries variable, new to 5.3, which is not
+    guaranteed to work in every case. --- DSE
+
+  * When the Zoom count is a largish number and PrettyZoom is set, some
+    artifacts may be left on formerly obscured windows. Decrease the count
+    value. --- djhjr
+
+  * Not a bug, but the IconRegion variable should take a list. --- DSE
+
+  * Not a bug, but the resource manager should have been used instead of
+    all of the window lists. --- DSE
+
+Bugs created as a result of my hacking VTWM 5.4. --- djhjr
+
+  * Icon borders will not do 3D, and I don't want to to mess with it.
+    The icons themselves are 3D when IconBevelWidth is non-zero, however,
+    and the IconBorderWidth variable is automatically set to 0.
+
+  * The code to vertically center a door name in the window is correct.
+    It just won't appear so, due to the window and font heights. Play with
+    the door geometry.
+
+  * Behavior of managed windows when used as transients on the virtual
+    desktop, when the real screen is not at (0,0), is sometimes flawed.
+    Hence the FixManagedVirtualGeometries variable, new to 5.4.4, which
+    is also guaranteed to not work in every case.
+
+  * Only titlebar buttons, and therefore the titlebar itself, can adjust
+    to the height of external images.
+
+  * All images should either tile or center as required.
+
+  * VTWM recognizes two-color pixmaps, but incorrectly uses them as
+    bitmaps.
+
+  * When 3D bevel widths reach double digits, things start going weird,
+    and I don't know why. Hence an imposed limit of nine pixels.
+
+  * The region resources don't like 0 or 1 for a horizontal grid space.
+    A kludge is in that fixes it (I think).
+
+  * The f.warpto function doesn't recognize a regular expression.
+
+  * It is possible to place a window sufficiently off-screen as to defeat
+    warp functions (ex: The visible part wholly within AutoPanBorderWidth
+    pixels of screen edge).
+
+  * When warping the screen to a window during a move or resize operation,
+    any number of exposed clients may not get drawn.
+
+  * Menus can become unresponsive. I don't know what triggers this, though
+    submenu selections seem to be involved.
+
+  * At least one application seems to foul up the window ring. At present,
+    restarting VTWM is the only cure.
+
+Bugs encountered and not fixed while hacking VTWM 5.4. --- djhjr
+
+  * Opaque resizing of windows with squeezed titlebars can kill the X
+    server. A hack prevents this by raising the window before the resize.
+
+  * If there is an order of precedence regarding contexts, it's broken.
+
+  * There are precious few safeguards against binding functions to objects
+    inappropriately, particularly where the virtual desktop is concerned.
+
+  * Redefining a bound function doesn't behave as one would expect; really
+    strange things occur.
+
+  * Not a bug, but the sample resource file .vtwmrc-marcel is quite out
+    of date regarding various VTWM features.
+

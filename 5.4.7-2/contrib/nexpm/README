@@ -1,0 +1,55 @@
+INTRODUCTION
+
+If you use vtwm, perhaps you would like to set or change the
+background of the "Virtual Desktop" panner window...
+
+This posting provides a simple program, based on sxpm, xMoveIt,
+and xsetroot, that draws a pixmap in *any* existing window.
+
+Instead of drawing a pixmap, you can make it set a solid background
+color for the window -- which is useful to cancel the effects of a
+previous nexpm invocation!
+
+There is a special parameter for operating on the vtwm panner
+window; otherwise, the target window is specified either by name, by
+numeric ID, or by using the mouse pointer.
+
+It is possible that the Compensate() routine, which is the only
+original code here, is vtwm-specific.
+
+There is probably no use for this technology except when applied to
+the panner window. Putting a pixmap in the background of an xterm
+window may be hazardous to your mental health.
+
+INSTALLATION
+
+xmkmf
+make
+
+COMPATIBILITY
+
+My version of xpm is, from README, "3.0     (91/10/03)";
+older xpm libraries will not understand the built-in default
+"plaid" pixmap.
+
+OTHER USES
+
+The same hack could be applied to xmartin, xv, xloadimage, xneko, or
+anything else, if you have source for them, to make them capable of
+displaying in other windows.
+
+FILES
+
+Imakefile
+README
+nexpm.c                 this is what it's all about
+patchlevel.h            required
+xpm.COPYRIGHT           came with sxpm...
+
+DISCLAIMER
+
+I'm not responsible. This is free stuff, and I wrote very little of
+it. Enjoy!
+
+--Ralph Betza
+  gnohmon@ssiny.com

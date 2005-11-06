@@ -1,0 +1,27 @@
+#!/bin/sh
+# Debian vtwm package pre-removal script
+# Copyright 1999, 2001 Branden Robinson.
+# Licensed under the GNU General Public License, version 2.  See the file
+# /usr/share/common-licenses/GPL or <http://www.gnu.org/copyleft/gpl.txt>.
+
+# $Id$
+
+set -e
+
+trap "echo ;\
+      echo 'Received signal.  Aborting removal of vtwm package.' ;\
+      echo ;\
+      exit 1" 1 2 3 15
+
+#DEBHELPER#
+
+case "$1" in
+    upgrade|failed-upgrade) ;;
+    remove|deconfigure)
+        update-alternatives --remove x-window-manager /usr/bin/X11/vtwm
+        ;;
+esac
+
+exit 0
+
+# vim:set ai et sts=4 sw=4 tw=80:
