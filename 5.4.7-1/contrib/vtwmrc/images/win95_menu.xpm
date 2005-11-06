@@ -1,0 +1,26 @@
+/* XPM */
+static char *win95_menu[] = {
+/* width height num_colors chars_per_pixel */
+"    15    15        4            1",
+/* colors */
+", c None s None",
+". c #ebebeb",
+"# c #000000",
+"a c #acacac",
+/* pixels */
+",,,,,,,,,,,,,,,",
+"..............#",
+".aaaaaaaaaaaaa#",
+".aaaaaaaaaaaaa#",
+".aaaaaaaaaaaaa#",
+".aa#########aa#",
+".aaa#######aaa#",
+".aaaa#####aaaa#",
+".aaaaa###aaaaa#",
+".aaaaaa#aaaaaa#",
+".aaaaaaaaaaaaa#",
+".aaaaaaaaaaaaa#",
+".aaaaaaaaaaaaa#",
+"###############",
+",,,,,,,,,,,,,,,"
+};

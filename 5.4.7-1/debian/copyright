@@ -1,0 +1,225 @@
+Package: vtwm
+Obtained from:
+  http://www.vtwm.org/downloads/vtwm-5.4.7.tar.gz
+  svn://necrotic.deadbeast.net/vtwm/tags/debian/5.4.7-1
+Upstream authors:
+    Tom LaStrange, Solbourne Computer; Jim Fulton, MIT X Consortium;
+    Steve Pitschke, Stardent Computer; Keith Packard, MIT X Consortium;
+    Dave Payne, Apple Computer; Nick Williams <njw@athena.mit.edu>;
+    Dave Edmondson, Santa Cruz Operation, <davided@sco.com>;
+    Dana Chee, Bellcore (R5 conversion), <dana@thumper.bellcore.com>;
+    Warren Jessop, University of Washington, <whj@cs.washington.edu>;
+    Gilligan <thoth@reef.cis.ufl.edu>;
+    Tim Ramsey <tar@math.ksu.edu>;
+    Ralph Betza <gnohmon@ssiny.com>;
+    Michael Kutzner <futzi@uni-paderborn.de>;
+    Stig Ostholm <ostholm@ce.chalmers.se>;
+    M. Eyckmans <mce@ping.be>;
+    Tony Brannigan <tbrann@ox.ac.uk>;
+    Alec Wolman <wolman@crl.dec.com>;
+    <gdmr@dcs.edinburgh.ac.uk>;
+    Marcel Mol <marcel@duteca.et.tudelft.nl>;
+    Darren S. Embry <dsembr01@starbase.spd.louisville.edu>;
+    Chris P. Ross <cross@eng.umd.edu>;
+    Paul Falstad <pf@z-code.z-code.com>;
+    D. J. Hawkey Jr., (version 5.4), <hawkeyd@visi.com>,
+  with
+    Erik Agsjo <erik.agsjo@aktiedirekt.com>,
+    Ugen Antsilevitch <ugen@xonix.com>,
+    Nelson H. F. Beebe <beebe@math.utah.edu>,
+    Michael Dales <michael@dcs.gla.ac.uk>,
+    Michel Eyckmans <mce@ping.be>,
+    Callum Gibson <callum.gibson@db.com>,
+    Jason Gloudon <jdg@world.std.com>,
+    Nicholas Jacobs <nicholas_jacobs@hotmail.com>,
+    Caveh Frank Jalali <caveh@eng.sun.com>
+    Takeharu Kato <magician@maekawa.is.uec.ac.jp>,
+    Goran Larsson <hoh@lorelei.approve.se>,
+    Rolf Neugebauer <neugebar@dcs.gla.ac.uk>,
+    Steve Ratcliffe <sterat@dial.pipex.com>,
+    Seth Robertson <seth@baka.org>,
+    Mehul N. Sanghvi <mehul@kirsun.ne.mediaone.net>,
+    Tim Wiess <tim@zetaflops.net>,
+  acknowledging
+    Claude Lecommandeur, (ctwm), <lecom@sic.epfl.ch>
+Debian package author: Branden Robinson
+
+Branden Robinson would like to acknowledge Martin "Joey" Schulze for his
+previous packaging of vtwm.
+
+Debian's changes to the upstream sources are available in the file
+debian/patches.
+
+Debian copyright/licensing:
+
+  Unless otherwise noted, all modifications and additions to vtwm found in
+  Debian packages bear the following copyright and license terms:
+
+  Copyright 1999-2002, 2004 Branden Robinson
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+  SOFTWARE IN THE PUBLIC INTEREST, INC.  BE LIABLE FOR ANY CLAIM, DAMAGES OR
+  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  DEALINGS IN THE SOFTWARE.
+
+Upstream copyright/licensing:
+
+1) add_window.c
+   add_window.h
+   doc/vtwm.man
+   events.c
+   events.h
+   gc.c
+   gc.h
+   gram.y
+   lex.l
+   list.c
+   list.h
+   menus.c
+   menus.h
+   parse.c
+   parse.h
+   resize.c
+   resize.h
+   twm.c
+   twm.h
+   util.c
+   util.h
+   version.c
+   version.h
+
+  Copyright 1988 by Evans & Sutherland Computer Corporation,
+  Salt Lake City, Utah
+  Portions Copyright 1989 by the Massachusetts Institute of Technology
+  Cambridge, Massachusetts
+
+  All Rights Reserved
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation  for  any  purpose  and  without  fee is hereby
+  granted, provided that the above copyright notice appear  in  all
+  copies and that both  that  copyright  notice  and  this  permis-
+  sion  notice appear in supporting  documentation,  and  that  the
+  names of Evans & Sutherland and M.I.T. not be used in advertising
+  in publicity pertaining to distribution of the  software  without
+  specific, written prior permission.
+
+  EVANS & SUTHERLAND AND M.I.T. DISCLAIM ALL WARRANTIES WITH REGARD
+  TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES  OF  MERCHANT-
+  ABILITY  AND  FITNESS,  IN  NO  EVENT SHALL EVANS & SUTHERLAND OR
+  M.I.T. BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL  DAM-
+  AGES OR  ANY DAMAGES WHATSOEVER  RESULTING FROM LOSS OF USE, DATA
+  OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+  TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE
+  OR PERFORMANCE OF THIS SOFTWARE.
+
+2) applets.c
+   cursor.c
+   iconmgr.c
+   iconmgr.h
+   icons.c
+   regions.c
+   regions.h
+   screen.h
+
+  Copyright 1989 Massachusetts Institute of Technology
+
+  Permission to use, copy, modify, and distribute this software and its
+  documentation for any purpose and without fee is hereby granted, provided
+  that the above copyright notice appear in all copies and that both that
+  copyright notice and this permission notice appear in supporting
+  documentation, and that the name of M.I.T. not be used in advertising
+  or publicity pertaining to distribution of the software without specific,
+  written prior permission.  M.I.T. makes no representations about the
+  suitability of this software for any purpose.  It is provided "as is"
+  without express or implied warranty.
+
+  M.I.T. DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL M.I.T.
+  BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
+  OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+  CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+3) desktop.c
+   desktop.h
+   doors.c
+   doors.h
+
+  Copyright 1990 Dave Edmondson.
+  Copyright 1990 Imperial College of Science, Technology & Medicine.
+
+  All Rights Reserved.
+
+  Permission to use, copy, modify, and distribute this software and its
+  documentation for any purpose and without fee is hereby granted, provided
+  that the above copyright notice appear in all copies and that both that
+  copyright notice and this permission notice appear in supporting
+  documentation, and that the names of Dave Edmondson or Imperial College
+  not be used in advertising or publicity pertaining to distribution of the
+  software without specific, written prior permission. Dave Edmondson and
+  Imperial College make no representations about the suitability of this
+  software for any purpose.  It is provided "as is" without express or
+  implied warranty.
+
+4) sound.c
+   sound.h
+
+  Copyright 2001 David J. Hawkey Jr.
+
+  Permission to use, copy, modify, and distribute this software and its
+  documentation for any purpose and without fee is hereby granted, provided
+  that the above copyright notice appear in all copies and that both that
+  copyright notice and this permission notice appear in supporting
+  documentation, and that the name of the copyright holder or the author not
+  be used in advertising or publicity pertaining to distribution of the
+  software without specific, written prior permission. The copyright holder
+  and the author make no representations about the suitability of this
+  software for any purpose. It is provided "as is" without express or
+  implied warranty.
+
+  THE COPYRIGHT HOLDER AND THE AUTHOR DISCLAIM ALL WARRANTIES WITH REGARD
+  TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+  FITNESS, IN NO EVENT SHALL THE COPYRIGHT HOLDER OR THE AUTHOR BE LIABLE
+  FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+5) nexpm.c
+
+  Copyright 1990, 1991 GROUPE BULL
+
+  Permission to use, copy, modify, and distribute this software and its
+  documentation for any purpose and without fee is hereby granted, provided
+  that the above copyright notice appear in all copies and that both that
+  copyright notice and this permission notice appear in supporting
+  documentation, and that the name of GROUPE BULL not be used in advertising
+  or publicity pertaining to distribution of the software without specific,
+  written prior permission.  GROUPE BULL makes no representations about the
+  suitability of this software for any purpose.  It is provided "as is"
+  without express or implied warranty.
+
+  GROUPE BULL disclaims all warranties with regard to this software,
+  including all implied warranties of merchantability and fitness,
+  in no event shall GROUPE BULL be liable for any special,
+  indirect or consequential damages or any damages
+  whatsoever resulting from loss of use, data or profits,
+  whether in an action of contract, negligence or other tortious
+  action, arising out of or in connection with the use
+  or performance of this software.
+
+$Id$

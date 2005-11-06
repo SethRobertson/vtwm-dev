@@ -1,0 +1,466 @@
+$Id$
+
+desktop.c, doors.c, iconmgr.c, list.c, menus.c, util.c:
+  Eliminate redefinitions of strdup().
+
+Imakefile:
+  Replace VTWMLIBDIR symbol with VTWMCONFDIR since all we use it for is
+  installation of the configuration file.  Create a new TWMCONFDIR symbol,
+  which we use to locate twm's configration file.  If Imake defines
+  EtcX11Directory, use a subdirectory of ETCX11DIR for vtwm's
+  configuration; otherwise, use a subdirectory of LIBDIR.
+
+doc/vtwm.man:
+  + Add copyright notice to the manpage itself, copied from the copyright
+    information on TWM's source files in X11R4, from which VTWM was forked.
+  + Remove commented-out local macro definition from manpage (which also
+    dates back to X11R4).
+  + Fix up the .TH directive:
+    - Downcase the command name (rendering a command's name in full caps is
+      a presentation decision).
+    - Change the date to reflect my modifications.
+    - Indicate the source as "VTWM 5.4.6b", not "X11R4-6", since this
+      manual page is independently maintained by the VTWM hackers.
+  + Fix up the NAME section:
+    - Remove spurious paragraph break at the beginning of the section.
+    - Use \- instead of - to separate the manpage's name and summary and so
+      that mkwhatis is less easily confused.  (See man(7).)
+  + Rename the SYNTAX section to SYNOPSIS.  (See man(7).)
+  + Use an macros for type face selection in the SYNOPSIS section.
+  + Use \- instead of - in the SYNOPSIS section to notate literal dashes
+    that the user will type (e.g., when specifying command-line options).
+  + Rename the SIGNALS section to ASYNCHRONOUS EVENTS (after SUSv3
+    manpages).
+  + Rename the ENVIRONMENT VARIABLES section to ENVIRONMENT.  (See
+    man(7).)
+  + Use "an" typeface macros instead of roff \f escapes for font changes
+    where practical in the ASYNCHRONOUS EVENTS, BUGS, FILES,
+    ENVIRONMENT, COPYRIGHT, and SEE ALSO sections.
+  + Quote multi-word arguments to the .SH macro in the ASYNCHRONOUS
+    EVENTS and AUTHORS AND CONTRIBUTORS sections.
+  + Use \(oq and \(cq named characters instead of literal double-quotes
+    in the BUGS section.
+  + Italicize signal names in the ASYNCHRONOUS EVENTS section.
+  + Put a newline at the ends of sentences per the GNU Roff info
+    documentation.
+  + Move the SEE ALSO section to the end of the page.
+  + Update COPYRIGHT section based on the information I gathered from
+    trawling the source tree.
+  + Add a Vim modeline.
+
+Index: Imakefile
+===================================================================
+--- Imakefile	(revision 46)
++++ Imakefile	(working copy)
+@@ -56,9 +56,22 @@
+ XCOMM Installation path for the binary
+        VTWMBINDIR = $(BINDIR)
+ 
+-XCOMM Installation path for the system resource file
+-       VTWMLIBDIR = $(LIBDIR)/twm
++/*
++ * If EtcX11Directory is defined, we're using a relatively modern X.Org or
++ * XFree86 release.
++ */
++#ifdef EtcX11Directory
++          CONFDIR = $(ETCX11DIR)
++#else
++          CONFDIR = $(LIBDIR)
++#endif
+ 
++XCOMM Installation path for VTWM's system resource file
++       VTWMCONFDIR = $(CONFDIR)/vtwm
++
++XCOMM Location where we search for TWM's system resource file
++       TWMCONFDIR = $(CONFDIR)/twm
++
+ XCOMM Installation path for the man page
+        VTWMMANDIR = $(MANDIR)
+ 
+@@ -113,8 +126,8 @@
+ SpecialObjectRule(events.o,gram.h,$(NEED_SELECT_H))
+ 
+ SpecialObjectRule(parse.o,gram.h,$(NEED_YYLINENO_V) \
+-'-DSYSTEM_VTWMRC="'$(VTWMLIBDIR)'/system.vtwmrc"' \
+-'-DSYSTEM_TWMRC="'$(VTWMLIBDIR)'/system.twmrc"')
++'-DSYSTEM_VTWMRC="'$(VTWMCONFDIR)'/system.vtwmrc"' \
++'-DSYSTEM_TWMRC="'$(VTWMCONFDIR)'/system.twmrc"')
+ 
+ SpecialObjectRule(add_window.o applets.o icons.o \
+ list.o regions.o sound.o twm.o,gram.h,NullParameter)
+@@ -123,7 +136,7 @@
+ 
+ InstallProgram(vtwm,$(VTWMBINDIR))
+ InstallManPage(vtwm,$(VTWMMANDIR))
+-InstallNonExecFile(system.vtwmrc,$(VTWMLIBDIR))
++InstallNonExecFile(system.vtwmrc,$(VTWMCONFDIR))
+ 
+ depend:: lex.c gram.c deftwmrc.c lastmake.c vtwm.man
+ 
+Index: iconmgr.c
+===================================================================
+--- iconmgr.c	(revision 46)
++++ iconmgr.c	(working copy)
+@@ -45,9 +45,6 @@
+ int strcmp(); /* missing from string.h in AUX 2.0 */
+ #endif
+ 
+-#define strdup Strdup /* avoid conflict with system header files */
+-extern char *strdup(char *);
+-
+ /* djhjr - 5/2/98 */
+ static int ComputeIconMgrWindowHeight();
+ 
+Index: util.c
+===================================================================
+--- util.c	(revision 46)
++++ util.c	(working copy)
+@@ -89,9 +89,6 @@
+ #define ZOOMSLEEP 50000 /* arbitrary, but pleasing, msec value */
+ #endif
+ 
+-#define strdup Strdup /* avoid conflict with system header files */
+-extern char *strdup(char *);
+-
+ /*
+  * All instances of Scr->TitleBevelWidth and Scr->BorderBevelWidth
+  * were a hard value of 2 - djhjr - 4/29/98
+Index: doors.c
+===================================================================
+--- doors.c	(revision 46)
++++ doors.c	(working copy)
+@@ -24,16 +24,6 @@
+ #include "desktop.h"
+ #include "add_window.h"
+ 
+-#define strdup Strdup /* avoid conflict with system header files */
+-char *strdup(s1)
+-char * s1;
+-{
+-	char *s2;
+-
+-	s2 = malloc((unsigned) strlen(s1)+1);
+-	return (s2 == NULL ? NULL : strcpy(s2,s1));
+-}
+-
+ extern void SetMapStateProp();
+ extern TwmDoor *door_add_internal();
+ extern void twmrc_error_prefix();
+Index: desktop.c
+===================================================================
+--- desktop.c	(revision 46)
++++ desktop.c	(working copy)
+@@ -26,9 +26,6 @@
+ #include "events.h"
+ #include "desktop.h"
+ 
+-#define strdup Strdup /* avoid conflict with system header files */
+-extern char *strdup(char *);
+-
+ extern void SetRealScreenInternal();
+ extern void SetRealScreen();
+ extern void SnapRealScreen();
+Index: list.c
+===================================================================
+--- list.c	(revision 46)
++++ list.c	(working copy)
+@@ -60,9 +60,6 @@
+ 
+ #define REGCOMP_FLAGS		(REG_EXTENDED | REG_NOSUB)
+ 
+-#define strdup Strdup /* avoid conflict with system header files */
+-extern char *strdup(char *);
+-
+ struct name_list_struct
+ {
+     name_list *next;		/* pointer to the next name */
+Index: menus.c
+===================================================================
+--- menus.c	(revision 46)
++++ menus.c	(working copy)
+@@ -69,9 +69,6 @@
+ #endif
+ #include "version.h"
+ 
+-#define strdup Strdup /* avoid conflict with system header files */
+-extern char *strdup(char *);
+-
+ extern void IconUp(), IconDown(), CreateIconWindow();
+ 
+ /* djhjr - 4/26/99 */
+Index: doc/vtwm.man
+===================================================================
+--- doc/vtwm.man	(revision 46)
++++ doc/vtwm.man	(working copy)
+@@ -1,19 +1,27 @@
+-.\" twm
+-.\" .de EX              \"Begin example
+-.\" .ne 5
+-.\" .if n .sp 1
+-.\" .if t .sp .5
+-.\" .nf
+-.\" .in +.5i
+-.\" ..
+-.\" .de EE
+-.\" .fi
+-.\" .in -.5i
+-.\" .if n .sp 1
+-.\" .if t .sp .5
+-.\" ..
+-.\" .ta .3i .6i .9i 1.2i 1.5i 1.8i
+-.TH VTWM 1 "Release 5.4.7" "X11R4-6"
++.\"       Copyright 1988 by Evans & Sutherland Computer Corporation,
++.\"                          Salt Lake City, Utah
++.\"  Portions Copyright 1989 by the Massachusetts Institute of Technology
++.\"                        Cambridge, Massachusetts
++.\"
++.\"                           All Rights Reserved
++.\"
++.\"    Permission to use, copy, modify, and distribute this software and
++.\"    its documentation  for  any  purpose  and  without  fee is hereby
++.\"    granted, provided that the above copyright notice appear  in  all
++.\"    copies and that both  that  copyright  notice  and  this  permis-
++.\"    sion  notice appear in supporting  documentation,  and  that  the
++.\"    names of Evans & Sutherland and M.I.T.  not be used in advertising
++.\"    in publicity pertaining to distribution of the  software  without
++.\"    specific, written prior permission.
++.\"
++.\"    EVANS & SUTHERLAND AND M.I.T.  DISCLAIM ALL WARRANTIES WITH REGARD
++.\"    TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES  OF  MERCHANT-
++.\"    ABILITY  AND  FITNESS,  IN  NO  EVENT SHALL EVANS & SUTHERLAND OR
++.\"    M.I.T.  BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL  DAM-
++.\"    AGES OR  ANY DAMAGES WHATSOEVER  RESULTING FROM LOSS OF USE, DATA
++.\"    OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
++.\"    TORTIOUS ACTION, ARISING OUT OF OR IN  CONNECTION  WITH  THE  USE
++.\"    OR PERFORMANCE OF THIS SOFTWARE.
+ .\"*********************************************************************
+ .\" Important note: At the time 5.4.4 was released, this manual page
+ .\" conformed to Sun's guidelines for manual page markup, passed
+@@ -22,16 +30,37 @@
+ .\" in subsequent edits to preserve these important invariants!
+ .\"*********************************************************************
+ .\"=====================================================================
++.TH vtwm 1 "2005-06-28" "VTWM 5.4.7"
+ .SH NAME
+ .PP
+ vtwm - Virtual Tab Window Manager for the X Window System
+ .PP
+ .\"=====================================================================
+-.SH SYNTAX
+-.PP
+-\&\fBvtwm\fP [\fB-d\fP \fIdisplay\fP] [\fB-f\fP [\fIinitfile\fP]]
+-[\fB-m\fP [\fIoptions\fP]] [\fB-p\fP] [\fB-s\fP] [\fB-v\fP]
+-.PP
++.SH SYNOPSIS
++.B vtwm
++[
++.B \-d
++.I display
++]
++[
++.B \-f
++.I initfile
++]
++[
++.B \-m
++[
++.I m4-options
++]
++]
++[
++.B \-p
++]
++[
++.B \-s
++]
++[
++.B \-v
++]
+ .\"=====================================================================
+ .SH DESCRIPTION
+ .PP
+@@ -2552,11 +2581,22 @@
+ accomplishes the same thing. This is but a simple example of RE usage,
+ and as such doesn't demonstrate or leverage their capabilities.
+ .\"=====================================================================
+-.SH SIGNALS
+-It is possible to issue a \fBf.restart\fP via a UNIX signal, to ease
+-debugging of \fBvtwm\fP resource files.  To do this, send a SIGUSR1 to the
+-\&\fBvtwm\fP process ID (written to \fI$HOME/vtwm.pid\fP).
+-See \fBkill\fP(1) or \fBslay\fP(1).
++.SH "ASYNCHRONOUS EVENTS"
++It is possible to issue an
++.B f.restart
++via a Unix signal, to ease debugging of
++.B vtwm
++resource files.
++To do this, send a
++.I SIGUSR1
++to the
++.B vtwm
++process ID (written to
++.IR $HOME/vtwm.pid ).
++See
++.BR kill (1)
++or
++.BR slay (1).
+ .\"=====================================================================
+ .SH BUGS
+ There are precious few safeguards against binding functions to objects
+@@ -2565,65 +2605,59 @@
+ Double clicking very fast to get the constrained move function will sometimes
+ cause the window to move, even though the pointer is not moved.
+ .PP
+-It is possible to "lose" windows in the virtual desktop by placing them
+-in a large desktop area, then shrinking the desktop so as to remove them
+-from view. They are still there, of course, but are unreachable until the
+-desktop is grown sufficiently large again.
++It is possible to \(oqlose\(cq windows in the virtual desktop by placing
++them in a large desktop area, then shrinking the desktop so as to remove
++them from view.
++They are still there, of course, but are unreachable until the
+ .PP
+-See the \fIBUGS\fP file in the distribution for others.
++See the
++.I BUGS
++file in the distribution for others.
+ .\"=====================================================================
+ .SH FILES
+-.PP
+-Searched for in the order shown:
+-.RS 4
+-.nf
+-\&\fI$HOME/.vtwmrc.<screen number>\fP
+-\&\fI$HOME/.vtwmrc\fP
+-\&\fI$VTWMDIR/twm/system.vtwmrc\fP
+-\&\fI$HOME/.twmrc.<screen number>\fP
+-\&\fI$HOME/.twmrc\fP
+-\&\fI$VTWMDIR/twm/system.twmrc\fP
++.PD 0
++.TP
++.IR $HOME/.vtwmrc. screen-number
++.TP
++.I $HOME/.vtwmrc
++.TP
++.I $VTWMETCMDIR/vtwm/system.vtwmrc
++.TP
++.IR $HOME/.twmrc. screen-number
++.TP
++.I $HOME/.twmrc
++.TP
++.I $VTWMETCMDIR/twm/system.vtwmrc
++are files
++.B vtwm
++will search for and use as its configuration file.
++They are searched for in the order shown, and the first readable file
++found is used.
++.PD 1
++.TP
++.I $HOME/vtwm.pid
++contains the ID of the user's
++.B vtwm
++process; see the description of the
++.B \-p
++option above.
+ .fi
+-.RE
+-.PP
+-.nf
+-\&\fI$HOME/vtwm.pid\fP
+-.fi
+ .\"=====================================================================
+-.SH "ENVIRONMENT VARIABLES"
+-.IP "\fBDISPLAY\fP" 8
+-This variable is used to determine which X server to use.  It is also set
+-during \fBf.exec\fP so that programs come up on the proper screen.
+-.IP "\fBHOME\fP" 8
++.SH ENVIRONMENT
++.TP
++.B DISPLAY
++This variable is used to determine which X server to use.
++It is also set during
++.B f.exec
++so that programs come up on the proper screen.
++.TP
++.B HOME
+ This variable is used as the prefix for files that begin with a tilde and
+-for locating the \fBvtwm\fP startup file.
++for locating the
++.B vtwm
++startup file.
+ .\"=====================================================================
+-.SH "SEE ALSO"
+-\&\fBbitmap\fP(5),
+-\&\fBctwm\fP(1),
+-\&\fBm4\fP(1),
+-\&\fBmwm\fP(1),
+-\&\fBpixmap\fP(5),
+-\&\fBre_format\fP(7) or \fBegrep\fP(1),
+-\&\fBrplayd\fP(8) and \fBrplay.helpers\fP(5),
+-\&\fBtvtwm\fP(1),
+-\&\fBtwm\fP(1),
+-\&\fBvuewm\fP(1),
+-\&\fBX\fP(1),
+-\&\fBxdm\fP(1),
+-\&\fBxinit\fP(1),
+-\&\fBxmodmap\fP(1),
+-\&\fBxrdb\fP(1),
+-\&\fBXserver\fP(1)
+-.\"=====================================================================
+-.SH COPYRIGHT
+-Portions copyright 1988 Evans & Sutherland Computer Corporation; portions
+-copyright 1989 Hewlett-Packard Company and the Massachusetts Institute of
+-Technology; portions copyright 2001 D. J. Hawkey Jr..
+-.PP
+-See \fBX\fP(1) for a full statement of rights and permissions.
+-.\"=====================================================================
+-.SH AUTHORS AND CONTRIBUTORS
++.SH "AUTHORS AND CONTRIBUTORS"
+ Tom LaStrange, Solbourne Computer; Jim Fulton, MIT X Consortium;
+ Steve Pitschke, Stardent Computer; Keith Packard, MIT X Consortium;
+ Dave Payne, Apple Computer; Nick Williams <njw@athena.mit.edu>;
+@@ -2665,4 +2699,44 @@
+ Tim Wiess <tim@zetaflops.net>,
+ acknowledging
+ Claude Lecommandeur, (ctwm), <lecom@sic.epfl.ch>
++.\"=====================================================================
++.SH COPYRIGHT
++Copyright 1988 Evans & Sutherland Computer Corporation
++.br
++Copyright 1989 Massachusetts Institute of Technology
++.br
++Copyright 1990 Dave Edmondson
++.br
++Copyright 1990 Imperial College of Science, Technology & Medicine
++.br
++Copyright 1990, 1991 Groupe Bull
++.br
++Copyright 2001 David J. Hawkey Jr.
++.PP
++See the copyright notices in the
++.B vtwm
++source distribution for copyright license statements.
++On Debian systems, these may also be found in the file
++.IR /usr/share/doc/vtwm/copyright .
++.\"=====================================================================
++.SH "SEE ALSO"
++.BR bitmap (1),
++.BR ctwm (1),
++.BR m4 (1),
++.BR mwm (1),
++.BR pixmap (1),
++.BR regex (7)
++or
++.BR egrep (1),
++.BR rplayd (8),
++.BR tvtwm (1),
++.BR twm (1),
++.BR vuewm (1),
++.BR X (1),
++.BR xdm (1),
++.BR xinit (1),
++.BR xmodmap (1),
++.BR xrdb (1),
++.BR Xserver (1)
+ .\"==============================[The End]==============================
++.\" vim:set ai et sts=4 sw=4 tw=72:

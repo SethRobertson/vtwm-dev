@@ -1,0 +1,95 @@
+As far as changes from version 5.2 to version 5.2.1 go, they are mostly a few
+aesthetic and look-and-feel hacks and a couple of bug fixes.
+
+I would really like input as to how you like the changes I made.
+
+-- Darren S. Embry, dsembr01@starbase.spd.louisville.edu
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    MINOR NEW FEATURE (I can't say it's a big deal)
+    -----------------------------------------------
+        Natural Autopan Behavior
+        
+            By default, when autopanning, the pointer is warped by only
+            (AutoPanBorderWidth + AutoPanExtraWarp) pixels on the real
+            screen.  With this option turned on, the pointer is warped by as
+            many pixels as the screen is scrolled, or by the above number of
+            pixels, whichever is greater.  Thus, the pointer will not
+            actually move very much (only by AutoPanExtraWarp) in relation to
+            the virtual desktop.  This works very well on faster X terminals,
+            although I can't say the same thing for slower ones (but setting
+            AutoPanWarpWithRespectToRealScreen may do a good job).
+            
+    NEW VARIABLES to play around with
+    ---------------------------------
+        AutoPanBorderWidth <pixels>
+        AutoPanExtraWarp <pixels>
+        AutoPanWarpWithRespectToRealScreen <N%>
+        EnhancedExecResources
+        LessRandomZoomZoom
+        NaturalAutopanBehavior
+            # synonymous with ``AutoPanWarpWithRespectToRealScreen 100''
+        PrettyZoom
+        RealScreenBorderWidth <pixels>
+        RightHandSidePulldownMenus
+
+    OTHER HACKS AND BUG FIXES
+    -------------------------
+        Supports negative and `0,0' door geometries. [ bug fix ]
+
+CHANGES BY SOURCE FILE
+======================
+
+Any lines, code or data structures in the code denoted by "/* DSE */" are
+changes I made.
+
+    desktop.c:
+    ----------
+        Supports the RealScreenBorderWidth variable now.
+
+        Added dx,dy parameters to SetRealScreenInternal and PanRealScreen so
+        that they pass information on how much to warp the mouse pointer,
+        to support my AutoPanWarpWithRespectToRealScreen hack.
+
+    desktop.h:
+    ----------
+        Define AP_SIZE to Scr->AutoPanBorderWidth instead of just 5.
+
+    doors.c
+    -------
+        Supports negative door geometries now (like "120x120-0-0").
+        [ bug fix ]
+
+        Also fixes bug that wouldn't allow "+0+0" to be a valid door
+        position. [ bug fix ]
+
+    events.c
+    --------
+        In HandleEnterNotify(), initial setting of xwarp and ywarp uses
+        AutopanExtraWarp instead of just 2.
+
+    menus.c
+    -------
+        The RightHandSidePulldownMenus, EnhancedExecResources, and PrettyZoom
+        hacks are done here.
+
+    parse.c, screen.h
+    -----------------
+        Of course, the new variables were inserted here.
+
+    util.c
+    ------
+        The LessRandomZoomZoom hack was done here.
+
+DISCLAIMER: I am not the official maintainer or central programmer of vtwm,
+but there isn't one anyway; I just made a few fixes, played with the code to
+make it a little bit more `configurable' in certain areas, and decided to see
+what *you* think of the changes I made.  I also don't know much about X
+programming, but the changes I made to vtwm haven't caused any major damage
+so far.
+
+--
+    letitflowletyourselfgos[   darren s. embry   ]lowandlowthatisthetempo
+                           [  dsembr01@starbase  ]
+beingashamedbecauseyouredif[ .spd.louisville.edu ]ferentisthesickestkindoflie

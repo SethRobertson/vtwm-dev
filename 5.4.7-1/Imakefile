@@ -1,0 +1,210 @@
+#ifndef XCOMM
+#define XCOMM #
+#endif
+
+XCOMM $XConsortium: Imakefile,v 1.33 91/07/17 00:48:06 gildea Exp $
+XCOMM
+XCOMM Here is an Imakefile for VTWM.
+XCOMM I like to use Imakefiles for everything, and I am sure other
+XCOMM people do also, so perhaps you could do us all a favor and
+XCOMM distribute this one.
+
+XCOMM =============== Start of common editables =====================
+
+XCOMM To omit XPM image support, uncomment this
+XCOMM   NO_XPM_SUPPORT = -DNO_XPM_SUPPORT
+XCOMM and comment these
+           XPMLIB = -lXpm
+           XPMINC =
+XCOMM (version 3.4h of the XPM library is the earliest supported I know of)
+
+XCOMM To omit regular expressions ("RE"s) support, uncomment this
+XCOMM NO_REGEX_SUPPORT = -DNO_REGEX_SUPPORT
+XCOMM and comment these
+         REGEXLIB =
+         REGEXINC =
+XCOMM (the library must conform to the POSIX 1003.2 specification)
+
+XCOMM To omit sound support, uncomment this
+XCOMM NO_SOUND_SUPPORT = -DNO_SOUND_SUPPORT
+XCOMM and comment these
+SOUNDLIB = -L/usr/local/lib -lrplay
+SOUNDINC = -I/usr/local/include
+XCOMM (sound is supported only by way of the rplay library)
+
+XCOMM To omit Internationalization support, uncomment this
+XCOMM  NO_I18N_SUPPORT = -DNO_I18N_SUPPORT
+
+XCOMM To omit m4 pre-processing of resource files, uncomment this
+XCOMM    NO_M4_SUPPORT = -DNO_M4_SUPPORT
+
+XCOMM To omit platform and build info in the version window, uncomment this
+XCOMM    NO_BUILD_INFO = -DNO_BUILD_INFO
+
+XCOMM For lexers that don't track line numbers, uncomment this
+XCOMM  NEED_YYLINENO_V = -DNEED_YYLINENO_V
+
+XCOMM For those systems that don't have putenv(), uncomment this
+XCOMM    NEED_PUTENV_F = -DNEED_PUTENV_F
+
+XCOMM For those systems that require sys/select.h, uncomment this
+XCOMM    NEED_SELECT_H = -DNEED_SELECT_H
+
+XCOMM For those systems that require process.h, uncomment this
+XCOMM   NEED_PROCESS_H = -DNEED_PROCESS_H
+
+XCOMM Installation path for the binary
+       VTWMBINDIR = $(BINDIR)
+
+/*
+ * If EtcX11Directory is defined, we're using a relatively modern X.Org or
+ * XFree86 release.
+ */
+#ifdef EtcX11Directory
+          CONFDIR = $(ETCX11DIR)
+#else
+          CONFDIR = $(LIBDIR)
+#endif
+
+XCOMM Installation path for VTWM's system resource file
+       VTWMCONFDIR = $(CONFDIR)/vtwm
+
+XCOMM Location where we search for TWM's system resource file
+       TWMCONFDIR = $(CONFDIR)/twm
+
+XCOMM Installation path for the man page
+       VTWMMANDIR = $(MANDIR)
+
+XCOMM For the traditional look of TWM as the system fallback,
+XCOMM change this to "2D"
+  SYS_VTWMRC_LOOK = 3D
+
+XCOMM ================ End of common editables ======================
+
+XCOMM ============= Start of less common editables ==================
+
+XCOMM Handy for developers to check man page editions
+XCOMM (see the end of this file)
+           DEROFF = deroff
+               DW = dw
+            SPELL = spell
+
+XCOMM Required to generate HTML or Postscript versions of the man page
+XCOMM (see the end of this file)
+         MAN2HTML = man2html
+           MAN2PS = man2ps
+
+XCOMM ============== End of less common editables ===================
+
+XCOMM ========= Editing below here should not be necessary ==========
+
+           YFLAGS = -d
+          DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
+  LOCAL_LIBRARIES = $(LEXLIB) $(XPMLIB) $(REGEXLIB) $(SOUNDLIB) \
+                    $(XMULIB) $(EXTENSIONLIB) $(XLIB)
+         LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
+   EXTRA_INCLUDES = $(XPMINC) $(REGEXINC) $(SOUNDINC)
+          DEFINES = $(SIGNAL_DEFINES) $(NO_XPM_SUPPORT) $(NO_REGEX_SUPPORT) \
+                    $(NO_SOUND_SUPPORT) $(NO_I18N_SUPPORT) $(NO_M4_SUPPORT)
+
+             SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c \
+                    twm.c sound.c parse.c menus.c events.c resize.c util.c \
+                    version.c iconmgr.c cursor.c regions.c applets.c \
+                    icons.c desktop.c doors.c lastmake.c
+
+             OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o \
+                    twm.o sound.o parse.o menus.o events.o resize.o util.o \
+                    version.o iconmgr.o cursor.o regions.o applets.o \
+                    icons.o desktop.o doors.o lastmake.o
+
+AllTarget(vtwm)
+
+SpecialObjectRule(menus.o,gram.h,$(NO_BUILD_INFO) $(NEED_PROCESS_H))
+
+SpecialObjectRule(util.o,gram.h,$(NEED_PUTENV_F))
+
+SpecialObjectRule(events.o,gram.h,$(NEED_SELECT_H))
+
+SpecialObjectRule(parse.o,gram.h,$(NEED_YYLINENO_V) \
+'-DSYSTEM_VTWMRC="'$(VTWMCONFDIR)'/system.vtwmrc"' \
+'-DSYSTEM_TWMRC="'$(VTWMCONFDIR)'/system.twmrc"')
+
+SpecialObjectRule(add_window.o applets.o icons.o \
+list.o regions.o sound.o twm.o,gram.h,NullParameter)
+
+NormalProgramTarget(vtwm,$(OBJS),$(DEPLIBS),$(LOCAL_LIBRARIES),NullParameter)
+
+InstallProgram(vtwm,$(VTWMBINDIR))
+InstallManPage(vtwm,$(VTWMMANDIR))
+InstallNonExecFile(system.vtwmrc,$(VTWMCONFDIR))
+
+depend:: lex.c gram.c deftwmrc.c lastmake.c vtwm.man
+
+all::
+	$(RM) deftwmrc.* lastmake.*
+
+install::
+	$(RM) deftwmrc.* lastmake.*
+	$(MAKE) install.man
+
+clean::
+	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c \
+	lastmake.c system.vtwmrc vtwm.dw vtwm.ser vtwm.html vtwm.ps vtwm.man
+
+gram.h gram.c: gram.y
+	$(YACC) $(YFLAGS) gram.y
+	$(MV) y.tab.c gram.c
+	$(MV) y.tab.h gram.h
+
+deftwmrc.c: system.vtwmrc
+	$(RM) $@
+	echo '/* ' >>$@
+	echo ' * This file is generated automatically from the default' >>$@
+	echo ' * VTWM bindings file system.vtwmrc.'$(SYS_VTWMRC_LOOK)' by the VTWM Makefile.' >>$@
+	echo ' */' >>$@
+	echo '' >>$@
+	echo 'char *defTwmrc[] = {' >>deftwmrc.c
+	sed -e '/^$$/d' -e '/^#/d' -e 's/"/\\"/g' -e 's/^/"/' -e 's/$$/",/' -e 's/[	]\{1,\}/ /g' -e 's/^" /"/' system.vtwmrc >>$@
+	echo '(char *)0 };' >>$@
+
+lastmake.c:
+	$(RM) $@
+	echo '/* ' >>$@
+	echo ' * This file is generated automatically by the VTWM Makefile.' >>$@
+	echo ' */' >>$@
+	echo '' >>$@
+	echo 'char *lastmake[] = {' >>lastmake.c
+	echo '    "Platform:  '`uname -r -s`'",' >>$@
+	echo '    "Build:  '`date`'",' >>$@
+	echo '    "" };' >>$@
+
+system.vtwmrc:
+	$(RM) $@
+	$(CP) $@.$(SYS_VTWMRC_LOOK) $@
+
+vtwm.man:
+	$(RM) $@
+	$(LN) doc/$@ $@
+
+XCOMM Handy for developers to check the man page
+dw vtwm.dw: vtwm.man
+	$(DEROFF) vtwm.man | $(DW) >vtwm.dw
+	@if test -s vtwm.dw ; \
+	then \
+	    echo Doubled words in vtwm.man ... ; \
+	    cat vtwm.dw ; \
+	fi
+spell vtwm.ser: vtwm.man vtwm.sok
+	$(DEROFF) vtwm.man | $(SPELL) +vtwm.sok >vtwm.ser
+	@if test -s vtwm.ser ; \
+	then \
+	    echo Spelling exceptions in vtwm.man ... ; \
+	    cat vtwm.ser ; \
+	fi
+
+XCOMM If you wish to generate HTML or Postscript versions of the man page,
+XCOMM enter 'make vtwm.html' or 'make vtwm.ps'
+vtwm.html: vtwm.man
+	$(MAN2HTML) vtwm.man
+vtwm.ps: vtwm.man
+	$(MAN2PS) < $< >$@

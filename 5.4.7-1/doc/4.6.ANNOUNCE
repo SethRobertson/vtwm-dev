@@ -1,0 +1,40 @@
+
+This is the announcement of VTWM 5.4.6, an upgrade of the five-year
+old 5.4 release of the window manager for the X Window System.
+
+Highlighting the major changes from release 5.4.5a:
+  - m4 preprocessing of the resource file. VTWM can now share a
+    common .twmrc with TWM and other TWM derivatives, and support
+    by-user, by-group, and by-feature configurations.
+  - Regular expressions ("RE"s) support for resource file window
+    lists. Much more sophisticated than VTWM's own wildcarding.
+  - Sound effects, by way of the rplay library and daemon. What's
+    wrong with a little chrome?
+  - Applet regions, for all those little tools we have up all the
+    time.
+  - Scrolling menus, for those with more entries than the display
+    can handle.
+  - 3D doors and the virtual desktop. All 3D features are rendered
+    on opaque resizes (well, except for one case).
+  - Windows can be resized or moved from the virtual desktop, icon
+    managers, and menus not of the root or window in question.
+  - Better (dare I say it, "complete"?) support for multi-headed
+    systems.
+And, of course, many more bug fixes, tweaks, additions, and changes.
+
+VTWM continues to be 100% backward-compatable with TWM. It can still
+build and run under X11R4, and lose no self-supported functionality.
+Release 5.4.6 supports the many features expected of "modern" window
+managers, is highly configurable, yet it keeps a small footprint and
+quick response. VTWM is quite portable; it has been built on over a
+dozen different OSes, across nine platforms.
+
+The web page, www.visi.com/~hawkeyd/vtwm.html, has been updated, and
+the archive may be found via a link there, or directly via FTP at
+ftp.visi.com/users/hawkeyd/X/ and ftp.x.org/contrib/window_managers/
+(if and when they move it there from contrib/INCOMING/). Visit the
+above web page for installation notes, complete histories, and more.
+
+David J. Hawkey Jr. (hawkeyd@visi.com)
+November 3, 2001
+

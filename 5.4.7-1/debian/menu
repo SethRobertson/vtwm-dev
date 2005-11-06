@@ -1,0 +1,8 @@
+# $Id$
+?package(vtwm):\
+    needs="wm"\
+    section="WindowManagers"\
+    longtitle="Virtual Tab Window Manager"\
+    title="VTWM"\
+    command="vtwm"
+# vim:set ai et sts=4 sw=4 tw=80:

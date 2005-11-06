@@ -1,0 +1,530 @@
+
+VERSION HISTORY OF VTWM 5.4
+===========================
+
+VTWM 5.4.7
+
+    New Features
+        - Added internationalization (I18N) support.
+        - Support ignoring "shift states" when determining if a key
+          or rodent button event is bound (added the IgnoreModifiers
+          variable).
+        - Support passing raw key and rodent button events to windows
+          (added the f.bindbuttons, f.bindkeys, f.unbindbuttons and
+          f.unbindkeys functions).
+        - Allow warp functions to position the pointer at the center
+          of windows (added the WarpCentered variable).
+        - Allow the 3D borders of titled windows to be unadorned (added
+          the NoBorderDecorations variable).
+        - Prohibit windows from being added to the WindowRing list
+          (added the NoWindowRing variable).
+        - Opened up icon managers and menus to user-specified images
+          (added the MenuIconPixmap and IconManagerPixmap keywords).
+          This gives the ShallowReliefWindowButton variable wider scope.
+        - Two new 3D built-in pixmaps, :xpm:box and :xpm:lines.
+        - Four new 3D built-in pixmaps for the titlebar highlight,
+          :xpm:raisedbox, :xpm:sunkenbox, :xpm:raisedlines, and
+          :xpm:sunkenlines. These obsolete the SunkFocusHighlightWindow
+          variable.
+        - The command line can specify that no startup file be used
+          (primarily for testing compiled-in defaults).
+        - Added support for Motif window manager hints (currently, honor
+          "noborder" and "notitle" hints).
+        - Allow sounds to be played "ad hoc" (added the f.playsound
+          function).
+	- Added PointerPlacement keyword.
+    Changed Features
+        - The UsePPosition variable accepts a list now.
+        - The f.warpto function accepts VTWM-style wildcards now.
+        - Refinements to the f.resize and f.move functions: Both are
+          now single rodent button operations from any context, and both
+          warp the pointer back to the virtual desktop when started from
+          there. The wireframe is drawn immediately, ignoring MoveDelta.
+          MoveDelta is otherwise used consistantly now. Constrain virtual
+          desktop resizes to multiples of PanDistance when SnapRealScreen
+          is set.
+        - Refinements to the titlebar: The title bevel can now frame the
+          entire titlebar when built-in 3D buttons are not full height.
+          Buttons can now "extend into" the title bevel and frame padding.
+          The highlight area (or absence of) is handled correctly now.
+          The built-in 3D highlight is now available with or without a
+          title bevel. The ButtonIndent, FramePadding, TitleBevelWidth,
+          and TitlePadding variables are changed.
+        - The TitleHighlight keyword accepts built-in pixmaps now, like
+          the LeftTitleButton and RightTitleButton bindings.
+        - The raise for moved and resized windows now occurs after the
+          movement (added the RaiseOnStart variable).
+        - Some shaping optimizations.
+        - Depreciated the motion event handler.
+        - Chmod 0600 $(HOME)/vtwm.pid.
+        - Let lexers track line numbers by default.
+        - Reduced the compiled-in defaults footprint.
+    Bug Fixes
+        - Fixed warp bugs when windows are borderless or shaped.
+        - Fixed some icon move and resize bugs.
+        - Fixed a vertical placement error in applet regions.
+        - Fixed most stacking order bugs when moving and resizing windows.
+        - Cancelled moves and resizes now work correctly, except one case.
+        - The pointer is adjusted back to the window as needed on resizes.
+        - Fixed some titlebar highlight exposure bugs.
+        - Fixed some off-by-clientborderwidth window placement bugs.
+        - Fixed an off-by-one malloc() and a null pointer reference.
+        - Checks for the number of rodent buttons and VTWM Windows entries.
+        - The f.warpring function has been fixed. Again.
+        - Fixed a race condition when f.squeeze* functions are invoked
+          from a window menu while Opaque* variables are set.
+        - Prevent f.squeeze* functions when the DontSqueezeTitle variable
+          is set.
+        - Removed the limitations of the f.startwm argument.
+        - Fixed the 3D borders of titled windows when the BeNiceToColormap
+          variable is set.
+        - Reduced server grabs.
+        - Better handling of missing or empty string resources.
+	- sound function referenced outside of ifdef.
+    Misc.
+        - Updated the man page, and the BUGS, INSTALL, SOUND, and WISHLIST
+          files.
+        - Updated the system and sample resource files.
+        - Updated contrib/support/sysrc_add_apps.sh.
+
+VTWM 5.4.6b (bugfix release)
+
+    Fixed a bug causing sporadic restarts when realizing unmanaged
+    windows.
+
+VTWM 5.4.6a
+          
+    Support for borderless windows (added the NoBorder variable).
+    Better random placement of large windows.
+    Fixed bugs regarding icon managers and warp rings.
+    Doors are drawn during opaque interactive creation now.
+    MakeTitle now overrides NoTitle like it's supposed to.
+    Added creating and deleting a pid file.
+    Fixed a focus problem with transient windows.
+    Improved the list parser in contrib/support/sysrc_add_apps.sh.
+          
+VTWM 5.4.6
+
+    New Features
+        - Added pre-processing of the resource file with m4. Parameters
+          can be passed on the command-line, too.
+        - Added support for regular expressions ("RE"s) in resource file
+          window lists. VTWM's own wildcarding is still honored.
+        - Sound effects are now supported, by way of the rplay library
+          and daemon (added the PauseOnExit, PauseOnQuit, SoundHost,
+          Sounds, SoundVolume, and f.sounds resources).
+        - Added applet regions. For all those handy little utilities we
+          use every day.
+        - Added "scrollability" to menus that would be taller than the
+          display (added the MenuScrollBorderWidth and MenuScrollJump
+          variables).
+        - Doors and the virtual desktop can now be rendered in 3D
+          (added the DoorBevelWidth and VirtualDesktopBevelWidth
+          variables).
+        - Non-nailed icons can now stay put at their locations on the
+          virtual desktop (added the StaticIconPositions and
+          f.staticiconpositions resources).
+        - Iconified transient windows of an iconified parent window can
+          now have their state preserved when that parent is
+          deiconified (added the DontDeiconifyTransients variable).
+        - Iconification of windows is now prevented when there is no
+          provision to deiconify or otherwise restore them.
+        - Icon managers can now list only iconified windows (added the
+          StrictIconManager and f.stricticonmgr resources).
+        - Added support for warping only to visible windows (added the
+          WarpVisible and f.warpvisible resources).
+        - Improved response to exposure events of transparent pixmaps
+          used for window buttons on pointer-driven focus changes.
+        - Added four built-in button images, two each of down and right
+          arrows.
+    Changed Features
+        - A small tweak in icon and applet regions to have the region
+          layout logic disregard grid spacing in determining whether a
+          window will fit.
+        - Relaxed the door geometry parser, allowing omission of the
+          position.
+        - Applied the XPM library's color closeness attribute to
+          external pixmap images.
+        - Doors, icon managers, and the virtual desktop have minimum
+          sizes imposed on them now.
+        - Doors now override real screen snapping on entry.
+        - Icon managers now honor the IconifyByUnmapping resource.
+        - Removed the UseRealScreenBorder variable. If it's non-zero,
+          why wouldn't you want to use it?
+        - Added compiled-in options to the build info in the version
+          window.
+        - The X database resource "*bitmapFilePath" is now searched for
+          pixmap image files.
+        - Random zooms during deiconification are controlled by a
+          resource now (added the ZoomZoom variable).
+        - The cursor stays with the titlebar on a squeeze operation,
+          like it does with zooms.
+        - All the f.*iconmgr warp functions honor the WarpSnug and
+          WarpWindows variables now (or absence of). The WarpSnug state
+          can now be toggled.
+    Bug Fixes
+        - Doors, icon managers, and the virtual desktop now respond to
+          zoom operations properly.
+        - Doors, icon managers, and the virtual desktop now get redrawn
+          during opaque resizes (redrawing doors during interactive
+          creation is still a problem).
+        - Fixed transposed virtual desktop default foreground and
+          background colors.
+        - Work on the bug where windows may be mapped in desktop (0,0)
+          regardless of the desktop's location in the virtual display.
+        - Fixed positioning errors for the icon manager and virtual
+          desktop windows.
+        - The virtual desktop's bevel and a door's text and bevel now
+          get redrawn after being resized.
+        - The virtual desktop now properly accomodates the real
+          screen's border.
+        - Skip re-mapping of the virtual desktop to clean up outline
+          droppings if the window moved or resized is itself.
+        - When moving an application window in the virtual desktop, the
+          border of the corresponding real screen window now highlights
+          as required.
+        - Windows can now be resized and moved from icon managers and
+          menus not of the root or window in question.
+        - Fixed window resizing via the virtual desktop and icon
+          managers. Fixed window moves (f.move) via the virtual desktop.
+        - Zooms know about icon managers now.
+        - Iconified icon managers now behave as one would expect when
+          removing the last entry in them.
+        - The f.delete and f.destroy functions now work properly on
+          doors, icon managers, and the virtual desktop.
+        - The f.hideiconmgr and f.showiconmgr functions now work
+          against icon managers defined with the IconManagers resource.
+        - Fixed bugs in getting icon names, window states, and pixel
+          atoms from the X server.
+        - Fixed where truncation of long titles messed up in titlebars
+          that don't have any left-side buttons.
+        - The titlebar height now adjusts to external button images.
+        - Sanity checks on door renames. Fixed two menu repaint bugs.
+        - Fixed a bug in the display of a renamed door.
+        - Tweaks to correct the painting of external images on multiple
+          screens.
+        - Fixed a bug where icon bitmaps were rendered with the wrong
+          color.
+        - Fixed the PanResistance resource's not recognizing when the
+          pointer has left the autopan windows.
+        - The icon manager's class is visible to resource list entries
+          now.
+        - The window's icon name now has it's own memory space.
+          Occasionally, VTWM would crash if an app changed it.
+        - Added a kludge to "fix" not getting the rodent button up
+          event when deleting doors.
+        - Fixed the "orphaning" of intermediate parent menu(s) when
+          skipping them for some superior parent menu.
+        - Fixed deferred execution on keyboard events when the root
+          window has focus.
+    Misc.
+        - Added support for the rplay library to the make files.
+        - Added support for regular expressions to the make files.
+        - Ensure the built-in resources and build info are current
+          (tweaks in the make files).
+        - The man page is now included on 'make install'.
+        - Also in the make files, moved the $(NO_XPM_SUPPORT) and
+          $(NO_M4_SUPPORT) defines into $(DEFINES), and removed some
+          SpecialObjectRule()s. Two new definitions and a different
+          directive make for more flexible installs.
+        - Renamed the lnf directory to contrib. Created subdirectories
+          therein for images, sounds, and misc. support stuff. Removed
+          the leading '.' from the resource file names.
+        - The system resource files are a bit more useful and appealing.
+        - A new script in contrib/support can add installed applications
+          to the system default resource file.
+        - Updated the sample resource files to demonstrate some of m4's
+          capabilities.
+        - Added some sample button image and sound files.
+        - Updated the BUGS, INSTALL, and WISHLIST files, and added the
+          HISTORY and SOUND files.
+        - Moved the man page into doc.
+  
+VTWM 5.4.5a
+        
+    Fixed text display bug in the size and position windows.
+
+VTWM 5.4.5
+
+    New Features
+        - Added code to make it a little harder to accidentally pan to
+          an adjacent virtual screen (added the PanResistance
+          variable).
+        - Discovered that VTWM supports a subset of regex wildcards for
+          list variables! It's in the man page now.
+        - Added a signal handler for external restarts.
+        - Added code to restart using a specified window manager (added
+          the f.startwm function).
+        - Made the borders of windows without titlebars forward key
+          events events to the application, like titlebars do.
+        - Added and aliased the OldFashionedVtwmWindowsMenu variable to
+          OldFashionedTwmWindowsMenu.
+        - Added code to suppress entries in th VTWM Windows menu (added
+          the DontShowInVtwmWindows and DontShowInTwmWindows
+          variables).
+        - The window border of the virtual desktop now honors key
+          bindings to "virtual".
+        - Doors and their borders are now sensitive to key bindings.
+        - Added code to inhibit forwarding focus from icon manager
+          entries to the corresponding application windows (added the
+          NoIconManagerFocus variable).
+        - Established a directory, doc, for all the documentation that
+          has accumulated through time.
+        - Established a directory, lnf (look n' feel), for the
+          previously included sample resource and image files, added a
+          couple more, renamed some.
+        - Gave the icon manager and virtual desktop resource classes.
+        - The f.warpclassprev and f.warpclassnext functions now accept
+          an empty string, meaning the class of the window with focus.
+        - Added color (XPM) image support for the UnknownIcon variable
+          and application-specified icons (changed the UnknownIcon
+          variable).
+        - The three entries of the Pixmaps variable now fully support
+          color (XPM) images (changed the Pixmaps variable).
+        - The 3D rendition of icons is now governed by its own variable
+          (added the IconBevelWidth variable).
+        - The position window now reports during moves in the virtual
+          desktop.
+        - The position window now reports during constrained moves.
+        - Added code to support pasting a name into a door (added the
+          f.namedoor function).
+        - When windows are created, they now honor the opaque variables
+          when the RandomPlacement variable is not set.
+        - While moving and resizing windows on the real screen, the
+          virtual desktop now responds in kind, and visa-versa (added
+          the VirtualReceivesMotionEvents and VirtualSendsMotionEvents
+          variables).
+        - Added code for opaque resizing (added the OpaqueResize and
+          NoOpaqueResize variables).
+        - All opaque variables now support lists (added the
+          NoOpaqueMove variable, and changed the OpaqueMove variable).
+        - Added code to properly truncate, then add ellipses to, titles
+          that are longer than the space they're drawn on.
+    Changed Features
+        - Applied the MoveDelta variable to window resizing and initial
+          menu highlighting.
+        - Tweaks to suppress menu highlighting on mapping, relieve CPU
+          consumption on menus bound to rodent buttons, and allow a
+          second rodent button press to cancel menus.
+        - Tweaks for application-defined icon border widths.
+        - All references to and mention of the shadow contrast
+          variables have been changed to *BevelContrast (changed the
+          DarkShadowContrast variable to DarkBevelContrast, and the
+          LightShadowContrast variable to LightBevelContrast).
+        - All references to and mention of the shadow width variables
+          have been changed to *BevelWidth, and they are configurable
+          now (added the BorderBevelWidth, IconManagerBevelWidth,
+          InfoBevelWidth, MenuBevelWidth, TitleBevelWidth, and
+          ButtonBevelWidth variables; removed the UseThreeDBorders,
+          UseThreeDIcons, UseThreeDIconManagers, UseThreeDMenus,
+          UseThreeDTitles, and ThreeDBorderWidth variables).
+        - A few changes to grab the server during non-opaque moves and
+          resizes, regardless of the NoGrabServer variable.
+        - Changed the foreground color for the built-in "TwmWindows"
+          menu to that of the global variable (added and aliased "VTWM
+          Windows" to "TwmWindows").
+        - Another tweak to the f.warpclass* functions, to properly
+          handle multiple icon managers.
+        - Had to make an exception for icon managers regarding warps,
+          that their window border isn't the destination.
+        - The f.warpclass* functions will now exhibit reasonable
+          behavior when an empty string is used on windows without
+          titlebars or on VTWM-specific windows.
+        - Tweaks made to the f.warpclass* variables and the f.warpring
+          function so the destination is a titlebar or border like the
+          other warp functions, and the latter now remembers the window
+          to warp to when invoked from the root window.
+        - All warping functions now honor the WarpUnmapped variable a
+          la the f.warpto function (changed the f.warpclassprev,
+          f.warpclassnext, f.warpnewest, f.warpring, and
+          f.warptoiconmgr functions).
+    Bug Fixes
+        - Fixed a bug with icon manager geometries that would blow VTWM
+          out of the water.
+        - Fixed a bug for the AutoPan variable, when the pan windows
+          are obscured by a newly-raised window.
+        - Plugged a memory leak, where transparent pixmap resources
+          weren't freed before re-use.
+        - Tweaks to streamline icon bitmap handling, and fixed the
+          painting of non-transparent titlebar highlight pixmaps.
+        - Tweaks to correct the painting of built-in images on multiple
+          screens.
+        - Window buttons can now be beveled when external images are
+          used.
+        - Fixed a bug where the titlebar highlight wasn't erased when
+          focus was unset and the BeNiceToColormap and
+          SunkFocusWindowTitle variables were used.
+        - A safer approach to the RaiseDelay variable's timeout.
+        - Fixed a bug I introduced where non-3D borders were always
+          rendered as highlighted!
+        - Fixed some bugs in colormap management.
+        - Added a few "prevents" when there isn't an icon manager
+          mapped.
+        - Made initial window placement adjust to client borderwidths,
+          depending on related variables.
+        - The virtual desktop is now re-mapped after non-opaque moves
+          and resizes to clean up any outline droppings left on it when
+          the Virtual*MotionEvents variables are set.
+        - Found and plugged the hole in the original menu handler that
+          would blow VTWM out of the water when the pointer scrolled
+          down past the last entry.
+        - Virtual window geometries now account for 3D borders.
+        - Virtual-to-real window scaling and positioning errors have
+          been reduced.
+        - Re-instated the effects of the RightHandSidePulldownMenus
+          variable!
+        - The snug variables now take border width into account.
+        - Fixed the rendition of a squeezed titlebar's right-side 3D
+          border (a silly gunkulation error).
+        - The NoGrabServer variable now sees to it the server is
+          actually not grabbed!
+        - The f.warpclassprev function actually goes backwards now!
+        - Many tweaks to make titlebar-related variables consistant
+          with respect to each other and 3D rendition of the various
+          elements.
+    Misc.
+        - Even more tweaks for portability, most notably, restoring
+          X11R4 compatability by not including the X11R5,6 headers
+          Xosdefs.h and Xfuncs.h! X11R5,6 don't seem to mind.
+        - Purged GNU-specific syntax from this new Imakefile, and
+          changed the NO_PUTENV definition to NEED_PUTENV_F, for
+          consistancy.
+        - Support for bison.
+        - Added a define supporting a 2D or 3D system default resource
+          file.
+        - Added the system Imake.tmpl macro for flex's library (should
+          be absent or an empty string on systems with lex).
+        - Renamed the HINTS file to INSTALL, and it's more
+          comprehensive now.
+
+VTWM 5.4.4c
+
+    Added color image (XPM) support for window buttons.
+          
+VTWM 5.4.4b
+          
+    Fixed a bug where the window buttons would get painted with the
+    border color when the background color should have been used.
+    Fixed warping to titlebars not flush left.
+        
+VTWM 5.4.4a
+          
+    Fixed a fault causing a SIGSEGV in the info window.
+    Purged the use of a depreciated constant in the XPM library.
+          
+VTWM 5.4.4
+          
+    New Features
+        - Added a variable to tell the icon manager whether or not to
+          highlight its entries as an indication of pointer location,
+          regardless of the NoHighlight variable (added the
+          NoIconManagerHighlight variable).
+        - Enabled a variable to go easy on the colormap; it doesn't
+          render perfectly yet (added the BeNiceToColormap variable).
+        - Color image (XPM) support for icons.
+        - Added a bug workaround to try to make managed windows used as
+          transients behave (added the FixManagedVirtualGeometries
+          variable).
+    Changed Features
+        - Allow screen warps to honor the SnapRealScreen variable.
+        - Simplified the meaning of the SqueezeTitle variable list
+          parameters.
+    Bug Fixes
+        - A better effort at getting a name for the window.
+        - Added a kludge to "fix" screen warps to de-iconifying windows
+          not on the real screen (high degree of confidence it's not
+          the source of the problem).
+        - Rewrote most of the 3D border code, adding, among other
+          things, drawing the top border segment when 3D borders are
+          used with squeezed titles!
+        - Fixed a bug causing SIGFPEs when pan distances are set to
+          zero.
+        - Fixed an oversight where monochrome GCs weren't getting
+          intialized!
+    Misc.
+        - Added the HINTS file to the distribution.
+        - Moved and added many function declarations into header files
+          for quieter builds.
+        - Use the system Imake.tmpl macro for yacc and removed all
+          escaped characters from the lastmake.c rule in the
+          *akefile*s.
+        - On startup, VTWM now searches for user and system .vtwmrc
+          files, then user and system .twmrc files, in this order.
+        - Fixed and added many declarations and definitions.
+        - Updated the man page.
+        - Support for HTML and Postscript versions of the man page
+          added to the *akefile*s.
+        - Pruned the R4 Imakefile from the tree.
+        - Pruned the vtwmrc/ directory from the distribution tree.
+
+VTWM 5.4.3
+          
+    Bug Fixes
+        - Fixed a bug where the wrong variable was being used to
+          highlight the window border that has focus.
+        - Fixed an omission where the window buttons would not follow
+          the border color when highlighted and the ButtonColorIsFrame
+          variable is true.
+        - Added a hack to trap corrupted/invalid window button names.
+
+VTWM 5.4.2
+
+    New Features
+        - Modifications for a 3D appearance, menu separators, a
+          position window, info window fonts, and resize/position
+          window locations (added the SunkFocusWindowTitle,
+          UseThreeDIconManagers, UseThreeDMenus, UseThreeDTitles,
+          UseThreeDBorders, ThreeDBorderWidth, ClearBevelContrast,
+          DarkBevelContrast, InfoFont, and ResizeRegion variables;
+          added the f.separator function).
+        - Added code to properly paint the window buttons in the same
+          color as their titlebar (added the ButtonColorIsFrame
+          variable).
+        - Now closes the display before spawning the new WM on a
+          restart operation - free alloc'd memory in the X server?
+        - Applied the backing store and NoBackingStore variables to the
+          Icon Manager and titlebars (defeats effects of RaiseDelay).
+        - Added code for Motif-ish "shallow" relief in 3D titlebars and
+          buttons to matches the others (added the
+          ShallowReliefWindowButton variable).
+    Changed Features
+        - Made a few variables un-alterable when 3D appearances are
+          used.
+        - Made the cursor warp to the titlebar on a zoom operation if
+          WarpCursor is set on.
+        - The function f.showdesktopdisplay now deiconifies as
+          required.
+        - Added build info to the version window by having the
+          *makefil*s create a temporary C module.
+        - Tweaked the 3D menu icons to look a little more like menus.
+        - Made the 3D Icon Manager iconified indicators "shallow" to
+          match the 3D menu icons.
+        - Tweaked the hard-coded geometries for a better 3D appearance
+          on icons (looks best with IconBorderWidth set to 0).
+        - Changed "Twm Door" to "VTWM Door", in the name of
+          Consistancy.
+        - Changed "Virtual Desktop" to "VTWM Desktop".
+        - Changed the code to center door window names in their
+          windows.
+        - Took liberties with the SunkFocusWindowTitle function.
+        - Changed as many as convenient boolean shorts to bits in a
+          Slim-Fast effort.
+    Bug Fixes
+        - Numerous changes to accomodate added buttons and squeezed
+          titlebars - I had previously overlooked these.
+        - Changed code to properly scale menus to the fonts used.
+        - Fixed a bug in zooms that I introduced!
+        - Added code preventing the virtual desktop window and door
+          windows from doing harm.
+        - Fixed a bug when trying to move the virtual desktop window
+          with the pointer.
+    Misc.
+        - A couple of changes for a cleaner compile (what were 'int'
+          functions are now 'void', etc.).
+        - Updated the man page.
+
+VTWM 5.4.0 - 5.4.1
+   
+    No public release was made of versions before 5.4.2.
+
+

@@ -1,0 +1,24 @@
+Source: vtwm
+Section: x11
+Priority: optional
+Maintainer: Branden Robinson <branden@debian.org>
+Build-Depends: debhelper (>= 4.0), xutils, x-dev, libx11-dev, libxext-dev, libxmu-dev, libxpm-dev, libxt-dev, libsm-dev, libice-dev, flex, bison
+Standards-Version: 3.6.2
+
+Package: vtwm
+Architecture: any
+Depends: ${shlibs:Depends}
+Provides: x-window-manager
+Description: Virtual Tab Window Manager
+ VTWM is an enhanced version of the Tab window manager (TWM) that adds many
+ features -- primarily a virtual desktop, meaning that what is currently on
+ screen is just a portion of a larger workspace.  What portion of the virtual
+ desktop that is displayed, and whatever windows might be visible within it,
+ are simple point-and-click operations within a scaled representation of the
+ workspace.
+ .
+ For a more extensive description of VTWM's features, see
+ <URL: http://www.vtwm.org/ >.
+# $Id$
+#
+# vim:set ai et sts=4 sw=4 tw=78:

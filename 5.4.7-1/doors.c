@@ -1,0 +1,448 @@
+/*
+ * $Id: doors.c,v 3.0 90/11/20 16:13:17 dme Exp Locker: dme $
+ *
+ * Copyright (c) 1990 Dave Edmondson.
+ * Copyright (c) 1990 Imperial College of Science, Technoology & Medicine
+ * All Rights Reserved.
+ *
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted, provided
+ * that the above copyright notice appear in all copies and that both that
+ * copyright notice and this permission notice appear in supporting
+ * documentation, and that the names of Dave Edmondson or Imperial College
+ * not be used in advertising or publicity pertaining to distribution of the
+ * software without specific, written prior permission. Dave Edmondson and
+ * Imperial College make no representations about the suitability of this
+ * software for any purpose.  It is provided "as is" without express or
+ * implied warranty.
+ */
+
+#include <stdio.h>
+#include <string.h>
+#include "doors.h"
+#include "screen.h"
+#include "desktop.h"
+#include "add_window.h"
+
+extern void SetMapStateProp();
+extern TwmDoor *door_add_internal();
+extern void twmrc_error_prefix();
+
+/* djhjr - 4/20/98 */
+extern void HandleExpose();
+extern void SetupWindow();
+
+/* djhjr - 4/27/99 */
+extern void AppletDown();
+
+TwmDoor *door_add(name, position, destination)
+char *name, *position, *destination;
+{
+	int px, py, pw, ph, dx, dy;
+
+	/* djhjr - 4/26/96 */
+/* djhjr - 8/11/98
+	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
+	int	bw = (Scr->BorderBevelWidth > 0) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
+*/
+	int	bw = Scr->BorderWidth;
+
+	JunkMask = XParseGeometry (position, &JunkX, &JunkY,
+				   &JunkWidth, &JunkHeight);
+
+	/* we have some checking for negative (x,y) to do 
+	   sorta taken from desktop.c by DSE */
+	if ((JunkMask & XNegative) == XNegative) {
+		JunkX += Scr->MyDisplayWidth - JunkWidth - (2 * bw);
+		}
+	if ((JunkMask & YNegative) == YNegative) {
+		JunkY += Scr->MyDisplayHeight - JunkHeight - (2 * bw);
+		}
+
+/* allow position to be omitted - djhjr - 5/10/99
+	if ((JunkMask & (XValue | YValue)) !=
+	    (XValue | YValue)) {
+		twmrc_error_prefix();
+		fprintf (stderr, "bad Door position \"%s\"\n", position);
+		return NULL;
+	}
+*/
+
+	/* added this 'if (...) else' - djhjr - 5/10/99 */
+	if ((JunkMask & (XValue | YValue)) != (XValue | YValue))
+	{
+		/* allow AddWindow() to position it - djhjr - 5/10/99 */
+		JunkX = JunkY = -1;
+	}
+	else
+	{
+/*		if (JunkX <= 0 || JunkY <= 0) {  */
+		if (JunkX < 0 || JunkY < 0) { /* 0,0 accepted now -- DSE */
+			twmrc_error_prefix();
+			fprintf (stderr, "silly Door position \"%s\"\n", position);
+			return NULL;
+		}
+	}
+
+	/* they seemed ok */
+	px = JunkX;
+	py = JunkY;
+
+	if (JunkMask & WidthValue)
+		pw = JunkWidth;
+	else
+		/* means figure it out when you create the window */
+		pw = -1;
+	if (JunkMask & HeightValue)
+		ph = JunkHeight;
+	else
+		ph = -1;
+
+	JunkMask = XParseGeometry (destination, &JunkX, &JunkY,
+				   &JunkWidth, &JunkHeight);
+	if ((JunkMask & (XValue | YValue)) !=
+	    (XValue | YValue)) {
+		twmrc_error_prefix();
+		fprintf (stderr, "bad Door destination \"%s\"\n", destination);
+		return NULL;
+	}
+	if (JunkX < 0 || JunkY < 0) {
+		twmrc_error_prefix();
+		fprintf (stderr, "silly Door destination \"%s\"\n",
+			 destination);
+		return NULL;
+	}
+	dx = JunkX;
+	dy = JunkY;
+
+	return (door_add_internal(name, px, py, pw, ph, dx, dy));
+}
+
+TwmDoor *door_add_internal(name, px, py, pw, ph, dx, dy)
+char *name;
+int px, py, pw, ph, dx, dy;
+{
+	TwmDoor *new;
+
+	new = (TwmDoor *)malloc(sizeof(TwmDoor));
+	new->name = strdup(name);
+
+	/* this for getting colors */
+	new->class = XAllocClassHint();
+	new->class->res_name = new->name;
+	new->class->res_class = strdup(VTWM_DOOR_CLASS);
+
+	new->x = px;
+	new->y = py;
+	new->width = pw;
+	new->height = ph;
+	new->goto_x = dx;
+	new->goto_y = dy;
+
+	/* link into the list */
+	new->prev = NULL;
+	new->next = Scr->Doors;
+	if (Scr->Doors)
+		Scr->Doors->prev = new;
+	Scr->Doors = new;
+
+	return (new);
+}
+
+void door_open(tmp_door)
+TwmDoor *tmp_door;
+{
+	Window w;
+
+	/* djhjr - 4/26/96 */
+/* djhjr - 8/11/98
+	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
+	int	bw = (Scr->BorderBevelWidth > 0) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
+*/
+	int	bw = Scr->BorderWidth;
+
+	/* look up colours */
+	if (!GetColorFromList(Scr->DoorForegroundL,
+			      tmp_door->name,
+			      tmp_door->class, &tmp_door->colors.fore))
+		tmp_door->colors.fore = Scr->DoorC.fore;
+	if (!GetColorFromList(Scr->DoorBackgroundL,
+			      tmp_door->name,
+			      tmp_door->class, &tmp_door->colors.back))
+		tmp_door->colors.back = Scr->DoorC.back;
+
+	if (tmp_door->width < 0)
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+		tmp_door->width = MyFont_TextWidth(&Scr->DoorFont,
+#else
+		tmp_door->width = XTextWidth(Scr->DoorFont.font,
+#endif
+					     tmp_door->name,
+					     strlen(tmp_door->name))
+
+			/* djhjr - 2/7/99 */
+			+ (Scr->DoorBevelWidth * 2)
+
+			+ SIZE_HINDENT;
+
+	if (tmp_door->height < 0)
+		tmp_door->height = Scr->DoorFont.height
+
+			/* djhjr - 2/7/99 */
+			+ (Scr->DoorBevelWidth * 2)
+
+			+ SIZE_VINDENT;
+
+	/* create the window */
+	w = XCreateSimpleWindow(dpy, Scr->Root,
+				tmp_door->x, tmp_door->y,
+				tmp_door->width, tmp_door->height,
+				bw,
+				tmp_door->colors.fore,
+				tmp_door->colors.back);
+	tmp_door->w = XCreateSimpleWindow(dpy, w,
+					  0, 0,
+					  tmp_door->width, tmp_door->height,
+					  0,
+					  tmp_door->colors.fore,
+					  tmp_door->colors.back);
+
+/* reworked to limit the minimum size of a door - djhjr - 3/1/99
+	if ((tmp_door->x < 0) || (tmp_door->y < 0)) {
+		XSizeHints *hints = NULL;
+		long ret;
+
+		 *
+		 * set the wmhints so that add_window() will allow
+		 * the user to place the window
+		 *
+		if (XGetWMNormalHints(dpy, w, hints, &ret) > 0) {
+			hints->flags = hints->flags &
+				(!USPosition & !PPosition);
+			XSetStandardProperties(dpy, w,
+					       tmp_door->class->res_name,
+					       tmp_door->class->res_name,
+					       None, NULL, 0, hints);
+		}
+	} else {
+		XSetStandardProperties(dpy, w,
+				       tmp_door->class->res_name,
+				       tmp_door->class->res_name,
+				       None, NULL, 0, NULL);
+	}
+*/
+	{
+		XSizeHints *hints = NULL;
+
+		if (tmp_door->x < 0 || tmp_door->y < 0)
+		{
+			long ret;
+
+			/*
+			 * set the wmhints so that add_window() will allow
+			 * the user to place the window
+			 */
+			if (XGetWMNormalHints(dpy, w, hints, &ret) != 0)
+				hints->flags &= (!USPosition & !PPosition);
+		}
+
+		if (!hints) hints = XAllocSizeHints();
+
+		hints->flags |= PMinSize;
+		hints->min_width = tmp_door->width;
+		hints->min_height = tmp_door->height;
+
+		XSetStandardProperties(dpy, w,
+				tmp_door->class->res_name,
+				tmp_door->class->res_name,
+				None, NULL, 0, hints);
+	}
+
+	XSetClassHint(dpy, w, tmp_door->class);
+
+	/* set the name on both */
+	XStoreName(dpy, tmp_door->w, tmp_door->name);
+	XStoreName(dpy, w, tmp_door->name);
+
+	XDefineCursor( dpy, w, Scr->FrameCursor );/*RFB*/
+	XDefineCursor( dpy, tmp_door->w, Scr->DoorCursor );/*RFBCURSOR*/
+
+	/* moved these 'cuz AddWindow() will need 'em - djhjr - 11/15/01 */
+	/* store the address of the door on the window */
+	XSaveContext(dpy,
+		     tmp_door->w, DoorContext, (caddr_t) tmp_door);
+	XSaveContext(dpy,
+		     w, DoorContext, (caddr_t) tmp_door);
+
+	/* give to twm */
+	tmp_door->twin = AddWindow(w, FALSE, NULL);
+
+	SetMapStateProp(tmp_door->twin, NormalState);
+
+	/* interested in... */
+	XSelectInput(dpy, tmp_door->w, ExposureMask |
+		     ButtonPressMask | ButtonReleaseMask);
+
+	/* store the address of the door on the window */
+	XSaveContext(dpy,
+		     tmp_door->w,
+		     TwmContext, (caddr_t) tmp_door->twin);
+
+	/* map it */
+	XMapWindow(dpy, tmp_door->w);
+	XMapWindow(dpy, w);
+}
+
+void door_open_all()
+{
+	TwmDoor *tmp_door;
+
+	for (tmp_door = Scr->Doors; tmp_door; tmp_door = tmp_door->next)
+		door_open(tmp_door);
+}
+
+/*
+ * go into a door
+ */
+void door_enter(w, d)
+Window w;
+TwmDoor *d;
+{
+	int snapon; /* doors override real screen snapping - djhjr - 2/5/99 */
+
+	if (!d)
+		/* find the door */
+		if (XFindContext(dpy, w, DoorContext, (caddr_t *)&d)
+		    == XCNOENT)
+			/* not a door ! */
+			return;
+
+	/* go to it */
+	snapon = (int)Scr->snapRealScreen;
+	Scr->snapRealScreen = FALSE;
+	SetRealScreen(d->goto_x, d->goto_y);
+	Scr->snapRealScreen = (snapon) ? TRUE : FALSE;
+}
+
+/*
+ * delete a door
+ */
+void door_delete(w, d)
+Window w;
+TwmDoor *d;
+{	/*marcel@duteca.et.tudelft.nl*/
+	if (!d)
+		/* find the door */
+		if (XFindContext(dpy, w, DoorContext, (caddr_t *)&d)
+		    == XCNOENT)
+			/* not a door ! */
+			return;
+
+	/* unlink it: */
+	if (Scr->Doors == d)
+		Scr->Doors = d->next;
+	if (d->prev != NULL)
+		d->prev->next = d->next;
+	if (d->next != NULL)
+		d->next->prev = d->prev;
+
+	/* djhjr - 4/27/99 */
+	AppletDown(d->twin);
+
+/*
+ * Must this be done here ? Is it do by XDestroyWindow(),
+ * or by HandleDestroyNotify() in events.c, or should it
+ * it be done there ? M.J.E. Mol.
+ *
+ * It looks as though the contexts, at least, should be
+ * deleted here, maybe more, I dunno. - djhjr 2/25/99
+ */
+	XDeleteContext(dpy, d->w, DoorContext);
+	XDeleteContext(dpy, d->w,  TwmContext);
+	XDeleteContext(dpy, d->twin->w, DoorContext); /* ??? */
+	XUnmapWindow(dpy, d->w);
+	XUnmapWindow(dpy, w);
+	XDestroyWindow(dpy, w);
+	free(d->class->res_class); /* djhjr - 2/25/99 */
+	XFree(d->class);
+	free(d->name); /* djhjr - 2/25/99 */
+	free(d);
+}
+
+/*
+ * create a new door on the fly
+ */
+void door_new()
+{
+	TwmDoor *d;
+	char name[256];
+
+	sprintf(name, "+%d+%d", Scr->VirtualDesktopX, Scr->VirtualDesktopY);
+
+	d = door_add_internal(name, -1, -1, -1, -1,
+			      Scr->VirtualDesktopX, Scr->VirtualDesktopY);
+
+	door_open(d);
+}
+
+/*
+ * rename a door from cut buffer 0
+ *
+ * adapted from VTWM-5.2b - djhjr - 4/20/98
+ */
+void
+door_paste_name(w, d)
+Window w;
+TwmDoor* d;
+{
+	int width, height, count;
+	char *ptr;
+/* djhjr - 8/11/98
+	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
+	int	bw = (Scr->BorderBevelWidth > 0) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
+*/
+	/* added initialization and test - djhjr - 3/1/99 */
+	int bw = 0;
+	if (Scr->BorderBevelWidth) bw = Scr->BorderWidth;
+ 
+	if (!d)
+		if (XFindContext(dpy, w, DoorContext, (caddr_t *)&d) == XCNOENT)
+			return;
+
+	/* sanity check - djhjr - 10/31/00 */
+	if (!(ptr = XFetchBytes(dpy, &count)) || count == 0) return;
+	if (count > 128) count = 128;
+
+	if (d->name)
+		d->name = realloc(d->name, count + 1);
+	else
+		d->name = malloc(count + 1);
+
+	sprintf(d->name, "%*s", count, ptr);
+	XFree(ptr);
+
+	/* djhjr - 1/14/99 */
+	XClearWindow(dpy, d->w);
+
+	/* added 'Scr->DoorBevelWidth * 2' - djhjr - 2/7/99 */
+/* djhjr - 9/14/03 */
+#ifndef NO_I18N_SUPPORT
+	width = MyFont_TextWidth(&Scr->DoorFont, d->name, count) +
+#else
+	width = XTextWidth(Scr->DoorFont.font, d->name, count) +
+#endif
+			SIZE_HINDENT + (Scr->DoorBevelWidth * 2);
+	height = Scr->DoorFont.height + SIZE_VINDENT + (Scr->DoorBevelWidth * 2);
+
+	/* limit the size of a door - djhjr - 3/1/99 */
+	d->twin->hints.flags |= PMinSize;
+	d->twin->hints.min_width = width;
+	d->twin->hints.min_height = height;
+
+	SetupWindow(d->twin, d->twin->frame_x, d->twin->frame_y,
+			width + 2 * bw, height + d->twin->title_height + 2 * bw, -1);
+
+	HandleExpose();
+}
+
