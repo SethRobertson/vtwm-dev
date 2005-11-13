@@ -1095,11 +1095,17 @@ EndResizeAdjPointer(tmp_win)
 TwmWindow *tmp_win;
 {
     int x, y, bw = tmp_win->frame_bw + tmp_win->frame_bw3D;
+    int pointer_x, pointer_y; /* pointer coordinates relative to root origin */
 
-    XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild,
-		  &JunkX, &JunkY, &JunkBW, &JunkBW, &JunkBW);
-    XTranslateCoordinates(dpy, Scr->Root, tmp_win->frame,
-			  JunkX, JunkY, &x, &y, &JunkChild);
+    /* Declare junk variables for Xlib calls that return more than we need. */
+    Window junk_root, junk_child;
+    int junk_win_x, junk_win_y;
+    unsigned int junk_mask;
+
+    XQueryPointer(dpy, Scr->Root, &junk_root, &junk_child,
+		  &pointer_x, &pointer_y, &junk_win_x, &junk_win_y, &junk_mask);
+    XTranslateCoordinates(dpy, Scr->Root, tmp_win->frame, pointer_x, pointer_y,
+			  &x, &y, &junk_child);
 
     /* for borderless windows */
     if (bw == 0) bw = 4;
