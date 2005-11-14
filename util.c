@@ -123,9 +123,9 @@ static int borderdashoffset;
 
 int HotX, HotY;
 
-#define questionmark_width 8
-#define questionmark_height 8
-static unsigned char questionmark_bits[] = {
+#define questionmark_width (unsigned int)(8)
+#define questionmark_height (unsigned int)(8)
+static char questionmark_bits[] = {
    0x38, 0x7c, 0x64, 0x30, 0x18, 0x00, 0x18, 0x18};
 
 /***********************************************************************
