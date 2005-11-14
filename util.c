@@ -89,9 +89,6 @@ in this Software without prior written authorization from The Open Group.
 #define ZOOMSLEEP 50000 /* arbitrary, but pleasing, msec value */
 #endif
 
-#define strdup Strdup /* avoid conflict with system header files */
-extern char *strdup(char *);
-
 /*
  * All instances of Scr->TitleBevelWidth and Scr->BorderBevelWidth
  * were a hard value of 2 - djhjr - 4/29/98
@@ -1378,14 +1375,14 @@ I18N_FetchName(dpy, w, winname)
 	*winname = NULL;
 	return 0;
     }
-    *winname = (char *)strdup(text_prop.value);
+    *winname = strdup((char *)text_prop.value);
     status = XmbTextPropertyToTextList(dpy, &text_prop, &list, &num);
     if (status < Success || !num || !*list) {
 	*winname = NULL;      
 	return 0;
     }
     XFree(text_prop.value);
-    *winname = (char *)strdup(*list);
+    *winname = strdup(*list);
     XFreeStringList(list);
     return 1;
 }
@@ -1403,11 +1400,11 @@ I18N_GetIconName(dpy, w, iconname)
 	
     status = XGetWMIconName(dpy, w, &text_prop);
     if (!status || !text_prop.value || !text_prop.nitems) return 0;
-    *iconname = (char *)strdup(text_prop.value);
+    *iconname = strdup((char *)text_prop.value);
     status = XmbTextPropertyToTextList(dpy, &text_prop, &list, &num);
     if (status < Success || !num || !*list) return 0;
     XFree(text_prop.value);
-    *iconname = (char *)strdup(*list);
+    *iconname = strdup(*list);
     XFreeStringList(list);
     return 1;
 }

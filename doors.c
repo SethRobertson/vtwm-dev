@@ -24,16 +24,6 @@
 #include "desktop.h"
 #include "add_window.h"
 
-#define strdup Strdup /* avoid conflict with system header files */
-char *strdup(s1)
-char * s1;
-{
-	char *s2;
-
-	s2 = malloc((unsigned) strlen(s1)+1);
-	return (s2 == NULL ? NULL : strcpy(s2,s1));
-}
-
 extern void SetMapStateProp();
 extern TwmDoor *door_add_internal();
 extern void twmrc_error_prefix();

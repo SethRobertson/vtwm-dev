@@ -26,9 +26,6 @@
 #include "events.h"
 #include "desktop.h"
 
-#define strdup Strdup /* avoid conflict with system header files */
-extern char *strdup(char *);
-
 extern void SetRealScreenInternal();
 extern void SetRealScreen();
 extern void SnapRealScreen();

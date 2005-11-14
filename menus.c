@@ -69,9 +69,6 @@
 #endif
 #include "version.h"
 
-#define strdup Strdup /* avoid conflict with system header files */
-extern char *strdup(char *);
-
 extern void IconUp(), IconDown(), CreateIconWindow();
 
 /* djhjr - 4/26/99 */

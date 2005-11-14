@@ -60,9 +60,6 @@
 
 #define REGCOMP_FLAGS		(REG_EXTENDED | REG_NOSUB)
 
-#define strdup Strdup /* avoid conflict with system header files */
-extern char *strdup(char *);
-
 struct name_list_struct
 {
     name_list *next;		/* pointer to the next name */
@@ -174,7 +171,7 @@ char *ptr;
     nptr->next = *list_head;
 #endif
 
-    nptr->name = (char *)strdup(name);
+    nptr->name = strdup(name);
     if (type & LTYPE_HOST)
     {
 	nptr->type = (type & ~LTYPE_HOST) | LTYPE_PROPERTY;

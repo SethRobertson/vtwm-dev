@@ -45,9 +45,6 @@
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif
 
-#define strdup Strdup /* avoid conflict with system header files */
-extern char *strdup(char *);
-
 /* djhjr - 5/2/98 */
 static int ComputeIconMgrWindowHeight();
 

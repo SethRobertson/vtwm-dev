@@ -210,7 +210,7 @@ IconMgr *iconp;
 	 */
 	if (XGetWMName(dpy, tmp_win->w, &text_property) != 0)
 	{
-		tmp_win->name = (char *)strdup(text_property.value);
+		tmp_win->name = strdup(text_property.value);
 		XFree(text_property.value);
 	}
 #endif
