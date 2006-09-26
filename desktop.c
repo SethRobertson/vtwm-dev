@@ -1224,7 +1224,7 @@ int scale;
 		return;
 	}
 
-	if (scale < 0) {
+	if (scale <= 0) {
 		twmrc_error_prefix();
 		fprintf(stderr,
 			"VirtualDesktop scale must be positive, not %d\n", scale);
