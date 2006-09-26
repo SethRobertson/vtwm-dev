@@ -283,6 +283,8 @@ typedef struct ScreenInfo
     name_list *UsePPositionL;	/* windows with UsePPosition set */
 
     GC NormalGC;		/* normal GC for everything */
+    /* sjr - 9/25/06 */
+    GC RootGC;			/* root GC for title buttons */
     GC MenuGC;			/* gc for menus */
     GC DrawGC;			/* GC to draw lines for move and resize */
 

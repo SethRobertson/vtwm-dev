@@ -115,8 +115,11 @@ void Draw3DBevel();
 void Draw3DNoBevel();
 #endif
 
+/* sjr - 9/25/06 */
+#if 0
 /* djhjr - 4/19/96 */
 static GC     rootGC = (GC) 0;
+#endif
 
 /* for trying to clean up BeNiceToColormap - djhjr - 10/20/02 */
 static int borderdashoffset;
@@ -688,7 +691,7 @@ Image *FindImage (name, color)
     XpmAttributes attributes;
 	XpmColorSymbol xpmcolor[1]; /* djhjr - 9/28/99 */
     int ErrorStatus;
-    
+
     /*
      * Generate a full pathname if any special prefix characters (such as ~)
      * are used.  If the bigname is different from name, bigname will need to
@@ -1530,8 +1533,8 @@ int state;
 
     lw = (w > h) ? h / 16 : w / 16;
     if (lw == 1) lw = 0;
-    XSetForeground(dpy, rootGC, cp.fore);
-    XSetLineAttributes(dpy, rootGC, lw, LineSolid, CapButt, JoinMiter);
+    XSetForeground(dpy, Scr->RootGC, cp.fore);
+    XSetLineAttributes(dpy, Scr->RootGC, lw, LineSolid, CapButt, JoinMiter);
 
     ws = x + (w / 2) - 2;
     hs = y + (h / 2) - 2;
@@ -1542,7 +1545,7 @@ int state;
     points[0].y = points[1].y = points[4].y = hs;
     points[1].x = points[2].x = wb;
     points[2].y = points[3].y = hb;
-    XDrawLines(dpy, d, rootGC, points, 5, CoordModeOrigin);
+    XDrawLines(dpy, d, Scr->RootGC, points, 5, CoordModeOrigin);
 }
 
 /* djhjr - 10/30/02 */
@@ -1557,8 +1560,8 @@ int state;
 
     lw = (w > h) ? h / 16 : w / 16;
     if (lw == 1) lw = 0;
-    XSetForeground(dpy, rootGC, cp.fore);
-    XSetLineAttributes(dpy, rootGC, lw, LineSolid, CapButt, JoinMiter);
+    XSetForeground(dpy, Scr->RootGC, cp.fore);
+    XSetLineAttributes(dpy, Scr->RootGC, lw, LineSolid, CapButt, JoinMiter);
 
     y--;
     wb = w / 4; /* bigger width */
@@ -1570,13 +1573,13 @@ int state;
     points[0].y = points[1].y = y + hb;
     points[1].x = points[2].x = x + w - wb - 1;
     points[2].y = y + h;
-    XDrawLines(dpy, d, rootGC, points, 3, CoordModeOrigin);
+    XDrawLines(dpy, d, Scr->RootGC, points, 3, CoordModeOrigin);
 
     points[0].x = x;
     points[0].y = points[1].y = y + hs;
     points[1].x = points[2].x = x + ws;
     points[2].y = y + h;
-    XDrawLines(dpy, d, rootGC, points, 3, CoordModeOrigin);
+    XDrawLines(dpy, d, Scr->RootGC, points, 3, CoordModeOrigin);
 }
 
 /* djhjr - 10/30/02 */
@@ -1611,11 +1614,11 @@ int state;
     th = mh - bw * 2;
     ix += x;
     iy += y;
-    XSetForeground(dpy, rootGC, cp.fore);
-    XFillRectangle(dpy, d, rootGC, ix, iy, mw, mh);
-    XFillRectangle(dpy, d, rootGC, ix + iw - mw, iy + ih - mh, mw, mh);
-    XSetForeground(dpy, rootGC, cp.back);
-    XFillRectangle(dpy, d, rootGC, ix + bw, iy + bw, tw, th);
+    XSetForeground(dpy, Scr->RootGC, cp.fore);
+    XFillRectangle(dpy, d, Scr->RootGC, ix, iy, mw, mh);
+    XFillRectangle(dpy, d, Scr->RootGC, ix + iw - mw, iy + ih - mh, mw, mh);
+    XSetForeground(dpy, Scr->RootGC, cp.back);
+    XFillRectangle(dpy, d, Scr->RootGC, ix + bw, iy + bw, tw, th);
 
     lw = tw / 2;
     if ((tw & 1) ^ (lw & 1)) lw++;
@@ -1626,10 +1629,10 @@ int state;
     lines = 3;
     if ((lh & 1) && lh < 6) lines--;
     dly = lh / (lines - 1);
-    XSetForeground(dpy, rootGC, cp.fore);
+    XSetForeground(dpy, Scr->RootGC, cp.fore);
     while (lines--)
     {
-	XFillRectangle(dpy, d, rootGC, lx, ly, lw, bw);
+	XFillRectangle(dpy, d, Scr->RootGC, lx, ly, lw, bw);
 	ly += dly;
     }
 }
@@ -1663,9 +1666,9 @@ int state;
     y += pad;
     w -= pad * 2;
     h -= pad * 2;
-    XSetForeground(dpy, rootGC, cp.fore);
+    XSetForeground(dpy, Scr->RootGC, cp.fore);
     XSetForeground(dpy, gcBack, cp.back);
-    XmuDrawLogo(dpy, d, rootGC, gcBack, x - 1, y - 1, w + 2, h + 2);
+    XmuDrawLogo(dpy, d, Scr->RootGC, gcBack, x - 1, y - 1, w + 2, h + 2);
     XDrawRectangle(dpy, d, gcBack, x - 1, y - 1, w + 1, h + 1);
 
     XFreeGC(dpy, gcBack);
@@ -1683,8 +1686,8 @@ int state;
     p = XCreateBitmapFromData(dpy, Scr->Root, questionmark_bits,
 			      questionmark_width, questionmark_height);
 
-    XSetForeground(dpy, rootGC, cp.fore);
-    XCopyPlane(dpy, p, d, rootGC, 0, 0,
+    XSetForeground(dpy, Scr->RootGC, cp.fore);
+    XCopyPlane(dpy, p, d, Scr->RootGC, 0, 0,
 	       questionmark_width, questionmark_height,
 	       x + (w - questionmark_width) / 2,
 	       y + (h - questionmark_height) / 2,
@@ -1708,8 +1711,8 @@ int state;
 
     lw = (w > h) ? h / 16 : w / 16;
     if (lw == 1) lw = 0;
-    XSetForeground(dpy, rootGC, cp.fore);
-    XSetLineAttributes(dpy, rootGC, lw, LineSolid, CapButt, JoinMiter);
+    XSetForeground(dpy, Scr->RootGC, cp.fore);
+    XSetLineAttributes(dpy, Scr->RootGC, lw, LineSolid, CapButt, JoinMiter);
 
     mw = w / 3;
     mh = h / 3;
@@ -1720,7 +1723,7 @@ int state;
     points[2].x = mw - 1;
     points[2].y = h - mh;
     points[3] = points[0];
-    XDrawLines(dpy, d, rootGC, points, 4, CoordModeOrigin);
+    XDrawLines(dpy, d, Scr->RootGC, points, 4, CoordModeOrigin);
 }
 
 /* djhjr - 10/30/02 */
@@ -1738,8 +1741,8 @@ int state;
 
     lw = (w > h) ? h / 16 : w / 16;
     if (lw == 1) lw = 0;
-    XSetForeground(dpy, rootGC, cp.fore);
-    XSetLineAttributes(dpy, rootGC, lw, LineSolid, CapButt, JoinMiter);
+    XSetForeground(dpy, Scr->RootGC, cp.fore);
+    XSetLineAttributes(dpy, Scr->RootGC, lw, LineSolid, CapButt, JoinMiter);
 
     mw = h / 3;
     mh = h / 3;
@@ -1750,7 +1753,7 @@ int state;
     points[2].x = mw - 1;
     points[2].y = mh - 1;
     points[3] = points[0];
-    XDrawLines(dpy, d, rootGC, points, 4, CoordModeOrigin);
+    XDrawLines(dpy, d, Scr->RootGC, points, 4, CoordModeOrigin);
 }
 
 /* djhjr - 4/19/96 */
@@ -2092,15 +2095,15 @@ int use_rootGC;
 
     if (use_rootGC)
     {
-	if (rootGC == (GC)0)
-	    rootGC = XCreateGC(dpy, Scr->Root, 0, &gcvalues);
+	if (Scr->RootGC == (GC)0)
+	    Scr->RootGC = XCreateGC(dpy, Scr->Root, 0, &gcvalues);
 
 	gcvalues.background = cp.back;
 	gcvalues.foreground = cp.fore;
-	XChangeGC(dpy, rootGC, GCForeground | GCBackground, &gcvalues);
+	XChangeGC(dpy, Scr->RootGC, GCForeground | GCBackground, &gcvalues);
 
-	XSetForeground(dpy, rootGC, cp.back);
-	XFillRectangle(dpy, d, rootGC, x, y, w, h);
+	XSetForeground(dpy, Scr->RootGC, cp.back);
+	XFillRectangle(dpy, d, Scr->RootGC, x, y, w, h);
     }
     else
     {
@@ -2171,15 +2174,15 @@ int state;
 				/* ick - djhjr - 10/30/02 */
 				if (pmtab[i].use_rootGC)
 				{
-					if (rootGC == (GC)0)
-						rootGC = XCreateGC(dpy,
+					if (Scr->RootGC == (GC)0)
+						Scr->RootGC = XCreateGC(dpy,
 								   Scr->Root,
 								   0,
 								   &gcvalues);
 
 					gcvalues.background = cp.back;
 					gcvalues.foreground = cp.fore;
-					XChangeGC(dpy, rootGC,
+					XChangeGC(dpy, Scr->RootGC,
 						  GCForeground | GCBackground,
 						  &gcvalues);
 				}
@@ -2635,7 +2638,7 @@ ColorPair cp;
     int		width, height;
     XGCValues	gcvalues;
 
-    if (rootGC == (GC) 0) rootGC = XCreateGC (dpy, Scr->Root, 0, &gcvalues);
+    if (Scr->RootGC == (GC) 0) Scr->RootGC = XCreateGC (dpy, Scr->Root, 0, &gcvalues);
     bm = FindBitmap (name, (unsigned int *) &width, (unsigned int *) &height);
     if (bm == None) return (None);
 
@@ -2643,8 +2646,8 @@ ColorPair cp;
     image->pixmap = XCreatePixmap (dpy, Scr->Root, width, height, Scr->d_depth);
     gcvalues.background = cp.back;
     gcvalues.foreground = cp.fore;
-    XChangeGC   (dpy, rootGC, GCForeground | GCBackground, &gcvalues);
-    XCopyPlane  (dpy, bm, image->pixmap, rootGC, 0, 0, width, height, 0, 0, (unsigned long) 1);
+    XChangeGC   (dpy, Scr->RootGC, GCForeground | GCBackground, &gcvalues);
+    XCopyPlane  (dpy, bm, image->pixmap, Scr->RootGC, 0, 0, width, height, 0, 0, (unsigned long) 1);
     XFreePixmap (dpy, bm);
     image->mask   = None;
     image->width  = width;
@@ -2731,8 +2734,8 @@ ColorPair cp;
     if (name[0] == ':')
     {
 	/* probably need '"%d", Scr->screen' - Caveh Frank Jalali */
-	sprintf(fullname, "%s.%dx%d.%Xx%X", name,
-		w, h, (int)cp.fore, (int)cp.back);
+	sprintf(fullname, "%s.%dx%d.%Xx%X.%d", name,
+		w, h, (int)cp.fore, (int)cp.back, Scr->screen);
 	if ((image = (Image *)LookInNameList(*list, fullname)) == NULL)
 	{
 	    for (i = 0; i < sizeof(pmtab) / sizeof(pmtab[0]); i++)
