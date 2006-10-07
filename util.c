@@ -3195,7 +3195,9 @@ TwmWindow *tmp_win;
 		    0;
 
 	/* djhjr - 3/29/98 */
-	int i, j, slen = strlen(tmp_win->name);
+	int cur_computed_scrlen;
+	int max_avail_scrlen;
+	int cur_string_len = strlen(tmp_win->name);
 	char *a = NULL;
 
 /* djhjr - 9/14/03 */
@@ -3216,17 +3218,17 @@ TwmWindow *tmp_win;
 	{
 /* djhjr - 9/14/03 */
 #ifndef NO_I18N_SUPPORT
-		i = MyFont_TextWidth(&Scr->TitleBarFont, tmp_win->name, slen);
+		cur_computed_scrlen = MyFont_TextWidth(&Scr->TitleBarFont, tmp_win->name, cur_string_len);
 #else
-		i = XTextWidth(Scr->TitleBarFont.font, tmp_win->name, slen);
+		cur_computed_scrlen = XTextWidth(Scr->TitleBarFont.font, tmp_win->name, cur_string_len);
 #endif
 
 /* DUH! - djhjr - 6/18/99
-		j = tmp_win->title_width - 2 * Scr->TBInfo.rightoff;
+		max_avail_scrlen = tmp_win->title_width - 2 * Scr->TBInfo.rightoff;
 */
 /* djhjr - 10/18/02
 		if (!dots) dots = XTextWidth(Scr->TitleBarFont.font, "...", 3) + en;
-		j = tmp_win->title_width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff - dots;
+		max_avail_scrlen = tmp_win->title_width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff - dots;
 */
 /* djhjr - 9/14/03 */
 #ifndef NO_I18N_SUPPORT
@@ -3234,20 +3236,20 @@ TwmWindow *tmp_win;
 #else
 		if (!dots) dots = XTextWidth(Scr->TitleBarFont.font, "...", 3);
 #endif
-		j = tmp_win->title_width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff - en;
+		max_avail_scrlen = tmp_win->title_width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff - en;
 
 /* djhjr - 10/18/02
 		* djhjr - 5/5/98 *
 		* was 'Scr->use3Dtitles' - djhjr - 8/11/98 *
 		if (Scr->TitleBevelWidth > 0)
-			j -= Scr->TitleBevelWidth;
+			max_avail_scrlen -= Scr->TitleBevelWidth;
 */
 		/* reworked this stuff - djhjr - 10/18/02 */
-		if (dots >= j)
-			slen = 0;
-		else if (i > j)
+		if (dots >= max_avail_scrlen)
+			cur_string_len = 0;
+		else if (cur_computed_scrlen > max_avail_scrlen)
 		{
-			while (i >= 0)
+			while (cur_string_len >= 0)
 			{
 /* djhjr - 9/14/03 */
 #ifndef NO_I18N_SUPPORT
@@ -3255,19 +3257,19 @@ TwmWindow *tmp_win;
 #else
 				if (XTextWidth(Scr->TitleBarFont.font,
 #endif
-						tmp_win->name, i) + dots < j)
+/* sjr - 10/06/06 */
+						tmp_win->name, cur_string_len) + dots < max_avail_scrlen)
 				{
-					slen = i;
 					break;
 				}
 
-				i--;
+				cur_string_len--;
 			}
 
-			a = (char *)malloc(slen + 4);
-			memcpy(a, tmp_win->name, slen);
-			strcpy(a + slen, "...");
-			slen += 3;
+			a = (char *)malloc(cur_string_len + 4);
+			memcpy(a, tmp_win->name, cur_string_len);
+			strcpy(a + cur_string_len, "...");
+			cur_string_len += 3;
 		}
 	}
 
@@ -3294,7 +3296,7 @@ TwmWindow *tmp_win;
 */
 		 Scr->TBInfo.titlex + Scr->TitleBevelWidth + en, Scr->TitleBarFont.y, 
 
-		 (a) ? a : tmp_win->name, slen);
+		 (a) ? a : tmp_win->name, cur_string_len);
 	}
     else
 #endif
@@ -3305,7 +3307,7 @@ TwmWindow *tmp_win;
         XDrawString (dpy, tmp_win->title_w,
 #endif
 		 Scr->NormalGC, Scr->TBInfo.titlex, Scr->TitleBarFont.y,
-		 (a) ? a : tmp_win->name, slen);
+		 (a) ? a : tmp_win->name, cur_string_len);
 
 	/* free the clipped title - djhjr - 3/29/98 */
 	if (a) free(a);
