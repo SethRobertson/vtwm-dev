@@ -29,8 +29,8 @@ vtwm - Virtual Tab Window Manager for the X Window System
 .\"=====================================================================
 .SH SYNTAX
 .PP
-\&\fBvtwm\fP [\fB-d\fP \fIdisplay\fP] [\fB-f\fP [\fIinitfile\fP]]
-[\fB-m\fP [\fIoptions\fP]] [\fB-p\fP] [\fB-s\fP] [\fB-v\fP]
+\&\fBvtwm\fP [\fB\-d\fP \fIdisplay\fP] [\fB\-f\fP [\fIinitfile\fP]]
+[\fB\-m\fP [\fIoptions\fP]] [\fB\-p\fP] [\fB\-s\fP] [\fB\-v\fP]
 .PP
 .\"=====================================================================
 .SH DESCRIPTION
