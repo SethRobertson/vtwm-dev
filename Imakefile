@@ -26,10 +26,10 @@ XCOMM and comment these
 XCOMM (the library must conform to the POSIX 1003.2 specification)
 
 XCOMM To omit sound support, uncomment this
-XCOMM NO_SOUND_SUPPORT = -DNO_SOUND_SUPPORT
+NO_SOUND_SUPPORT = -DNO_SOUND_SUPPORT
 XCOMM and comment these
-SOUNDLIB = -L/usr/local/lib -lrplay
-SOUNDINC = -I/usr/local/include
+XCOMM SOUNDLIB = -L/usr/local/lib -lrplay
+XCOMM SOUNDINC = -I/usr/local/include
 XCOMM (sound is supported only by way of the rplay library)
 
 XCOMM To omit Internationalization support, uncomment this
