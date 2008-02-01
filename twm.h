@@ -60,7 +60,6 @@ typedef unsigned long Pixel;
 #endif
 #define PIXEL_ALREADY_TYPEDEFED /* for Xmu/Drawing.h */
 
-#include "util.h"
 
 #ifndef WithdrawnState
 #define WithdrawnState 0

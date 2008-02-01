@@ -37,13 +37,13 @@
 #include <X11/cursorfont.h>
 #include "list.h"
 #include "menus.h"
-#include "iconmgr.h"
-#include "doors.h"
-
 /* djhjr - 5/17/98 */
 #ifndef ORIGINAL_PIXMAPS
 #include "util.h" /* for Image structure */
 #endif
+#include "iconmgr.h"
+#include "doors.h"
+
 
 typedef struct _StdCmap {
     struct _StdCmap *next;		/* next link in chain */
