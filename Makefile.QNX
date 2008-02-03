@@ -31,9 +31,6 @@ SOUND_DEFINE = -DNO_SOUND_SUPPORT
 #SOUNDINC = -I/usr/local/include
 # (sound is supported only by way of the rplay library)
 
-# To omit Internationalization support, uncomment this
-I18N_DEFINE = -DNO_I18N_SUPPORT
-
 # To omit m4 pre-processing of resource files, uncomment this
 #M4_DEFINE = -DNO_M4_SUPPORT
 
@@ -118,7 +115,7 @@ ALLINCLUDES = $(INCLUDES) $(EXTRA_INCLUDES) $(STD_INCLUDES)
 STD_DEFINES = -D__QNX__ -DMetroLink -DSTRINGS_ALIGNED -DNO_REGEX \
               -DBOGUS_MB_MAX
 EXTRA_DEFINES = $(XPM_DEFINE) $(SOUND_DEFINE) $(REGEX_DEFINE) \
-                $(I18N_DEFINE) $(M4_DEFINE) $(INFO_DEFINE) \
+                $(M4_DEFINE) $(INFO_DEFINE) \
                 $(YYLINENO_DEFINE) $(PUTENV_DEFINE) $(SELECT_DEFINE) \
                 $(PROCESS_DEFINE)
 PROTO_DEFINES =

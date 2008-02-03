@@ -27,11 +27,6 @@ BUILDING VTWM 5.4
       - The header file is usually found in /usr/local/include,
         /usr/include, or some such directory. It's "rplay.h".
 
-  - Determine if your system supports internationalization (I18N):
-      - On many systems, header files "locale.h" and "Xlocale.h"
-        are found in /usr/include and /usr/X11R6/include/X11,
-        respectively.
-
   - Determine if you have the m4 macro processor installed:
       - Issuing 'whence m4' or 'which m4' ought to do it.
 
@@ -109,11 +104,6 @@ BUILD HINTS
     adding a line "#define YY_DECL int yylex YY_PROTO((void))" to lex.l.
     These are all expected to be in the lexer's skeleton file, but there
     are some without.
-
-  - If, during the build, you get complaints of undefined data types and
-    functions "FontSet" and "Xmb" whatall, it's because you've built VTWM
-    with internationalization (I18N) support, and your system doesn't
-    support it. Read the comments in Imakefile and/or Makefile.QNX.
 
   - If, during the build, you get complaints of undefined data types and
     functions "Xpm" whatall, it's because you've built VTWM with XPM image

@@ -908,11 +908,6 @@ void
 HandlePropertyNotify()
 {
 	char *prop = NULL;
-#ifdef NO_I18N_SUPPORT
-	Atom actual = None;
-	int actual_format;
-	unsigned long nitems, bytesafter;
-#endif
 	unsigned long valuemask;		/* mask for create windows */
 	XSetWindowAttributes attributes;	/* attributes for create windows */
 	Pixmap pm;
@@ -944,33 +939,15 @@ HandlePropertyNotify()
 
 	switch (Event.xproperty.atom) {
 	  case XA_WM_NAME:
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	if (!I18N_FetchName(dpy, Tmp_win->w, &prop))
-#else
-	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0L,
-			MAX_NAME_LEN, False, XA_STRING, &actual,
-			&actual_format, &nitems, &bytesafter,
-			(unsigned char **) &prop) != Success || actual == None)
-#endif
 		return;
 
 	free_window_names (Tmp_win, True, True, False);
 	Tmp_win->full_name = (prop) ? strdup(prop) : NoName;
 	Tmp_win->name = (prop) ? strdup(prop) : NoName;
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	if (prop) free(prop);
-#else
-	if (prop) XFree(prop);
-#endif
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	Tmp_win->name_width = MyFont_TextWidth (&Scr->TitleBarFont,
-#else
-	Tmp_win->name_width = XTextWidth (Scr->TitleBarFont.font,
-#endif
 					  Tmp_win->name,
 					  strlen (Tmp_win->name));
 
@@ -984,8 +961,6 @@ HandlePropertyNotify()
 	 * the same as the window
 	 */
 /* see that the icon name is it's own memory - djhjr - 2/20/99
-	if (Tmp_win->icon_name == NoName) {
-	    Tmp_win->icon_name = Tmp_win->name;
 */
 	if (!strcmp(Tmp_win->icon_name, NoName)) {
 	    free(Tmp_win->icon_name);
@@ -996,30 +971,14 @@ HandlePropertyNotify()
 	break;
 
 	  case XA_WM_ICON_NAME:
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	if (!I18N_GetIconName(dpy, Tmp_win->w, &prop))
-#else
-	if (XGetWindowProperty (dpy, Tmp_win->w, Event.xproperty.atom, 0,
-			MAX_ICON_NAME_LEN, False, XA_STRING, &actual,
-			&actual_format, &nitems, &bytesafter,
-			(unsigned char **) &prop) != Success || actual == None)
-#endif
 		return;
 
 /* see that the icon name is it's own memory - djhjr - 2/20/99
-	if (!prop) prop = NoName;
-	free_window_names (Tmp_win, False, False, True);
-	Tmp_win->icon_name = prop;
 */
 	free_window_names (Tmp_win, False, False, True);
 	Tmp_win->icon_name = (prop) ? strdup(prop) : NoName;
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	if (prop) free(prop);
-#else
-	if (prop) XFree(prop);
-#endif
 
 	RedoIconName();
 
@@ -1233,12 +1192,7 @@ void RedoIconName()
 	if (Tmp_win->icon_not_ours)
 	return;
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	Tmp_win->icon_w_width = MyFont_TextWidth(&Scr->IconFont,
-#else
-	Tmp_win->icon_w_width = XTextWidth(Scr->IconFont.font,
-#endif
 			Tmp_win->icon_name, strlen(Tmp_win->icon_name));
 
 /* djhjr - 6/11/96
@@ -1327,12 +1281,7 @@ TwmDoor *door;
 	{
 		int tw, bw;
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 		tw = MyFont_TextWidth(&Scr->DoorFont,
-#else
-		tw = XTextWidth(Scr->DoorFont.font,
-#endif
 				door->name, strlen(door->name));
 
 		/* djhjr - 4/26/96 */
@@ -1353,12 +1302,7 @@ TwmDoor *door;
 ** over to the right, it just looks wrong!
 ** For example grog-9 from ISC's X11R3 distribution.
 */
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 		MyFont_DrawString(dpy, door->w, &Scr->DoorFont,
-#else
-		XDrawString(dpy, door->w,
-#endif
 			Scr->NormalGC,
 /* gets 'SIZE_VINDENT' out of here... djhjr - 5/14/96
 			(tmp_win->frame_width - tw)/2,
@@ -1368,9 +1312,6 @@ TwmDoor *door;
 			(tmp_win->frame_width - tw - 2 * bw) / 2,
 			(tmp_win->frame_height - tmp_win->title_height -
 					Scr->DoorFont.height - 2 * bw) / 2 +
-/* djhjr - 9/14/03
-					Scr->DoorFont.font->ascent,
-*/
 					Scr->DoorFont.ascent,
 			door->name, strlen(door->name));
 
@@ -1380,12 +1321,7 @@ TwmDoor *door;
 					tmp_win->frame_height - (bw * 2),
 					Scr->DoorBevelWidth, Scr->DoorC, off, False, False);
 	} else {
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 		MyFont_DrawString(dpy, door->w, &Scr->DoorFont,
-#else
-		XDrawString(dpy, door->w,
-#endif
 			Scr->NormalGC,
 			SIZE_HINDENT/2, 0/*Scr->DoorFont.height*/,
 			door->name, strlen(door->name));
@@ -1404,12 +1340,7 @@ TwmWindow *twin;
 /* djhjr - 4/19/96
 	* font was font.font->fid - djhjr - 9/14/03 *
 	FBF(twin->list->fore, twin->list->back, Scr->IconManagerFont);
-* djhjr - 9/14/03 *
-#ifndef NO_I18N_SUPPORT
 	MyFont_DrawString (dpy, Event.xany.window, &Scr->IconManagerFont,
-#else
-	XDrawString (dpy, Event.xany.window,
-#endif
 		Scr->NormalGC,
 		iconmgr_textx, Scr->IconManagerFont.y+4,
 		twin->icon_name, strlen(twin->icon_name));
@@ -1434,25 +1365,14 @@ TwmWindow *twin;
 	 */
 	if (Scr->NoPrettyTitles == FALSE) /* for rader - djhjr - 2/9/99 */
 	{
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 		i = MyFont_TextWidth(&Scr->IconManagerFont,
-#else
-		i = XTextWidth(Scr->IconManagerFont.font,
-#endif
 				twin->icon_name, slen);
 
 /* DUH! - djhjr - 6/18/99
 		j = twin->list->width - iconmgr_textx - en;
 */
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 		if (!en) en = MyFont_TextWidth(&Scr->IconManagerFont, "n", 1);
 		if (!dots) dots = MyFont_TextWidth(&Scr->IconManagerFont, "...", 3);
-#else
-		if (!en) en = XTextWidth(Scr->IconManagerFont.font, "n", 1);
-		if (!dots) dots = XTextWidth(Scr->IconManagerFont.font, "...", 3);
-#endif
 		j = twin->list->width - iconmgr_textx - dots;
 
 		/* djhjr - 5/5/98 */
@@ -1471,15 +1391,7 @@ TwmWindow *twin;
 		{
 			for (i = slen; i >= 0; i--)
 
-/* djhjr - 6/18/99
-				if (XTextWidth(Scr->IconManagerFont.font, twin->icon_name, i) + 2 * en < j)
-*/
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 				if (MyFont_TextWidth(&Scr->IconManagerFont,
-#else
-				if (XTextWidth(Scr->IconManagerFont.font,
-#endif
 						twin->icon_name, i) + en < j)
 				{
 					slen = i;
@@ -1498,13 +1410,8 @@ TwmWindow *twin;
 
 /* what's the point of this? - djhjr - 5/2/98
 	if (Scr->use3Diconmanagers && (Scr->Monochrome != COLOR))
-* djhjr - 9/14/03 *
-#ifndef NO_I18N_SUPPORT
 		MyFont_DrawImageString (dpy, twin->list->w,
 				&Scr->IconManagerFont,
-#else
-		XDrawImageString (dpy, twin->list->w,
-#endif
 		Scr->NormalGC, iconmgr_textx,
 
 * djhjr - 5/2/98
@@ -1516,13 +1423,8 @@ TwmWindow *twin;
 		(a) ? a : twin->icon_name, slen);
 	else
 */
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 		MyFont_DrawString (dpy, twin->list->w,
 				&Scr->IconManagerFont,
-#else
-		XDrawString (dpy, twin->list->w,
-#endif
 		Scr->NormalGC, iconmgr_textx,
 
 /* djhjr - 5/2/98
@@ -1636,22 +1538,12 @@ HandleExpose()
 		/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 		if (!i && Scr->BorderBevelWidth > 0) k += Scr->InfoBevelWidth;
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	    MyFont_DrawString(dpy, Scr->InfoWindow, &Scr->InfoFont,
-#else
-	    XDrawString(dpy, Scr->InfoWindow,
-#endif
 		Scr->NormalGC,
 /* centers the lines... djhjr - 5/10/96
 		10,
 */
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 		(JunkWidth - MyFont_TextWidth(&Scr->InfoFont, Info[i], j)) / 2,
-#else
-		(JunkWidth - XTextWidth(Scr->InfoFont.font, Info[i], j)) / 2,
-#endif
 
 		/* 'k' was a hard-coded '5' - djhjr - 4/29/98 */
 		(i*height) + Scr->InfoFont.y + k, Info[i], j);
@@ -1697,12 +1589,7 @@ HandleExpose()
 	    * font was font.font->fid - djhjr - 9/14/03 *
 	    FBF(Tmp_win->title.fore, Tmp_win->title.back, Scr->TitleBarFont);
 
-* djhjr - 9/14/03 *
-#ifndef NO_I18N_SUPPORT
 	    MyFont_DrawString (dpy, Tmp_win->title_w, &Scr->TitleBarFont,
-#else
-	    XDrawString (dpy, Tmp_win->title_w,
-#endif
 			 Scr->NormalGC,
 			 Scr->TBInfo.titlex, Scr->TitleBarFont.y,
 			 Tmp_win->name, strlen(Tmp_win->name));
@@ -1722,12 +1609,7 @@ HandleExpose()
 	    * font was font.font->fid - djhjr - 9/14/03 *
 	    FBF(Tmp_win->iconc.fore, Tmp_win->iconc.back, Scr->IconFont);
 
-* djhjr - 9/14/03 *
-#ifndef NO_I18N_SUPPORT
 	    MyFont_DrawString (dpy, Tmp_win->icon_w, &Scr->IconManagerFont,
-#else
-	    XDrawString (dpy, Tmp_win->icon_w,
-#endif
 		Scr->NormalGC,
 		Tmp_win->icon_x, Tmp_win->icon_y,
 		Tmp_win->icon_name, strlen(Tmp_win->icon_name));
@@ -1818,13 +1700,8 @@ HandleExpose()
 		    else if (tmp_win->name)
 			    name = tmp_win->name;
 		    if (name)
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 			    MyFont_DrawImageString(dpy, Event.xany.window,
 					     &Scr->VirtualFont,
-#else
-			    XDrawImageString(dpy, Event.xany.window,
-#endif
 					     Scr->NormalGC,
 					     0, Scr->VirtualFont.height,
 					     name, strlen(name));

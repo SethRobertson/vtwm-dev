@@ -353,12 +353,7 @@ int def_x, def_y;
 	attributes.background_pixel = tmp_win->iconc.fore;
     }
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
     tmp_win->icon_w_width = MyFont_TextWidth(&Scr->IconFont,
-#else
-    tmp_win->icon_w_width = XTextWidth(Scr->IconFont.font,
-#endif
 	tmp_win->icon_name, strlen(tmp_win->icon_name));
 
 /* djhjr - 6/11/96
@@ -809,12 +804,7 @@ int def_x, def_y;
 		}
     }
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
     tmp_win->icon_w_width = MyFont_TextWidth(&Scr->IconFont,
-#else
-    tmp_win->icon_w_width = XTextWidth(Scr->IconFont.font,
-#endif
 				       tmp_win->icon_name, strlen(tmp_win->icon_name));
 
 /* djhjr - 6/11/96

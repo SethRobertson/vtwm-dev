@@ -155,9 +155,6 @@ IconMgr *iconp;
     TwmWindow *tmp_win;			/* new twm window structure */
     unsigned long valuemask;		/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
-#ifdef NO_I18N_SUPPORT
-    XTextProperty text_property;
-#endif
     Atom actual_type;
     int actual_format;
     unsigned long nitems, bytesafter;
@@ -167,9 +164,8 @@ IconMgr *iconp;
     int namelen;
     int bw2;
     char *icon_name; /* djhjr - 2/20/99 */
-#ifndef NO_I18N_SUPPORT
     char *name;
-#endif
+
     /* next two submitted by Jonathan Paisley - 11/8/02 */
     Atom motifhints = XInternAtom( dpy, "_MOTIF_WM_HINTS", 0);
     MotifWmHints *mwmhints;
@@ -195,27 +191,13 @@ IconMgr *iconp;
     XSelectInput(dpy, tmp_win->w, PropertyChangeMask);
     XGetWindowAttributes(dpy, tmp_win->w, &tmp_win->attr);
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
-	if (I18N_FetchName(dpy, tmp_win->w, &name))
-	{
-		tmp_win->name = strdup(name);
-		free(name);
-	}
-#else
-	/*
-	 * Ask the window manager for a name with "newer" R4 function -
-	 * it was 'XFetchName()', which apparently failed more often.
-	 * Submitted by Nicholas Jacobs
-	 */
-	if (XGetWMName(dpy, tmp_win->w, &text_property) != 0)
-	{
-		tmp_win->name = strdup(text_property.value);
-		XFree(text_property.value);
-	}
-#endif
-	else
-		tmp_win->name = NoName;
+    if (I18N_FetchName(dpy, tmp_win->w, &name))
+    {
+	tmp_win->name = strdup(name);
+	free(name);
+    }
+    else
+	tmp_win->name = NoName;
 
     tmp_win->class = NoClass;
     XGetClassHint(dpy, tmp_win->w, &tmp_win->class);
@@ -582,39 +564,16 @@ IconMgr *iconp;
 
     if (tmp_win->old_bw) XSetWindowBorderWidth (dpy, tmp_win->w, 0);
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
     tmp_win->name_width = MyFont_TextWidth(&Scr->TitleBarFont,
-#else
-    tmp_win->name_width = XTextWidth(Scr->TitleBarFont.font,
-#endif
 				     tmp_win->name, namelen);
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
-	if (!I18N_GetIconName(dpy, tmp_win->w, &icon_name))
-#else
-	/* used to be a simple boolean test for success - djhjr - 1/10/98 */
-	if (XGetWindowProperty (dpy, tmp_win->w, XA_WM_ICON_NAME, 0L, 200L, False,
-			XA_STRING, &actual_type, &actual_format, &nitems, &bytesafter,
-
-/* see that the icon name is it's own memory - djhjr - 2/20/99
-			(unsigned char **)&tmp_win->icon_name) != Success || actual_type == None)
-		tmp_win->icon_name = tmp_win->name;
-*/
-			(unsigned char **)&icon_name) != Success || actual_type == None)
-#endif
-		tmp_win->icon_name = strdup(tmp_win->name);
-	else
-	{
-		tmp_win->icon_name = strdup(icon_name);
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
-		free(icon_name);
-#else
-		XFree(icon_name);
-#endif
-	}
+    if (I18N_GetIconName(dpy, tmp_win->w, &icon_name))
+    {
+	tmp_win->icon_name = strdup(icon_name);
+	free(icon_name);
+    }
+    else
+	tmp_win->icon_name = strdup(tmp_win->name);
 
 /* redundant? - djhjr - 1/10/98
     if (tmp_win->icon_name == NULL)
@@ -1139,12 +1098,7 @@ int ask_user;
 		if (Scr->NoGrabServer) XUngrabServer(dpy);
 
 /* use initialized size... djhjr - 5/9/96
-* djhjr - 9/14/03 *
-#ifndef NO_I18N_SUPPORT
 	    width = (SIZE_HINDENT + MyFont_TextWidth (&Scr->SizeFont,
-#else
-	    width = (SIZE_HINDENT + XTextWidth (Scr->SizeFont.font,
-#endif
 						tmp_win->name, namelen));
 	    height = Scr->SizeFont.height + SIZE_VINDENT * 2;
 
@@ -1161,16 +1115,8 @@ int ask_user;
 /* DisplayPosition overwrites it anyway... djhjr - 5/9/96
 	    * font was font.font->fid - djhjr - 9/14/03 *
 	    FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont);
-* djhjr - 9/14/03 *
-#ifndef NO_I18N_SUPPORT
 	    MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
-#else
-	    XDrawImageString (dpy, Scr->SizeWindow,
-#endif
 			      Scr->NormalGC, SIZE_HINDENT,
-* djhjr - 9/14/03
-			      SIZE_VINDENT + Scr->SizeFont.font->ascent,
-*
 			      SIZE_VINDENT + Scr->SizeFont.ascent,
 			      tmp_win->name, namelen);
 */
@@ -1212,17 +1158,8 @@ int ask_user;
 		}
 
 /* DisplayPosition() overwrites it anyway... djhjr - 5/9/96
-* djhjr - 9/14/03 *
-#ifndef NO_I18N_SUPPORT
 	    MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
-#else
-		* djhjr - 4/27/96 *
-	    XDrawImageString (dpy, Scr->SizeWindow,
-#endif
 				Scr->NormalGC, width, 
-* djhjr - 9/14/03
-				SIZE_VINDENT + Scr->SizeFont.font->ascent, ": ", 2);
-*
 				SIZE_VINDENT + Scr->SizeFont.ascent, ": ", 2);
 */
 
@@ -1331,24 +1268,11 @@ int ask_user;
 
 /* AddStartResize() overwrites it anyway... djhjr - 5/9/96
 		Scr->SizeStringOffset = width +
-* djhjr - 9/14/03 *
-#ifndef NO_I18N_SUPPORT
 		  MyFont_TextWidth(&Scr->SizeFont, ": ", 2);
-#else
-		  XTextWidth(Scr->SizeFont.font, ": ", 2);
-#endif
 		XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
 			       Scr->SizeStringWidth, height);
-* djhjr - 9/14/03 *
-#ifndef NO_I18N_SUPPORT
 		MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
-#else
-		XDrawImageString (dpy, Scr->SizeWindow,
-#endif
 				  Scr->NormalGC, width,
-* djhjr - 9/14/03
-				  SIZE_VINDENT + Scr->SizeFont.font->ascent,
-*
 				  SIZE_VINDENT + Scr->SizeFont.ascent,
 				  ": ", 2);
 */
@@ -1843,12 +1767,7 @@ static Window CreateHighlightWindow (tmp_win)
     Window w;
 
 /* djhjr - 9/14/03
-#ifndef NO_I18N_SUPPORT
 	int en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
-#else
-	* djhjr - 4/1/98 *
-	int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
-#endif
 */
 /* djhjr - 10/18/02
 	int width = Scr->TBInfo.titlex + tmp_win->name_width + 2 * en;
@@ -2045,13 +1964,7 @@ static Window CreateHighlightWindow (tmp_win)
 
 void ComputeCommonTitleOffsets ()
 {
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
     int en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
-#else
-    /* djhjr - 10/18/02 */
-    int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
-#endif
 
     int buttonwidth = (Scr->TBInfo.width + Scr->TBInfo.pad);
 
@@ -2077,13 +1990,7 @@ void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
 	int width;
     Bool squeeze;
 {
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
     int en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
-#else
-    /* djhjr - 10/18/02 */
-    int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
-#endif
 
     /* added 'en' - djhjr - 10/18/02 */
     tmp_win->highlightx = Scr->TBInfo.titlex + tmp_win->name_width + en;
@@ -2093,12 +2000,7 @@ void ComputeWindowTitleOffsets (tmp_win, width, squeeze)
 	* was 'Scr->use3Dtitles' - djhjr - 8/11/98 *
 	if (Scr->TitleBevelWidth > 0)
 	{
-* djhjr - 9/14/03 *
-#ifndef NO_I18N_SUPPORT
 		int en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
-#else
-		int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
-#endif
 		tmp_win->highlightx += en;
 
 		* rem'd out - djhjr - 4/19/96 *

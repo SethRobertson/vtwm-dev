@@ -32,9 +32,6 @@ XCOMM SOUNDLIB = -L/usr/local/lib -lrplay
 XCOMM SOUNDINC = -I/usr/local/include
 XCOMM (sound is supported only by way of the rplay library)
 
-XCOMM To omit Internationalization support, uncomment this
-XCOMM  NO_I18N_SUPPORT = -DNO_I18N_SUPPORT
-
 XCOMM To omit m4 pre-processing of resource files, uncomment this
 XCOMM    NO_M4_SUPPORT = -DNO_M4_SUPPORT
 
@@ -92,7 +89,7 @@ XCOMM ========= Editing below here should not be necessary ==========
          LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
    EXTRA_INCLUDES = $(XPMINC) $(REGEXINC) $(SOUNDINC)
           DEFINES = $(SIGNAL_DEFINES) $(NO_XPM_SUPPORT) $(NO_REGEX_SUPPORT) \
-                    $(NO_SOUND_SUPPORT) $(NO_I18N_SUPPORT) $(NO_M4_SUPPORT)
+                    $(NO_SOUND_SUPPORT) $(NO_M4_SUPPORT)
 
              SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c \
                     twm.c sound.c parse.c menus.c events.c resize.c util.c \

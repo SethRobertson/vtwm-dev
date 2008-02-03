@@ -62,10 +62,7 @@
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
 #include <X11/Xmu/Error.h>
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 #include <X11/Xlocale.h>
-#endif
 
 Display *dpy;			/* which display are we talking to */
 Window ResizeWindow;		/* the window we are resizing */
@@ -131,10 +128,7 @@ Bool RestartPreviousState = False;	/* try to restart in previous state */
 
 unsigned long black, white;
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 Bool use_fontset;
-#endif
 
 extern void assign_var_savecolor();
 
@@ -173,10 +167,7 @@ main(argc, argv, environ)
     int sound_state = 0;
 #endif
     extern char *defTwmrc[];	/* djhjr - 10/7/02 */
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
     char *loc;
-#endif
 
     /* djhjr - 7/21/98 */
     SIGNAL_T QueueRestartVtwm();
@@ -242,8 +233,6 @@ main(argc, argv, environ)
 	exit (1);
     }
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
     loc = setlocale(LC_ALL, "");
     if (!loc || !strcmp(loc, "C") || !strcmp(loc, "POSIX") ||
 		!XSupportsLocale())
@@ -252,9 +241,8 @@ main(argc, argv, environ)
 	use_fontset = True;
 
     if (PrintErrorMessages)
-	fprintf(stderr, "%s: I18N supported, L10N %sabled\n",
+	fprintf(stderr, "%s: L10N %sabled.\n",
 		ProgramName, (use_fontset) ? "en" : "dis");
-#endif
 
 /* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
@@ -822,12 +810,7 @@ main(argc, argv, environ)
 					 (Visual *) CopyFromParent,
 					 valuemask, &attributes);
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	Scr->SizeStringWidth = MyFont_TextWidth (&Scr->SizeFont,
-#else
-	Scr->SizeStringWidth = XTextWidth (Scr->SizeFont.font,
-#endif
 /* djhjr - 5/9/96
 					   " 8888 x 8888 ", 13);
 */

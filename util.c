@@ -1190,7 +1190,6 @@ void
 GetFont(font)
 MyFont *font;
 {
-#ifndef NO_I18N_SUPPORT
     char **missing_charset_list_return;
     int missing_charset_count_return;
     char *def_string_return;
@@ -1269,7 +1268,6 @@ MyFont *font;
 	font->descent = descent;
 	return;
     }
-#endif
 
     if (font->font != NULL)
 	XFreeFont(dpy, font->font);
@@ -1288,7 +1286,6 @@ MyFont *font;
     font->descent = font->font->descent;
 }
 
-#ifndef NO_I18N_SUPPORT
 int
 MyFont_TextWidth(font, string, len)
     MyFont *font;
@@ -1363,55 +1360,52 @@ MyFont_ChangeGC(fix_fore, fix_back, fix_font)
  * not XFree().
  */
 Status
-I18N_FetchName(dpy, w, winname)
-    Display *dpy;
-    Window w;
-    char ** winname;
+I18N_FetchName (Display *dpy, Window w, char **winname)
 {
     int    status;
     XTextProperty text_prop;
     char **list;
     int    num;
-    
+
     status = XGetWMName(dpy, w, &text_prop);
     if (!status || !text_prop.value || !text_prop.nitems) {
 	*winname = NULL;
 	return 0;
     }
-    *winname = strdup((char *)text_prop.value);
     status = XmbTextPropertyToTextList(dpy, &text_prop, &list, &num);
-    if (status < Success || !num || !*list) {
-	*winname = NULL;      
-	return 0;
+    if (status != Success || !num || !*list)
+	*winname = strdup((char *)text_prop.value);
+    else {
+	*winname = strdup(*list);
+	XFreeStringList(list);
     }
     XFree(text_prop.value);
-    *winname = strdup(*list);
-    XFreeStringList(list);
     return 1;
 }
 
 Status
-I18N_GetIconName(dpy, w, iconname)
-    Display *dpy;
-    Window w;
-    char ** iconname;
+I18N_GetIconName (Display *dpy, Window w, char **iconname)
 {
     int    status;
     XTextProperty text_prop;
     char **list;
     int    num;
-	
+
     status = XGetWMIconName(dpy, w, &text_prop);
-    if (!status || !text_prop.value || !text_prop.nitems) return 0;
-    *iconname = strdup((char *)text_prop.value);
+    if (!status || !text_prop.value || !text_prop.nitems) {
+	*iconname = NULL;
+	return 0;
+    }
     status = XmbTextPropertyToTextList(dpy, &text_prop, &list, &num);
-    if (status < Success || !num || !*list) return 0;
+    if (status != Success || !num || !*list)
+	*iconname = strdup((char *)text_prop.value);
+    else {
+	*iconname = strdup(*list);
+	XFreeStringList(list);
+    }
     XFree(text_prop.value);
-    *iconname = strdup(*list);
-    XFreeStringList(list);
     return 1;
 }
-#endif
 
 
 /*
@@ -3169,12 +3163,7 @@ TwmWindow *tmp_win;
     /* font was font.font->fid - djhjr - 9/14/03 */
     FBF(tmp_win->iconc.fore, tmp_win->iconc.back, Scr->IconFont);
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	MyFont_DrawString (dpy, tmp_win->icon_w, &Scr->IconFont,
-#else
-	XDrawString (dpy, tmp_win->icon_w,
-#endif
 		Scr->NormalGC, tmp_win->icon_x, tmp_win->icon_y, 
 		tmp_win->icon_name, strlen(tmp_win->icon_name));
 }
@@ -3200,12 +3189,7 @@ TwmWindow *tmp_win;
 	int cur_string_len = strlen(tmp_win->name);
 	char *a = NULL;
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	if (!en) en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
-#else
-	if (!en) en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
-#endif
 
 	/*
 	 * clip the title a couple of characters less than the width of
@@ -3216,26 +3200,10 @@ TwmWindow *tmp_win;
 	 */
 	if (Scr->NoPrettyTitles == FALSE) /* for rader - djhjr - 2/9/99 */
 	{
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 		cur_computed_scrlen = MyFont_TextWidth(&Scr->TitleBarFont, tmp_win->name, cur_string_len);
-#else
-		cur_computed_scrlen = XTextWidth(Scr->TitleBarFont.font, tmp_win->name, cur_string_len);
-#endif
 
-/* DUH! - djhjr - 6/18/99
-		max_avail_scrlen = tmp_win->title_width - 2 * Scr->TBInfo.rightoff;
-*/
-/* djhjr - 10/18/02
-		if (!dots) dots = XTextWidth(Scr->TitleBarFont.font, "...", 3) + en;
-		max_avail_scrlen = tmp_win->title_width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff - dots;
-*/
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 		if (!dots) dots = MyFont_TextWidth(&Scr->TitleBarFont, "...", 3);
-#else
-		if (!dots) dots = XTextWidth(Scr->TitleBarFont.font, "...", 3);
-#endif
+
 		max_avail_scrlen = tmp_win->title_width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff - en;
 
 /* djhjr - 10/18/02
@@ -3251,12 +3219,7 @@ TwmWindow *tmp_win;
 		{
 			while (cur_string_len >= 0)
 			{
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 				if (MyFont_TextWidth(&Scr->TitleBarFont,
-#else
-				if (XTextWidth(Scr->TitleBarFont.font,
-#endif
 /* sjr - 10/06/06 */
 						tmp_win->name, cur_string_len) + dots < max_avail_scrlen)
 				{
@@ -3281,12 +3244,7 @@ TwmWindow *tmp_win;
 	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
     if (Scr->TitleBevelWidth > 0)
 	{
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	    MyFont_DrawString (dpy, tmp_win->title_w, &Scr->TitleBarFont,
-#else
-	    XDrawString (dpy, tmp_win->title_w,
-#endif
 		 Scr->NormalGC,
 /* djhjr - 4/29/98
 		 Scr->TBInfo.titlex + en, Scr->TitleBarFont.y + 2, 
@@ -3300,12 +3258,7 @@ TwmWindow *tmp_win;
 	}
     else
 #endif
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
         MyFont_DrawString (dpy, tmp_win->title_w, &Scr->TitleBarFont,
-#else
-        XDrawString (dpy, tmp_win->title_w,
-#endif
 		 Scr->NormalGC, Scr->TBInfo.titlex, Scr->TitleBarFont.y,
 		 (a) ? a : tmp_win->name, cur_string_len);
 
@@ -3409,12 +3362,7 @@ Bool onoroff;
 int ComputeHighlightWindowWidth(tmp_win)
 TwmWindow *tmp_win;
 {
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	int en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
-#else
-	int en = XTextWidth(Scr->TitleBarFont.font, "n", 1);
-#endif
 
 	return (tmp_win->rightx - tmp_win->highlightx - en);
 }

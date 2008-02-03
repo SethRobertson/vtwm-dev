@@ -2133,7 +2133,6 @@ void do_squeeze_entry (list, name, type, justify, num, denom)
 /* added support for user-defined parameters - djhjr - 2/20/99 */
 /* added support for sound - djhjr - 6/22/01 */
 /* added support for regex - djhjr - 10/20/01 */
-/* added support for i18n - djhjr - 9/14/03 */
 #ifndef NO_M4_SUPPORT
 char *make_m4_cmdline(display_name, cp, m4_option)
 char *display_name;
@@ -2143,14 +2142,14 @@ char *m4_option; /* djhjr - 2/20/99 */
   char *m4_lines[6] = {
       "m4 -DHOME='%s' -DWIDTH='%d' -DHEIGHT='%d' -DSOUND='%s' ",
       "-DPLANES='%d' -DBITS_PER_RGB='%d' -DCLASS='%s' -DXPM='%s' ",
-      "-DI18N='%s' -DCOLOR='%s' -DX_RESOLUTION='%d' -DY_RESOLUTION='%d' ",
+      "-DCOLOR='%s' -DX_RESOLUTION='%d' -DY_RESOLUTION='%d' ",
       "-DREGEX='%s' -DUSER='%s' -DSERVERHOST='%s' -DCLIENTHOST='%s' ",
       "-DHOSTNAME='%s' -DTWM_TYPE='vtwm' -DVERSION='%d' ",
       "-DREVISION='%d' -DVENDOR='%s' -DRELEASE='%d'"
   };
   char *client, *server, *hostname;
   char *m4_cmdline, *colon, *vc, *env_username;
-  char *is_sound, *is_xpm, *is_regex, *is_color, *is_i18n;
+  char *is_sound, *is_xpm, *is_regex, *is_color;
   int i, client_len, opt_len = 0, cmd_len = 0, server_is_client = 0;
   struct hostent *hostname_ent;
 
@@ -2239,11 +2238,6 @@ char *m4_option; /* djhjr - 2/20/99 */
 #else
   is_regex = "Yes";
 #endif
-#ifdef NO_I18N_SUPPORT
-  is_i18n = "No";
-#else
-  is_i18n = "Yes";
-#endif
 
   /* assume colour visual */
   is_color = "Yes";
@@ -2273,7 +2267,7 @@ char *m4_option; /* djhjr - 2/20/99 */
   cmd_len += M4_MAXDIGITS * 9 + HomeLen + strlen(vc) + strlen(is_xpm) +
       strlen(is_color) + strlen(env_username) + strlen(server) +
       strlen(client) + strlen(hostname) + strlen(ServerVendor(dpy)) +
-      strlen(is_sound) + strlen(is_regex) + strlen(is_i18n) + strlen(cp) + 16;
+      strlen(is_sound) + strlen(is_regex) + strlen(cp) + 16;
   if (opt_len) cmd_len += opt_len;
 
   if((m4_cmdline = malloc(cmd_len)) == NULL){
@@ -2291,7 +2285,7 @@ char *m4_option; /* djhjr - 2/20/99 */
   sprintf(m4_cmdline + cmd_len, m4_lines[1], Scr->d_depth,
       Scr->d_visual->bits_per_rgb, vc, is_xpm);
   cmd_len = strlen(m4_cmdline);
-  sprintf(m4_cmdline + cmd_len, m4_lines[2], is_i18n, is_color, 
+  sprintf(m4_cmdline + cmd_len, m4_lines[2], is_color, 
 	  Resolution(Scr->MyDisplayWidth, DisplayWidthMM(dpy, Scr->screen)),
 	  Resolution(Scr->MyDisplayHeight, DisplayHeightMM(dpy, Scr->screen)));
   cmd_len = strlen(m4_cmdline);

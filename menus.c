@@ -575,15 +575,7 @@ int exposure;
 			/* font was font.font->fid - djhjr - 9/14/03 */
 			FBF(mi->highlight.fore, mi->highlight.back, Scr->MenuFont);
 
-/* djhjr - 4/29/98
-			XDrawImageString(dpy, mr->w, Scr->NormalGC, mi->x + 2, text_y, mi->item, mi->strlen);
-*/
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 			MyFont_DrawImageString(dpy, mr->w, &Scr->MenuFont,
-#else
-			XDrawImageString(dpy, mr->w,
-#endif
 					Scr->NormalGC, mi->x + Scr->MenuBevelWidth, text_y, mi->item, mi->strlen);
 
 			gc = Scr->NormalGC;
@@ -615,15 +607,7 @@ int exposure;
 				gc = Scr->MenuGC;
 			}
 
-/* djhjr - 4/29/98
-			XDrawImageString (dpy, mr->w, gc, mi->x + 2, text_y, mi->item, mi->strlen);
-*/
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 			MyFont_DrawImageString (dpy, mr->w, &Scr->MenuFont,
-#else
-			XDrawImageString (dpy, mr->w,
-#endif
 					gc, mi->x + Scr->MenuBevelWidth, text_y, mi->item, mi->strlen);
 
 			if (mi->separated)
@@ -721,15 +705,7 @@ int exposure;
 		/* font was font.font->fid - djhjr - 9/14/03 */
 		FBF (mi->normal.fore, mi->normal.back, Scr->MenuTitleFont);
 
-/* djhjr - 9/25/96
-		XDrawImageString (dpy, mr->w, Scr->NormalGC, mi->x + 2, text_y, mi->item, mi->strlen);
-*/
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 		MyFont_DrawImageString (dpy, mr->w, &Scr->MenuTitleFont,
-#else
-		XDrawImageString (dpy, mr->w,
-#endif
 				Scr->NormalGC, mi->x, text_y, mi->item, mi->strlen);
 	}
 }
@@ -769,12 +745,7 @@ int exposure;
 			/* font was font.font->fid - djhjr - 9/14/03 */
 			FBF(mi->highlight.fore, mi->highlight.back, Scr->MenuFont);
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 			MyFont_DrawString(dpy, mr->w, &Scr->MenuFont,
-#else
-			XDrawString(dpy, mr->w,
-#endif
 				Scr->NormalGC, mi->x,
 				text_y, mi->item, mi->strlen);
 
@@ -799,12 +770,7 @@ int exposure;
 				gc = Scr->MenuGC;
 			}
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 			MyFont_DrawString(dpy, mr->w, &Scr->MenuFont,
-#else
-			XDrawString(dpy, mr->w,
-#endif
 					gc, mi->x, text_y, mi->item, mi->strlen);
 
 			if (mi->separated)
@@ -893,12 +859,7 @@ int exposure;
 		FBF (mi->normal.fore, mi->normal.back, Scr->MenuTitleFont);
 
 		/* finally render the title */
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 		MyFont_DrawString(dpy, mr->w, &Scr->MenuTitleFont,
-#else
-		XDrawString(dpy, mr->w,
-#endif
 			Scr->NormalGC, mi->x, text_y, mi->item, mi->strlen);
 	}
 }
@@ -1348,12 +1309,7 @@ AddToMenu(menu, item, action, sub, func, fore, back)
 		font= &(Scr->MenuFont);
 
 	if (!Scr->HaveFonts) CreateFonts();
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	width = MyFont_TextWidth(font,
-#else
-	width = XTextWidth(font->font,
-#endif
 			item, tmp->strlen);
 	if (width <= 0)
 	width = 1;
@@ -1467,12 +1423,7 @@ MenuRoot *mr;
 		else
 		{
 		cur->x = width -
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 			MyFont_TextWidth(titleFont,
-#else
-			XTextWidth(titleFont->font,
-#endif
 				cur->item, cur->strlen);
 		cur->x /= 2;
 		}
@@ -5242,7 +5193,6 @@ TwmWindow *t;
 		char is_m4, is_xpm;
 		char is_rplay; /* djhjr - 6/22/01 */
 		char is_regex; /* djhjr - 10/20/01 */
-		char is_i18n; /* djhjr - 10/20/01 */
 
 /* djhjr - 6/22/99 */
 #ifdef WE_REALLY_DO_WANT_TO_SEE_THIS
@@ -5282,15 +5232,9 @@ TwmWindow *t;
 #else
 		is_regex = '+';
 #endif
-/* djhjr - 9/14/03 */
-#ifdef NO_I18N_SUPPORT
-		is_i18n = '-';
-#else
-		is_i18n = '+';
-#endif
 		(void) sprintf(Info[n++],
-			       "Options:  %ci18n %cm4 %cregex %crplay %cxpm",
-			       is_i18n, is_m4, is_regex, is_rplay, is_xpm);
+			       "Options:  %cm4 %cregex %crplay %cxpm",
+			       is_m4, is_regex, is_rplay, is_xpm);
 
 		Info[n++][0] = '\0';
 	}
@@ -5310,12 +5254,7 @@ TwmWindow *t;
     width = 1;
     for (i = 0; i < n; i++)
     {
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	twidth = MyFont_TextWidth(&Scr->InfoFont,
-#else
-	twidth = XTextWidth(Scr->InfoFont.font,
-#endif
 	    Info[i], strlen(Info[i]));
 	if (twidth > width)
 	    width = twidth;
@@ -6485,33 +6424,17 @@ int x, y;
     XRaiseWindow (dpy, Scr->SizeWindow);
     /* font was font.font->fid - djhjr - 9/14/03 */
     FBF (Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont);
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
     MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
-#else
-    XDrawImageString (dpy, Scr->SizeWindow,
-#endif
 			  Scr->NormalGC,
 
 /* djhjr - 5/9/96
 		      Scr->SizeStringOffset,
 */
 			  (Scr->SizeStringWidth -
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 			   MyFont_TextWidth(&Scr->SizeFont,
-#else
-			   XTextWidth(Scr->SizeFont.font,
-#endif
 					str, i)) / 2,
 
-/* djhjr - 4/29/98
-			Scr->SizeFont.font->ascent + SIZE_VINDENT,
-*/
 			/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
-/* djhjr - 9/14/03
-			Scr->SizeFont.font->ascent +
-*/
 			Scr->SizeFont.ascent +
 				 SIZE_VINDENT +
 				 ((Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth : 0),

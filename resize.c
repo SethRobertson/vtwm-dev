@@ -848,33 +848,17 @@ int height;
     XRaiseWindow(dpy, Scr->SizeWindow);
     /* font was font.font->fid - djhjr - 9/14/03 */
     FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont);
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
     MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
-#else
-    XDrawImageString (dpy, Scr->SizeWindow,
-#endif
 			  Scr->NormalGC,
 
 /* djhjr - 5/9/96
 		      Scr->SizeStringOffset,
 */
 			  (Scr->SizeStringWidth -
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 			   MyFont_TextWidth(&Scr->SizeFont,
-#else
-			   XTextWidth(Scr->SizeFont.font,
-#endif
 					str, i)) / 2,
 
-/* djhjr - 4/29/98
-			Scr->SizeFont.font->ascent + SIZE_VINDENT,
-*/
 			/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
-/* djhjr 9/14/03
-			Scr->SizeFont.font->ascent +
-*/
 			Scr->SizeFont.ascent +
 				 SIZE_VINDENT +
 				 ((Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth : 0),

@@ -172,12 +172,7 @@ TwmDoor *tmp_door;
 		tmp_door->colors.back = Scr->DoorC.back;
 
 	if (tmp_door->width < 0)
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 		tmp_door->width = MyFont_TextWidth(&Scr->DoorFont,
-#else
-		tmp_door->width = XTextWidth(Scr->DoorFont.font,
-#endif
 					     tmp_door->name,
 					     strlen(tmp_door->name))
 
@@ -426,12 +421,7 @@ TwmDoor* d;
 	XClearWindow(dpy, d->w);
 
 	/* added 'Scr->DoorBevelWidth * 2' - djhjr - 2/7/99 */
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 	width = MyFont_TextWidth(&Scr->DoorFont, d->name, count) +
-#else
-	width = XTextWidth(Scr->DoorFont.font, d->name, count) +
-#endif
 			SIZE_HINDENT + (Scr->DoorBevelWidth * 2);
 	height = Scr->DoorFont.height + SIZE_VINDENT + (Scr->DoorBevelWidth * 2);
 

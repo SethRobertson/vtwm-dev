@@ -170,17 +170,8 @@ typedef struct
 /* defines for zooming/unzooming */
 #define ZOOM_NONE 0
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 #define FBF(fix_fore, fix_back, fix_font)\
     MyFont_ChangeGC(fix_fore, fix_back, &fix_font)
-#else
-#define FBF(fix_fore, fix_back, fix_font)\
-    Gcv.foreground = fix_fore;\
-    Gcv.background = fix_back;\
-    Gcv.font = fix_font.font->fid;\
-    XChangeGC(dpy, Scr->NormalGC, GCFont|GCForeground|GCBackground,&Gcv)
-#endif
 
 #define FB(fix_fore, fix_back)\
     Gcv.foreground = fix_fore;\
@@ -193,10 +184,7 @@ typedef struct MyFont
 {
     char *name;			/* name of the font */
     XFontStruct *font;		/* font structure */
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
     XFontSet fontset;
-#endif
     int height;			/* height of the font */
     int y;			/* Y coordinate to draw characters */
     int ascent;
@@ -558,10 +546,7 @@ extern XErrorEvent LastErrorEvent;
 extern Bool RestartPreviousState;
 extern Bool GetWMState();
 
-/* djhjr - 9/14/03 */
-#ifndef NO_I18N_SUPPORT
 extern Bool use_fontset;
-#endif
 
 extern Atom _XA_MIT_PRIORITY_COLORS;
 extern Atom _XA_WM_CHANGE_STATE;
