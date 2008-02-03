@@ -1113,10 +1113,8 @@ int ask_user;
 	    InstallRootColormap();
 
 /* DisplayPosition overwrites it anyway... djhjr - 5/9/96
-	    * font was font.font->fid - djhjr - 9/14/03 *
-	    FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont);
 	    MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
-			      Scr->NormalGC, SIZE_HINDENT,
+			      &Scr->DefaultC, SIZE_HINDENT,
 			      SIZE_VINDENT + Scr->SizeFont.ascent,
 			      tmp_win->name, namelen);
 */
@@ -1159,7 +1157,7 @@ int ask_user;
 
 /* DisplayPosition() overwrites it anyway... djhjr - 5/9/96
 	    MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
-				Scr->NormalGC, width, 
+				&Scr->DefaultC, width, 
 				SIZE_VINDENT + Scr->SizeFont.ascent, ": ", 2);
 */
 
@@ -1272,7 +1270,7 @@ int ask_user;
 		XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
 			       Scr->SizeStringWidth, height);
 		MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
-				  Scr->NormalGC, width,
+				  &Scr->DefaultC, width,
 				  SIZE_VINDENT + Scr->SizeFont.ascent,
 				  ": ", 2);
 */

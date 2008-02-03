@@ -72,9 +72,14 @@ extern void LocateStandardColormaps();
 extern void GetFont();
 
 extern int MyFont_TextWidth();
-extern void MyFont_DrawImageString();
-extern void MyFont_DrawString();
-extern void MyFont_ChangeGC();
+
+extern void MyFont_DrawImageString (Display *dpy, Drawable d, MyFont *font,
+					ColorPair *col,
+					int x, int y, char * string, int len);
+
+extern void MyFont_DrawString (Display *dpy, Drawable d, MyFont *font,
+					ColorPair *col,
+					int x, int y, char * string, int len);
 
 extern Status I18N_FetchName (Display *dpy, Window w, char **winname);
 extern Status I18N_GetIconName (Display *dpy, Window w, char **iconname);

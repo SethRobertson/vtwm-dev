@@ -846,10 +846,8 @@ int height;
     i = strlen (str);
 
     XRaiseWindow(dpy, Scr->SizeWindow);
-    /* font was font.font->fid - djhjr - 9/14/03 */
-    FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont);
     MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
-			  Scr->NormalGC,
+			  &Scr->DefaultC,
 
 /* djhjr - 5/9/96
 		      Scr->SizeStringOffset,

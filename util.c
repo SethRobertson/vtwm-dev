@@ -1303,52 +1303,35 @@ MyFont_TextWidth(font, string, len)
 }
 
 void
-MyFont_DrawImageString(dpy, d, font, gc, x, y, string, len)
-    Display *dpy;
-    Drawable d;
-    MyFont *font;
-    GC gc;
-    int x,y;
-    char *string;
-    int len;
+MyFont_DrawImageString (Display *dpy, Drawable d, MyFont *font, ColorPair *col, 
+                       int x, int y, char *string, int len)
 {
+    Gcv.foreground = col->fore;
+    Gcv.background = col->back;
     if (use_fontset) {
-	XmbDrawImageString(dpy, d, font->fontset, gc, x, y, string, len);
-	return;
+	XChangeGC (dpy, Scr->NormalGC, GCForeground|GCBackground, &Gcv);
+	XmbDrawImageString (dpy, d, font->fontset, Scr->NormalGC, x, y, string, len);
+    } else {
+	Gcv.font = font->font->fid;
+	XChangeGC (dpy, Scr->NormalGC, GCFont|GCForeground|GCBackground, &Gcv);
+	XDrawImageString (dpy, d, Scr->NormalGC, x, y, string, len);
     }
-    XDrawImageString (dpy, d, gc, x, y, string, len);
 }
 
 void
-MyFont_DrawString(dpy, d, font, gc, x, y, string, len)
-    Display *dpy;
-    Drawable d;
-    MyFont *font;
-    GC gc;
-    int x,y;
-    char *string;
-    int len;
+MyFont_DrawString (Display *dpy, Drawable d, MyFont *font, ColorPair *col, 
+                  int x, int y, char *string, int len)
 {
+    Gcv.foreground = col->fore;
+    Gcv.background = col->back;
     if (use_fontset) {
-	XmbDrawString(dpy, d, font->fontset, gc, x, y, string, len);
-	return;
+	XChangeGC (dpy, Scr->NormalGC, GCForeground|GCBackground, &Gcv);
+	XmbDrawString (dpy, d, font->fontset, Scr->NormalGC, x, y, string, len);
+    } else {
+	Gcv.font = font->font->fid;
+	XChangeGC (dpy, Scr->NormalGC, GCFont|GCForeground|GCBackground, &Gcv);
+	XDrawString (dpy, d, Scr->NormalGC, x, y, string, len);
     }
-    XDrawString (dpy, d, gc, x, y, string, len);
-}
-
-void
-MyFont_ChangeGC(fix_fore, fix_back, fix_font)
-    unsigned long fix_fore, fix_back;
-    MyFont *fix_font;
-{
-    Gcv.foreground = fix_fore;
-    Gcv.background = fix_back;
-    if (use_fontset) {
-	XChangeGC(dpy, Scr->NormalGC, GCForeground|GCBackground, &Gcv);
-	return;
-    }
-    Gcv.font = fix_font->font->fid;
-    XChangeGC(dpy, Scr->NormalGC, GCFont|GCForeground|GCBackground,&Gcv);
 }
 
 /*
@@ -3160,11 +3143,8 @@ TwmWindow *tmp_win;
 		Scr->IconBevelWidth, tmp_win->iconc, off, False, False);
     }
 
-    /* font was font.font->fid - djhjr - 9/14/03 */
-    FBF(tmp_win->iconc.fore, tmp_win->iconc.back, Scr->IconFont);
-
 	MyFont_DrawString (dpy, tmp_win->icon_w, &Scr->IconFont,
-		Scr->NormalGC, tmp_win->icon_x, tmp_win->icon_y, 
+		&tmp_win->iconc, tmp_win->icon_x, tmp_win->icon_y, 
 		tmp_win->icon_name, strlen(tmp_win->icon_name));
 }
 
@@ -3236,16 +3216,13 @@ TwmWindow *tmp_win;
 		}
 	}
 
-    /* font was font.font->fid - djhjr - 9/14/03 */
-    FBF(tmp_win->title.fore, tmp_win->title.back, Scr->TitleBarFont);
-
 /* djhjr - 10/18/02 */
 #if 0
 	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
     if (Scr->TitleBevelWidth > 0)
 	{
 	    MyFont_DrawString (dpy, tmp_win->title_w, &Scr->TitleBarFont,
-		 Scr->NormalGC,
+		 &tmp_win->title,
 /* djhjr - 4/29/98
 		 Scr->TBInfo.titlex + en, Scr->TitleBarFont.y + 2, 
 */
@@ -3259,7 +3236,7 @@ TwmWindow *tmp_win;
     else
 #endif
         MyFont_DrawString (dpy, tmp_win->title_w, &Scr->TitleBarFont,
-		 Scr->NormalGC, Scr->TBInfo.titlex, Scr->TitleBarFont.y,
+		 &tmp_win->title, Scr->TBInfo.titlex, Scr->TitleBarFont.y,
 		 (a) ? a : tmp_win->name, cur_string_len);
 
 	/* free the clipped title - djhjr - 3/29/98 */

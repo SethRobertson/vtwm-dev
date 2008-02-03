@@ -1259,9 +1259,6 @@ TwmDoor *door;
 {
 	TwmWindow *tmp_win;
 
-	/* font was font.font->fid - djhjr - 9/14/03 */
-	FBF(door->colors.fore, door->colors.back, Scr->DoorFont);
-
 	/* find it's twm window to get the current width, etc. */
 /*
  * The TWM window is passed from Do*Resize(),
@@ -1303,7 +1300,7 @@ TwmDoor *door;
 ** For example grog-9 from ISC's X11R3 distribution.
 */
 		MyFont_DrawString(dpy, door->w, &Scr->DoorFont,
-			Scr->NormalGC,
+			&door->colors,
 /* gets 'SIZE_VINDENT' out of here... djhjr - 5/14/96
 			(tmp_win->frame_width - tw)/2,
 			tmp_win->frame_height - SIZE_VINDENT -
@@ -1322,7 +1319,7 @@ TwmDoor *door;
 					Scr->DoorBevelWidth, Scr->DoorC, off, False, False);
 	} else {
 		MyFont_DrawString(dpy, door->w, &Scr->DoorFont,
-			Scr->NormalGC,
+			&door->colors,
 			SIZE_HINDENT/2, 0/*Scr->DoorFont.height*/,
 			door->name, strlen(door->name));
 	}
@@ -1338,10 +1335,8 @@ RedoListWindow(twin)
 TwmWindow *twin;
 {
 /* djhjr - 4/19/96
-	* font was font.font->fid - djhjr - 9/14/03 *
-	FBF(twin->list->fore, twin->list->back, Scr->IconManagerFont);
 	MyFont_DrawString (dpy, Event.xany.window, &Scr->IconManagerFont,
-		Scr->NormalGC,
+		&twin->list->cp,
 		iconmgr_textx, Scr->IconManagerFont.y+4,
 		twin->icon_name, strlen(twin->icon_name));
 	DrawIconManagerBorder(twin->list);
@@ -1405,14 +1400,11 @@ TwmWindow *twin;
 		}
 	}
 
-	/* font was font.font->fid - djhjr - 9/14/03 */
-	FBF(twin->list->cp.fore, twin->list->cp.back, Scr->IconManagerFont);
-
 /* what's the point of this? - djhjr - 5/2/98
 	if (Scr->use3Diconmanagers && (Scr->Monochrome != COLOR))
 		MyFont_DrawImageString (dpy, twin->list->w,
 				&Scr->IconManagerFont,
-		Scr->NormalGC, iconmgr_textx,
+		&twin->list->cp, iconmgr_textx,
 
 * djhjr - 5/2/98
 		Scr->IconManagerFont.y+4,
@@ -1425,7 +1417,7 @@ TwmWindow *twin;
 */
 		MyFont_DrawString (dpy, twin->list->w,
 				&Scr->IconManagerFont,
-		Scr->NormalGC, iconmgr_textx,
+		&twin->list->cp, iconmgr_textx,
 
 /* djhjr - 5/2/98
 		Scr->IconManagerFont.y+4,
@@ -1520,9 +1512,6 @@ HandleExpose()
 	int i, k;
 	int height;
 
-	/* font was font.font->fid - djhjr - 9/14/03 */
-	FBF(Scr->DefaultC.fore, Scr->DefaultC.back, Scr->InfoFont);
-
 	/* djhjr - 5/10/96 */
 	XGetGeometry (dpy, Scr->InfoWindow, &JunkRoot, &JunkX, &JunkY,
 				&JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
@@ -1539,7 +1528,7 @@ HandleExpose()
 		if (!i && Scr->BorderBevelWidth > 0) k += Scr->InfoBevelWidth;
 
 	    MyFont_DrawString(dpy, Scr->InfoWindow, &Scr->InfoFont,
-		Scr->NormalGC,
+		&Scr->DefaultC,
 /* centers the lines... djhjr - 5/10/96
 		10,
 */
@@ -1585,15 +1574,6 @@ HandleExpose()
 
 	if (Event.xany.window == Tmp_win->title_w)
 	{
-/* djhjr - 4/20/96
-	    * font was font.font->fid - djhjr - 9/14/03 *
-	    FBF(Tmp_win->title.fore, Tmp_win->title.back, Scr->TitleBarFont);
-
-	    MyFont_DrawString (dpy, Tmp_win->title_w, &Scr->TitleBarFont,
-			 Scr->NormalGC,
-			 Scr->TBInfo.titlex, Scr->TitleBarFont.y,
-			 Tmp_win->name, strlen(Tmp_win->name));
-*/
 		PaintTitle (Tmp_win);
 
 		/* djhjr - 10/25/02 */
@@ -1604,16 +1584,6 @@ HandleExpose()
 	}
 	else if (Event.xany.window == Tmp_win->icon_w)
 	{
-
-/* djhjr - 4/21/96
-	    * font was font.font->fid - djhjr - 9/14/03 *
-	    FBF(Tmp_win->iconc.fore, Tmp_win->iconc.back, Scr->IconFont);
-
-	    MyFont_DrawString (dpy, Tmp_win->icon_w, &Scr->IconManagerFont,
-		Scr->NormalGC,
-		Tmp_win->icon_x, Tmp_win->icon_y,
-		Tmp_win->icon_name, strlen(Tmp_win->icon_name));
-*/
 		PaintIcon(Tmp_win);
 
 	    flush_expose (Event.xany.window);
@@ -1658,7 +1628,7 @@ HandleExpose()
 	    if (Event.xany.window == Tmp_win->list->icon)
 	    {
 /* djhjr - 4/19/96
-		FB(Tmp_win->list->fore, Tmp_win->list->back);
+		FB(Tmp_win->list->cp.fore, Tmp_win->list->cp.back);
 		XCopyPlane(dpy, Scr->siconifyPm, Tmp_win->list->icon,
 		    Scr->NormalGC,
 		    0,0, iconifybox_width, iconifybox_height, 0, 0, 1);
@@ -1692,9 +1662,6 @@ HandleExpose()
 
 	    if (XFindContext(dpy, Event.xany.window, VirtualContext,
 			     (caddr_t *)&tmp_win) != XCNOENT) {
-		    /* font was font.font->fid - djhjr - 9/14/03 */
-		    FBF(tmp_win->virtual.fore, tmp_win->virtual.back,
-			Scr->VirtualFont);
 		    if (tmp_win->icon_name)
 			    name = tmp_win->icon_name;
 		    else if (tmp_win->name)
@@ -1702,7 +1669,7 @@ HandleExpose()
 		    if (name)
 			    MyFont_DrawImageString(dpy, Event.xany.window,
 					     &Scr->VirtualFont,
-					     Scr->NormalGC,
+					     &tmp_win->virtual,
 					     0, Scr->VirtualFont.height,
 					     name, strlen(name));
 	    }

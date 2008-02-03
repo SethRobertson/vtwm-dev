@@ -170,9 +170,6 @@ typedef struct
 /* defines for zooming/unzooming */
 #define ZOOM_NONE 0
 
-#define FBF(fix_fore, fix_back, fix_font)\
-    MyFont_ChangeGC(fix_fore, fix_back, &fix_font)
-
 #define FB(fix_fore, fix_back)\
     Gcv.foreground = fix_fore;\
     Gcv.background = fix_back;\

@@ -572,11 +572,8 @@ int exposure;
 			Draw3DBorder (mr->w, Scr->MenuBevelWidth, y_offset + 1, mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight - 1, 1,
 				mi->highlight, off, True, False);
 
-			/* font was font.font->fid - djhjr - 9/14/03 */
-			FBF(mi->highlight.fore, mi->highlight.back, Scr->MenuFont);
-
 			MyFont_DrawImageString(dpy, mr->w, &Scr->MenuFont,
-					Scr->NormalGC, mi->x + Scr->MenuBevelWidth, text_y, mi->item, mi->strlen);
+					&mi->highlight, mi->x + Scr->MenuBevelWidth, text_y, mi->item, mi->strlen);
 
 			gc = Scr->NormalGC;
 		}
@@ -597,9 +594,6 @@ int exposure;
 				XFillRectangle (dpy, mr->w, Scr->NormalGC, Scr->MenuBevelWidth, y_offset + 1,
 					mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight - 1);
 
-				/* font was font.font->fid - djhjr - 9/14/03 */
-				FBF (mi->normal.fore, mi->normal.back, Scr->MenuFont);
-
 				gc = Scr->NormalGC;
 		    }
 			else
@@ -607,8 +601,9 @@ int exposure;
 				gc = Scr->MenuGC;
 			}
 
+			/* MyFont_DrawImageString() sets NormalGC: */
 			MyFont_DrawImageString (dpy, mr->w, &Scr->MenuFont,
-					gc, mi->x + Scr->MenuBevelWidth, text_y, mi->item, mi->strlen);
+					&mi->normal, mi->x + Scr->MenuBevelWidth, text_y, mi->item, mi->strlen);
 
 			if (mi->separated)
 			{
@@ -699,14 +694,8 @@ int exposure;
 		Draw3DBorder (mr->w, Scr->MenuBevelWidth, y_offset, mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight + 1, 1, 
 			mi->normal, off, True, False);
 
-/* djhjr - 4/29/96
-		FBF (mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
-*/
-		/* font was font.font->fid - djhjr - 9/14/03 */
-		FBF (mi->normal.fore, mi->normal.back, Scr->MenuTitleFont);
-
 		MyFont_DrawImageString (dpy, mr->w, &Scr->MenuTitleFont,
-				Scr->NormalGC, mi->x, text_y, mi->item, mi->strlen);
+				&mi->normal, mi->x, text_y, mi->item, mi->strlen);
 	}
 }
     
@@ -742,11 +731,8 @@ int exposure;
 			XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
 				mr->width, Scr->EntryHeight);
 
-			/* font was font.font->fid - djhjr - 9/14/03 */
-			FBF(mi->highlight.fore, mi->highlight.back, Scr->MenuFont);
-
 			MyFont_DrawString(dpy, mr->w, &Scr->MenuFont,
-				Scr->NormalGC, mi->x,
+				&mi->highlight, mi->x,
 				text_y, mi->item, mi->strlen);
 
 			gc = Scr->NormalGC;
@@ -760,9 +746,6 @@ int exposure;
 				XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
 					mr->width, Scr->EntryHeight);
 
-				/* font was font.font->fid - djhjr - 9/14/03 */
-				FBF(mi->normal.fore, mi->normal.back, Scr->MenuFont);
-
 				gc = Scr->NormalGC;
 			}
 			else
@@ -770,8 +753,9 @@ int exposure;
 				gc = Scr->MenuGC;
 			}
 
+			/* MyFont_DrawString() sets NormalGC: */
 			MyFont_DrawString(dpy, mr->w, &Scr->MenuFont,
-					gc, mi->x, text_y, mi->item, mi->strlen);
+					&mi->normal, mi->x, text_y, mi->item, mi->strlen);
 
 			if (mi->separated)
 
@@ -852,15 +836,9 @@ int exposure;
 		y = ((mi->item_num+1) * Scr->EntryHeight)-1;
 		XDrawLine(dpy, mr->w, Scr->NormalGC, 0, y, mr->width, y);
 
-/* djhjr - 4/29/96
-		FBF(mi->normal.fore, mi->normal.back, Scr->MenuFont.font->fid);
-*/
-		/* font was font.font->fid - djhjr - 9/14/03 */
-		FBF (mi->normal.fore, mi->normal.back, Scr->MenuTitleFont);
-
 		/* finally render the title */
 		MyFont_DrawString(dpy, mr->w, &Scr->MenuTitleFont,
-			Scr->NormalGC, mi->x, text_y, mi->item, mi->strlen);
+			&mi->normal, mi->x, text_y, mi->item, mi->strlen);
 	}
 }
 
@@ -6422,10 +6400,8 @@ int x, y;
     i = strlen (str);
 
     XRaiseWindow (dpy, Scr->SizeWindow);
-    /* font was font.font->fid - djhjr - 9/14/03 */
-    FBF (Scr->DefaultC.fore, Scr->DefaultC.back, Scr->SizeFont);
     MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
-			  Scr->NormalGC,
+			  &Scr->DefaultC,
 
 /* djhjr - 5/9/96
 		      Scr->SizeStringOffset,
