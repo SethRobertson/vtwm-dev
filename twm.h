@@ -188,6 +188,11 @@ typedef struct MyFont
     int descent;
 } MyFont;
 
+typedef struct MyWindow		/* MyFont/ColorPair text rendering */
+{
+    Window win;			/* Window XID */
+} MyWindow;
+
 typedef struct ColorPair
 {
     Pixel fore, back;
@@ -277,13 +282,13 @@ typedef struct TwmWindow
     struct TwmWindow *next;	/* next twm window */
     struct TwmWindow *prev;	/* previous twm window */
     Window w;			/* the child window */
-    Window VirtualDesktopDisplayWindow; /* the representation of this window in the vd display */
+    MyWindow VirtualDesktopDisplayWindow; /* the representation of this window in the vd display */
     int old_bw;			/* border width before reparenting */
     Window frame;		/* the frame window */
-    Window title_w;		/* the title bar window */
+    MyWindow title_w;		/* the title bar window */
     Window hilite_w;		/* the hilite window */
     Pixmap gray;
-    Window icon_w;		/* the icon window */
+    MyWindow icon_w;		/* the icon window */
     Window icon_bm_w;		/* the icon bitmap window */
     int frame_x;		/* x position of frame */
     int frame_y;		/* y position of frame */

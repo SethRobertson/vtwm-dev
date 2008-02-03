@@ -127,7 +127,7 @@ void AutoRaiseWindow (tmp)
 	TwmWindow *tmp;
 {
 	XRaiseWindow (dpy, tmp->frame);
-	XRaiseWindow (dpy, tmp->VirtualDesktopDisplayWindow);
+	XRaiseWindow (dpy, tmp->VirtualDesktopDisplayWindow.win);
 
 	RaiseStickyAbove(); /* DSE */
 	RaiseAutoPan();
@@ -611,7 +611,7 @@ HandleKeyPress()
 
 #if 0
 	if (InfoLines)
-	{	XUnmapWindow(dpy, Scr->InfoWindow);
+	{	XUnmapWindow(dpy, Scr->InfoWindow.win);
 RFB july 28 1993 this code was wrong anyway because
 InfoLines should have been set to 0.
 Simply remove it...
@@ -636,15 +636,15 @@ Simply remove it...
 	}
 	if (Tmp_win)
 	{
-	if (Event.xany.window == Tmp_win->title_w)
+	if (Event.xany.window == Tmp_win->title_w.win)
 	    Context = C_TITLE;
 	if (Event.xany.window == Tmp_win->w)
 	    Context = C_WINDOW;
-	if (Event.xany.window == Tmp_win->icon_w)
+	if (Event.xany.window == Tmp_win->icon_w.win)
 	    Context = C_ICON;
 	if (Event.xany.window == Tmp_win->frame)
 	    Context = C_FRAME;
-	if (Tmp_win->list && Event.xany.window == Tmp_win->list->w)
+	if (Tmp_win->list && Event.xany.window == Tmp_win->list->w.win)
 	    Context = C_ICONMGR;
 	if (Tmp_win->list && Event.xany.window == Tmp_win->list->icon)
 	    Context = C_ICONMGR;
@@ -695,7 +695,7 @@ Simply remove it...
 					break;
 				}
 		}
-		else if (Scr->Focus->frame && !Scr->Focus->title_w)
+		else if (Scr->Focus->frame && !Scr->Focus->title_w.win)
 		{
 			Tmp_win = Scr->Focus;
 			Event.xany.window = Tmp_win->frame;
@@ -821,10 +821,10 @@ Simply remove it...
 	 */
 	if (Tmp_win)
 	{
-	    if (Event.xany.window == Tmp_win->icon_w ||
+	    if (Event.xany.window == Tmp_win->icon_w.win ||
 	    Event.xany.window == Tmp_win->frame ||
-	    Event.xany.window == Tmp_win->title_w ||
-	    (Tmp_win->list && (Event.xany.window == Tmp_win->list->w)))
+	    Event.xany.window == Tmp_win->title_w.win ||
+	    (Tmp_win->list && (Event.xany.window == Tmp_win->list->w.win)))
 	    {
 	        Event.xkey.window = Tmp_win->w;
 	        XSendEvent(dpy, Tmp_win->w, False, KeyPressMask, &Event);
@@ -954,7 +954,7 @@ HandlePropertyNotify()
 	SetupWindow (Tmp_win, Tmp_win->frame_x, Tmp_win->frame_y,
 		     Tmp_win->frame_width, Tmp_win->frame_height, -1);
 
-	if (Tmp_win->title_w) XClearArea(dpy, Tmp_win->title_w, 0,0,0,0, True);
+	if (Tmp_win->title_w.win) XClearArea(dpy, Tmp_win->title_w.win, 0,0,0,0, True);
 
 	/*
 	 * if the icon name is NoName, set the name of the icon to be
@@ -993,7 +993,7 @@ HandlePropertyNotify()
 
 	if (!Tmp_win->forced && Tmp_win->wmhints &&
 	    Tmp_win->wmhints->flags & IconWindowHint) {
-	    if (Tmp_win->icon_w) {
+	    if (Tmp_win->icon_w.win) {
 	    	int icon_x, icon_y;
 
 		/*
@@ -1001,7 +1001,7 @@ HandlePropertyNotify()
 		 * Try to find out where it is; if we succeed, move the new
 		 * window to where the old one is.
 		 */
-		if (XGetGeometry (dpy, Tmp_win->icon_w, &JunkRoot, &icon_x,
+		if (XGetGeometry (dpy, Tmp_win->icon_w.win, &JunkRoot, &icon_x,
 		  &icon_y, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth)) {
 		    /*
 		     * Move the new icon window to where the old one was.
@@ -1021,10 +1021,11 @@ HandlePropertyNotify()
 		 * just get rid of it completely.
 		 */
 		if (Tmp_win->icon_not_ours) {
-		    if (Tmp_win->icon_w != Tmp_win->wmhints->icon_window)
-			XUnmapWindow(dpy, Tmp_win->icon_w);
-		} else
-		    XDestroyWindow(dpy, Tmp_win->icon_w);
+		    if (Tmp_win->icon_w.win != Tmp_win->wmhints->icon_window)
+			XUnmapWindow(dpy, Tmp_win->icon_w.win);
+		} else {
+		    XDestroyWindow(dpy, Tmp_win->icon_w.win);
+		}
 
 		/*
 		 * The new icon window isn't our window, so note that fact
@@ -1038,16 +1039,16 @@ HandlePropertyNotify()
 		 * and button presses/releases, set up the contexts for it,
 		 * and define the cursor for it).
 		 */
-		Tmp_win->icon_w = Tmp_win->wmhints->icon_window;
-		XSelectInput (dpy, Tmp_win->icon_w,
+		Tmp_win->icon_w.win = Tmp_win->wmhints->icon_window;
+		XSelectInput (dpy, Tmp_win->icon_w.win,
 		  KeyPressMask | ButtonPressMask | ButtonReleaseMask);
-		XSaveContext(dpy, Tmp_win->icon_w, TwmContext, (caddr_t)Tmp_win);
-		XSaveContext(dpy, Tmp_win->icon_w, ScreenContext, (caddr_t)Scr);
-		XDefineCursor(dpy, Tmp_win->icon_w, Scr->IconCursor);
+		XSaveContext(dpy, Tmp_win->icon_w.win, TwmContext, (caddr_t)Tmp_win);
+		XSaveContext(dpy, Tmp_win->icon_w.win, ScreenContext, (caddr_t)Scr);
+		XDefineCursor(dpy, Tmp_win->icon_w.win, Scr->IconCursor);
 	    }
 	}
 
-	if (Tmp_win->icon_w && !Tmp_win->forced && Tmp_win->wmhints &&
+	if (Tmp_win->icon_w.win && !Tmp_win->forced && Tmp_win->wmhints &&
 	    (Tmp_win->wmhints->flags & IconPixmapHint)) {
 	    if (!XGetGeometry (dpy, Tmp_win->wmhints->icon_pixmap, &JunkRoot,
 			       &JunkX, &JunkY, (unsigned int *)&Tmp_win->icon_width,
@@ -1084,7 +1085,7 @@ HandlePropertyNotify()
 		XDestroyWindow(dpy, Tmp_win->icon_bm_w);
 
 	    Tmp_win->icon_bm_w =
-	      XCreateWindow (dpy, Tmp_win->icon_w, 0, 0,
+	      XCreateWindow (dpy, Tmp_win->icon_w.win, 0, 0,
 			     (unsigned int) Tmp_win->icon_width,
 			     (unsigned int) Tmp_win->icon_height,
 			     (unsigned int) 0, Scr->d_depth,
@@ -1101,7 +1102,7 @@ HandlePropertyNotify()
 			rect.x = rect.y = 0;
 			rect.width  = Tmp_win->icon_width;
 			rect.height = Tmp_win->icon_height;
-			XShapeCombineRectangles (dpy, Tmp_win->icon_w, ShapeBounding,
+			XShapeCombineRectangles (dpy, Tmp_win->icon_w.win, ShapeBounding,
 					0, 0, &rect, 1, ShapeUnion, 0);
 	    }
 #endif
@@ -1114,7 +1115,7 @@ HandlePropertyNotify()
  * adapted from CTWM-3.5 - djhjr - 9/4/98
  */
 #ifndef ORIGINAL_PIXMAPS
-	if (Tmp_win->icon_w && !Tmp_win->forced && Tmp_win->wmhints &&
+	if (Tmp_win->icon_w.win && !Tmp_win->forced && Tmp_win->wmhints &&
 	    (Tmp_win->wmhints->flags & IconMaskHint)) {
 	    GC gc;
 
@@ -1175,7 +1176,7 @@ void RedoIconName()
 	if (Tmp_win->list)
 	{
 	/* let the expose event cause the repaint */
-	XClearArea(dpy, Tmp_win->list->w, 0,0,0,0, True);
+	XClearArea(dpy, Tmp_win->list->w.win, 0,0,0,0, True);
 
 	if (Scr->SortIconMgr)
 	    SortIconManager(Tmp_win->list->iconmgr);
@@ -1183,11 +1184,11 @@ void RedoIconName()
 
 	if (Scr->Virtual &&
  	Scr->NamesInVirtualDesktop &&
- 	Tmp_win->VirtualDesktopDisplayWindow)
- 	    XClearArea(dpy, Tmp_win->VirtualDesktopDisplayWindow,
+ 	Tmp_win->VirtualDesktopDisplayWindow.win)
+ 	    XClearArea(dpy, Tmp_win->VirtualDesktopDisplayWindow.win,
  		       0, 0, 0, 0, True);
 
-	if ( ! Tmp_win->icon_w ) return;
+	if ( ! Tmp_win->icon_w.win ) return;
 
 	if (Tmp_win->icon_not_ours)
 	return;
@@ -1234,7 +1235,7 @@ void RedoIconName()
 	Tmp_win->icon_w_height = Tmp_win->icon_height + Scr->IconFont.height + 8;
 	Tmp_win->icon_y = Tmp_win->icon_height + Scr->IconFont.height + 2;
 
-	XResizeWindow(dpy, Tmp_win->icon_w, Tmp_win->icon_w_width,
+	XResizeWindow(dpy, Tmp_win->icon_w.win, Tmp_win->icon_w_width,
 	Tmp_win->icon_w_height);
 	if (Tmp_win->icon_bm_w)
 	{
@@ -1243,7 +1244,7 @@ void RedoIconName()
 	}
 	if (Tmp_win->icon)
 	{
-	XClearArea(dpy, Tmp_win->icon_w, 0, 0, 0, 0, True);
+	XClearArea(dpy, Tmp_win->icon_w.win, 0, 0, 0, 0, True);
 	}
 }
 
@@ -1289,7 +1290,7 @@ TwmDoor *door;
 		bw = (Scr->BorderBevelWidth > 0) ? Scr->BorderWidth : 0;
 
 		/* change the little internal one to fit the external */
-		XResizeWindow(dpy, door->w,
+		XResizeWindow(dpy, door->w.win,
 			  tmp_win->frame_width,
 			  tmp_win->frame_height);
 
@@ -1299,7 +1300,7 @@ TwmDoor *door;
 ** over to the right, it just looks wrong!
 ** For example grog-9 from ISC's X11R3 distribution.
 */
-		MyFont_DrawString(dpy, door->w, &Scr->DoorFont,
+		MyFont_DrawString(dpy, &door->w, &Scr->DoorFont,
 			&door->colors,
 /* gets 'SIZE_VINDENT' out of here... djhjr - 5/14/96
 			(tmp_win->frame_width - tw)/2,
@@ -1314,11 +1315,11 @@ TwmDoor *door;
 
 		/* djhjr - 2/7/99 */
 		if (Scr->DoorBevelWidth > 0)
-			Draw3DBorder(door->w, 0, 0, tmp_win->frame_width - (bw * 2),
+			Draw3DBorder(door->w.win, 0, 0, tmp_win->frame_width - (bw * 2),
 					tmp_win->frame_height - (bw * 2),
 					Scr->DoorBevelWidth, Scr->DoorC, off, False, False);
 	} else {
-		MyFont_DrawString(dpy, door->w, &Scr->DoorFont,
+		MyFont_DrawString(dpy, &door->w, &Scr->DoorFont,
 			&door->colors,
 			SIZE_HINDENT/2, 0/*Scr->DoorFont.height*/,
 			door->name, strlen(door->name));
@@ -1335,7 +1336,7 @@ RedoListWindow(twin)
 TwmWindow *twin;
 {
 /* djhjr - 4/19/96
-	MyFont_DrawString (dpy, Event.xany.window, &Scr->IconManagerFont,
+	MyFont_DrawString (dpy, &twin->list->w, &Scr->IconManagerFont,
 		&twin->list->cp,
 		iconmgr_textx, Scr->IconManagerFont.y+4,
 		twin->icon_name, strlen(twin->icon_name));
@@ -1402,7 +1403,7 @@ TwmWindow *twin;
 
 /* what's the point of this? - djhjr - 5/2/98
 	if (Scr->use3Diconmanagers && (Scr->Monochrome != COLOR))
-		MyFont_DrawImageString (dpy, twin->list->w,
+		MyFont_DrawImageString (dpy, &twin->list->w,
 				&Scr->IconManagerFont,
 		&twin->list->cp, iconmgr_textx,
 
@@ -1415,7 +1416,7 @@ TwmWindow *twin;
 		(a) ? a : twin->icon_name, slen);
 	else
 */
-		MyFont_DrawString (dpy, twin->list->w,
+		MyFont_DrawString (dpy, &twin->list->w,
 				&Scr->IconManagerFont,
 		&twin->list->cp, iconmgr_textx,
 
@@ -1507,13 +1508,13 @@ HandleExpose()
 	if (Event.xexpose.count != 0)
 	return;
 
-	if (Event.xany.window == Scr->InfoWindow && InfoLines)
+	if (Event.xany.window == Scr->InfoWindow.win && InfoLines)
 	{
 	int i, k;
 	int height;
 
 	/* djhjr - 5/10/96 */
-	XGetGeometry (dpy, Scr->InfoWindow, &JunkRoot, &JunkX, &JunkY,
+	XGetGeometry (dpy, Scr->InfoWindow.win, &JunkRoot, &JunkX, &JunkY,
 				&JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
 
 	height = Scr->InfoFont.height+2;
@@ -1527,7 +1528,7 @@ HandleExpose()
 		/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 		if (!i && Scr->BorderBevelWidth > 0) k += Scr->InfoBevelWidth;
 
-	    MyFont_DrawString(dpy, Scr->InfoWindow, &Scr->InfoFont,
+	    MyFont_DrawString(dpy, &Scr->InfoWindow, &Scr->InfoFont,
 		&Scr->DefaultC,
 /* centers the lines... djhjr - 5/10/96
 		10,
@@ -1541,7 +1542,7 @@ HandleExpose()
 	/* djhjr - 5/9/96 */
 	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 	if (Scr->InfoBevelWidth > 0)
-	    Draw3DBorder(Scr->InfoWindow, 0, 0, JunkWidth, JunkHeight,
+	    Draw3DBorder(Scr->InfoWindow.win, 0, 0, JunkWidth, JunkHeight,
 /* djhjr - 4/29/98
 				BW, Scr->DefaultC, off, False, False);
 */
@@ -1572,7 +1573,7 @@ HandleExpose()
 	}
 	else
 
-	if (Event.xany.window == Tmp_win->title_w)
+	if (Event.xany.window == Tmp_win->title_w.win)
 	{
 		PaintTitle (Tmp_win);
 
@@ -1582,7 +1583,7 @@ HandleExpose()
 	    flush_expose (Event.xany.window);
 		return;
 	}
-	else if (Event.xany.window == Tmp_win->icon_w)
+	else if (Event.xany.window == Tmp_win->icon_w.win)
 	{
 		PaintIcon(Tmp_win);
 
@@ -1618,7 +1619,7 @@ HandleExpose()
 	    }
 	}
 	if (Tmp_win->list) {
-	    if (Event.xany.window == Tmp_win->list->w)
+	    if (Event.xany.window == Tmp_win->list->w.win)
 	    {
 			/* see also resize.c - djhjr - 3/1/99 */
 			RedoListWindow(Tmp_win);
@@ -1667,7 +1668,8 @@ HandleExpose()
 		    else if (tmp_win->name)
 			    name = tmp_win->name;
 		    if (name)
-			    MyFont_DrawImageString(dpy, Event.xany.window,
+			    MyFont_DrawImageString (dpy,
+					     &tmp_win->VirtualDesktopDisplayWindow,
 					     &Scr->VirtualFont,
 					     &tmp_win->virtual,
 					     0, Scr->VirtualFont.height,
@@ -1723,17 +1725,16 @@ HandleDestroyNotify()
 	XDeleteContext(dpy, Tmp_win->w, ScreenContext);
 	XDeleteContext(dpy, Tmp_win->frame, TwmContext);
 	XDeleteContext(dpy, Tmp_win->frame, ScreenContext);
-	XDeleteContext(dpy, Tmp_win->VirtualDesktopDisplayWindow, VirtualContext);
-	if (Tmp_win->icon_w)
+	if (Tmp_win->icon_w.win)
 	{
-	XDeleteContext(dpy, Tmp_win->icon_w, TwmContext);
-	XDeleteContext(dpy, Tmp_win->icon_w, ScreenContext);
+	XDeleteContext(dpy, Tmp_win->icon_w.win, TwmContext);
+	XDeleteContext(dpy, Tmp_win->icon_w.win, ScreenContext);
 	}
 	if (Tmp_win->title_height)
 	{
 	int nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
-	XDeleteContext(dpy, Tmp_win->title_w, TwmContext);
-	XDeleteContext(dpy, Tmp_win->title_w, ScreenContext);
+	XDeleteContext(dpy, Tmp_win->title_w.win, TwmContext);
+	XDeleteContext(dpy, Tmp_win->title_w.win, ScreenContext);
 	if (Tmp_win->hilite_w)
 	{
 	    XDeleteContext(dpy, Tmp_win->hilite_w, TwmContext);
@@ -1774,11 +1775,14 @@ HandleDestroyNotify()
 	AppletDown(Tmp_win);
 
 	XDestroyWindow(dpy, Tmp_win->frame);
-	if (Tmp_win->icon_w && !Tmp_win->icon_not_ours) {
-	XDestroyWindow(dpy, Tmp_win->icon_w);
-	IconDown (Tmp_win);
+	if (Tmp_win->icon_w.win && !Tmp_win->icon_not_ours) {
+	    XDestroyWindow(dpy, Tmp_win->icon_w.win);
+	    IconDown (Tmp_win);
 	}
-	XDestroyWindow(dpy, Tmp_win->VirtualDesktopDisplayWindow);	/* 12 */
+	if (Tmp_win->VirtualDesktopDisplayWindow.win) {
+	    XDeleteContext(dpy, Tmp_win->VirtualDesktopDisplayWindow.win, VirtualContext);
+	    XDestroyWindow(dpy, Tmp_win->VirtualDesktopDisplayWindow.win);	/* 12 */
+	}
 	RemoveIconManager(Tmp_win);					/* 7 */
 	Tmp_win->prev->next = Tmp_win->next;
 	if (Tmp_win->next != NULL)
@@ -1954,10 +1958,10 @@ HandleMapNotify()
 	 * when it really isn't.
 	 */
 	XGrabServer (dpy);
-	if (Tmp_win->icon_w)
-	XUnmapWindow(dpy, Tmp_win->icon_w);
-	if (Tmp_win->title_w)
-	XMapSubwindows(dpy, Tmp_win->title_w);
+	if (Tmp_win->icon_w.win)
+	XUnmapWindow(dpy, Tmp_win->icon_w.win);
+	if (Tmp_win->title_w.win)
+	XMapSubwindows(dpy, Tmp_win->title_w.win);
 	XMapSubwindows(dpy, Tmp_win->frame);
 
 /* djhjr - 4/25/96
@@ -2137,7 +2141,7 @@ HandleButtonRelease()
 0		/* This would force you to click on the box itself */
 0	  {
 0fprintf( stderr, "Kill info B\n" );
-0	XUnmapWindow(dpy, Scr->InfoWindow);
+0	XUnmapWindow(dpy, Scr->InfoWindow.win);
 0	InfoLines = 0;
 0	Context = C_NO_CONTEXT;
 0	  }
@@ -2448,7 +2452,7 @@ HandleButtonPress()
 		PlaySound(S_IUNMAP);
 #endif
 
-	  	XUnmapWindow(dpy, Scr->InfoWindow);
+	  	XUnmapWindow(dpy, Scr->InfoWindow.win);
 		InfoLines = 0;
 	}
 
@@ -2485,7 +2489,7 @@ HandleButtonPress()
 		EndMoveWindowOnDesktop();
 #endif
 
-		XUnmapWindow(dpy, Scr->SizeWindow);
+		XUnmapWindow(dpy, Scr->SizeWindow.win);
 		ResizeWindow = None;
 		DragWindow = None;
 		cur = LeftButt;
@@ -2549,7 +2553,7 @@ HandleButtonPress()
 	}
 
 	Context = C_NO_CONTEXT;
-	if ( Event.xany.window == Scr->InfoWindow ) Context = C_IDENTIFY;
+	if ( Event.xany.window == Scr->InfoWindow.win ) Context = C_IDENTIFY;
 	if ( Event.xany.window == Scr->Root ) Context = C_ROOT;
 
 /* djhjr - 9/12/96 - moved to the bottom of this context decision chain...
@@ -2594,7 +2598,7 @@ HandleButtonPress()
 			&&
 			RootFunction != F_NOFUNCTION
 			&&
-			(	Event.xany.window == Tmp_win->list->w
+			(	Event.xany.window == Tmp_win->list->w.win
 				||
 				Event.xany.window == Tmp_win->list->icon
 			)
@@ -2617,7 +2621,7 @@ HandleButtonPress()
 		}
 		else
 */
-		if ( Event.xany.window == Tmp_win->title_w )
+		if ( Event.xany.window == Tmp_win->title_w.win )
 		{
 			Context = C_TITLE;
 		}
@@ -2626,7 +2630,7 @@ HandleButtonPress()
 			printf("ERROR! ERROR! ERROR! YOU SHOULD NOT BE HERE!!!\n");
 			Context = C_WINDOW;
 		}
-		else if (Event.xany.window == Tmp_win->icon_w)
+		else if (Event.xany.window == Tmp_win->icon_w.win)
 		{
 			Context = C_ICON;
 		}
@@ -2674,7 +2678,7 @@ HandleButtonPress()
 		else if
 		(	Tmp_win->list
 			&&
-			(	Event.xany.window == Tmp_win->list->w
+			(	Event.xany.window == Tmp_win->list->w.win
 				||
 				Event.xany.window == Tmp_win->list->icon
 			)
@@ -2765,7 +2769,7 @@ HandleButtonPress()
 		}
 
 		/* make sure we are not trying to move an identify window */
-		if (Scr->InfoWindow && Event.xany.window != Scr->InfoWindow)
+		if (Scr->InfoWindow.win && Event.xany.window != Scr->InfoWindow.win)
 		{
 			ExecuteFunction(RootFunction, Action, Event.xany.window,
 				Tmp_win, &Event, Context, FALSE);
@@ -3053,7 +3057,7 @@ HandleEnterNotify()
 /*RAISEDELAY*/ 	/* Handle RaiseDelay, if any..... */
 /*RAISEDELAY*/ 	if (RaiseDelay > 0) {
 /*RAISEDELAY*/ 	    if (Tmp_win && Tmp_win->auto_raise
-/*RAISEDELAY*/ 		&& (!Tmp_win->list || Tmp_win->list->w != ewp->window)) {
+/*RAISEDELAY*/ 		&& (!Tmp_win->list || Tmp_win->list->w.win != ewp->window)) {
 /*RAISEDELAY*/ 		ColormapWindow *cwin;
 
 #ifdef NEVER
@@ -3173,7 +3177,7 @@ HandleEnterNotify()
 		     *     5.  send WM_TAKE_FOCUS if requested
 		     */
 		    if (ewp->window == Tmp_win->frame ||
-			(Tmp_win->list && ewp->window == Tmp_win->list->w)) {
+			(Tmp_win->list && ewp->window == Tmp_win->list->w.win)) {
 
 /* djhjr - 4/25/96
 			if (Tmp_win->hilite_w)				* 1 *
@@ -3193,12 +3197,12 @@ HandleEnterNotify()
 					(Scr->FocusRoot &&
 					Scr->StrictIconManager &&
 					!Tmp_win->list) ||
-					(Tmp_win->list && Tmp_win->list->w &&
-					Tmp_win->list->w != ewp->window) ||
+					(Tmp_win->list && Tmp_win->list->w.win &&
+					Tmp_win->list->w.win != ewp->window) ||
 					Tmp_win->transient)
 			{
 			/* added test for transients - djhjr - 4/9/02 */
-			if ((((Tmp_win->title_w || Scr->NoTitlebar) &&	/* 4, 4a */
+			if ((((Tmp_win->title_w.win || Scr->NoTitlebar) &&	/* 4, 4a */
 					Scr->TitleFocus) ||
 					Tmp_win->transient) &&
 					Tmp_win->wmhints &&
@@ -3242,7 +3246,7 @@ HandleEnterNotify()
 			 *
 			 * Is the icon manager in the ring? - djhjr - 10/27/02
 			 */
-			if (Tmp_win->list && ewp->window == Tmp_win->list->w &&
+			if (Tmp_win->list && ewp->window == Tmp_win->list->w.win &&
 					Tmp_win->list->iconmgr->twm_win->ring.next)
 			{
 				Scr->RingLeader = Tmp_win->list->iconmgr->twm_win;
@@ -3264,7 +3268,7 @@ HandleEnterNotify()
 /* djhjr - 4/23/96
 	if (ActiveMenu && mr == ActiveMenu->prev && RootFunction == F_NOFUNCTION) {
 		if (Scr->Shadow) XUnmapWindow (dpy, ActiveMenu->shadow);
-		XUnmapWindow (dpy, ActiveMenu->w);
+		XUnmapWindow (dpy, ActiveMenu->w.win);
 		ActiveMenu->mapped = UNMAPPED;
 		UninstallRootColormap ();
 		if (ActiveItem) {
@@ -3285,7 +3289,7 @@ HandleEnterNotify()
 		for (tmp = ActiveMenu; tmp != mr; tmp = tmp->prev) {
 			/* all 'tmp' were 'ActiveMenu'... DUH! - djhjr - 11/16/98 */
 			if (Scr->Shadow) XUnmapWindow (dpy, tmp->shadow);
-			XUnmapWindow (dpy, tmp->w);
+			XUnmapWindow (dpy, tmp->w.win);
 			tmp->mapped = UNMAPPED;
 	    	MenuDepth--;
 		}
@@ -3365,7 +3369,7 @@ HandleLeaveNotify()
 		return;
 
 	inicon = (Tmp_win->list &&
-		  Tmp_win->list->w == Event.xcrossing.window);
+		  Tmp_win->list->w.win == Event.xcrossing.window);
 
 /*
  * rem'ing this allows the window crossed out of onto the root window
@@ -3486,7 +3490,7 @@ HandleConfigureRequest()
 	 * Instead, we'll read the current geometry.  Therefore, we should respond
 	 * to configuration requests for windows which have never been mapped.
 	 */
-	if (!Tmp_win || Tmp_win->icon_w == cre->window) {
+	if (!Tmp_win || Tmp_win->icon_w.win == cre->window) {
 	xwcm = cre->value_mask &
 		(CWX | CWY | CWWidth | CWHeight | CWBorderWidth);
 	xwc.x = cre->x;

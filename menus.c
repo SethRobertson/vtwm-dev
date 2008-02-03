@@ -562,17 +562,17 @@ int exposure;
 		{
 
 /* djhjr - 9/25/96
-			Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight, 1, 
+			Draw3DBorder (mr->w.win, 2, y_offset, mr->width - 4, Scr->EntryHeight, 1, 
 				mi->highlight, off, True, False);
 */
 /* djhjr - 4/29/98
-			Draw3DBorder (mr->w, 2, y_offset + 1, mr->width - 4, Scr->EntryHeight - 1, 1,
+			Draw3DBorder (mr->w.win, 2, y_offset + 1, mr->width - 4, Scr->EntryHeight - 1, 1,
 				mi->highlight, off, True, False);
 */
-			Draw3DBorder (mr->w, Scr->MenuBevelWidth, y_offset + 1, mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight - 1, 1,
+			Draw3DBorder (mr->w.win, Scr->MenuBevelWidth, y_offset + 1, mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight - 1, 1,
 				mi->highlight, off, True, False);
 
-			MyFont_DrawImageString(dpy, mr->w, &Scr->MenuFont,
+			MyFont_DrawImageString (dpy, &mr->w, &Scr->MenuFont,
 					&mi->highlight, mi->x + Scr->MenuBevelWidth, text_y, mi->item, mi->strlen);
 
 			gc = Scr->NormalGC;
@@ -584,14 +584,14 @@ int exposure;
 				XSetForeground (dpy, Scr->NormalGC, mi->normal.back);
 
 /* djhjr - 9/25/96
-				XFillRectangle (dpy, mr->w, Scr->NormalGC, 2, y_offset,
+				XFillRectangle (dpy, mr->w.win, Scr->NormalGC, 2, y_offset,
 					mr->width - 4, Scr->EntryHeight);
 */
 /* djhjr - 4/29/98
-				XFillRectangle (dpy, mr->w, Scr->NormalGC, 2, y_offset + 1,
+				XFillRectangle (dpy, mr->w.win, Scr->NormalGC, 2, y_offset + 1,
 					mr->width - 4, Scr->EntryHeight - 1);
 */
-				XFillRectangle (dpy, mr->w, Scr->NormalGC, Scr->MenuBevelWidth, y_offset + 1,
+				XFillRectangle (dpy, mr->w.win, Scr->NormalGC, Scr->MenuBevelWidth, y_offset + 1,
 					mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight - 1);
 
 				gc = Scr->NormalGC;
@@ -602,7 +602,7 @@ int exposure;
 			}
 
 			/* MyFont_DrawImageString() sets NormalGC: */
-			MyFont_DrawImageString (dpy, mr->w, &Scr->MenuFont,
+			MyFont_DrawImageString (dpy, &mr->w, &Scr->MenuFont,
 					&mi->normal, mi->x + Scr->MenuBevelWidth, text_y, mi->item, mi->strlen);
 
 			if (mi->separated)
@@ -613,28 +613,28 @@ int exposure;
 					FB (Scr->MenuC.shadd, Scr->MenuC.shadc);
 
 /* djhjr - 9/25/96
-					XDrawLine (dpy, mr->w, Scr->NormalGC, 1, y_offset + Scr->MenuFont.y + 5,
+					XDrawLine (dpy, mr->w.win, Scr->NormalGC, 1, y_offset + Scr->MenuFont.y + 5,
 						mr->width - 2, y_offset + Scr->MenuFont.y + 5);
 */
 /* djhjr - 4/29/98
-					XDrawLine (dpy, mr->w, Scr->NormalGC, 1, y_offset + Scr->EntryHeight - 1,
+					XDrawLine (dpy, mr->w.win, Scr->NormalGC, 1, y_offset + Scr->EntryHeight - 1,
 						mr->width - 2, y_offset + Scr->EntryHeight - 1);
 */
-					XDrawLine (dpy, mr->w, Scr->NormalGC, Scr->MenuBevelWidth + 1, y_offset + Scr->EntryHeight - 1,
+					XDrawLine (dpy, mr->w.win, Scr->NormalGC, Scr->MenuBevelWidth + 1, y_offset + Scr->EntryHeight - 1,
 						mr->width - Scr->MenuBevelWidth - 3, y_offset + Scr->EntryHeight - 1);
 				}
 
 				FB (Scr->MenuC.shadc, Scr->MenuC.shadd);
 
 /* djhjr - 9/25/96
-				XDrawLine (dpy, mr->w, Scr->NormalGC, 2, y_offset + Scr->MenuFont.y + 6,
+				XDrawLine (dpy, mr->w.win, Scr->NormalGC, 2, y_offset + Scr->MenuFont.y + 6,
 					mr->width - 3, y_offset + Scr->MenuFont.y + 6);
 */
 /* djhjr - 4/29/98
-				XDrawLine (dpy, mr->w, Scr->NormalGC, 2, y_offset + Scr->EntryHeight,
+				XDrawLine (dpy, mr->w.win, Scr->NormalGC, 2, y_offset + Scr->EntryHeight,
 					mr->width - 3, y_offset + Scr->EntryHeight);
 */
-				XDrawLine (dpy, mr->w, Scr->NormalGC, Scr->MenuBevelWidth + 2, y_offset + Scr->EntryHeight,
+				XDrawLine (dpy, mr->w.win, Scr->NormalGC, Scr->MenuBevelWidth + 2, y_offset + Scr->EntryHeight,
 					mr->width - Scr->MenuBevelWidth - 2, y_offset + Scr->EntryHeight);
 			}
 		}
@@ -677,24 +677,24 @@ int exposure;
 */
 			y = y_offset + ((Scr->EntryHeight - Scr->pullH) / 2) + 1;
 
-			XCopyArea (dpy, image->pixmap, mr->w, gc, 0, 0, Scr->pullW, Scr->pullH, x, y);
+			XCopyArea (dpy, image->pixmap, mr->w.win, gc, 0, 0, Scr->pullW, Scr->pullH, x, y);
 		}
 	}
 	else
 	{
 
 /* djhjr - 4/29/96
-		Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight, 1, 
+		Draw3DBorder (mr->w.win, 2, y_offset, mr->width - 4, Scr->EntryHeight, 1, 
 			mi->normal, off, True, False);
 */
 /* djhjr - 4/29/98
-		Draw3DBorder (mr->w, 2, y_offset, mr->width - 4, Scr->EntryHeight + 1, 1, 
+		Draw3DBorder (mr->w.win, 2, y_offset, mr->width - 4, Scr->EntryHeight + 1, 1, 
 			mi->normal, off, True, False);
 */
-		Draw3DBorder (mr->w, Scr->MenuBevelWidth, y_offset, mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight + 1, 1, 
+		Draw3DBorder (mr->w.win, Scr->MenuBevelWidth, y_offset, mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight + 1, 1, 
 			mi->normal, off, True, False);
 
-		MyFont_DrawImageString (dpy, mr->w, &Scr->MenuTitleFont,
+		MyFont_DrawImageString (dpy, &mr->w, &Scr->MenuTitleFont,
 				&mi->normal, mi->x, text_y, mi->item, mi->strlen);
 	}
 }
@@ -728,10 +728,10 @@ int exposure;
 		{
 			XSetForeground(dpy, Scr->NormalGC, mi->highlight.back);
 
-			XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
+			XFillRectangle(dpy, mr->w.win, Scr->NormalGC, 0, y_offset,
 				mr->width, Scr->EntryHeight);
 
-			MyFont_DrawString(dpy, mr->w, &Scr->MenuFont,
+			MyFont_DrawString(dpy, &mr->w, &Scr->MenuFont,
 				&mi->highlight, mi->x,
 				text_y, mi->item, mi->strlen);
 
@@ -743,7 +743,7 @@ int exposure;
 			{
 				XSetForeground(dpy, Scr->NormalGC, mi->normal.back);
 
-				XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
+				XFillRectangle(dpy, mr->w.win, Scr->NormalGC, 0, y_offset,
 					mr->width, Scr->EntryHeight);
 
 				gc = Scr->NormalGC;
@@ -754,16 +754,16 @@ int exposure;
 			}
 
 			/* MyFont_DrawString() sets NormalGC: */
-			MyFont_DrawString(dpy, mr->w, &Scr->MenuFont,
+			MyFont_DrawString(dpy, &mr->w, &Scr->MenuFont,
 					&mi->normal, mi->x, text_y, mi->item, mi->strlen);
 
 			if (mi->separated)
 
 /* djhjr - 9/26/96
-				XDrawLine (dpy, mr->w, gc, 0, y_offset + Scr->MenuFont.y + 5,
+				XDrawLine (dpy, mr->w.win, gc, 0, y_offset + Scr->MenuFont.y + 5,
 					mr->width, y_offset + Scr->MenuFont.y + 5);
 */
-				XDrawLine (dpy, mr->w, gc, 0, y_offset + Scr->EntryHeight - 1,
+				XDrawLine (dpy, mr->w.win, gc, 0, y_offset + Scr->EntryHeight - 1,
 					mr->width, y_offset + Scr->EntryHeight - 1);
 		}
 
@@ -809,10 +809,10 @@ int exposure;
 			y = y_offset + ((Scr->EntryHeight - Scr->pullH) / 2);
 
 /* djhjr - 10/30/02
-			XCopyPlane(dpy, Scr->pullPm->pixmap, mr->w, gc, 0, 0,
+			XCopyPlane(dpy, Scr->pullPm->pixmap, mr->w.win, gc, 0, 0,
 				Scr->pullW, Scr->pullH, x, y, 1);
 */
-			XCopyArea (dpy, image->pixmap, mr->w, gc, 0, 0,
+			XCopyArea (dpy, image->pixmap, mr->w.win, gc, 0, 0,
 				Scr->pullW, Scr->pullH, x, y);
 		}
 	}
@@ -823,21 +823,21 @@ int exposure;
 		XSetForeground(dpy, Scr->NormalGC, mi->normal.back);
 
 		/* fill the rectangle with the title background color */
-		XFillRectangle(dpy, mr->w, Scr->NormalGC, 0, y_offset,
+		XFillRectangle(dpy, mr->w.win, Scr->NormalGC, 0, y_offset,
 			mr->width, Scr->EntryHeight);
 
 		XSetForeground(dpy, Scr->NormalGC, mi->normal.fore);
 
 		/* now draw the dividing lines */
 		if (y_offset)
-			XDrawLine (dpy, mr->w, Scr->NormalGC, 0, y_offset,
+			XDrawLine (dpy, mr->w.win, Scr->NormalGC, 0, y_offset,
 				mr->width, y_offset);
 
 		y = ((mi->item_num+1) * Scr->EntryHeight)-1;
-		XDrawLine(dpy, mr->w, Scr->NormalGC, 0, y, mr->width, y);
+		XDrawLine(dpy, mr->w.win, Scr->NormalGC, 0, y, mr->width, y);
 
 		/* finally render the title */
-		MyFont_DrawString(dpy, mr->w, &Scr->MenuTitleFont,
+		MyFont_DrawString(dpy, &mr->w, &Scr->MenuTitleFont,
 			&mi->normal, mi->x, text_y, mi->item, mi->strlen);
 	}
 }
@@ -854,9 +854,9 @@ XEvent *e;
 	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
     if (Scr->MenuBevelWidth > 0) {
 /* djhjr - 4/29/98
-	Draw3DBorder (mr->w, 0, 0, mr->width, mr->height, 2, Scr->MenuC, off, False, False);
+	Draw3DBorder (mr->w.win, 0, 0, mr->width, mr->height, 2, Scr->MenuC, off, False, False);
 */
-	Draw3DBorder (mr->w, 0, 0, mr->width, mr->height, Scr->MenuBevelWidth, Scr->MenuC, off, False, False);
+	Draw3DBorder (mr->w.win, 0, 0, mr->width, mr->height, Scr->MenuBevelWidth, Scr->MenuC, off, False, False);
     }
 
     for (mi = mr->first; mi != NULL; mi = mi->next)
@@ -973,7 +973,7 @@ void UpdateMenu()
 			continue;
 
 		done = FALSE;
-		XQueryPointer( dpy, ActiveMenu->w, &JunkRoot, &JunkChild,
+		XQueryPointer( dpy, ActiveMenu->w.win, &JunkRoot, &JunkChild,
 				&x_root, &y_root, &x, &y, &JunkMask);
 
 		/* djhjr - 9/5/98 */
@@ -988,7 +988,7 @@ void UpdateMenu()
 			continue;
 #endif
 
-		XFindContext(dpy, ActiveMenu->w, ScreenContext, (caddr_t *)&Scr);
+		XFindContext(dpy, ActiveMenu->w.win, ScreenContext, (caddr_t *)&Scr);
 
 		JunkWidth = ActiveMenu->width;
 		JunkHeight = ActiveMenu->height;
@@ -1041,7 +1041,7 @@ void UpdateMenu()
 				if (ActiveMenu->top != j)
 				{
 					ActiveMenu->top = j;
-					XClearArea(dpy, ActiveMenu->w, 0, 0, 0, 0, True);
+					XClearArea(dpy, ActiveMenu->w.win, 0, 0, 0, 0, True);
 				}
 			}
 
@@ -1181,7 +1181,7 @@ NewMenuRoot(name)
 	tmp->width = 0;
 	tmp->mapped = NEVER_MAPPED;
 	tmp->pull = FALSE;
-	tmp->w = None;
+	tmp->w.win = None;
 	tmp->shadow = None;
 	tmp->real_menu = FALSE;
 
@@ -1469,7 +1469,7 @@ MenuRoot *mr;
 		attributes.backing_store = Always;
 	}
 
-	mr->w = XCreateWindow (dpy, Scr->Root, 0, 0, (unsigned int) mr->width,
+	mr->w.win = XCreateWindow (dpy, Scr->Root, 0, 0, (unsigned int) mr->width,
 
 /* djhjr - 4/22/96
 				   (unsigned int) mr->height, (unsigned int) 1,
@@ -1481,8 +1481,8 @@ MenuRoot *mr;
 				   valuemask, &attributes);
 
 
-	XSaveContext(dpy, mr->w, MenuContext, (caddr_t)mr);
-	XSaveContext(dpy, mr->w, ScreenContext, (caddr_t)Scr);
+	XSaveContext(dpy, mr->w.win, MenuContext, (caddr_t)mr);
+	XSaveContext(dpy, mr->w.win, ScreenContext, (caddr_t)Scr);
 
 	mr->mapped = UNMAPPED;
 	}
@@ -1719,7 +1719,7 @@ Bool PopUpMenu (menu, x, y, center)
 
 	/* djhjr - 5/22/00 */
 	menu->top = 0;
-	if (menu->w) XClearArea(dpy, menu->w, 0, 0, 0, 0, True);
+	if (menu->w.win) XClearArea(dpy, menu->w.win, 0, 0, 0, 0, True);
 
 	InstallRootColormap();
 
@@ -1819,7 +1819,7 @@ Bool PopUpMenu (menu, x, y, center)
 	MakeMenu(menu);
 	}
 
-	if (menu->w == None || menu->items == 0) return False;
+	if (menu->w.win == None || menu->items == 0) return False;
 
 	/* Prevent recursively bringing up menus. */
 	if (menu->mapped == MAPPED) return False;
@@ -1869,21 +1869,21 @@ Bool PopUpMenu (menu, x, y, center)
 	MenuOrigins[MenuDepth].y = y;
 	MenuDepth++;
 
-	XMoveWindow(dpy, menu->w, x, y);
+	XMoveWindow(dpy, menu->w.win, x, y);
 	if (Scr->Shadow) {
 	XMoveWindow (dpy, menu->shadow, x + SHADOWWIDTH, y + SHADOWWIDTH);
 	}
 	if (Scr->Shadow) {
 	XRaiseWindow (dpy, menu->shadow);
 	}
-	XMapRaised(dpy, menu->w);
+	XMapRaised(dpy, menu->w.win);
 	if (Scr->Shadow) {
 	XMapWindow (dpy, menu->shadow);
 	}
 	XSync(dpy, 0);
 
 	/* djhjr - 9/5/98 */
-	XQueryPointer(dpy, menu->w, &JunkRoot, &JunkChild,
+	XQueryPointer(dpy, menu->w.win, &JunkRoot, &JunkChild,
 			&x_root, &y_root, &JunkX, &JunkY, &JunkMask);
 	MenuOrigX = x_root;
 	MenuOrigY = y_root;
@@ -1925,7 +1925,7 @@ void PopDownMenu()
 	if (Scr->Shadow) {
 		XUnmapWindow (dpy, tmp->shadow);
 	}
-	XUnmapWindow(dpy, tmp->w);
+	XUnmapWindow(dpy, tmp->w.win);
 	tmp->mapped = UNMAPPED;
 	UninstallRootColormap();
 	}
@@ -1979,8 +1979,8 @@ static Bool belongs_to_twm_window (t, w)
 
 #if 0
 StayUpMenus
-	if (w == t->frame || w == t->title_w || w == t->hilite_w ||
-	w == t->icon_w || w == t->icon_bm_w) return True;
+	if (w == t->frame || w == t->title_w.win || w == t->hilite_w ||
+	w == t->icon_w.win || w == t->icon_bm_w) return True;
 #endif
 
 	if (t && t->titlebuttons) {
@@ -2459,7 +2459,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	{
 	    DeIconify(tmp_win);
 	    XRaiseWindow (dpy, tmp_win->frame);
-	    XRaiseWindow (dpy, tmp_win->VirtualDesktopDisplayWindow);
+	    XRaiseWindow (dpy, tmp_win->VirtualDesktopDisplayWindow.win);
 	    
 	    RaiseStickyAbove();
 	    RaiseAutoPan();
@@ -2492,7 +2492,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    EventHandler[LeaveNotify] = HandleUnknown;
 
 /* allow the resizing of doors - djhjr - 2/22/99
-	    if ((w != tmp_win->icon_w) && (context != C_DOOR))
+	    if ((w != tmp_win->icon_w.win) && (context != C_DOOR))
 */
 	    if (context == C_ICON) /* can't resize icons */
 	    {
@@ -2714,8 +2714,8 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		{
 		    XRaiseWindow(dpy, tmp_win->frame);
 		    SetRaiseWindow(tmp_win);
-		    if (Scr->Virtual && tmp_win->VirtualDesktopDisplayWindow)
-			XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+		    if (Scr->Virtual && tmp_win->VirtualDesktopDisplayWindow.win)
+			XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
 		}
 
 /* djhjr - 6/22/01 */
@@ -2864,7 +2864,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 /* use initialized size... djhjr - 5/9/96
 	    * djhjr - 4/27/96 *
 	    Scr->SizeStringOffset = SIZE_HINDENT;
-	    XResizeWindow(dpy, Scr->SizeWindow,
+	    XResizeWindow(dpy, Scr->SizeWindow.win,
 			  Scr->SizeStringWidth + SIZE_HINDENT * 2, 
 			  Scr->SizeFont.height + SIZE_VINDENT * 2);
 */
@@ -2913,15 +2913,15 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    }
 	    else
 
-	    if (context == C_ICON && tmp_win->icon_w)
+	    if (context == C_ICON && tmp_win->icon_w.win)
 	    {
 		DragX = eventp->xbutton.x;
 		DragY = eventp->xbutton.y;
 
-		w = tmp_win->icon_w;
+		w = tmp_win->icon_w.win;
 		moving_icon = TRUE;
 	    }
-	    else if (w != tmp_win->icon_w)
+	    else if (w != tmp_win->icon_w.win)
 	    {
 		XTranslateCoordinates(dpy, w, tmp_win->frame,
 				      eventp->xbutton.x,
@@ -2931,7 +2931,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		w = tmp_win->frame;
 	    }
 
-	    XMapRaised (dpy, Scr->SizeWindow);
+	    XMapRaised (dpy, Scr->SizeWindow.win);
 
 	    DragWindow = None;
 
@@ -3138,13 +3138,13 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 			if (moving_icon)
 			{
 			    tmp_win->icon_moved = TRUE;
-			    XMoveWindow(dpy, tmp_win->icon_w,
+			    XMoveWindow(dpy, tmp_win->icon_w.win,
 					CurrentDragX, CurrentDragY);
 
 			    if (!Scr->NoRaiseMove && !Scr->RaiseOnStart)
 			    {
-				XRaiseWindow(dpy, tmp_win->icon_w);
-				SetRaiseWindow(tmp_win->icon_w);
+				XRaiseWindow(dpy, tmp_win->icon_w.win);
+				SetRaiseWindow(tmp_win->icon_w.win);
 			    }
 			}
 			else
@@ -3208,17 +3208,17 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		{
 		    if (moving_icon)
 		    {
-			XRaiseWindow(dpy, tmp_win->icon_w);
-			SetRaiseWindow(tmp_win->icon_w);
+			XRaiseWindow(dpy, tmp_win->icon_w.win);
+			SetRaiseWindow(tmp_win->icon_w.win);
 		    }
 		    else
 		    {
 			XRaiseWindow(dpy, tmp_win->frame);
 			SetRaiseWindow(tmp_win);
 			if (Scr->Virtual &&
-				tmp_win->VirtualDesktopDisplayWindow)
+				tmp_win->VirtualDesktopDisplayWindow.win)
 			    XRaiseWindow(dpy,
-					 tmp_win->VirtualDesktopDisplayWindow);
+					 tmp_win->VirtualDesktopDisplayWindow.win);
 		    }
 		}
 
@@ -3319,7 +3319,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 /* djhjr - 4/17/98
 		    * move the small representation window
 		    * this knows a bit much about the internals i guess
-		    * XMoveWindow(dpy, tmp_win->VirtualDesktopDisplayWindow, SCALE_D(xl), SCALE_D(yt));
+		    * XMoveWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win, SCALE_D(xl), SCALE_D(yt));
 */
 		    if (Scr->VirtualReceivesMotionEvents)
 		    {
@@ -3343,7 +3343,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    if (!tmp_win->opaque_move) XUngrabServer(dpy);
 
 	    /* djhjr - 4/27/96 */
-	    XUnmapWindow (dpy, Scr->SizeWindow);
+	    XUnmapWindow (dpy, Scr->SizeWindow.win);
 
 	    MovedFromKeyPress = False;
 
@@ -3574,10 +3574,10 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    XWindowChanges xwc;
 
 	    xwc.stack_mode = Opposite;
-	    if (w != tmp_win->icon_w)
+	    if (w != tmp_win->icon_w.win)
 	      w = tmp_win->frame;
 	    XConfigureWindow (dpy, w, CWStackMode, &xwc);
-	    XConfigureWindow (dpy, tmp_win->VirtualDesktopDisplayWindow, CWStackMode, &xwc);
+	    XConfigureWindow (dpy, tmp_win->VirtualDesktopDisplayWindow.win, CWStackMode, &xwc);
 	    /* ug */
 	    XLowerWindow(dpy, Scr->VirtualDesktopDScreen);
 	}
@@ -3588,12 +3588,12 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    return TRUE;
 
 	/* check to make sure raise is not from the WindowFunction */
-	if (w == tmp_win->icon_w && Context != C_ROOT)
-	    XRaiseWindow(dpy, tmp_win->icon_w);
+	if (w == tmp_win->icon_w.win && Context != C_ROOT)
+	    XRaiseWindow(dpy, tmp_win->icon_w.win);
 	else
 	{
 	    XRaiseWindow(dpy, tmp_win->frame);
-	    XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+	    XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
 	}
 
 	RaiseStickyAbove(); /* DSE */
@@ -3606,11 +3606,11 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    return TRUE;
 
 	if (!(Scr->StickyAbove && tmp_win->nailed)) { /* DSE */
-		if (w == tmp_win->icon_w)
-		    XLowerWindow(dpy, tmp_win->icon_w);
+		if (w == tmp_win->icon_w.win)
+		    XLowerWindow(dpy, tmp_win->icon_w.win);
 		else
 		{    XLowerWindow(dpy, tmp_win->frame);
-			XLowerWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+			XLowerWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
 			XLowerWindow(dpy, Scr->VirtualDesktopDScreen);
 		}
 	} /* DSE */
@@ -4150,8 +4150,8 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
 
-	if (context == C_ICON && tmp_win->icon_w)
-	    w = XCreateSimpleWindow(dpy, tmp_win->icon_w,
+	if (context == C_ICON && tmp_win->icon_w.win)
+	    w = XCreateSimpleWindow(dpy, tmp_win->icon_w.win,
 		0, 0, 9999, 9999, 0, Scr->Black, Scr->Black);
 	else
 	    w = XCreateSimpleWindow(dpy, tmp_win->frame,
@@ -4836,11 +4836,11 @@ TwmWindow *tmp_win;
 	{
 	    if (tmp_win->icon_on)
 	    {
-		wf = tmp_win->icon_w; wt = tmp_win->frame;
+		wf = tmp_win->icon_w.win; wt = tmp_win->frame;
 	    }
 	    else if (tmp_win->list) /* djhjr - 10/11/01 */
 	    {
-		wf = tmp_win->list->w; wt = tmp_win->frame;
+		wf = tmp_win->list->w.win; wt = tmp_win->frame;
 		ipf = tmp_win->list->iconmgr;
 	    }
 	    else if (tmp_win->group != None)
@@ -4849,10 +4849,10 @@ TwmWindow *tmp_win;
 		    if (tmp_win->group == t->w)
 		    {
 			if (t->icon_on)
-			    wf = t->icon_w;
+			    wf = t->icon_w.win;
 			else if (t->list) /* djhjr - 10/11/01 */
 			{
-			    wf = t->list->w;
+			    wf = t->list->w.win;
 			    ipf = t->list->iconmgr;
 			}
 
@@ -4875,12 +4875,12 @@ TwmWindow *tmp_win;
     else
     {
 	XMapRaised(dpy, tmp_win->frame);
-	XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+	XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
     }
     SetMapStateProp(tmp_win, NormalState);
 
-    if (tmp_win->icon_w) {
-	XUnmapWindow(dpy, tmp_win->icon_w);
+    if (tmp_win->icon_w.win) {
+	XUnmapWindow(dpy, tmp_win->icon_w.win);
 	IconDown (tmp_win);
     }
 
@@ -4905,20 +4905,20 @@ TwmWindow *tmp_win;
 	if (t->transient && t->transientfor == tmp_win->w)
 	{
 	    /* this 'if (...) else' (see also Iconify()) - djhjr - 6/22/99 */
-	    if (Scr->DontDeiconifyTransients && t->icon_w &&
+	    if (Scr->DontDeiconifyTransients && t->icon_w.win &&
 			t->icon == TRUE && t->icon_on == FALSE)
 	    {
 		IconUp(t);
-		XMapRaised(dpy, t->icon_w);
+		XMapRaised(dpy, t->icon_w.win);
 		t->icon_on = TRUE;
 	    }
 	    else
 	    {
 		/* added Zoom()s args to iconmgrs - djhjr - 10/11/01 */
 		if (t->icon_on)
-		    Zoom(t->icon_w, NULL, t->frame, NULL);
+		    Zoom(t->icon_w.win, NULL, t->frame, NULL);
 		else
-		    Zoom(tmp_win->icon_w, NULL, t->frame, NULL);
+		    Zoom(tmp_win->icon_w.win, NULL, t->frame, NULL);
 
 		XMapWindow(dpy, t->w);
 		t->mapped = TRUE;
@@ -4928,13 +4928,13 @@ TwmWindow *tmp_win;
 		else
 		{
 		    XMapRaised(dpy, t->frame);
-		    XRaiseWindow(dpy, t->VirtualDesktopDisplayWindow);
+		    XRaiseWindow(dpy, t->VirtualDesktopDisplayWindow.win);
 		}
 		SetMapStateProp(t, NormalState);
 
-		if (t->icon_w)
+		if (t->icon_w.win)
 		{
-		    XUnmapWindow(dpy, t->icon_w);
+		    XUnmapWindow(dpy, t->icon_w.win);
 		    IconDown (t);
 		}
 
@@ -4985,12 +4985,12 @@ int def_x, def_y;
     iconify = ((!tmp_win->iconify_by_unmapping) || tmp_win->transient);
     if (iconify)
     {
-	if (tmp_win->icon_w == None)
+	if (tmp_win->icon_w.win == None)
 	    CreateIconWindow(tmp_win, def_x, def_y);
 	else
 	    IconUp(tmp_win);
 
-	XMapRaised(dpy, tmp_win->icon_w);
+	XMapRaised(dpy, tmp_win->icon_w.win);
 	
 	RaiseStickyAbove(); /* DSE */
 	RaiseAutoPan();
@@ -5025,13 +5025,13 @@ int def_x, def_y;
 	    {
 		/* added Zoom()s args to iconmgrs - djhjr - 10/11/01 */
 		if (t->icon_on)
-		  Zoom(t->icon_w, NULL, tmp_win->icon_w, NULL);
+		  Zoom(t->icon_w.win, NULL, tmp_win->icon_w.win, NULL);
 		else
-		  Zoom(t->frame, NULL, tmp_win->icon_w, NULL);
+		  Zoom(t->frame, NULL, tmp_win->icon_w.win, NULL);
 	    }
 
-	    if (t->icon_w)
-	      XUnmapWindow(dpy, t->icon_w);
+	    if (t->icon_w.win)
+	      XUnmapWindow(dpy, t->icon_w.win);
 	    SetMapStateProp(t, IconicState);
 	    SetBorder (t, False);
 	    if (t == Scr->Focus)
@@ -5107,7 +5107,7 @@ int def_x, def_y;
     /* moved again to ensure an icon manager entry exists - djhjr - 10/11/01 */
     /* added Zoom()s args to iconmgrs - djhjr - 10/11/01 */
     if (iconify)
-	Zoom(tmp_win->frame, NULL, tmp_win->icon_w, NULL);
+	Zoom(tmp_win->frame, NULL, tmp_win->icon_w.win, NULL);
     else if (tmp_win->list) /* djhjr - 10/11/01 */
 	Zoom(tmp_win->frame, NULL, tmp_win->list->w, tmp_win->list->iconmgr);
 
@@ -5237,7 +5237,7 @@ TwmWindow *t;
 	if (twidth > width)
 	    width = twidth;
     }
-    if (InfoLines) XUnmapWindow(dpy, Scr->InfoWindow);
+    if (InfoLines) XUnmapWindow(dpy, Scr->InfoWindow.win);
 
 /* djhjr - 4/29/98
     width += 20; * some padding *
@@ -5274,16 +5274,16 @@ TwmWindow *t;
 	px = py = 0;
     }
 
-    XMoveResizeWindow(dpy, Scr->InfoWindow, px, py, width, height);
+    XMoveResizeWindow(dpy, Scr->InfoWindow.win, px, py, width, height);
 
 /* done in HandleExpose() in events.c - djhjr - 4/30/98 */
 #ifdef NEVER
 	/* djhjr - 5/9/96 */
 	if (Scr->use3Dborders > 0)
 	{
-		XGetGeometry (dpy, Scr->InfoWindow, &JunkRoot, &JunkX, &JunkY,
+		XGetGeometry (dpy, Scr->InfoWindow.win, &JunkRoot, &JunkX, &JunkY,
 				&JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
-	    Draw3DBorder(Scr->InfoWindow, 0, 0, JunkWidth, JunkHeight,
+	    Draw3DBorder(Scr->InfoWindow.win, 0, 0, JunkWidth, JunkHeight,
 /* djhjr - 4/29/98
 			 BW, Scr->DefaultC, off, False, False);
 */
@@ -5291,7 +5291,7 @@ TwmWindow *t;
 	}
 #endif
 
-    XMapRaised(dpy, Scr->InfoWindow);
+    XMapRaised(dpy, Scr->InfoWindow.win);
     InfoLines = n;
 }
 
@@ -5305,7 +5305,7 @@ int state;
 
     data[0] = (unsigned long) state;
     data[1] = (unsigned long) (tmp_win->iconify_by_unmapping ? None :
-			   tmp_win->icon_w);
+			   tmp_win->icon_w.win);
 
     XChangeProperty (dpy, tmp_win->w, _XA_WM_STATE, _XA_WM_STATE, 32,
 		 PropModeReplace, (unsigned char *) data, 2);
@@ -5432,8 +5432,8 @@ IconMgr *ip;
 
     SetMapStateProp (ip->twm_win, WithdrawnState);
     XUnmapWindow(dpy, ip->twm_win->frame);
-    if (ip->twm_win->icon_w)
-      XUnmapWindow (dpy, ip->twm_win->icon_w);
+    if (ip->twm_win->icon_w.win)
+      XUnmapWindow (dpy, ip->twm_win->icon_w.win);
     ip->twm_win->mapped = FALSE;
     ip->twm_win->icon = TRUE;
 }
@@ -5448,7 +5448,7 @@ IconMgr *ip;
 
 	DeIconify(ip->twm_win);
 	XRaiseWindow(dpy, ip->twm_win->frame);
-	XRaiseWindow(dpy, ip->twm_win->VirtualDesktopDisplayWindow);
+	XRaiseWindow(dpy, ip->twm_win->VirtualDesktopDisplayWindow.win);
 }
 
 
@@ -5474,21 +5474,21 @@ Bool		onoroff;
 */
 				XSetWindowBorder (dpy, tmp->frame, tmp->border.back);
 
-				if (tmp->title_w)
+				if (tmp->title_w.win)
 /* djhjr - 4/24/96
-					XSetWindowBorder (dpy, tmp->title_w, tmp->border);
+					XSetWindowBorder (dpy, tmp->title_w.win, tmp->border);
 */
 /* djhjr - 11/17/97
-					XSetWindowBorder (dpy, tmp->title_w, tmp->border_tile.back);
+					XSetWindowBorder (dpy, tmp->title_w.win, tmp->border_tile.back);
 */
-					XSetWindowBorder (dpy, tmp->title_w, tmp->border.back);
+					XSetWindowBorder (dpy, tmp->title_w.win, tmp->border.back);
 			}
 			else
 			{
 				XSetWindowBorderPixmap (dpy, tmp->frame, tmp->gray);
 
-				if (tmp->title_w)
-					XSetWindowBorderPixmap (dpy, tmp->title_w, tmp->gray);
+				if (tmp->title_w.win)
+					XSetWindowBorderPixmap (dpy, tmp->title_w.win, tmp->gray);
 			}
 		}
 
@@ -5513,11 +5513,11 @@ void DestroyMenu (menu)
 {
     MenuItem *item;
 
-    if (menu->w) {
-	XDeleteContext (dpy, menu->w, MenuContext);
-	XDeleteContext (dpy, menu->w, ScreenContext);
+    if (menu->w.win) {
+	XDeleteContext (dpy, menu->w.win, MenuContext);
+	XDeleteContext (dpy, menu->w.win, ScreenContext);
 	if (Scr->Shadow) XDestroyWindow (dpy, menu->shadow);
-	XDestroyWindow(dpy, menu->w);
+	XDestroyWindow(dpy, menu->w.win);
     }
 
     for (item = menu->first; item; ) {
@@ -5714,7 +5714,7 @@ void WarpClass (next, t, class)
 		{
 		    XRaiseWindow (dpy, t->frame);
 		}
-	    XRaiseWindow (dpy, t->VirtualDesktopDisplayWindow);
+	    XRaiseWindow (dpy, t->VirtualDesktopDisplayWindow.win);
 
 	    RaiseStickyAbove(); /* DSE */
 	    RaiseAutoPan();
@@ -6028,7 +6028,7 @@ TwmWindow *t;
 			y += t->iconmgrp->twm_win->title_height;
 		}
 	}
-	else if (!t->title_w)
+	else if (!t->title_w.win)
 	{
 		/* added this 'if (...) else' - djhjr - 10/16/02 */
 		if (Scr->WarpCentered & WARPC_UNTITLED)
@@ -6079,7 +6079,7 @@ TwmWindow *t;
 		x = Scr->MyDisplayWidth - t->frame_x - pan_margin - 2;
 	if (x + t->frame_x <= pan_margin)
 	{
-		if (t->title_w)
+		if (t->title_w.win)
 			x = t->title_width - (t->frame_x + t->title_width) +
 			    pan_margin + 2;
 		else
@@ -6087,7 +6087,7 @@ TwmWindow *t;
 	}
 
 	/* added test for centered warps - djhjr - 10/16/02 */
-	if (t->title_w && !(Scr->WarpCentered & WARPC_TITLED) &&
+	if (t->title_w.win && !(Scr->WarpCentered & WARPC_TITLED) &&
 			(x < t->title_x || x > t->title_x + t->title_width))
 	{
 		y = t->title_height + bw / 2;
@@ -6237,7 +6237,7 @@ int func;
 
 		if (!w->mapped) DeIconify(w);
 		if (!Scr->NoRaiseWarp) XRaiseWindow(dpy, w->frame);
-		XRaiseWindow(dpy, w->VirtualDesktopDisplayWindow);
+		XRaiseWindow(dpy, w->VirtualDesktopDisplayWindow.win);
 
 		return (1);
 	}
@@ -6399,8 +6399,8 @@ int x, y;
     sprintf (str, "%+6d %-+6d", x, y);
     i = strlen (str);
 
-    XRaiseWindow (dpy, Scr->SizeWindow);
-    MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
+    XRaiseWindow (dpy, Scr->SizeWindow.win);
+    MyFont_DrawImageString (dpy, &Scr->SizeWindow, &Scr->SizeFont,
 			  &Scr->DefaultC,
 
 /* djhjr - 5/9/96
@@ -6420,7 +6420,7 @@ int x, y;
 	/* I know, I know, but the above code overwrites it... djhjr - 5/9/96 */
 	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 	if (Scr->InfoBevelWidth > 0)
-	    Draw3DBorder(Scr->SizeWindow, 0, 0,
+	    Draw3DBorder(Scr->SizeWindow.win, 0, 0,
 				Scr->SizeStringWidth,
 
 /* djhjr - 4/29/98

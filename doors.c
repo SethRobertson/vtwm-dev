@@ -196,7 +196,7 @@ TwmDoor *tmp_door;
 				bw,
 				tmp_door->colors.fore,
 				tmp_door->colors.back);
-	tmp_door->w = XCreateSimpleWindow(dpy, w,
+	tmp_door->w.win = XCreateSimpleWindow(dpy, w,
 					  0, 0,
 					  tmp_door->width, tmp_door->height,
 					  0,
@@ -257,16 +257,16 @@ TwmDoor *tmp_door;
 	XSetClassHint(dpy, w, tmp_door->class);
 
 	/* set the name on both */
-	XStoreName(dpy, tmp_door->w, tmp_door->name);
+	XStoreName(dpy, tmp_door->w.win, tmp_door->name);
 	XStoreName(dpy, w, tmp_door->name);
 
 	XDefineCursor( dpy, w, Scr->FrameCursor );/*RFB*/
-	XDefineCursor( dpy, tmp_door->w, Scr->DoorCursor );/*RFBCURSOR*/
+	XDefineCursor( dpy, tmp_door->w.win, Scr->DoorCursor );/*RFBCURSOR*/
 
 	/* moved these 'cuz AddWindow() will need 'em - djhjr - 11/15/01 */
 	/* store the address of the door on the window */
 	XSaveContext(dpy,
-		     tmp_door->w, DoorContext, (caddr_t) tmp_door);
+		     tmp_door->w.win, DoorContext, (caddr_t) tmp_door);
 	XSaveContext(dpy,
 		     w, DoorContext, (caddr_t) tmp_door);
 
@@ -276,16 +276,16 @@ TwmDoor *tmp_door;
 	SetMapStateProp(tmp_door->twin, NormalState);
 
 	/* interested in... */
-	XSelectInput(dpy, tmp_door->w, ExposureMask |
+	XSelectInput(dpy, tmp_door->w.win, ExposureMask |
 		     ButtonPressMask | ButtonReleaseMask);
 
 	/* store the address of the door on the window */
 	XSaveContext(dpy,
-		     tmp_door->w,
+		     tmp_door->w.win,
 		     TwmContext, (caddr_t) tmp_door->twin);
 
 	/* map it */
-	XMapWindow(dpy, tmp_door->w);
+	XMapWindow(dpy, tmp_door->w.win);
 	XMapWindow(dpy, w);
 }
 
@@ -353,10 +353,10 @@ TwmDoor *d;
  * It looks as though the contexts, at least, should be
  * deleted here, maybe more, I dunno. - djhjr 2/25/99
  */
-	XDeleteContext(dpy, d->w, DoorContext);
-	XDeleteContext(dpy, d->w,  TwmContext);
+	XDeleteContext(dpy, d->w.win, DoorContext);
+	XDeleteContext(dpy, d->w.win,  TwmContext);
 	XDeleteContext(dpy, d->twin->w, DoorContext); /* ??? */
-	XUnmapWindow(dpy, d->w);
+	XUnmapWindow(dpy, d->w.win);
 	XUnmapWindow(dpy, w);
 	XDestroyWindow(dpy, w);
 	free(d->class->res_class); /* djhjr - 2/25/99 */
@@ -418,7 +418,7 @@ TwmDoor* d;
 	XFree(ptr);
 
 	/* djhjr - 1/14/99 */
-	XClearWindow(dpy, d->w);
+	XClearWindow(dpy, d->w.win);
 
 	/* added 'Scr->DoorBevelWidth * 2' - djhjr - 2/7/99 */
 	width = MyFont_TextWidth(&Scr->DoorFont, d->name, count) +

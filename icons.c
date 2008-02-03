@@ -134,7 +134,7 @@ void IconUp (tmp_win)
       return;
 
     if (tmp_win->icon_moved) {
-	if (!XGetGeometry (dpy, tmp_win->icon_w, &JunkRoot, &defx, &defy,
+	if (!XGetGeometry (dpy, tmp_win->icon_w.win, &JunkRoot, &defx, &defy,
 			   &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth))
 	  return;
 
@@ -157,7 +157,7 @@ void IconUp (tmp_win)
     defy = -100;
     PlaceIcon(tmp_win, defx, defy, &x, &y);
     if (x != defx || y != defy) {
-	XMoveWindow (dpy, tmp_win->icon_w, x, y);
+	XMoveWindow (dpy, tmp_win->icon_w.win, x, y);
 	tmp_win->icon_moved = FALSE;	/* since we've restored it */
     }
 }
@@ -394,13 +394,13 @@ int def_x, def_y;
     event_mask = 0;
     if (tmp_win->wmhints && tmp_win->wmhints->flags & IconWindowHint)
     {
-	tmp_win->icon_w = tmp_win->wmhints->icon_window;
+	tmp_win->icon_w.win = tmp_win->wmhints->icon_window;
 	if (tmp_win->forced ||
-	    XGetGeometry(dpy, tmp_win->icon_w, &JunkRoot, &JunkX, &JunkY,
+	    XGetGeometry(dpy, tmp_win->icon_w.win, &JunkRoot, &JunkX, &JunkY,
 		     (unsigned int *)&tmp_win->icon_w_width, (unsigned int *)&tmp_win->icon_w_height,
 		     &JunkBW, &JunkDepth) == 0)
 	{
-	    tmp_win->icon_w = None;
+	    tmp_win->icon_w.win = None;
 	    tmp_win->wmhints->flags &= ~IconWindowHint;
 	}
 	else
@@ -411,7 +411,7 @@ int def_x, def_y;
     }
     else
     {
-	tmp_win->icon_w = None;
+	tmp_win->icon_w.win = None;
     }
 
 	/* djhjr - 5/5/98 */
@@ -425,16 +425,16 @@ int def_x, def_y;
 		tmp_win->icon_y += Scr->IconBevelWidth;
 	}
 
-    if (tmp_win->icon_w == None)
+    if (tmp_win->icon_w.win == None)
     {
-	tmp_win->icon_w = XCreateSimpleWindow(dpy, Scr->Root,
+	tmp_win->icon_w.win = XCreateSimpleWindow(dpy, Scr->Root,
 	    0,0,
 	    tmp_win->icon_w_width, tmp_win->icon_w_height,
 	    Scr->IconBorderWidth, tmp_win->icon_border, tmp_win->iconc.back);
 	event_mask = ExposureMask;
     }
 
-    XSelectInput (dpy, tmp_win->icon_w,
+    XSelectInput (dpy, tmp_win->icon_w.win,
 		  KeyPressMask | ButtonPressMask | ButtonReleaseMask |
 		  event_mask);
 
@@ -459,7 +459,7 @@ int def_x, def_y;
 	if (Scr->IconBevelWidth > 0)
 		y += Scr->IconBevelWidth;
 
-	tmp_win->icon_bm_w = XCreateWindow (dpy, tmp_win->icon_w, x, y,
+	tmp_win->icon_bm_w = XCreateWindow (dpy, tmp_win->icon_w.win, x, y,
 					    (unsigned int)tmp_win->icon_width,
 					    (unsigned int)tmp_win->icon_height,
 					    (unsigned int) 0, Scr->d_depth,
@@ -490,13 +490,13 @@ int def_x, def_y;
 	final_y = Scr->MyDisplayHeight - tmp_win->icon_height -
 	    Scr->IconFont.height - 4 - (2 * Scr->IconBorderWidth);
 
-    XMoveWindow(dpy, tmp_win->icon_w, final_x, final_y);
+    XMoveWindow(dpy, tmp_win->icon_w.win, final_x, final_y);
     tmp_win->iconified = TRUE;
 
-    XMapSubwindows(dpy, tmp_win->icon_w);
-    XSaveContext(dpy, tmp_win->icon_w, TwmContext, (caddr_t)tmp_win);
-    XSaveContext(dpy, tmp_win->icon_w, ScreenContext, (caddr_t)Scr);
-    XDefineCursor(dpy, tmp_win->icon_w, Scr->IconCursor);
+    XMapSubwindows(dpy, tmp_win->icon_w.win);
+    XSaveContext(dpy, tmp_win->icon_w.win, TwmContext, (caddr_t)tmp_win);
+    XSaveContext(dpy, tmp_win->icon_w.win, ScreenContext, (caddr_t)Scr);
+    XDefineCursor(dpy, tmp_win->icon_w.win, Scr->IconCursor);
     if (pm) XFreePixmap (dpy, pm);
     return;
 }
@@ -845,13 +845,13 @@ int def_x, def_y;
     event_mask = 0;
     if (tmp_win->wmhints && tmp_win->wmhints->flags & IconWindowHint)
     {
-	tmp_win->icon_w = tmp_win->wmhints->icon_window;
+	tmp_win->icon_w.win = tmp_win->wmhints->icon_window;
 	if (tmp_win->forced ||
-	    XGetGeometry(dpy, tmp_win->icon_w, &JunkRoot, &JunkX, &JunkY,
+	    XGetGeometry(dpy, tmp_win->icon_w.win, &JunkRoot, &JunkX, &JunkY,
 		     (unsigned int *)&tmp_win->icon_w_width, (unsigned int *)&tmp_win->icon_w_height,
 		     &JunkBW, &JunkDepth) == 0)
 	{
-	    tmp_win->icon_w = None;
+	    tmp_win->icon_w.win = None;
 	    tmp_win->wmhints->flags &= ~IconWindowHint;
 	}
 	else
@@ -862,7 +862,7 @@ int def_x, def_y;
     }
     else
     {
-	tmp_win->icon_w = None;
+	tmp_win->icon_w.win = None;
     }
 
 	/* djhjr - 5/5/98 */
@@ -876,16 +876,16 @@ int def_x, def_y;
 		tmp_win->icon_y += Scr->IconBevelWidth;
 	}
 
-    if (tmp_win->icon_w == None)
+    if (tmp_win->icon_w.win == None)
     {
-	tmp_win->icon_w = XCreateSimpleWindow(dpy, Scr->Root,
+	tmp_win->icon_w.win = XCreateSimpleWindow(dpy, Scr->Root,
 	    0,0,
 	    tmp_win->icon_w_width, tmp_win->icon_w_height,
 	    Scr->IconBorderWidth, tmp_win->icon_border, tmp_win->iconc.back);
 	event_mask = ExposureMask;
     }
 
-    XSelectInput (dpy, tmp_win->icon_w,
+    XSelectInput (dpy, tmp_win->icon_w.win,
 		  KeyPressMask | ButtonPressMask | ButtonReleaseMask |
 		  event_mask);
 
@@ -910,7 +910,7 @@ int def_x, def_y;
 	if (Scr->IconBevelWidth > 0)
 		y += Scr->IconBevelWidth;
 
-	tmp_win->icon_bm_w = XCreateWindow (dpy, tmp_win->icon_w, x, y,
+	tmp_win->icon_bm_w = XCreateWindow (dpy, tmp_win->icon_w.win, x, y,
 					    (unsigned int)tmp_win->icon_width,
 					    (unsigned int)tmp_win->icon_height,
 					    (unsigned int) 0, Scr->d_depth,
@@ -946,13 +946,13 @@ int def_x, def_y;
 	final_y = Scr->MyDisplayHeight - tmp_win->icon_height -
 	    Scr->IconFont.height - 4 - (2 * Scr->IconBorderWidth);
 
-    XMoveWindow(dpy, tmp_win->icon_w, final_x, final_y);
+    XMoveWindow(dpy, tmp_win->icon_w.win, final_x, final_y);
     tmp_win->iconified = TRUE;
 
-    XMapSubwindows(dpy, tmp_win->icon_w);
-    XSaveContext(dpy, tmp_win->icon_w, TwmContext, (caddr_t)tmp_win);
-    XSaveContext(dpy, tmp_win->icon_w, ScreenContext, (caddr_t)Scr);
-    XDefineCursor(dpy, tmp_win->icon_w, Scr->IconCursor);
+    XMapSubwindows(dpy, tmp_win->icon_w.win);
+    XSaveContext(dpy, tmp_win->icon_w.win, TwmContext, (caddr_t)tmp_win);
+    XSaveContext(dpy, tmp_win->icon_w.win, ScreenContext, (caddr_t)Scr);
+    XDefineCursor(dpy, tmp_win->icon_w.win, Scr->IconCursor);
 
     return;
 }

@@ -632,7 +632,7 @@ TwmWindow *tmp_win;
 		return;
 
 	if (tmp_win->icon) {
-		XUnmapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+		XUnmapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
 		return;
 	}
 
@@ -643,7 +643,7 @@ TwmWindow *tmp_win;
 
 	/* if it already has a vd display window, just move it to the right place
 	   and map it, else actually create the window */
-	if (!tmp_win->VirtualDesktopDisplayWindow) {
+	if (!tmp_win->VirtualDesktopDisplayWindow.win) {
 		Pixel background, border;
 
 #ifdef notdef
@@ -663,23 +663,23 @@ TwmWindow *tmp_win;
 			border = Scr->VirtualDesktopDisplayBorder;
 
 		/* the position and size don't matter */
-		tmp_win->VirtualDesktopDisplayWindow =
+		tmp_win->VirtualDesktopDisplayWindow.win =
 			XCreateSimpleWindow(dpy,
 				dwindow, x, y, width, height, /* Stig */
 				1, border, background);
 
-/*RFBCURSOR*/XDefineCursor( dpy, tmp_win->VirtualDesktopDisplayWindow,
+/*RFBCURSOR*/XDefineCursor( dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 /*RFBCURSOR*/Scr->DesktopCursor );
 
 		/* listen for expose events to redraw the name */
 		if (Scr->NamesInVirtualDesktop)
-			XSelectInput(dpy, tmp_win->VirtualDesktopDisplayWindow,
+			XSelectInput(dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 				     ExposureMask);
 
 		/* save the twm window on the window */
-		XSaveContext(dpy, tmp_win->VirtualDesktopDisplayWindow,
+		XSaveContext(dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 			     VirtualContext, (caddr_t) tmp_win);
-		XSaveContext(dpy, tmp_win->VirtualDesktopDisplayWindow,
+		XSaveContext(dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 			     TwmContext, (caddr_t) tmp_win);
 
 
@@ -688,7 +688,7 @@ TwmWindow *tmp_win;
 0		/* comment out this section */
 0	} else
 0		/* unmap whilst we reconfigure it */
-0		XUnmapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+0		XUnmapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
 0
 0	if (tmp_win->nailed) {
 0		x = tmp_win->frame_x / Scr->VirtualDesktopDScale;
@@ -698,7 +698,7 @@ TwmWindow *tmp_win;
 0		/* y = SCALE_D(tmp_win->frame_y); */
 0
 0		/* reparent this window into the little screen representation */
-0		XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+0		XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 0				Scr->VirtualDesktopDScreen, x, y);
 0	} else {
 0		x = tmp_win->virtual_frame_x / Scr->VirtualDesktopDScale;
@@ -707,7 +707,7 @@ TwmWindow *tmp_win;
 0		/* x = SCALE_D(tmp_win->virtual_frame_x); */
 0		/* y = SCALE_D(tmp_win->virtual_frame_y); */
 0
-0		XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+0		XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 0				Scr->VirtualDesktopDisplay, x, y);
 0	}
 0
@@ -731,19 +731,19 @@ TwmWindow *tmp_win;
 0#endif /* DEBUG */
 0
 0	/* move and size it */
-0	XMoveWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+0	XMoveWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 0		    x, y);
-0	XResizeWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+0	XResizeWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 0		      width, height);
 #else	/* 0, Stig */
 	} else {	/* Unmapping is fixed by XReparentWindow */
-		XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+		XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 			dwindow, x, y);
-		XResizeWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+		XResizeWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 			width, height);
 	}
 #endif
-	XMapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+	XMapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
 }
 
 #if 0	/* Stig */
@@ -760,8 +760,8 @@ TwmWindow *tmp_win;
 0		return;
 0
 0	/*
-0	if (tmp_win->VirtualDesktopDisplayWindow)
-0		XUnmapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+0	if (tmp_win->VirtualDesktopDisplayWindow.win)
+0		XUnmapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
 0	*/
 0	/* reparent its representation out of the real screen window */
 0	x = tmp_win->virtual_frame_x /Scr->VirtualDesktopDScale;
@@ -770,7 +770,7 @@ TwmWindow *tmp_win;
 0	/* x = SCALE_D(tmp_win->virtual_frame_x); */
 0	/* y = SCALE_D(tmp_win->virtual_frame_y); */
 0
-0	XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+0	XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 0			Scr->VirtualDesktopDisplay, x, y);
 0}
 #endif /* 0, Stig */
@@ -783,18 +783,18 @@ TwmWindow *tmp_win;
 {
 	int x, y;
 
-	if (!tmp_win->VirtualDesktopDisplayWindow
+	if (!tmp_win->VirtualDesktopDisplayWindow.win
 	|| !Scr->Virtual
 	|| tmp_win->icon)
 		return;
 
 	GetDesktopWindowCoordinates(tmp_win, &x, &y, (int *) 0, (int *) 0);
-	XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+	XReparentWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 		(tmp_win->nailed)
 			? Scr->VirtualDesktopDScreen
 			: Scr->VirtualDesktopDisplay,
 		x, y);
-	XMapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+	XMapWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
 }
 
 /*
@@ -979,7 +979,7 @@ XMotionEvent ev;
 	}
 
 	/* djhjr - 4/28/98 */
-	XMapRaised(dpy, Scr->SizeWindow);
+	XMapRaised(dpy, Scr->SizeWindow.win);
 	InstallRootColormap();
 	if (moving_window == Scr->VirtualDesktopDScreen)
 		JunkX = JunkY = 0;
@@ -1112,7 +1112,7 @@ void EndMoveWindowOnDesktop()
 		return;
 
 	/* djhjr - 4/28/98 */
-	XUnmapWindow(dpy, Scr->SizeWindow);
+	XUnmapWindow(dpy, Scr->SizeWindow.win);
 	UninstallRootColormap();
 
 	if (moving_window == Scr->VirtualDesktopDScreen) {
@@ -1170,7 +1170,7 @@ void EndMoveWindowOnDesktop()
 		/* added '!Cancel &&' - djhjr - 11/3/03 */
 		if (!Cancel && !Scr->NoRaiseMove) {
 			XRaiseWindow(dpy, moving_twindow->frame);
-			XRaiseWindow(dpy, moving_twindow->VirtualDesktopDisplayWindow);
+			XRaiseWindow(dpy, moving_twindow->VirtualDesktopDisplayWindow.win);
 
 			RaiseStickyAbove(); /* DSE */
 			RaiseAutoPan();
@@ -1200,17 +1200,17 @@ int noraise;
 {
 	int x, y, w, h;
 
-	if (!tmp_win->VirtualDesktopDisplayWindow
+	if (!tmp_win->VirtualDesktopDisplayWindow.win
 	|| !Scr->Virtual
 	|| tmp_win->icon)
 		return;
 
 	GetDesktopWindowCoordinates(tmp_win, &x, &y, &w, &h);
 	/* Resize the desktop representation window */
-	XMoveResizeWindow(dpy, tmp_win->VirtualDesktopDisplayWindow,
+	XMoveResizeWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 		x, y, w, h);
 	if (!noraise)
-		XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow);
+		XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
 }
 
 void SetVirtualDesktop(geom, scale)
@@ -1335,7 +1335,7 @@ int x, y;
 
 	if (!Scr->NoRaiseMove) {
 		XRaiseWindow(dpy, t->frame);
-		/* XRaiseWindow(dpy, t->VirtualDesktopDisplayWindow); Stig */
+		/* XRaiseWindow(dpy, t->VirtualDesktopDisplayWindow.win); Stig */
 
 		RaiseStickyAbove(); /* DSE */
 		RaiseAutoPan();
@@ -1446,16 +1446,16 @@ short dosnap;
 	/* move all of the windows by walking the twm list */
 	for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL; Tmp_win = Tmp_win->next)
 	{
-		if (Scr->StaticIconPositions && Tmp_win->icon && Tmp_win->icon_w)
+		if (Scr->StaticIconPositions && Tmp_win->icon && Tmp_win->icon_w.win)
 		{
 			/*
 			 * Make icons "stay put" on the virtual desktop when
 			 * not otherwise nailed - djhjr - 12/14/98
 			 */
-			XGetGeometry(dpy, Tmp_win->icon_w, &JunkRoot, &JunkX, &JunkY,
+			XGetGeometry(dpy, Tmp_win->icon_w.win, &JunkRoot, &JunkX, &JunkY,
 					&JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
 
-			XMoveWindow(dpy, Tmp_win->icon_w,
+			XMoveWindow(dpy, Tmp_win->icon_w.win,
 					JunkX + xdiff, JunkY + ydiff);
 		}
 
@@ -1536,7 +1536,7 @@ void RaiseStickyAbove () {
 		Tmp_win = Tmp_win->next)
 			if (Tmp_win->nailed) {
 				XRaiseWindow(dpy,Tmp_win->w);
-				XRaiseWindow(dpy,Tmp_win->VirtualDesktopDisplayWindow);
+				XRaiseWindow(dpy,Tmp_win->VirtualDesktopDisplayWindow.win);
 				XRaiseWindow(dpy,Tmp_win->frame);
 			}
 	}
@@ -1552,7 +1552,7 @@ void LowerSticky () {
 	Tmp_win = Tmp_win->next)
 		if (Tmp_win->nailed) {
 			XLowerWindow(dpy,Tmp_win->w);
-			XLowerWindow(dpy,Tmp_win->VirtualDesktopDisplayWindow);
+			XLowerWindow(dpy,Tmp_win->VirtualDesktopDisplayWindow.win);
 			XLowerWindow(dpy,Tmp_win->frame);
 		}
 }

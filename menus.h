@@ -85,7 +85,7 @@ typedef struct MenuRoot
     struct MenuRoot *prev;	/* previous root menu if pull right */
     struct MenuRoot *next;	/* next in list of root menus */
     char *name;			/* name of root */
-    Window w;			/* the window of the menu */
+    MyWindow w;			/* the window of the menu */
     Window shadow;		/* the shadow window */
 
 /* djhjr - 4/22/96

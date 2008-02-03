@@ -799,7 +799,7 @@ main(argc, argv, environ)
 		valuemask = (CWBackPixel | CWEventMask | CWBackingStore);
 #endif
 
-	Scr->InfoWindow = XCreateWindow (dpy, Scr->Root, 0, 0,
+	Scr->InfoWindow.win = XCreateWindow (dpy, Scr->Root, 0, 0,
 					 (unsigned int) 5, (unsigned int) 5,
 
 					 /* djhjr - 5/9/96 */
@@ -853,7 +853,7 @@ main(argc, argv, environ)
 	}
 
 	attributes.bit_gravity = NorthWestGravity;
-	Scr->SizeWindow = XCreateWindow (dpy, Scr->Root,
+	Scr->SizeWindow.win = XCreateWindow (dpy, Scr->Root,
 
 /* djhjr - 5/15/96
 					 0,0,

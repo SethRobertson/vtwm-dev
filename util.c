@@ -1303,34 +1303,34 @@ MyFont_TextWidth(font, string, len)
 }
 
 void
-MyFont_DrawImageString (Display *dpy, Drawable d, MyFont *font, ColorPair *col, 
+MyFont_DrawImageString (Display *dpy, MyWindow *win, MyFont *font, ColorPair *col, 
                        int x, int y, char *string, int len)
 {
     Gcv.foreground = col->fore;
     Gcv.background = col->back;
     if (use_fontset) {
 	XChangeGC (dpy, Scr->NormalGC, GCForeground|GCBackground, &Gcv);
-	XmbDrawImageString (dpy, d, font->fontset, Scr->NormalGC, x, y, string, len);
+	XmbDrawImageString (dpy, win->win, font->fontset, Scr->NormalGC, x, y, string, len);
     } else {
 	Gcv.font = font->font->fid;
 	XChangeGC (dpy, Scr->NormalGC, GCFont|GCForeground|GCBackground, &Gcv);
-	XDrawImageString (dpy, d, Scr->NormalGC, x, y, string, len);
+	XDrawImageString (dpy, win->win, Scr->NormalGC, x, y, string, len);
     }
 }
 
 void
-MyFont_DrawString (Display *dpy, Drawable d, MyFont *font, ColorPair *col, 
+MyFont_DrawString (Display *dpy, MyWindow *win, MyFont *font, ColorPair *col, 
                   int x, int y, char *string, int len)
 {
     Gcv.foreground = col->fore;
     Gcv.background = col->back;
     if (use_fontset) {
 	XChangeGC (dpy, Scr->NormalGC, GCForeground|GCBackground, &Gcv);
-	XmbDrawString (dpy, d, font->fontset, Scr->NormalGC, x, y, string, len);
+	XmbDrawString (dpy, win->win, font->fontset, Scr->NormalGC, x, y, string, len);
     } else {
 	Gcv.font = font->font->fid;
 	XChangeGC (dpy, Scr->NormalGC, GCFont|GCForeground|GCBackground, &Gcv);
-	XDrawString (dpy, d, Scr->NormalGC, x, y, string, len);
+	XDrawString (dpy, win->win, Scr->NormalGC, x, y, string, len);
     }
 }
 
@@ -2140,7 +2140,7 @@ int state;
 		{
 			if (state == off)
 			{
-				DrawBackground(t->title_w,
+				DrawBackground(t->title_w.win,
 					       t->highlightx,
 					       Scr->FramePadding + 1,
 					       w, h, cp,
@@ -2164,7 +2164,7 @@ int state;
 						  &gcvalues);
 				}
 
-				(*pmtab[i].proc)(t->title_w,
+				(*pmtab[i].proc)(t->title_w.win,
 						 t->highlightx,
 						 Scr->FramePadding + 1,
 						 w, h, 0, cp, pmtab[i].state);
@@ -2219,11 +2219,8 @@ ColorPair	cp;
 }
 
 /* djhjr - 4/19/96 */
-void Draw3DBorder (w, x, y, width, height, bw, cp, state, fill, forcebw)
-Drawable		w;
-int			x, y, width, height, bw;
-ColorPair	cp;
-int			state, fill, forcebw;
+void Draw3DBorder (Drawable w, int x, int y, int width, int height, int bw,
+			ColorPair cp, int state, int fill, int forcebw)
 {
 	int				i;
 
@@ -3133,17 +3130,17 @@ TwmWindow *tmp_win;
     if (Scr->IconBevelWidth > 0) {
 
 /*
-	Draw3DBorder (tmp_win->icon_w, 0, tmp_win->icon_height,
+	Draw3DBorder (tmp_win->icon_w.win, 0, tmp_win->icon_height,
 		tmp_win->icon_w_width, Scr->IconFont.height + 6,
 		Scr->BorderBevelWidth, tmp_win->iconc, off, False, False);
 */
 	/* was 'Scr->BorderBevelWidth' - djhjr - 8/11/98 */
-	Draw3DBorder (tmp_win->icon_w, 0, 0,
+	Draw3DBorder (tmp_win->icon_w.win, 0, 0,
 		tmp_win->icon_w_width, tmp_win->icon_w_height,
 		Scr->IconBevelWidth, tmp_win->iconc, off, False, False);
     }
 
-	MyFont_DrawString (dpy, tmp_win->icon_w, &Scr->IconFont,
+	MyFont_DrawString (dpy, &tmp_win->icon_w, &Scr->IconFont,
 		&tmp_win->iconc, tmp_win->icon_x, tmp_win->icon_y, 
 		tmp_win->icon_name, strlen(tmp_win->icon_name));
 }
@@ -3221,7 +3218,7 @@ TwmWindow *tmp_win;
 	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
     if (Scr->TitleBevelWidth > 0)
 	{
-	    MyFont_DrawString (dpy, tmp_win->title_w, &Scr->TitleBarFont,
+	    MyFont_DrawString (dpy, &tmp_win->title_w, &Scr->TitleBarFont,
 		 &tmp_win->title,
 /* djhjr - 4/29/98
 		 Scr->TBInfo.titlex + en, Scr->TitleBarFont.y + 2, 
@@ -3235,7 +3232,7 @@ TwmWindow *tmp_win;
 	}
     else
 #endif
-        MyFont_DrawString (dpy, tmp_win->title_w, &Scr->TitleBarFont,
+        MyFont_DrawString (dpy, &tmp_win->title_w, &Scr->TitleBarFont,
 		 &tmp_win->title, Scr->TBInfo.titlex, Scr->TitleBarFont.y,
 		 (a) ? a : tmp_win->name, cur_string_len);
 
@@ -3246,30 +3243,30 @@ TwmWindow *tmp_win;
 	if (Scr->TitleBevelWidth > 0)
 	{
 /*
-	    Draw3DBorder (tmp_win->title_w, Scr->TBInfo.titlex, 0,
+	    Draw3DBorder (tmp_win->title_w.win, Scr->TBInfo.titlex, 0,
 		tmp_win->title_width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff,
 		Scr->TitleHeight, Scr->TitleBevelWidth, tmp_win->title, off, True, False);
 */
 /* djhjr - 3/12/97
-	    Draw3DBorder (tmp_win->title_w, Scr->TBInfo.rightoff, Scr->FramePadding,
+	    Draw3DBorder (tmp_win->title_w.win, Scr->TBInfo.rightoff, Scr->FramePadding,
 		tmp_win->title_width - 2 * Scr->TBInfo.rightoff,
 		Scr->TitleHeight - 2 * Scr->FramePadding, Scr->TitleBevelWidth, tmp_win->title, off, True, False);
 */
 /* djhjr - 10/17/02
-	    Draw3DBorder (tmp_win->title_w, Scr->TBInfo.leftx + left,
+	    Draw3DBorder (tmp_win->title_w.win, Scr->TBInfo.leftx + left,
 		Scr->FramePadding, tmp_win->title_width - (left + right),
 		Scr->TitleHeight - 2 * Scr->FramePadding, Scr->TitleBevelWidth, tmp_win->title, off, False, False);
 */
 	    if (Scr->FramePadding + Scr->ButtonIndent > 0)
 	    {
-		Draw3DBorder(tmp_win->title_w, 0, 0,
+		Draw3DBorder(tmp_win->title_w.win, 0, 0,
 			     tmp_win->title_width, Scr->TitleHeight,
 			     Scr->TitleBevelWidth, tmp_win->title,
 			     off, False, False);
 	    }
 	    else
 	    {
-		Draw3DBorder(tmp_win->title_w, left, 0,
+		Draw3DBorder(tmp_win->title_w.win, left, 0,
 			     tmp_win->title_width - (left + right),
 			     Scr->TitleHeight,
 			     Scr->TitleBevelWidth, tmp_win->title,

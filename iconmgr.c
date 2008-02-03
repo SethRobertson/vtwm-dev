@@ -408,7 +408,7 @@ void MoveIconManager(dir)
 	if (tmp->twm->title_height) {
 	    int tbx = Scr->TBInfo.titlex;
 	    int x = tmp->twm->highlightx;
-	    XWarpPointer (dpy, None, tmp->twm->title_w, 0, 0, 0, 0,
+	    XWarpPointer (dpy, None, tmp->twm->title_w.win, 0, 0, 0, 0,
 			  tbx + (x - tbx) / 2,
 			  Scr->TitleHeight / 4);
 	} else {
@@ -634,7 +634,7 @@ WList *AddIconManager(tmp_win)
 		valuemask |= CWBackingStore;
 	}
 
-    tmp->w = XCreateWindow (dpy, ip->w, 0, 0, (unsigned int) 1, 
+    tmp->w.win = XCreateWindow (dpy, ip->w, 0, 0, (unsigned int) 1, 
 			    (unsigned int) h, (unsigned int) 0, 
 			    CopyFromParent, (unsigned int) CopyFromParent,
 			    (Visual *) CopyFromParent, valuemask, &attributes);
@@ -664,7 +664,7 @@ WList *AddIconManager(tmp_win)
 	}
 
 	/* 'iconmgr_iconx' was '5' - djhjr - 5/5/98 */
-    tmp->icon = XCreateWindow (dpy, tmp->w, iconmgr_iconx, (int) (h - siconify_height)/2,
+    tmp->icon = XCreateWindow (dpy, tmp->w.win, iconmgr_iconx, (int) (h - siconify_height)/2,
 			       (unsigned int) siconify_width,
 			       (unsigned int) siconify_height,
 			       (unsigned int) 0, CopyFromParent,
@@ -674,11 +674,11 @@ WList *AddIconManager(tmp_win)
 
     ip->count += 1;
     PackIconManager(ip);
-    XMapWindow(dpy, tmp->w);
+    XMapWindow(dpy, tmp->w.win);
 
-    XSaveContext(dpy, tmp->w, IconManagerContext, (caddr_t) tmp);
-    XSaveContext(dpy, tmp->w, TwmContext, (caddr_t) tmp_win);
-    XSaveContext(dpy, tmp->w, ScreenContext, (caddr_t) Scr);
+    XSaveContext(dpy, tmp->w.win, IconManagerContext, (caddr_t) tmp);
+    XSaveContext(dpy, tmp->w.win, TwmContext, (caddr_t) tmp_win);
+    XSaveContext(dpy, tmp->w.win, ScreenContext, (caddr_t) Scr);
     XSaveContext(dpy, tmp->icon, TwmContext, (caddr_t) tmp_win);
     XSaveContext(dpy, tmp->icon, ScreenContext, (caddr_t) Scr);
     tmp_win->list = tmp;
@@ -691,7 +691,7 @@ WList *AddIconManager(tmp_win)
 
 	/* djhjr - 9/21/99 */
 	else
-		XMapWindow(dpy, ip->twm_win->icon_w);
+		XMapWindow(dpy, ip->twm_win->icon_w.win);
 
     return (tmp);
 }
@@ -818,10 +818,10 @@ void RemoveIconManager(tmp_win)
     XDeleteContext(dpy, tmp->icon, TwmContext);
     XDeleteContext(dpy, tmp->icon, ScreenContext);
     XDestroyWindow(dpy, tmp->icon);
-    XDeleteContext(dpy, tmp->w, IconManagerContext);
-    XDeleteContext(dpy, tmp->w, TwmContext);
-    XDeleteContext(dpy, tmp->w, ScreenContext);
-    XDestroyWindow(dpy, tmp->w);
+    XDeleteContext(dpy, tmp->w.win, IconManagerContext);
+    XDeleteContext(dpy, tmp->w.win, TwmContext);
+    XDeleteContext(dpy, tmp->w.win, ScreenContext);
+    XDestroyWindow(dpy, tmp->w.win);
     ip->count -= 1;
 
 #ifdef NEVER /* can't do this, else we lose the button entirely! */
@@ -837,7 +837,7 @@ void RemoveIconManager(tmp_win)
     {
 	/* djhjr - 9/21/99 */
 	if (ip->twm_win->icon)
-		XUnmapWindow(dpy, ip->twm_win->icon_w);
+		XUnmapWindow(dpy, ip->twm_win->icon_w.win);
 	else
 
 	XUnmapWindow(dpy, ip->twm_win->frame);
@@ -890,10 +890,10 @@ void DrawIconManagerBorder(tmp, fill)
 	if (tmp->active && Scr->Highlight)
 */
 	if (tmp->active && Scr->IconMgrHighlight)
-	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
+	    Draw3DBorder (tmp->w.win, 0, 0, tmp->width, tmp->height, shadow_width,
 				tmp->cp, on, fill, False);
 	else
-	    Draw3DBorder (tmp->w, 0, 0, tmp->width, tmp->height, shadow_width,
+	    Draw3DBorder (tmp->w.win, 0, 0, tmp->width, tmp->height, shadow_width,
 				tmp->cp, off, fill, False);
     }
     else {
@@ -901,7 +901,7 @@ void DrawIconManagerBorder(tmp, fill)
 	XSetForeground(dpy, Scr->NormalGC, tmp->fore);
 */
 	XSetForeground(dpy, Scr->NormalGC, tmp->cp.fore);
-	    XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 2, 2,
+	    XDrawRectangle(dpy, tmp->w.win, Scr->NormalGC, 2, 2,
 		tmp->width-5, tmp->height-5);
 
 /* djhjr - 1/27/98
@@ -915,9 +915,9 @@ void DrawIconManagerBorder(tmp, fill)
 */
 	    XSetForeground(dpy, Scr->NormalGC, tmp->cp.back);
 
-	XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 0, 0,
+	XDrawRectangle(dpy, tmp->w.win, Scr->NormalGC, 0, 0,
 	    tmp->width-1, tmp->height-1);
-	XDrawRectangle(dpy, tmp->w, Scr->NormalGC, 1, 1,
+	XDrawRectangle(dpy, tmp->w.win, Scr->NormalGC, 1, 1,
 	    tmp->width-3, tmp->height-3);
     }
 }
@@ -1015,7 +1015,7 @@ void PackIconManager(ip)
 	if (tmp->x != new_x || tmp->y != new_y ||
 	    tmp->width != wwidth || tmp->height != wheight)
 	{
-	    XMoveResizeWindow(dpy, tmp->w, new_x, new_y, wwidth, wheight);
+	    XMoveResizeWindow(dpy, tmp->w.win, new_x, new_y, wwidth, wheight);
 
 	    tmp->row = row-1;
 	    tmp->col = col;

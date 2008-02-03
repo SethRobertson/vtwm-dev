@@ -59,7 +59,8 @@ extern void		GetColor();
 extern Cursor	NoCursor();
 
 extern Image *GetImage ();
-extern void Draw3DBorder();
+extern void Draw3DBorder (Drawable w, int x, int y, int width, int height,
+			int bw, ColorPair cp, int state, int fill, int forcebw);
 extern void GetShadeColors();
 extern void PaintBorders();
 extern void PaintIcon();
@@ -73,11 +74,11 @@ extern void GetFont();
 
 extern int MyFont_TextWidth();
 
-extern void MyFont_DrawImageString (Display *dpy, Drawable d, MyFont *font,
+extern void MyFont_DrawImageString (Display *dpy, MyWindow *win, MyFont *font,
 					ColorPair *col,
 					int x, int y, char * string, int len);
 
-extern void MyFont_DrawString (Display *dpy, Drawable d, MyFont *font,
+extern void MyFont_DrawString (Display *dpy, MyWindow *win, MyFont *font,
 					ColorPair *col,
 					int x, int y, char * string, int len);
 

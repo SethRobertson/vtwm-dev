@@ -102,8 +102,8 @@ typedef struct ScreenInfo
     TwmWindow TwmRoot;		/* the head of the twm window list */
 
     Window Root;		/* the root window */
-    Window SizeWindow;		/* the resize dimensions window */
-    Window InfoWindow;		/* the information window */
+    MyWindow SizeWindow;	/* the resize dimensions window */
+    MyWindow InfoWindow;	/* the information window */
     Window VirtualDesktopDisplayOuter; /* wrapper for display of the virtual desktop */
     Window VirtualDesktopDisplay; /* display of the virtual desktop */
     Window VirtualDesktopDScreen; /* display of the real screen on the vd */

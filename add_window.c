@@ -766,7 +766,7 @@ IconMgr *iconp;
 		valuemask |= CWBackingStore;
 	}
 
-	tmp_win->title_w = XCreateWindow (dpy, tmp_win->frame,
+	tmp_win->title_w.win = XCreateWindow (dpy, tmp_win->frame,
 /* djhjr - 4/19/96
 					  -tmp_win->frame_bw,
 					  -tmp_win->frame_bw,
@@ -783,7 +783,7 @@ IconMgr *iconp;
 					  &attributes);
     }
     else {
-	tmp_win->title_w = 0;
+	tmp_win->title_w.win = 0;
 	tmp_win->squeeze_info = NULL;
     }
 
@@ -809,12 +809,12 @@ IconMgr *iconp;
     else
 	tmp_win->gray = None;
 
-    if (tmp_win->title_w) {
+    if (tmp_win->title_w.win) {
 	CreateWindowTitlebarButtons (tmp_win);
 	ComputeTitleLocation (tmp_win);
-	XMoveWindow (dpy, tmp_win->title_w,
+	XMoveWindow (dpy, tmp_win->title_w.win,
 		     tmp_win->title_x, tmp_win->title_y);
-	XDefineCursor(dpy, tmp_win->title_w, Scr->TitleCursor);
+	XDefineCursor(dpy, tmp_win->title_w.win, Scr->TitleCursor);
     }
 
 	/* djhjr - 4/19/96 */
@@ -833,8 +833,8 @@ IconMgr *iconp;
     if (HasShape)
 	XShapeSelectInput (dpy, tmp_win->w, ShapeNotifyMask);
 
-    if (tmp_win->title_w) {
-	XMapWindow (dpy, tmp_win->title_w);
+    if (tmp_win->title_w.win) {
+	XMapWindow (dpy, tmp_win->title_w.win);
     }
 
     if (HasShape) {
@@ -878,7 +878,7 @@ IconMgr *iconp;
     /* wait until the window is iconified and the icon window is mapped
      * before creating the icon window
      */
-    tmp_win->icon_w = None;
+    tmp_win->icon_w.win = None;
 
     if (!tmp_win->iconmgr)
     {
@@ -898,8 +898,8 @@ IconMgr *iconp;
 	int i;
 	int nb = Scr->TBInfo.nleft + Scr->TBInfo.nright;
 
-	XSaveContext(dpy, tmp_win->title_w, TwmContext, (caddr_t) tmp_win);
-	XSaveContext(dpy, tmp_win->title_w, ScreenContext, (caddr_t) Scr);
+	XSaveContext(dpy, tmp_win->title_w.win, TwmContext, (caddr_t) tmp_win);
+	XSaveContext(dpy, tmp_win->title_w.win, ScreenContext, (caddr_t) Scr);
 	for (i = 0; i < nb; i++) {
 	    XSaveContext(dpy, tmp_win->titlebuttons[i].window, TwmContext,
 			 (caddr_t) tmp_win);
@@ -954,7 +954,7 @@ int x, y;
 
 	XMapWindow(dpy, tmp_win->frame);
 	XMapSubwindows(dpy, tmp_win->frame);
-	XMapSubwindows(dpy, tmp_win->title_w);
+	XMapSubwindows(dpy, tmp_win->title_w.win);
 
 	PaintBorderAndTitlebar(tmp_win);
 
@@ -1103,17 +1103,17 @@ int ask_user;
 	    height = Scr->SizeFont.height + SIZE_VINDENT * 2;
 
 * djhjr - 4/27/96
-	    XResizeWindow (dpy, Scr->SizeWindow, width + SIZE_HINDENT, height);
+	    XResizeWindow (dpy, Scr->SizeWindow.win, width + SIZE_HINDENT, height);
 *
-	    XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
+	    XResizeWindow (dpy, Scr->SizeWindow.win, Scr->SizeStringOffset +
 				Scr->SizeStringWidth, height);
 */
 
-	    XMapRaised(dpy, Scr->SizeWindow);
+	    XMapRaised(dpy, Scr->SizeWindow.win);
 	    InstallRootColormap();
 
 /* DisplayPosition overwrites it anyway... djhjr - 5/9/96
-	    MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
+	    MyFont_DrawImageString (dpy, &Scr->SizeWindow, &Scr->SizeFont,
 			      &Scr->DefaultC, SIZE_HINDENT,
 			      SIZE_VINDENT + Scr->SizeFont.ascent,
 			      tmp_win->name, namelen);
@@ -1138,7 +1138,7 @@ int ask_user;
 			/* djhjr - 11/15/01 */
 			if (door && !doorismapped)
 			{
-				XMapWindow(dpy, door->w);    
+				XMapWindow(dpy, door->w.win);    
 				RedoDoorName(tmp_win, door);
 				doorismapped = True;
 			}
@@ -1156,7 +1156,7 @@ int ask_user;
 		}
 
 /* DisplayPosition() overwrites it anyway... djhjr - 5/9/96
-	    MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
+	    MyFont_DrawImageString (dpy, &Scr->SizeWindow, &Scr->SizeFont,
 				&Scr->DefaultC, width, 
 				SIZE_VINDENT + Scr->SizeFont.ascent, ": ", 2);
 */
@@ -1267,9 +1267,9 @@ int ask_user;
 /* AddStartResize() overwrites it anyway... djhjr - 5/9/96
 		Scr->SizeStringOffset = width +
 		  MyFont_TextWidth(&Scr->SizeFont, ": ", 2);
-		XResizeWindow (dpy, Scr->SizeWindow, Scr->SizeStringOffset +
+		XResizeWindow (dpy, Scr->SizeWindow.win, Scr->SizeStringOffset +
 			       Scr->SizeStringWidth, height);
-		MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
+		MyFont_DrawImageString (dpy, &Scr->SizeWindow, &Scr->SizeFont,
 				  &Scr->DefaultC, width,
 				  SIZE_VINDENT + Scr->SizeFont.ascent,
 				  ": ", 2);
@@ -1286,7 +1286,7 @@ int ask_user;
 			/* djhjr - 11/15/01 */
 			if (door && !doorismapped)
 			{
-				XMapWindow(dpy, door->w);    
+				XMapWindow(dpy, door->w.win);    
 				RedoDoorName(tmp_win, door);
 				doorismapped = True;
 			}
@@ -1405,7 +1405,7 @@ Why?
 		/* erase the move outline */
 	    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
 
-	    XUnmapWindow(dpy, Scr->SizeWindow);
+	    XUnmapWindow(dpy, Scr->SizeWindow.win);
 	    UninstallRootColormap();
 	    XUngrabPointer(dpy, CurrentTime);
 
@@ -1689,20 +1689,20 @@ TwmWindow *tmp_win;
 	    break;
 
 	case C_ICON:
-	    if (tmp_win->icon_w)
+	    if (tmp_win->icon_w.win)
 /* djhjr - 9/10/03
-		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon_w, True,
+		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon_w.win, True,
 		    GrabModeAsync, GrabModeAsync);
 */
-		GrabModKeys(tmp_win->icon_w, tmp);
+		GrabModKeys(tmp_win->icon_w.win, tmp);
 
 	case C_TITLE:
-	    if (tmp_win->title_w)
+	    if (tmp_win->title_w.win)
 /* djhjr - 9/10/03
-		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w, True,
+		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w.win, True,
 		    GrabModeAsync, GrabModeAsync);
 */
-		GrabModKeys(tmp_win->title_w, tmp);
+		GrabModKeys(tmp_win->title_w.win, tmp);
 	    break;
 
 	case C_NAME:
@@ -1711,18 +1711,18 @@ TwmWindow *tmp_win;
 		GrabModeAsync, GrabModeAsync);
 */
 	    GrabModKeys(tmp_win->w, tmp);
-	    if (tmp_win->icon_w)
+	    if (tmp_win->icon_w.win)
 /* djhjr - 9/10/03
-		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon_w, True,
+		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->icon_w.win, True,
 		    GrabModeAsync, GrabModeAsync);
 */
-		GrabModKeys(tmp_win->icon_w, tmp);
-	    if (tmp_win->title_w)
+		GrabModKeys(tmp_win->icon_w.win, tmp);
+	    if (tmp_win->title_w.win)
 /* djhjr - 9/10/03
-		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w, True,
+		XGrabKey(dpy, tmp->keycode, tmp->mods, tmp_win->title_w.win, True,
 		    GrabModeAsync, GrabModeAsync);
 */
-		GrabModKeys(tmp_win->title_w, tmp);
+		GrabModKeys(tmp_win->title_w.win, tmp);
 	    break;
 
 	/*
@@ -1795,17 +1795,17 @@ static Window CreateHighlightWindow (tmp_win)
 	/* djhjr - 4/20/96 */
 	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
 	if (Scr->TitleBevelWidth > 0 && (Scr->Monochrome != COLOR))
-	    Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w, 
+	    Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w.win, 
 					(char *)black_bits, gray_width, gray_height);
 	else
-	    Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w, 
+	    Scr->hilitePm = XCreateBitmapFromData (dpy, tmp_win->title_w.win, 
 					gray_bits, gray_width, gray_height);
 
 	Scr->hilite_pm_width = gray_width;
 	Scr->hilite_pm_height = gray_height;
     }
     if (Scr->hilitePm) {
-	pm = XCreatePixmap (dpy, tmp_win->title_w,
+	pm = XCreatePixmap (dpy, tmp_win->title_w.win,
 			    Scr->hilite_pm_width, Scr->hilite_pm_height,
 			    Scr->d_depth);
 	gcv.foreground = tmp_win->title.fore;
@@ -1845,11 +1845,11 @@ static Window CreateHighlightWindow (tmp_win)
 			/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
 			if (Scr->TitleBevelWidth > 0 && (Scr->Monochrome != COLOR))
 				Scr->hilitePm->pixmap = XCreateBitmapFromData (dpy,
-						tmp_win->title_w, (char *)black_bits,
+						tmp_win->title_w.win, (char *)black_bits,
 						Scr->hilitePm->width, Scr->hilitePm->height);
 			else
 				Scr->hilitePm->pixmap = XCreateBitmapFromData (dpy,
-						tmp_win->title_w, gray_bits,
+						tmp_win->title_w.win, gray_bits,
 						Scr->hilitePm->width, Scr->hilitePm->height);
 		}
 	}
@@ -1877,7 +1877,7 @@ static Window CreateHighlightWindow (tmp_win)
 		}
 		else
 		{
-			pm = XCreatePixmap (dpy, tmp_win->title_w,
+			pm = XCreatePixmap (dpy, tmp_win->title_w.win,
 					Scr->hilitePm->width, Scr->hilitePm->height,
 					Scr->d_depth);
 
@@ -1921,14 +1921,14 @@ static Window CreateHighlightWindow (tmp_win)
 	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
     if (Scr->TitleBevelWidth > 0)
 /* djhjr - 4/25/96
-	w = XCreateWindow (dpy, tmp_win->title_w, 0, Scr->FramePadding + 2,
+	w = XCreateWindow (dpy, tmp_win->title_w.win, 0, Scr->FramePadding + 2,
 		       (unsigned int) Scr->TBInfo.width, (unsigned int) (h - 4),
 */
 /* djhjr - 4/1/98
-	w = XCreateWindow (dpy, tmp_win->title_w, 0, Scr->FramePadding + 3,
+	w = XCreateWindow (dpy, tmp_win->title_w.win, 0, Scr->FramePadding + 3,
 		       (unsigned int) Scr->TBInfo.width, (unsigned int) (h - 6),
 */
-	w = XCreateWindow (dpy, tmp_win->title_w, width, Scr->FramePadding + 4,
+	w = XCreateWindow (dpy, tmp_win->title_w.win, width, Scr->FramePadding + 4,
 		       ComputeHighlightWindowWidth(tmp_win), (unsigned int) (h - 8),
 
 		       (unsigned int) 0,
@@ -1937,16 +1937,16 @@ static Window CreateHighlightWindow (tmp_win)
 
     else
 /* djhjr - 4/1/98
-    w = XCreateWindow (dpy, tmp_win->title_w, 0, Scr->FramePadding,
+    w = XCreateWindow (dpy, tmp_win->title_w.win, 0, Scr->FramePadding,
 		       (unsigned int) Scr->TBInfo.width, (unsigned int) h,
 */
-	w = XCreateWindow (dpy, tmp_win->title_w, width, Scr->FramePadding + 2,
+	w = XCreateWindow (dpy, tmp_win->title_w.win, width, Scr->FramePadding + 2,
 		       ComputeHighlightWindowWidth(tmp_win), (unsigned int) (h - 4),
 		       (unsigned int) 0,
 		       Scr->d_depth, (unsigned int) CopyFromParent,
 		       Scr->d_visual, valuemask, &attributes);
 #else
-	w = XCreateWindow (dpy, tmp_win->title_w,
+	w = XCreateWindow (dpy, tmp_win->title_w.win,
 		       tmp_win->highlightx, Scr->FramePadding + 1,
 		       ComputeHighlightWindowWidth(tmp_win), (unsigned int) h,
 		       (unsigned int) 0,
@@ -2129,7 +2129,7 @@ static void CreateWindowTitlebarButtons (tmp_win)
 		    attributes.win_gravity = NorthWestGravity;
 		}
 
-		tbw->window = XCreateWindow (dpy, tmp_win->title_w, x, y, h, h,
+		tbw->window = XCreateWindow (dpy, tmp_win->title_w.win, x, y, h, h,
 					     (unsigned int) Scr->TBInfo.border,
 					     0, (unsigned int) CopyFromParent,
 					     (Visual *) CopyFromParent,
@@ -2144,7 +2144,7 @@ static void CreateWindowTitlebarButtons (tmp_win)
     tmp_win->hilite_w = (tmp_win->titlehighlight
 			 ? CreateHighlightWindow (tmp_win) : None);
 
-    XMapSubwindows(dpy, tmp_win->title_w);
+    XMapSubwindows(dpy, tmp_win->title_w.win);
 
 * djhjr - 4/25/96
     if (tmp_win->hilite_w)

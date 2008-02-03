@@ -45,7 +45,7 @@ typedef struct TwmDoor {
 
 	ColorPair colors;     /* fore and back */
 
-	Window w;             /* the x window for this */
+	MyWindow w;           /* the x window for this */
 	TwmWindow *twin;      /* the twmwindow for this */
 } TwmDoor;
 

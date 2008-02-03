@@ -38,7 +38,7 @@ typedef struct WList
     struct WList *prev;
     struct TwmWindow *twm;
     struct IconMgr *iconmgr;
-    Window w;
+    MyWindow w;
     Window icon;
     int x, y, width, height;
     int row, col;

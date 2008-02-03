@@ -161,7 +161,7 @@ int context;
     SetVirtualDesktopIncrs(tmp_win);	/* djhjr - 9/13/02 */
 
     if (context == C_VIRTUAL_WIN)
-	    ResizeWindow = tmp_win->VirtualDesktopDisplayWindow;
+	    ResizeWindow = tmp_win->VirtualDesktopDisplayWindow.win;
     else
 	    ResizeWindow = tmp_win->frame;
 
@@ -206,12 +206,12 @@ int context;
 
 /* use initialized size... djhjr - 5/9/96
 	Scr->SizeStringOffset = SIZE_HINDENT;
-    XResizeWindow (dpy, Scr->SizeWindow,
+    XResizeWindow (dpy, Scr->SizeWindow.win,
 		   Scr->SizeStringWidth + SIZE_HINDENT * 2,
 		   Scr->SizeFont.height + SIZE_VINDENT * 2);
 */
 
-    XMapRaised(dpy, Scr->SizeWindow);
+    XMapRaised(dpy, Scr->SizeWindow.win);
     if (!tmp_win->opaque_resize) InstallRootColormap();
     last_width = 0;
     last_height = 0;
@@ -280,12 +280,12 @@ int context;
 
 /* use initialized size... djhjr - 5/9/96
     Scr->SizeStringOffset = SIZE_HINDENT;
-    XResizeWindow (dpy, Scr->SizeWindow,
+    XResizeWindow (dpy, Scr->SizeWindow.win,
 		   Scr->SizeStringWidth + SIZE_HINDENT * 2,
 		   Scr->SizeFont.height + SIZE_VINDENT * 2);
 */
 
-    XMapRaised(dpy, Scr->SizeWindow);
+    XMapRaised(dpy, Scr->SizeWindow.win);
     if (!tmp_win->opaque_resize) InstallRootColormap();
     DisplaySize(tmp_win, origWidth, origHeight);
 
@@ -845,8 +845,8 @@ int height;
     sprintf (str, "%5d x %-5d", dwidth, dheight);
     i = strlen (str);
 
-    XRaiseWindow(dpy, Scr->SizeWindow);
-    MyFont_DrawImageString (dpy, Scr->SizeWindow, &Scr->SizeFont,
+    XRaiseWindow(dpy, Scr->SizeWindow.win);
+    MyFont_DrawImageString (dpy, &Scr->SizeWindow, &Scr->SizeFont,
 			  &Scr->DefaultC,
 
 /* djhjr - 5/9/96
@@ -866,7 +866,7 @@ int height;
 	/* I know, I know, but the above code overwrites it... djhjr - 5/9/96 */
 	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 	if (Scr->InfoBevelWidth > 0)
-	    Draw3DBorder(Scr->SizeWindow, 0, 0,
+	    Draw3DBorder(Scr->SizeWindow.win, 0, 0,
 				Scr->SizeStringWidth,
 
 /* djhjr - 4/29/98
@@ -900,7 +900,7 @@ EndResize()
 	    MoveOutline(Scr->VirtualDesktopDisplay, 0, 0, 0, 0, 0, 0);
     else
 	    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
-    XUnmapWindow(dpy, Scr->SizeWindow);
+    XUnmapWindow(dpy, Scr->SizeWindow.win);
 
     XFindContext(dpy, ResizeWindow, TwmContext, (caddr_t *)&tmp_win);
 
@@ -978,7 +978,7 @@ int context;
 	    MoveOutline(Scr->VirtualDesktopDisplay, 0, 0, 0, 0, 0, 0);
     else
 	    MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
-    XUnmapWindow(dpy, Scr->SizeWindow);
+    XUnmapWindow(dpy, Scr->SizeWindow.win);
 
     ConstrainSize (tmp_win, &dragWidth, &dragHeight);
 
@@ -1044,7 +1044,7 @@ TwmWindow *tmp_win;
 
     /* djhjr - 2/22/99 */
     MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
-    XUnmapWindow(dpy, Scr->SizeWindow);
+    XUnmapWindow(dpy, Scr->SizeWindow.win);
 
     ConstrainSize (tmp_win, &dragWidth, &dragHeight);
     AddingX = dragx;
@@ -1402,7 +1402,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     tmp_win->title_width = title_width;
     if (tmp_win->title_height) tmp_win->title_height = title_height;
 
-    if (tmp_win->title_w) {
+    if (tmp_win->title_w.win) {
 	if (bw != tmp_win->frame_bw) {
 	    xwc.border_width = bw;
 /* djhjr - 4/24/96
@@ -1415,7 +1415,7 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 	    xwcm |= (CWX | CWY | CWBorderWidth);
 	}
 
-	XConfigureWindow(dpy, tmp_win->title_w, xwcm, &xwc);
+	XConfigureWindow(dpy, tmp_win->title_w.win, xwcm, &xwc);
     }
 
 /* djhjr - 4/24/96
@@ -1700,16 +1700,16 @@ void SetFrameShape (tmp)
     /*
      * see if the titlebar needs to move
      */
-    if (tmp->title_w) {
+    if (tmp->title_w.win) {
 	int oldx = tmp->title_x, oldy = tmp->title_y;
 	ComputeTitleLocation (tmp);
 	if (oldx != tmp->title_x || oldy != tmp->title_y)
-	  XMoveWindow (dpy, tmp->title_w, tmp->title_x, tmp->title_y);
+	  XMoveWindow (dpy, tmp->title_w.win, tmp->title_x, tmp->title_y);
     }
 
     /*
      * The frame consists of the shape of the contents window offset by
-     * title_height or'ed with the shape of title_w (which is always
+     * title_height or'ed with the shape of title_w.win (which is always
      * rectangular).
      */
     if (tmp->wShaped) {
@@ -1723,11 +1723,11 @@ void SetFrameShape (tmp)
 			    tmp->frame_bw3D, tmp->title_height + tmp->frame_bw3D, tmp->w,
 
 			    ShapeBounding, ShapeSet);
-	if (tmp->title_w) {
+	if (tmp->title_w.win) {
 	    XShapeCombineShape (dpy, tmp->frame, ShapeBounding,
 				tmp->title_x + tmp->frame_bw,
 				tmp->title_y + tmp->frame_bw,
-				tmp->title_w, ShapeBounding,
+				tmp->title_w.win, ShapeBounding,
 				ShapeUnion);
 	}
     } else {
