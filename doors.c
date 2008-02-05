@@ -203,6 +203,15 @@ TwmDoor *tmp_door;
 					  tmp_door->colors.fore,
 					  tmp_door->colors.back);
 
+#ifdef TWM_USE_XFT
+	if (Scr->use_xft > 0) {
+	    tmp_door->w.xft = MyXftDrawCreate (dpy, tmp_door->w.win, Scr->d_visual,
+					  XDefaultColormap (dpy, Scr->screen));
+	    CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
+				tmp_door->colors.fore, &tmp_door->colors.xft);
+	}
+#endif
+
 /* reworked to limit the minimum size of a door - djhjr - 3/1/99
 	if ((tmp_door->x < 0) || (tmp_door->y < 0)) {
 		XSizeHints *hints = NULL;
@@ -358,6 +367,10 @@ TwmDoor *d;
 	XDeleteContext(dpy, d->twin->w, DoorContext); /* ??? */
 	XUnmapWindow(dpy, d->w.win);
 	XUnmapWindow(dpy, w);
+#ifdef TWM_USE_XFT
+	if (Scr->use_xft > 0)
+	    MyXftDrawDestroy (d->w.xft);
+#endif
 	XDestroyWindow(dpy, w);
 	free(d->class->res_class); /* djhjr - 2/25/99 */
 	XFree(d->class);

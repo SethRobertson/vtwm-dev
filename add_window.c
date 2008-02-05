@@ -671,6 +671,17 @@ IconMgr *iconp;
 		GetShadeColors (&tmp_win->border_tile);
     }
 
+#ifdef TWM_USE_XFT
+    if (Scr->use_xft > 0) {
+	CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
+			tmp_win->title.fore, &tmp_win->title.xft);
+	CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
+			tmp_win->iconc.fore, &tmp_win->iconc.xft);
+	CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
+			tmp_win->virtual.fore, &tmp_win->virtual.xft);
+    }
+#endif
+
     /* create windows */
 
 /* djhjr - 4/19/96
@@ -781,6 +792,12 @@ IconMgr *iconp;
 					  (unsigned int) CopyFromParent,
 					  Scr->d_visual, valuemask,
 					  &attributes);
+#ifdef TWM_USE_XFT
+	if (Scr->use_xft > 0) {
+	    tmp_win->title_w.xft = MyXftDrawCreate (dpy, tmp_win->title_w.win,
+				Scr->d_visual, XDefaultColormap (dpy, Scr->screen));
+	}
+#endif
     }
     else {
 	tmp_win->title_w.win = 0;

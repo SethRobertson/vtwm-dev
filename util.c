@@ -1187,8 +1187,7 @@ ColorPair *cp;
  *     locale is not set properly.
  */
 void
-GetFont(font)
-MyFont *font;
+GetFont (MyFont *font)
 {
     char **missing_charset_list_return;
     int missing_charset_count_return;
@@ -1201,6 +1200,80 @@ MyFont *font;
     int descent;
     int fnum;
     char *basename2, *basename3 = NULL;
+
+#ifdef TWM_USE_XFT
+
+    XFontStruct *xlfd;
+    Atom   atom;
+    char  *atom_name;
+    char  *deffontname;
+
+    if (Scr->use_xft > 0) {
+
+	if (font->xft != NULL) {
+	    XftFontClose (dpy, font->xft);
+	    font->xft = NULL;
+	}
+
+	/* test if core font: */
+	font_names = XListFontsWithInfo (dpy, font->name, 5, &fnum, &xlfd);
+	if (font_names != NULL) {
+	    for (i = 0; i < fnum; ++i)
+		if (XGetFontProperty (xlfd+i, XA_FONT, &atom) == True) {
+		    atom_name = XGetAtomName (dpy, atom);
+		    if (atom_name) {
+			font->xft = XftFontOpenXlfd (dpy, Scr->screen, atom_name);
+			XFree (atom_name);
+			break;
+		    }
+		}
+	    XFreeFontInfo (font_names, xlfd, fnum);
+	}
+
+	/* next, try Xft font: */
+	if (font->xft == NULL)
+	    font->xft = XftFontOpenName (dpy, Scr->screen, font->name);
+
+	/* fallback: */
+	if (font->xft == NULL) {
+	    if (Scr->DefaultFont.name != NULL)
+		deffontname = Scr->DefaultFont.name;
+	    else
+		deffontname = "fixed";
+
+	    font_names = XListFontsWithInfo (dpy, deffontname, 5, &fnum, &xlfd);
+	    if (font_names != NULL) {
+		for (i = 0; i < fnum; ++i)
+		    if (XGetFontProperty (xlfd+i, XA_FONT, &atom) == True) {
+			atom_name = XGetAtomName (dpy, atom);
+			if (atom_name) {
+			    font->xft = XftFontOpenXlfd (dpy, Scr->screen, atom_name);
+			    XFree (atom_name);
+			    break;
+			}
+		    }
+		XFreeFontInfo (font_names, xlfd, fnum);
+	    }
+
+	    if (font->xft == NULL)
+		font->xft = XftFontOpenName (dpy, Scr->screen, deffontname);
+
+	    if (font->xft == NULL) {
+	    fprintf (stderr, "%s:  unable to open fonts \"%s\" or \"%s\"\n",
+			ProgramName, font->name, deffontname);
+		exit(1);
+	    }
+	}
+
+	font->height = font->xft->ascent + font->xft->descent;
+	font->y = font->xft->ascent;
+	font->ascent = font->xft->ascent;
+	font->descent = font->xft->descent;
+
+	return;
+    }
+
+#endif /*TWM_USE_XFT*/
 
     if (use_fontset)
     {
@@ -1287,13 +1360,22 @@ MyFont *font;
 }
 
 int
-MyFont_TextWidth(font, string, len)
-    MyFont *font;
-    char *string;
-    int len;
+MyFont_TextWidth (MyFont *font, char *string, int len)
 {
     XRectangle ink_rect;
     XRectangle logical_rect;
+
+#ifdef TWM_USE_XFT
+    XGlyphInfo size;
+
+    if (Scr->use_xft > 0) {
+	if (use_fontset)
+	    XftTextExtentsUtf8 (dpy, font->xft, (XftChar8*)(string), len, &size);
+	else
+	    XftTextExtents8 (dpy, font->xft, (XftChar8*)(string), len, &size);
+	return size.width;
+    }
+#endif
 
     if (use_fontset) {
 	XmbTextExtents(font->fontset, string, len, &ink_rect, &logical_rect);
@@ -1306,6 +1388,19 @@ void
 MyFont_DrawImageString (Display *dpy, MyWindow *win, MyFont *font, ColorPair *col, 
                        int x, int y, char *string, int len)
 {
+#ifdef TWM_USE_XFT
+    if (Scr->use_xft > 0) {
+	if (win->xft) {
+	    XClearArea (dpy, XftDrawDrawable(win->xft), 0, 0, 0, 0, False);
+	    if (use_fontset)
+		XftDrawStringUtf8 (win->xft, &col->xft, font->xft, x, y, (XftChar8*)(string), len);
+	    else
+		XftDrawString8 (win->xft, &col->xft, font->xft, x, y, (XftChar8*)(string), len);
+	}
+	return;
+    }
+#endif
+
     Gcv.foreground = col->fore;
     Gcv.background = col->back;
     if (use_fontset) {
@@ -1322,6 +1417,18 @@ void
 MyFont_DrawString (Display *dpy, MyWindow *win, MyFont *font, ColorPair *col, 
                   int x, int y, char *string, int len)
 {
+#ifdef TWM_USE_XFT
+    if (Scr->use_xft > 0) {
+	if (win->xft) {
+	    if (use_fontset)
+		XftDrawStringUtf8 (win->xft, &col->xft, font->xft, x, y, (XftChar8*)(string), len);
+	    else
+		XftDrawString8 (win->xft, &col->xft, font->xft, x, y, (XftChar8*)(string), len);
+	}
+	return;
+    }
+#endif
+
     Gcv.foreground = col->fore;
     Gcv.background = col->back;
     if (use_fontset) {
@@ -3218,7 +3325,7 @@ TwmWindow *tmp_win;
 	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
     if (Scr->TitleBevelWidth > 0)
 	{
-	    MyFont_DrawString (dpy, &tmp_win->title_w, &Scr->TitleBarFont,
+	    MyFont_DrawImageString (dpy, &tmp_win->title_w, &Scr->TitleBarFont,
 		 &tmp_win->title,
 /* djhjr - 4/29/98
 		 Scr->TBInfo.titlex + en, Scr->TitleBarFont.y + 2, 
@@ -3232,7 +3339,7 @@ TwmWindow *tmp_win;
 	}
     else
 #endif
-        MyFont_DrawString (dpy, &tmp_win->title_w, &Scr->TitleBarFont,
+        MyFont_DrawImageString (dpy, &tmp_win->title_w, &Scr->TitleBarFont,
 		 &tmp_win->title, Scr->TBInfo.titlex, Scr->TitleBarFont.y,
 		 (a) ? a : tmp_win->name, cur_string_len);
 
@@ -3341,3 +3448,34 @@ TwmWindow *tmp_win;
 	return (tmp_win->rightx - tmp_win->highlightx - en);
 }
 
+
+#ifdef TWM_USE_XFT
+XftDraw *
+MyXftDrawCreate (Display *dpy, Drawable d, Visual *vis, Colormap  col)
+{
+    XftDraw * draw = XftDrawCreate (dpy, d, vis, col);
+    if (!draw)
+	fprintf (stderr, "%s: XftDrawCreate() failed.\n", ProgramName);
+    return draw;
+}
+
+void
+MyXftDrawDestroy (XftDraw *draw)
+{
+    if (draw)
+	XftDrawDestroy (draw);
+}
+
+void
+CopyPixelToXftColor (Colormap cmap, unsigned long pixel, XftColor *col)
+{
+    /* color already allocated, extract RGB values (for Xft rendering): */
+    XColor tmp;
+    tmp.pixel = col->pixel = pixel;
+    XQueryColor (dpy, cmap, &tmp);
+    col->color.red = tmp.red;
+    col->color.green = tmp.green;
+    col->color.blue = tmp.blue;
+    col->color.alpha = 65535;
+}
+#endif

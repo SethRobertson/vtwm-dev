@@ -46,6 +46,9 @@
 #ifdef NEVER /* stay X11R4 compatable; X11R5,6 doesn't seem to mind! */
 #include <X11/Xfuncs.h>
 #endif
+#ifdef TWM_USE_XFT
+#include <X11/Xft/Xft.h>
+#endif
 
 /*
  * This accomodates systems that simply cannot handle the
@@ -182,6 +185,9 @@ typedef struct MyFont
     char *name;			/* name of the font */
     XFontStruct *font;		/* font structure */
     XFontSet fontset;
+#ifdef TWM_USE_XFT
+    XftFont *xft;		/* Xft font structure for Window XID */
+#endif
     int height;			/* height of the font */
     int y;			/* Y coordinate to draw characters */
     int ascent;
@@ -191,13 +197,17 @@ typedef struct MyFont
 typedef struct MyWindow		/* MyFont/ColorPair text rendering */
 {
     Window win;			/* Window XID */
+#ifdef TWM_USE_XFT
+    XftDraw *xft;		/* Xft draw context for Window XID */
+#endif
 } MyWindow;
 
 typedef struct ColorPair
 {
     Pixel fore, back;
-
-    /* djhjr - 4/19/96 */
+#ifdef TWM_USE_XFT
+    XftColor xft;		/* Xft text colour for Window XID */
+#endif
     Pixel shadc, shadd;
 } ColorPair;
 

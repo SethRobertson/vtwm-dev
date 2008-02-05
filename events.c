@@ -1024,6 +1024,10 @@ HandlePropertyNotify()
 		    if (Tmp_win->icon_w.win != Tmp_win->wmhints->icon_window)
 			XUnmapWindow(dpy, Tmp_win->icon_w.win);
 		} else {
+#ifdef TWM_USE_XFT
+		    if (Scr->use_xft > 0)
+			MyXftDrawDestroy(Tmp_win->icon_w.xft);
+#endif
 		    XDestroyWindow(dpy, Tmp_win->icon_w.win);
 		}
 
@@ -1748,6 +1752,10 @@ HandleDestroyNotify()
 				ScreenContext);
 	    }
 	    }
+#ifdef TWM_USE_XFT
+	if (Scr->use_xft > 0)
+	    MyXftDrawDestroy (Tmp_win->title_w.xft);
+#endif
 	}
 
 	if (Scr->cmapInfo.cmaps == &Tmp_win->cmaps)
@@ -1776,10 +1784,18 @@ HandleDestroyNotify()
 
 	XDestroyWindow(dpy, Tmp_win->frame);
 	if (Tmp_win->icon_w.win && !Tmp_win->icon_not_ours) {
+#ifdef TWM_USE_XFT
+	    if (Scr->use_xft > 0)
+		MyXftDrawDestroy(Tmp_win->icon_w.xft);
+#endif
 	    XDestroyWindow(dpy, Tmp_win->icon_w.win);
 	    IconDown (Tmp_win);
 	}
 	if (Tmp_win->VirtualDesktopDisplayWindow.win) {
+#ifdef TWM_USE_XFT
+	    if (Scr->use_xft > 0)
+		MyXftDrawDestroy(Tmp_win->VirtualDesktopDisplayWindow.xft);
+#endif
 	    XDeleteContext(dpy, Tmp_win->VirtualDesktopDisplayWindow.win, VirtualContext);
 	    XDestroyWindow(dpy, Tmp_win->VirtualDesktopDisplayWindow.win);	/* 12 */
 	}

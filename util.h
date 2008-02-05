@@ -70,9 +70,10 @@ extern void InsertRGBColormap();
 extern void RemoveRGBColormap();
 extern void SetFocus();
 extern void LocateStandardColormaps();
-extern void GetFont();
 
-extern int MyFont_TextWidth();
+extern void GetFont (MyFont *font);
+
+extern int  MyFont_TextWidth (MyFont *font, char *string, int len);
 
 extern void MyFont_DrawImageString (Display *dpy, MyWindow *win, MyFont *font,
 					ColorPair *col,
@@ -106,6 +107,12 @@ extern Image *SetPixmapsPixmap();
 /* djhjr - 5/23/98 */
 #ifndef NO_XPM_SUPPORT
 extern int SetPixmapsBackground();
+#endif
+
+#ifdef TWM_USE_XFT
+extern XftDraw * MyXftDrawCreate (Display *dpy, Drawable d, Visual *vis, Colormap  col);
+extern void MyXftDrawDestroy (XftDraw *draw);
+extern void CopyPixelToXftColor (Colormap cmap, unsigned long pixel, XftColor *col);
 #endif
 
 extern int HotX, HotY;

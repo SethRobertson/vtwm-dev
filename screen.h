@@ -305,6 +305,11 @@ typedef struct ScreenInfo
     MyFont MenuTitleFont;   /* DSE -- for menu titles */
     MyFont InfoFont;        /* for the info window */
     MyFont DefaultFont;
+
+#ifdef TWM_USE_XFT
+    int use_xft;		/* >0 if using Xft fonts, otherwise X11 core fonts */
+#endif
+
     IconMgr iconmgr;		/* default icon manager */
     struct RootRegion *FirstIconRegion;	/* pointer to icon regions */
     struct RootRegion *LastIconRegion;	/* pointer to the last icon region */

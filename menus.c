@@ -572,9 +572,17 @@ int exposure;
 			Draw3DBorder (mr->w.win, Scr->MenuBevelWidth, y_offset + 1, mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight - 1, 1,
 				mi->highlight, off, True, False);
 
-			MyFont_DrawImageString (dpy, &mr->w, &Scr->MenuFont,
+			MyFont_DrawString (dpy, &mr->w, &Scr->MenuFont,
 					&mi->highlight, mi->x + Scr->MenuBevelWidth, text_y, mi->item, mi->strlen);
 
+#ifdef TWM_USE_XFT
+			/*
+			 * initialise NormalGC with color for XCopyPlane() later
+			 * ("non-TWM_USE_XFT" does it in MyFont_DrawString() already):
+			 */
+			if (Scr->use_xft > 0)
+			    FB(mi->highlight.fore, mi->highlight.back);
+#endif
 			gc = Scr->NormalGC;
 		}
 		else
@@ -593,7 +601,10 @@ int exposure;
 */
 				XFillRectangle (dpy, mr->w.win, Scr->NormalGC, Scr->MenuBevelWidth, y_offset + 1,
 					mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight - 1);
-
+#ifdef TWM_USE_XFT
+				if (Scr->use_xft > 0)
+				    FB(mi->normal.fore, mi->normal.back);
+#endif
 				gc = Scr->NormalGC;
 		    }
 			else
@@ -601,8 +612,8 @@ int exposure;
 				gc = Scr->MenuGC;
 			}
 
-			/* MyFont_DrawImageString() sets NormalGC: */
-			MyFont_DrawImageString (dpy, &mr->w, &Scr->MenuFont,
+			/* MyFont_DrawString() sets NormalGC: */
+			MyFont_DrawString (dpy, &mr->w, &Scr->MenuFont,
 					&mi->normal, mi->x + Scr->MenuBevelWidth, text_y, mi->item, mi->strlen);
 
 			if (mi->separated)
@@ -694,7 +705,7 @@ int exposure;
 		Draw3DBorder (mr->w.win, Scr->MenuBevelWidth, y_offset, mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight + 1, 1, 
 			mi->normal, off, True, False);
 
-		MyFont_DrawImageString (dpy, &mr->w, &Scr->MenuTitleFont,
+		MyFont_DrawString (dpy, &mr->w, &Scr->MenuTitleFont,
 				&mi->normal, mi->x, text_y, mi->item, mi->strlen);
 	}
 }
@@ -735,6 +746,14 @@ int exposure;
 				&mi->highlight, mi->x,
 				text_y, mi->item, mi->strlen);
 
+#ifdef TWM_USE_XFT
+			/*
+			 * initialise NormalGC with color for XCopyPlane() later
+			 * ("non-TWM_USE_XFT" does it in MyFont_DrawString() already):
+			 */
+			if (Scr->use_xft > 0)
+			    FB(mi->highlight.fore, mi->highlight.back);
+#endif
 			gc = Scr->NormalGC;
 		}
 		else
@@ -745,7 +764,10 @@ int exposure;
 
 				XFillRectangle(dpy, mr->w.win, Scr->NormalGC, 0, y_offset,
 					mr->width, Scr->EntryHeight);
-
+#ifdef TWM_USE_XFT
+				if (Scr->use_xft > 0)
+				    FB(mi->normal.fore, mi->normal.back);
+#endif
 				gc = Scr->NormalGC;
 			}
 			else
@@ -1480,6 +1502,11 @@ MenuRoot *mr;
 				   (Visual *) CopyFromParent,
 				   valuemask, &attributes);
 
+#ifdef TWM_USE_XFT
+	if (Scr->use_xft > 0)
+	    mr->w.xft = MyXftDrawCreate (dpy, mr->w.win, Scr->d_visual,
+				XDefaultColormap (dpy, Scr->screen));
+#endif
 
 	XSaveContext(dpy, mr->w.win, MenuContext, (caddr_t)mr);
 	XSaveContext(dpy, mr->w.win, ScreenContext, (caddr_t)Scr);
@@ -1574,6 +1601,14 @@ MenuRoot *mr;
 		GetShadeColors (&tmp->normal);
 	}
 
+#ifdef TWM_USE_XFT
+	if (Scr->use_xft > 0) {
+	    CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
+			    tmp->normal.fore, &tmp->normal.xft);
+	    CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
+			    tmp->highlight.fore, &tmp->highlight.xft);
+	}
+#endif
 
 	} /* end for(...) */
 
@@ -1669,6 +1704,14 @@ MenuRoot *mr;
 
 		f3 = save_fore;
 		b3 = save_back;
+#ifdef TWM_USE_XFT
+		if (Scr->use_xft > 0) {
+		    CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
+				cur->normal.fore, &cur->normal.xft);
+		    CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
+				cur->highlight.fore, &cur->highlight.xft);
+		}
+#endif
 	}
 	start = end;
 
@@ -5514,6 +5557,10 @@ void DestroyMenu (menu)
     MenuItem *item;
 
     if (menu->w.win) {
+#ifdef TWM_USE_XFT
+	if (Scr->use_xft > 0)
+	    MyXftDrawDestroy (menu->w.xft);
+#endif
 	XDeleteContext (dpy, menu->w.win, MenuContext);
 	XDeleteContext (dpy, menu->w.win, ScreenContext);
 	if (Scr->Shadow) XDestroyWindow (dpy, menu->shadow);

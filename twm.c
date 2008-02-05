@@ -169,6 +169,10 @@ main(argc, argv, environ)
     extern char *defTwmrc[];	/* djhjr - 10/7/02 */
     char *loc;
 
+#ifdef TWM_USE_XFT
+    int xft_available;
+#endif
+
     /* djhjr - 7/21/98 */
     SIGNAL_T QueueRestartVtwm();
     
@@ -294,6 +298,27 @@ main(argc, argv, environ)
 		 ProgramName);
 	exit (1);
     }
+
+#ifdef TWM_USE_XFT
+    if (True == XftDefaultHasRender(dpy)
+		&& FcTrue == XftInit(0)
+		&& FcTrue == XftInitFtLibrary()) {
+	xft_available = TRUE;
+	if (PrintErrorMessages) {
+	    i = XftGetVersion();
+	    fprintf (stderr, "%s: Xft subsystem (runtime version %d.%d.%d) initialised.\n",
+			ProgramName, i / 10000, (i / 100) % 100, i % 100);
+	}
+    } else {
+	xft_available = FALSE;
+	if (PrintErrorMessages) {
+	    i = XftVersion;
+	    fprintf (stderr,
+		"%s: FreeType/Xft(%d.%d.%d)/Xrender not available (using X11 core fonts).\n",
+		ProgramName, i / 10000, (i / 100) % 100, i % 100);
+	}
+    }
+#endif
 
     HasShape = XShapeQueryExtension (dpy, &ShapeEventBase, &ShapeErrorBase);
     TwmContext = XUniqueContext();
@@ -556,6 +581,13 @@ main(argc, argv, environ)
 		Scr->VirtualDesktopMaxWidth = 0;
 		Scr->VirtualDesktopMaxHeight = 0;
 	}
+
+#ifdef TWM_USE_XFT
+	if (xft_available == TRUE)
+	    Scr->use_xft = 0;  /* evtl. .vtwmrc sets this to '+1' */
+	else
+	    Scr->use_xft = -1; /* remains '-1' */
+#endif
 
 	InitVariables();
 	InitMenus();
@@ -876,6 +908,17 @@ main(argc, argv, environ)
 					 (unsigned int) CopyFromParent,
 					 (Visual *) CopyFromParent,
 					 valuemask, &attributes);
+
+#ifdef TWM_USE_XFT
+	if (Scr->use_xft > 0) {
+	    Scr->InfoWindow.xft = MyXftDrawCreate (dpy, Scr->InfoWindow.win, Scr->d_visual,
+					 XDefaultColormap (dpy, Scr->screen));
+	    Scr->SizeWindow.xft = MyXftDrawCreate (dpy, Scr->SizeWindow.win, Scr->d_visual,
+					 XDefaultColormap (dpy, Scr->screen));
+	    CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
+					 Scr->DefaultC.fore, &Scr->DefaultC.xft);
+	}
+#endif
 
 	XUngrabServer(dpy);
 
@@ -1239,6 +1282,19 @@ void InitVariables()
     Scr->DoorFont.name = DEFAULT_NICE_FONT;
     Scr->DefaultFont.font = NULL;
     Scr->DefaultFont.name = DEFAULT_FAST_FONT;
+
+#ifdef TWM_USE_XFT
+    Scr->TitleBarFont.xft = NULL;
+    Scr->MenuFont.xft = NULL;
+    Scr->MenuTitleFont.xft = NULL;
+    Scr->IconFont.xft = NULL;
+    Scr->SizeFont.xft = NULL;
+    Scr->InfoFont.xft = NULL;
+    Scr->IconManagerFont.xft = NULL;
+    Scr->VirtualFont.xft = NULL;
+    Scr->DoorFont.xft = NULL;
+    Scr->DefaultFont.xft = NULL;
+#endif
 
     /* no names unless they say so */
     Scr->NamesInVirtualDesktop = FALSE;

@@ -432,6 +432,11 @@ int def_x, def_y;
 	    tmp_win->icon_w_width, tmp_win->icon_w_height,
 	    Scr->IconBorderWidth, tmp_win->icon_border, tmp_win->iconc.back);
 	event_mask = ExposureMask;
+#ifdef TWM_USE_XFT
+	if (Scr->use_xft > 0)
+	    tmp_win->icon_w.xft = MyXftDrawCreate (dpy, tmp_win->icon_w.win,
+			Scr->d_visual, XDefaultColormap (dpy, Scr->screen));
+#endif
     }
 
     XSelectInput (dpy, tmp_win->icon_w.win,
@@ -883,6 +888,11 @@ int def_x, def_y;
 	    tmp_win->icon_w_width, tmp_win->icon_w_height,
 	    Scr->IconBorderWidth, tmp_win->icon_border, tmp_win->iconc.back);
 	event_mask = ExposureMask;
+#ifdef TWM_USE_XFT
+	if (Scr->use_xft > 0)
+	    tmp_win->icon_w.xft = MyXftDrawCreate (dpy, tmp_win->icon_w.win,
+			Scr->d_visual, XDefaultColormap (dpy, Scr->screen));
+#endif
     }
 
     XSelectInput (dpy, tmp_win->icon_w.win,

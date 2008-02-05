@@ -504,6 +504,10 @@ typedef struct _TwmKeyword {
 /* djhjr - 11/3/03 */
 #define kw0_RaiseOnStart		67
 
+#ifdef TWM_USE_XFT
+#define kw0_EnableXftFontRenderer	68
+#endif
+
 /* djhjr - 9/24/02
 #define kws_UsePPosition		1
 */
@@ -713,6 +717,9 @@ static TwmKeyword keytable[] = {
     { "doorforeground",		CLKEYWORD, kwcl_DoorForeground },
     { "doors",			DOORS, 0 },
     { "east",			DKEYWORD, D_EAST },
+#ifdef TWM_USE_XFT
+    { "enablexftfontrenderer",	KEYWORD, kw0_EnableXftFontRenderer },
+#endif
     { "enhancedexecresources", KEYWORD, kw0_EnhancedExecResources }, /* DSE */
     { "f",			FRAME, 0 },
     { "f.autopan",		FKEYWORD, F_AUTOPAN },/*RFB F_AUTOPAN*/
@@ -1501,6 +1508,13 @@ int do_single_keyword (keyword)
 	case kw0_RaiseOnStart:
 		Scr->RaiseOnStart = TRUE;
 		return 1;
+
+#ifdef TWM_USE_XFT
+	case kw0_EnableXftFontRenderer:
+		if (Scr->use_xft == 0) /*Xrender available?*/
+		    Scr->use_xft = +1;
+		return 1;
+#endif
     }
 
     return 0;

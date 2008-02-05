@@ -639,6 +639,14 @@ WList *AddIconManager(tmp_win)
 			    CopyFromParent, (unsigned int) CopyFromParent,
 			    (Visual *) CopyFromParent, valuemask, &attributes);
 
+#ifdef TWM_USE_XFT
+    if (Scr->use_xft > 0) {
+	tmp->w.xft = MyXftDrawCreate (dpy, tmp->w.win, Scr->d_visual,
+				XDefaultColormap (dpy, Scr->screen));
+	CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen), 
+				tmp->cp.fore, &tmp->cp.xft);
+    }
+#endif
 
     valuemask = (CWBackPixel | CWBorderPixel | CWEventMask | CWCursor);
 
@@ -818,6 +826,10 @@ void RemoveIconManager(tmp_win)
     XDeleteContext(dpy, tmp->icon, TwmContext);
     XDeleteContext(dpy, tmp->icon, ScreenContext);
     XDestroyWindow(dpy, tmp->icon);
+#ifdef TWM_USE_XFT
+    if (Scr->use_xft > 0)
+	MyXftDrawDestroy(tmp->w.xft);
+#endif
     XDeleteContext(dpy, tmp->w.win, IconManagerContext);
     XDeleteContext(dpy, tmp->w.win, TwmContext);
     XDeleteContext(dpy, tmp->w.win, ScreenContext);

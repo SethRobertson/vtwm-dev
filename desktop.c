@@ -668,6 +668,15 @@ TwmWindow *tmp_win;
 				dwindow, x, y, width, height, /* Stig */
 				1, border, background);
 
+#ifdef TWM_USE_XFT
+		if (Scr->use_xft > 0) {
+		    tmp_win->VirtualDesktopDisplayWindow.xft = MyXftDrawCreate (dpy,
+					tmp_win->VirtualDesktopDisplayWindow.win,
+					Scr->d_visual,
+					XDefaultColormap (dpy, Scr->screen));
+		}
+#endif
+
 /*RFBCURSOR*/XDefineCursor( dpy, tmp_win->VirtualDesktopDisplayWindow.win,
 /*RFBCURSOR*/Scr->DesktopCursor );
 

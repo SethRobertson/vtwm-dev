@@ -84,10 +84,14 @@ CreateGCs()
     gcm = 0;
     gcm |= GCForeground;    gcv.foreground = Scr->MenuC.fore;
     gcm |= GCBackground;    gcv.background = Scr->MenuC.back;
-    if (!use_fontset)
-    {
-	gcm |= GCFont;	    gcv.font =  Scr->MenuFont.font->fid;
-    }
+
+#ifdef TWM_USE_XFT
+    if (!(Scr->use_xft > 0))
+#endif
+	if (use_fontset != True)
+	{
+	    gcm |= GCFont;  gcv.font = Scr->MenuFont.font->fid;
+	}
 
     Scr->MenuGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
 
