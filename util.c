@@ -3478,3 +3478,35 @@ CopyPixelToXftColor (Colormap cmap, unsigned long pixel, XftColor *col)
     col->color.alpha = 65535;
 }
 #endif
+
+#ifdef TWM_USE_OPACITY
+void
+SetWindowOpacity (Window win, unsigned int opacity)
+{
+    /* rescale opacity from  0...255  to  0x00000000...0xffffffff */
+    opacity *= 0x01010101;
+    if (opacity == 0xffffffff)
+	XDeleteProperty (dpy, win, _XA_NET_WM_WINDOW_OPACITY);
+    else
+	XChangeProperty (dpy, win, _XA_NET_WM_WINDOW_OPACITY, XA_CARDINAL, 32,
+			PropModeReplace, (unsigned char*)(&opacity), 1);
+}
+
+void
+PropagateWindowOpacity (TwmWindow *tmp)
+{
+    Atom type;
+    int  fmt;
+    unsigned char *data;
+    unsigned long  n, left;
+
+    /* propagate 'opacity' property from 'client' to 'frame' window: */
+    if (XGetWindowProperty (dpy, tmp->w, _XA_NET_WM_WINDOW_OPACITY, 0, 1, False,
+				XA_CARDINAL, &type, &fmt, &n, &left, &data) == Success
+			&& data != NULL) {
+	XChangeProperty (dpy, tmp->frame, _XA_NET_WM_WINDOW_OPACITY,
+			XA_CARDINAL, 32, PropModeReplace, data, 1);
+	XFree ((void*)data);
+    }
+}
+#endif

@@ -114,6 +114,10 @@ extern XftDraw * MyXftDrawCreate (Display *dpy, Drawable d, Visual *vis, Colorma
 extern void MyXftDrawDestroy (XftDraw *draw);
 extern void CopyPixelToXftColor (Colormap cmap, unsigned long pixel, XftColor *col);
 #endif
+#ifdef TWM_USE_OPACITY	 /*opacity: 0 = transparent ... 255 = opaque*/
+extern void SetWindowOpacity (Window win, unsigned int opacity);
+extern void PropagateWindowOpacity (TwmWindow *tmp);
+#endif
 
 extern int HotX, HotY;
 

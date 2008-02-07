@@ -322,6 +322,11 @@ typedef struct ScreenInfo
 	/* djhjr - 12/26/98 */
 	char *BitmapFilePath;	/* local copy of the X database resource */
 
+#ifdef TWM_USE_OPACITY
+    int MenuOpacity;		/* make use of "_NET_WM_WINDOW_OPACITY" */
+    int IconOpacity;		/* property for twm menus, icons */
+#endif
+
     int SizeStringOffset;	/* x offset in size window for drawing */
     int SizeStringWidth;	/* minimum width of size window */
     int BorderWidth;		/* border width of twm windows */

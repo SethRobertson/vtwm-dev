@@ -572,4 +572,8 @@ extern Atom _XA_WM_DELETE_WINDOW;
 /* djhjr - 7/31/98 */
 extern Atom _XA_TWM_RESTART;
 
+#ifdef TWM_USE_OPACITY
+extern Atom _XA_NET_WM_WINDOW_OPACITY;
+#endif
+
 #endif /* _TWM_ */

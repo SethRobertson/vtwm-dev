@@ -590,6 +590,11 @@ typedef struct _TwmKeyword {
 #define kwn_PauseOnExit			34
 #define kwn_PauseOnQuit			35
 
+#ifdef TWM_USE_OPACITY
+#define kwn_MenuOpacity			36
+#define kwn_IconOpacity			37
+#endif
+
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
 #define kwcl_BorderTileForeground	3
@@ -902,6 +907,9 @@ static TwmKeyword keytable[] = {
     { "iconmanagers",		ICONMGRS, 0 },
     { "iconmanagershow",	ICONMGR_SHOW, 0 },
     { "iconmgr",		ICONMGR, 0 },
+#ifdef TWM_USE_OPACITY
+    { "iconopacity",		NKEYWORD, kwn_IconOpacity },
+#endif
     { "iconregion",		ICON_REGION, 0 },
     { "icons",			ICONS, 0 },
 
@@ -935,6 +943,9 @@ static TwmKeyword keytable[] = {
     /* djhjr - 10/30/02 */
     { "menuiconpixmap",		MENUICONMAP, 0 },
 
+#ifdef TWM_USE_OPACITY
+    { "menuopacity",		NKEYWORD, kwn_MenuOpacity },
+#endif
 	/* djhjr - 5/22/00 */
     { "menuscrollborderwidth",	NKEYWORD, kwn_MenuScrollBorderWidth },
     { "menuscrolljump",		NKEYWORD, kwn_MenuScrollJump },
@@ -1841,6 +1852,15 @@ int do_number_keyword (keyword, num)
 	case kwn_PauseOnQuit:
 		if (Scr->FirstTime) Scr->PauseOnQuit = num;
 		return 1;
+
+#ifdef TWM_USE_OPACITY
+	case kwn_MenuOpacity: /* clamp into range: 0 = transparent ... 255 = opaque */
+		if (Scr->FirstTime) Scr->MenuOpacity = (num > 255 ? 255 : (num < 0 ? 0 : num));
+		return 1;
+	case kwn_IconOpacity:
+		if (Scr->FirstTime) Scr->IconOpacity = (num > 255 ? 255 : (num < 0 ? 0 : num));
+		return 1;
+#endif
     }
 
     return 0;

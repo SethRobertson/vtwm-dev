@@ -1512,6 +1512,9 @@ MenuRoot *mr;
 	    mr->w.xft = MyXftDrawCreate (dpy, mr->w.win, Scr->d_visual,
 				XDefaultColormap (dpy, Scr->screen));
 #endif
+#ifdef TWM_USE_OPACITY
+	SetWindowOpacity (mr->w.win, Scr->MenuOpacity);
+#endif
 
 	XSaveContext(dpy, mr->w.win, MenuContext, (caddr_t)mr);
 	XSaveContext(dpy, mr->w.win, ScreenContext, (caddr_t)Scr);

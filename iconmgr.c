@@ -215,6 +215,10 @@ void CreateIconManagers()
 	p->twm_win = AddWindow(p->w, TRUE, p);
 
 	SetMapStateProp (p->twm_win, WithdrawnState);
+
+#if defined TWM_USE_OPACITY  &&  1 /* "iconmanager" windows get IconOpacity */
+	SetWindowOpacity (p->twm_win->frame, Scr->IconOpacity);
+#endif
     }
     for (p = &Scr->iconmgr; p != NULL; p = p->next)
     {

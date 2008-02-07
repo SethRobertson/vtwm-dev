@@ -39,6 +39,9 @@ EXTRA_LIBRARIES += $(XFTLIB)
 XCOMM To include font height dependent text layout spacing, uncomment this
 XCOMM TWM_USE_SPACING = -DTWM_USE_SPACING
 
+XCOMM To include _NET_WM_WINDOW_OPACITY client windows property support, uncomment this
+XCOMM TWM_USE_OPACITY = -DTWM_USE_OPACITY
+
 XCOMM To omit m4 pre-processing of resource files, uncomment this
 XCOMM    NO_M4_SUPPORT = -DNO_M4_SUPPORT
 
@@ -97,7 +100,7 @@ XCOMM ========= Editing below here should not be necessary ==========
    EXTRA_INCLUDES = $(XPMINC) $(REGEXINC) $(SOUNDINC) $(XFTINCLUDES)
           DEFINES = $(SIGNAL_DEFINES) $(NO_XPM_SUPPORT) $(NO_REGEX_SUPPORT) \
                     $(NO_SOUND_SUPPORT) $(NO_M4_SUPPORT) \
-		    $(TWM_USE_XFT) $(TWM_USE_SPACING)
+		    $(TWM_USE_XFT) $(TWM_USE_SPACING) $(TWM_USE_OPACITY)
 
              SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c \
                     twm.c sound.c parse.c menus.c events.c resize.c util.c \

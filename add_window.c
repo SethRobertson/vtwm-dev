@@ -758,6 +758,9 @@ IconMgr *iconp;
 				    Scr->d_depth,
 				    (unsigned int) CopyFromParent,
 				    Scr->d_visual, valuemask, &attributes);
+#ifdef TWM_USE_OPACITY
+    PropagateWindowOpacity (tmp_win);
+#endif
 
     if (tmp_win->title_height)
     {

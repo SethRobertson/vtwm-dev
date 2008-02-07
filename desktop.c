@@ -454,6 +454,10 @@ void CreateDesktopDisplay()
 	}
 #endif /* ORIGINAL_PIXMAPS */
 
+#if defined TWM_USE_OPACITY  &&  1 /* "virtualdesktop" window gets MenuOpacity */
+	SetWindowOpacity (Scr->VirtualDesktopDisplayOuter, Scr->MenuOpacity);
+#endif
+
 	/* declare our interest */
 	XSelectInput(dpy, Scr->VirtualDesktopDisplay, ButtonPressMask | ButtonReleaseMask |
 		     KeyPressMask | KeyReleaseMask | ExposureMask);

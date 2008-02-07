@@ -1000,6 +1000,13 @@ This variable specifies a list of windows that should appear in the icon
 manager.  When used in conjunction with the \fBIconManagerDontShow\fP
 variable, only the windows in this list will be shown in the icon manager.
 By default, all windows are shown except those in \fBIconManagerDontShow\fP.
+.IP "\fBIconOpacity\fP \fIvalue\fP
+This integer \fIvalue\fP (in range 0...255 corresponding to transparent...opaque)
+is used to set the _NET_WM_WINDOW_OPACITY property
+for the iconmanager and icons windows accordingly
+(allowing window semitransparency by e.g. \fIxcompmgr\fP by FreeDesktop.org
+and the Xorg X server Xcomposite extension).
+Default value is 255.
 .IP "\fBIconRegion\fP \fIgeomstr\fP \fIvgrav hgrav hgrid vgrid\fP"
 This variable specifies an area on the root window in which icons are placed
 if no specific icon location is provided by the client.  The \fIgeomstr\fP
@@ -1107,6 +1114,13 @@ The default is \fI"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"\fP.
 This variable specifies the foreground color used for menus, and can only be
 specified inside of a \fBColor\fP or \fBMonochrome\fP list.  The default is
 \&\fI"gray85"\fP.
+.IP "\fBMenuOpacity\fP \fIvalue\fP
+This integer \fIvalue\fP (in range 0...255 corresponding to transparent...opaque)
+is used to set the _NET_WM_WINDOW_OPACITY property
+for the vtwm menu-, info-, virtual desktop and door windows accordingly
+(allowing window semitransparency by e.g. \fIxcompmgr\fP by FreeDesktop.org
+and the Xorg X server Xcomposite extension).
+Default value is 255.
 .IP "\fBMenuScrollBorderWidth\fP \fIpixels\fP" 8
 When the contents of a menu would make it taller than the display, moving
 the pointer within \fIpixels\fP of the top or bottom of the menu causes it

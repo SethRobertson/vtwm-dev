@@ -428,6 +428,9 @@ int def_x, def_y;
 	    tmp_win->icon_w.xft = MyXftDrawCreate (dpy, tmp_win->icon_w.win,
 			Scr->d_visual, XDefaultColormap (dpy, Scr->screen));
 #endif
+#ifdef TWM_USE_OPACITY
+	SetWindowOpacity (tmp_win->icon_w.win, Scr->IconOpacity);
+#endif
     }
 
     XSelectInput (dpy, tmp_win->icon_w.win,
@@ -880,6 +883,9 @@ int def_x, def_y;
 	if (Scr->use_xft > 0)
 	    tmp_win->icon_w.xft = MyXftDrawCreate (dpy, tmp_win->icon_w.win,
 			Scr->d_visual, XDefaultColormap (dpy, Scr->screen));
+#endif
+#ifdef TWM_USE_OPACITY
+	SetWindowOpacity (tmp_win->icon_w.win, Scr->IconOpacity);
 #endif
     }
 

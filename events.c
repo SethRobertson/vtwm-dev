@@ -1159,6 +1159,18 @@ HandlePropertyNotify()
 	    FetchWmProtocols (Tmp_win);
 	    break;
 	}
+#ifdef TWM_USE_OPACITY
+	else if ((Event.xproperty.atom == _XA_NET_WM_WINDOW_OPACITY)
+			&& Event.xproperty.window == Tmp_win->w)
+	    switch (Event.xproperty.state) {
+	    case PropertyNewValue:
+		PropagateWindowOpacity (Tmp_win);
+		break;
+	    case PropertyDelete:
+		XDeleteProperty (dpy, Tmp_win->frame, _XA_NET_WM_WINDOW_OPACITY);
+		break;
+	    }
+#endif
 	break;
 	}
 }

@@ -211,6 +211,9 @@ TwmDoor *tmp_door;
 				tmp_door->colors.fore, &tmp_door->colors.xft);
 	}
 #endif
+#if defined TWM_USE_OPACITY  &&  1 /* "door" windows get MenuOpacity */
+	SetWindowOpacity (w, Scr->MenuOpacity);
+#endif
 
 /* reworked to limit the minimum size of a door - djhjr - 3/1/99
 	if ((tmp_door->x < 0) || (tmp_door->y < 0)) {

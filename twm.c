@@ -919,6 +919,9 @@ main(argc, argv, environ)
 					 Scr->DefaultC.fore, &Scr->DefaultC.xft);
 	}
 #endif
+#if defined TWM_USE_OPACITY  &&  1 /* "infowindows" get MenuOpacity */
+	SetWindowOpacity (Scr->InfoWindow.win, Scr->MenuOpacity);
+#endif
 
 	XUngrabServer(dpy);
 
@@ -1130,6 +1133,11 @@ void InitVariables()
     Scr->UnknownHeight = 0;
 #else
     Scr->unknownName = NULL;
+#endif
+
+#ifdef TWM_USE_OPACITY
+    Scr->MenuOpacity = 255;		/* 0 = transparent ... 255 = opaque */
+    Scr->IconOpacity = 255;
 #endif
 
     Scr->NumAutoRaises = 0;
@@ -1619,6 +1627,10 @@ Atom _XA_WM_DELETE_WINDOW;
 /* djhjr - 7/31/98 */
 Atom _XA_TWM_RESTART;
 
+#ifdef TWM_USE_OPACITY
+Atom _XA_NET_WM_WINDOW_OPACITY;
+#endif
+
 void InternUsefulAtoms ()
 {
     /*
@@ -1635,4 +1647,8 @@ void InternUsefulAtoms ()
 
     /* djhjr - 7/31/98 */
     _XA_TWM_RESTART = XInternAtom (dpy, "_TWM_RESTART", False);
+
+#ifdef TWM_USE_OPACITY
+    _XA_NET_WM_WINDOW_OPACITY = XInternAtom (dpy, "_NET_WM_WINDOW_OPACITY", False);
+#endif
 }
