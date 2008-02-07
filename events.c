@@ -1200,27 +1200,22 @@ void RedoIconName()
 	Tmp_win->icon_w_width = MyFont_TextWidth(&Scr->IconFont,
 			Tmp_win->icon_name, strlen(Tmp_win->icon_name));
 
-/* djhjr - 6/11/96
-	Tmp_win->icon_w_width += 6;
-	if (Tmp_win->icon_w_width < Tmp_win->icon_width)
-	{
-	Tmp_win->icon_x = (Tmp_win->icon_width - Tmp_win->icon_w_width)/2;
-	Tmp_win->icon_x += 3;
-	Tmp_win->icon_w_width = Tmp_win->icon_width;
-	}
-	else
-	{
-	Tmp_win->icon_x = 3;
-	}
-*/
+#ifdef TWM_USE_SPACING
+    Tmp_win->icon_w_width += Scr->IconFont.height; /*approx. '1ex' on both sides*/
+#else
     Tmp_win->icon_w_width += 8;
+#endif
     if (Tmp_win->icon_w_width < Tmp_win->icon_width + 8)
     {
 		Tmp_win->icon_x = (((Tmp_win->icon_width + 8) - Tmp_win->icon_w_width)/2) + 4;
 		Tmp_win->icon_w_width = Tmp_win->icon_width + 8;
     }
     else
+#ifdef TWM_USE_SPACING
+		Tmp_win->icon_x = Scr->IconFont.height/2;
+#else
 		Tmp_win->icon_x = 4;
+#endif
 
 	if (Tmp_win->icon_w_width == Tmp_win->icon_width)
 	x = 0;
@@ -1232,12 +1227,28 @@ void RedoIconName()
 */
 	y = 4;
 
-/* djhjr - 6/11/96
-	Tmp_win->icon_w_height = Tmp_win->icon_height + Scr->IconFont.height + 4;
-	Tmp_win->icon_y = Tmp_win->icon_height + Scr->IconFont.height;
-*/
+#ifdef TWM_USE_SPACING
+	/* icon label height := 1.44 times font height: */
+	Tmp_win->icon_w_height = Tmp_win->icon_height + 144*Scr->IconFont.height/100;
+	Tmp_win->icon_y = Tmp_win->icon_height + Scr->IconFont.y + 44*Scr->IconFont.height/200;
+	Tmp_win->icon_w_height += y;
+	Tmp_win->icon_y += y;
+#else
 	Tmp_win->icon_w_height = Tmp_win->icon_height + Scr->IconFont.height + 8;
 	Tmp_win->icon_y = Tmp_win->icon_height + Scr->IconFont.height + 2;
+#endif
+
+	if (Scr->IconBevelWidth > 0)
+	{
+		Tmp_win->icon_w_width += 2 * Scr->IconBevelWidth;
+		Tmp_win->icon_w_height += 2 * Scr->IconBevelWidth;
+
+		Tmp_win->icon_x += Scr->IconBevelWidth;
+		Tmp_win->icon_y += Scr->IconBevelWidth;
+
+		x += Scr->IconBevelWidth;
+		y += Scr->IconBevelWidth;
+	}
 
 	XResizeWindow(dpy, Tmp_win->icon_w.win, Tmp_win->icon_w_width,
 	Tmp_win->icon_w_height);
@@ -1517,33 +1528,35 @@ HandleExpose()
 	int i, k;
 	int height;
 
-	/* djhjr - 5/10/96 */
 	XGetGeometry (dpy, Scr->InfoWindow.win, &JunkRoot, &JunkX, &JunkY,
 				&JunkWidth, &JunkHeight, &JunkBW, &JunkDepth);
 
+#ifdef TWM_USE_SPACING
+	height = 120*Scr->InfoFont.height/100; /*baselineskip 1.2*/
+	k = Scr->InfoFont.height - Scr->InfoFont.y;
+#else
 	height = Scr->InfoFont.height+2;
+#endif
 	for (i = 0; i < InfoLines; i++)
 	{
-		/* djhjr - 5/10/96 */
 		j = strlen(Info[i]);
 
-		/* djhjr - 4/29/98 */
+#ifndef TWM_USE_SPACING
 		k = 5;
 		/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 		if (!i && Scr->BorderBevelWidth > 0) k += Scr->InfoBevelWidth;
-
+#endif
 	    MyFont_DrawString(dpy, &Scr->InfoWindow, &Scr->InfoFont,
 		&Scr->DefaultC,
-/* centers the lines... djhjr - 5/10/96
-		10,
-*/
+#if defined TWM_USE_SPACING && 0
+		Scr->InfoFont.height/2,
+#else
+		/* centers the lines... djhjr - 5/10/96 */
 		(JunkWidth - MyFont_TextWidth(&Scr->InfoFont, Info[i], j)) / 2,
-
-		/* 'k' was a hard-coded '5' - djhjr - 4/29/98 */
+#endif
 		(i*height) + Scr->InfoFont.y + k, Info[i], j);
 	}
 
-	/* djhjr - 5/9/96 */
 	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 	if (Scr->InfoBevelWidth > 0)
 	    Draw3DBorder(Scr->InfoWindow.win, 0, 0, JunkWidth, JunkHeight,
@@ -1671,13 +1684,28 @@ HandleExpose()
 			    name = tmp_win->icon_name;
 		    else if (tmp_win->name)
 			    name = tmp_win->name;
-		    if (name)
+		    if (name) {
+#ifdef TWM_USE_SPACING
+			    XGetGeometry (dpy,
+					tmp_win->VirtualDesktopDisplayWindow.win,
+					&JunkRoot, &JunkX, &JunkY,
+					&JunkWidth, &JunkHeight,
+					&JunkBW, &JunkDepth);
+			    JunkX = Scr->VirtualFont.ascent/6;
+			    JunkY = (JunkHeight > Scr->VirtualFont.height
+				? Scr->VirtualFont.y
+				: 2*(Scr->VirtualFont.y+JunkHeight)/5);
+#else
+			    JunkX = 0;
+			    JunkY = Scr->VirtualFont.height;
+#endif
 			    MyFont_DrawImageString (dpy,
 					     &tmp_win->VirtualDesktopDisplayWindow,
 					     &Scr->VirtualFont,
 					     &tmp_win->virtual,
-					     0, Scr->VirtualFont.height,
+					     JunkX, JunkY,
 					     name, strlen(name));
+		    }
 	    }
 	}
 }

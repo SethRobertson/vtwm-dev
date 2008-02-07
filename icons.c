@@ -356,40 +356,31 @@ int def_x, def_y;
     tmp_win->icon_w_width = MyFont_TextWidth(&Scr->IconFont,
 	tmp_win->icon_name, strlen(tmp_win->icon_name));
 
-/* djhjr - 6/11/96
-    tmp_win->icon_w_width += 6;
-    if (tmp_win->icon_w_width < tmp_win->icon_width)
-    {
-		tmp_win->icon_x = (tmp_win->icon_width - tmp_win->icon_w_width)/2;
-		tmp_win->icon_x += 3;
-		tmp_win->icon_w_width = tmp_win->icon_width;
-    }
-    else
-	{
-		tmp_win->icon_x = 3;
-	}
-*/
+#ifdef TWM_USE_SPACING
+    tmp_win->icon_w_width += Scr->IconFont.height; /*approx. '1ex' on both sides*/
+#else
     tmp_win->icon_w_width += 8;
+#endif
     if (tmp_win->icon_w_width < tmp_win->icon_width + 8)
     {
 		tmp_win->icon_x = (((tmp_win->icon_width + 8) - tmp_win->icon_w_width)/2) + 4;
 		tmp_win->icon_w_width = tmp_win->icon_width + 8;
     }
     else
+#ifdef TWM_USE_SPACING
+		tmp_win->icon_x = Scr->IconFont.height/2;
+#else
 		tmp_win->icon_x = 4;
+#endif
 
-/* djhjr - 6/11/96
-    tmp_win->icon_y = tmp_win->icon_height + Scr->IconFont.height;
-*/
-    tmp_win->icon_y = tmp_win->icon_height + Scr->IconFont.height + 2;
-
-/* djhjr - 4/27/96
-    tmp_win->icon_w_height = tmp_win->icon_height + Scr->IconFont.height + 4;
-*/
-/* djhjr - 6/11/96
-    tmp_win->icon_w_height = tmp_win->icon_height + Scr->IconFont.height + 6;
-*/
+#ifdef TWM_USE_SPACING
+    /* icon label height := 1.44 times font height: */
+    tmp_win->icon_w_height = tmp_win->icon_height + 144*Scr->IconFont.height/100;
+    tmp_win->icon_y = tmp_win->icon_height + Scr->IconFont.y + 44*Scr->IconFont.height/200;
+#else
     tmp_win->icon_w_height = tmp_win->icon_height + Scr->IconFont.height + 8;
+    tmp_win->icon_y = tmp_win->icon_height + Scr->IconFont.height + 2;
+#endif
 
     event_mask = 0;
     if (tmp_win->wmhints && tmp_win->wmhints->flags & IconWindowHint)
@@ -453,6 +444,12 @@ int def_x, def_y;
 	y = 0;
 */
 	y = 4;
+
+#ifdef TWM_USE_SPACING
+	tmp_win->icon_w_height += y;
+	tmp_win->icon_y += y;
+	XResizeWindow (dpy, tmp_win->icon_w, tmp_win->icon_w_width, tmp_win->icon_w_height);
+#endif
 
 	if (tmp_win->icon_w_width == tmp_win->icon_width)
 	    x = 0;
@@ -812,40 +809,31 @@ int def_x, def_y;
     tmp_win->icon_w_width = MyFont_TextWidth(&Scr->IconFont,
 				       tmp_win->icon_name, strlen(tmp_win->icon_name));
 
-/* djhjr - 6/11/96
-    tmp_win->icon_w_width += 6;
-    if (tmp_win->icon_w_width < tmp_win->icon_width)
-    {
-		tmp_win->icon_x = (tmp_win->icon_width - tmp_win->icon_w_width)/2;
-		tmp_win->icon_x += 3;
-		tmp_win->icon_w_width = tmp_win->icon_width;
-    }
-    else
-    {
-    tmp_win->icon_x = 3;
-    }
-*/
+#ifdef TWM_USE_SPACING
+    tmp_win->icon_w_width += Scr->IconFont.height; /*approx. '1ex' on both sides*/
+#else
     tmp_win->icon_w_width += 8;
+#endif
     if (tmp_win->icon_w_width < tmp_win->icon_width + 8)
     {
 		tmp_win->icon_x = (((tmp_win->icon_width + 8) - tmp_win->icon_w_width)/2) + 4;
 		tmp_win->icon_w_width = tmp_win->icon_width + 8;
     }
     else
+#ifdef TWM_USE_SPACING
+		tmp_win->icon_x = Scr->IconFont.height/2;
+#else
 		tmp_win->icon_x = 4;
+#endif
 
-/* djhjr - 6/11/96
-    tmp_win->icon_y = tmp_win->icon_height + Scr->IconFont.height;
-*/
-    tmp_win->icon_y = tmp_win->icon_height + Scr->IconFont.height + 2;
-
-/* djhjr - 4/27/96
-    tmp_win->icon_w_height = tmp_win->icon_height + Scr->IconFont.height + 4;
-*/
-/* djhjr - 6/11/96
-    tmp_win->icon_w_height = tmp_win->icon_height + Scr->IconFont.height + 6;
-*/
+#ifdef TWM_USE_SPACING
+    /* icon label height := 1.44 times font height: */
+    tmp_win->icon_w_height = tmp_win->icon_height + 144*Scr->IconFont.height/100;
+    tmp_win->icon_y = tmp_win->icon_height + Scr->IconFont.y + 44*Scr->IconFont.height/200;
+#else
     tmp_win->icon_w_height = tmp_win->icon_height + Scr->IconFont.height + 8;
+    tmp_win->icon_y = tmp_win->icon_height + Scr->IconFont.height + 2;
+#endif
 
     event_mask = 0;
     if (tmp_win->wmhints && tmp_win->wmhints->flags & IconWindowHint)
@@ -909,6 +897,12 @@ int def_x, def_y;
 	y = 0;
 */
 	y = 4;
+
+#ifdef TWM_USE_SPACING
+	tmp_win->icon_w_height += y;
+	tmp_win->icon_y += y;
+	XResizeWindow (dpy, tmp_win->icon_w.win, tmp_win->icon_w_width, tmp_win->icon_w_height);
+#endif
 
 	if (tmp_win->icon_w_width == tmp_win->icon_width)
 	    x = 0;

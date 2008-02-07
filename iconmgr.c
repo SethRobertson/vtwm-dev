@@ -45,8 +45,7 @@
 int strcmp(); /* missing from string.h in AUX 2.0 */
 #endif
 
-/* djhjr - 5/2/98 */
-static int ComputeIconMgrWindowHeight();
+static int ComputeIconMgrWindowHeight (IconMgr *ip);
 
 /* see AddIconManager() - djhjr - 5/5/98
 int iconmgr_textx = siconify_width+11;
@@ -605,8 +604,7 @@ WList *AddIconManager(tmp_win)
 				0, tmp->cp);
     }
 
-	/* djhjr - 5/2/98 */
-	h = ComputeIconMgrWindowHeight();
+    h = ComputeIconMgrWindowHeight(ip);
 
     ip->height = h * ip->count;
     tmp->me = ip->count;
@@ -998,8 +996,7 @@ void PackIconManager(ip)
     int savewidth;
     WList *tmp;
 
-	/* djhjr - 5/2/98 */
-	wheight = ComputeIconMgrWindowHeight();
+    wheight = ComputeIconMgrWindowHeight(ip);
 
     wwidth = ip->width / ip->columns;
 
@@ -1078,30 +1075,43 @@ void PackIconManager(ip)
 /*
  * ComputeIconMgrWindowHeight()
  * scale the icon manager window height to the font used
- *
- * djhjr - 5/2/98
  */
-static int ComputeIconMgrWindowHeight()
+static int ComputeIconMgrWindowHeight (IconMgr *ip)
 {
-	int h;
+    int h;
 
-	/* was 'Scr->use3Diconmanagers' - djhjr - 8/11/98 */
-	if (Scr->IconMgrBevelWidth > 0)
-	{
-		h = Scr->IconManagerFont.height + 2 * Scr->IconMgrBevelWidth + 4;
-		if (h < (siconify_height + 2 * Scr->IconMgrBevelWidth + 4))
-			h = siconify_height + 2 * Scr->IconMgrBevelWidth + 4;
-	}
+    if (Scr->IconMgrBevelWidth > 0)
+    {
+#ifdef TWM_USE_SPACING
+	if (ip->columns > 1) /* 100*pow(sqrt(1.2), i) for i = 2, 3, 4 */
+	    h = 144*Scr->IconManagerFont.height/100; /* i = 4 multicolumn*/
 	else
-	{
-		h = Scr->IconManagerFont.height + 10;
-		if (h < (siconify_height + 4))
-			h = siconify_height + 4;
+	    h = 120*Scr->IconManagerFont.height/100; /* i = 2 unicolumn*/
+	h += 2 * Scr->IconMgrBevelWidth;
+#else
+	h = Scr->IconManagerFont.height + 2 * Scr->IconMgrBevelWidth + 4;
+#endif
+	if (h < (siconify_height + 2 * Scr->IconMgrBevelWidth + 4))
+		h = siconify_height + 2 * Scr->IconMgrBevelWidth + 4;
+    }
+    else
+    {
+#ifdef TWM_USE_SPACING
+	if (ip->columns > 1)
+	    h = 144*Scr->IconManagerFont.height/100;
+	else
+	    h = 120*Scr->IconManagerFont.height/100;
+	h += 4; /* highlighted border */
+#else
+	h = Scr->IconManagerFont.height + 10;
+#endif
+	if (h < (siconify_height + 4))
+	    h = siconify_height + 4;
 	}
 
-	/* make height be odd so buttons look nice and centered */
-	if (!(h & 1)) h++;
+    /* make height be odd so buttons look nice and centered */
+    if (!(h & 1)) h++;
 
-	return (h);
+    return (h);
 }
 

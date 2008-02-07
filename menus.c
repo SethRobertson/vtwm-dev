@@ -178,7 +178,11 @@ static int do_squeezetitle();
 
 #define SHADOWWIDTH 5			/* in pixels */
 
+#ifdef TWM_USE_SPACING
+#define EDGE_OFFSET (Scr->MenuFont.ascent/2)
+#else
 #define EDGE_OFFSET 5 /* DSE */
+#endif
 
 /* djhjr - 5/5/98
 #define PULLDOWNMENU_OFFSET ((Scr->RightHandSidePulldownMenus)?\
@@ -541,17 +545,13 @@ int exposure;
     int text_y;
     GC gc;
 
-/* djhjr - 4/29/98
-    y_offset = mi->item_num * Scr->EntryHeight + 2;
-*/
-/* djhjr - 5/22/00
-    y_offset = mi->item_num * Scr->EntryHeight + Scr->MenuBevelWidth;
-*/
     y_offset = (mi->item_num - mr->top) * Scr->EntryHeight + Scr->MenuBevelWidth;
 
-/* djhjr - 9/25/96
-    text_y = y_offset + Scr->MenuFont.y + 2;
-*/
+#ifdef TWM_USE_SPACING
+    if (mi->func == F_TITLE)
+	text_y = y_offset + (((Scr->EntryHeight - Scr->MenuTitleFont.height) / 2) + Scr->MenuTitleFont.y);
+    else
+#endif
 	text_y = y_offset + (((Scr->EntryHeight - Scr->MenuFont.height) / 2) + Scr->MenuFont.y);
 
     if (mi->func != F_TITLE)
@@ -721,14 +721,13 @@ int exposure;
     int text_y;
     GC gc;
 
-/* djhjr - 5/22/00
-    y_offset = mi->item_num * Scr->EntryHeight;
-*/
     y_offset = (mi->item_num - mr->top) * Scr->EntryHeight;
 
-/* djhjr - 9/26/96
-    text_y = y_offset + Scr->MenuFont.y;
-*/
+#ifdef TWM_USE_SPACING
+    if (mi->func == F_TITLE)
+	text_y = y_offset + (((Scr->EntryHeight - Scr->MenuTitleFont.height) / 2) + Scr->MenuTitleFont.y);
+    else
+#endif
 	text_y = y_offset + (((Scr->EntryHeight - Scr->MenuFont.height) / 2) + Scr->MenuFont.y);
 
 	if (mi->func != F_TITLE)
@@ -1385,7 +1384,11 @@ MenuRoot *mr;
 	XSetWindowAttributes attributes;
 	Colormap cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
 	MyFont *titleFont;
-	
+
+#ifdef TWM_USE_SPACING
+	Scr->EntryHeight = 120*Scr->MenuFont.height/100; /*baselineskip 1.2*/
+	titleFont = &(Scr->MenuTitleFont);
+#else
 	if ( Scr->MenuTitleFont.name != NULL ) /* DSE */
 		{
 		Scr->EntryHeight = MAX(Scr->MenuFont.height,
@@ -1397,7 +1400,7 @@ MenuRoot *mr;
 		Scr->EntryHeight = Scr->MenuFont.height + 4;
 		titleFont= &(Scr->MenuFont);
 		}
-
+#endif
 
 	/* lets first size the window accordingly */
 	if (mr->mapped == NEVER_MAPPED)
@@ -1448,12 +1451,14 @@ MenuRoot *mr;
 		mr->height = Scr->MyDisplayHeight - borderwidth * 2;
 	}
 
-	/* added this 'if () ... else' - djhjr - 4/29/98 */
-	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
+#ifdef TWM_USE_SPACING
+	mr->width += 2 * (Scr->MenuBevelWidth + EDGE_OFFSET);
+#else
 	if (Scr->MenuBevelWidth > 0)
 		mr->width += 2 * Scr->MenuBevelWidth + 6;
 	else
 		mr->width += 10;
+#endif
 
 	if (Scr->Shadow)
 	{
@@ -5265,12 +5270,14 @@ TwmWindow *t;
 
     /* figure out the width and height of the info window */
 
-/* djhjr - 4/29/98
-    height = (n * (Scr->InfoFont.height+2)) + 10; * some padding *
-*/
-	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
-	i = (Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth + 8 : 10;
-	height = (n * (Scr->InfoFont.height+2)) + i; /* some padding */
+#ifdef TWM_USE_SPACING
+    height = n * (120*Scr->InfoFont.height/100); /*baselineskip 1.2*/
+    height += Scr->InfoFont.height - Scr->InfoFont.y;
+#else
+    /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+    i = (Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth + 8 : 10;
+    height = (n * (Scr->InfoFont.height+2)) + i; /* some padding */
+#endif
 
     width = 1;
     for (i = 0; i < n; i++)
@@ -5282,12 +5289,13 @@ TwmWindow *t;
     }
     if (InfoLines) XUnmapWindow(dpy, Scr->InfoWindow.win);
 
-/* djhjr - 4/29/98
-    width += 20; * some padding *
-*/
-	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
-	i = (Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth + 18 : 20;
-	width += i; /* some padding */
+#ifdef TWM_USE_SPACING
+    i = Scr->InfoFont.height;
+#else
+    /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
+    i = (Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth + 18 : 20;
+#endif
+    width += i; /* some padding */
 
     if (XQueryPointer (dpy, Scr->Root, &JunkRoot, &JunkChild, &px, &py,
 		       &dummy, &dummy, &udummy)) {

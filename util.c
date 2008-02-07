@@ -3256,8 +3256,7 @@ TwmWindow *tmp_win;
 void PaintTitle (tmp_win)
 TwmWindow *tmp_win;
 {
-	/* made static - djhjr - 6/18/99 */
-	static int en = 0, dots = 0;
+	int en, dots;
 
 	int bwidth = Scr->TBInfo.width + Scr->TBInfo.pad;
 	int left = (Scr->TBInfo.nleft) ? Scr->TBInfo.leftx +
@@ -3273,7 +3272,7 @@ TwmWindow *tmp_win;
 	int cur_string_len = strlen(tmp_win->name);
 	char *a = NULL;
 
-	if (!en) en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
+	en = Scr->TitleBarFont.height/2;
 
 	/*
 	 * clip the title a couple of characters less than the width of
@@ -3286,7 +3285,7 @@ TwmWindow *tmp_win;
 	{
 		cur_computed_scrlen = MyFont_TextWidth(&Scr->TitleBarFont, tmp_win->name, cur_string_len);
 
-		if (!dots) dots = MyFont_TextWidth(&Scr->TitleBarFont, "...", 3);
+		dots = MyFont_TextWidth(&Scr->TitleBarFont, "...", 3);
 
 		max_avail_scrlen = tmp_win->title_width - Scr->TBInfo.titlex - Scr->TBInfo.rightoff - en;
 
@@ -3301,7 +3300,7 @@ TwmWindow *tmp_win;
 			cur_string_len = 0;
 		else if (cur_computed_scrlen > max_avail_scrlen)
 		{
-			while (cur_string_len >= 0)
+			while (cur_string_len > 0)
 			{
 				if (MyFont_TextWidth(&Scr->TitleBarFont,
 /* sjr - 10/06/06 */
