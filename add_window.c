@@ -942,8 +942,13 @@ IconMgr *iconp;
 	ReGrab();
 
 	Scr->Newest = tmp_win; /* PF */
-	if (tmp_win->transient && Scr->WarpToTransients) /* PF */
+	if (tmp_win->transient && Scr->WarpToTransients /* PF */
+			/* warp to the transient only if top-level client has focus: */
+			&& Scr->Focus && Scr->Focus->w == tmp_win->transientfor)
 		WarpToWindow(tmp_win); /* PF,DSE */
+	/* warp mouse into client if listed in "WarpCursor": */
+	else if (Scr->WarpCursor || LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class))
+		WarpToWindow(tmp_win);
 
     return (tmp_win);
 }

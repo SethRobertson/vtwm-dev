@@ -1749,15 +1749,17 @@ The pointer always goes to either the active entry, or in the absence of,
 the top entry.
 .IP "\fBWarpCursor\fP [{ \fIwin-list\fP }]" 8
 This variable indicates that the pointer should be warped into windows when
-they are deiconified.  If the optional \fIwin-list\fP is given, the pointer
-will only be warped when those windows are deiconified. It is set by default.
+they are first created or later deiconified.  If the optional \fIwin-list\fP is given,
+the pointer will only be warped when those windows are created or deiconified.
+It is set by default.
 .IP "\fBWarpSnug\fP" 8
 With this variable set, the warp functions (\fBf.warp\fP and the like) will
 fit the entire window on the screen, i.e., they'll be snugged on the real
 screen.
 .IP "\fBWarpToTransients\fP" 8
 This variable indicates that the pointer should be warped into transient
-windows when they are created.
+windows when they are created, given the corresponding clients pointed to by their
+WM_TRANSIENT_FOR window property have already focus.
 .IP "\fBWarpUnmapped\fP" 8
 This variable indicates that the warp functions (\fBf.warp\fP and the like)
 should deiconify any iconified windows they encounter.  This is typically

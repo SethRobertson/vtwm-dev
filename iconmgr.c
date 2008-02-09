@@ -891,6 +891,10 @@ void DrawIconManagerBorder(tmp, fill)
     WList *tmp;
     int fill;
 {
+    /* speedup: only draw if iconmanager window mapped: */
+    if (!tmp->iconmgr->twm_win->mapped)
+	return;
+
 	/* was 'Scr->use3Diconmanagers' - djhjr - 8/11/98 */
     if (Scr->IconMgrBevelWidth > 0) {
 	int shadow_width;
