@@ -576,4 +576,8 @@ extern Atom _XA_TWM_RESTART;
 extern Atom _XA_NET_WM_WINDOW_OPACITY;
 #endif
 
+#ifdef TWM_USE_SLOPPYFOCUS
+extern int SloppyFocus;
+#endif
+
 #endif /* _TWM_ */

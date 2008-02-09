@@ -508,6 +508,10 @@ typedef struct _TwmKeyword {
 #define kw0_EnableXftFontRenderer	68
 #endif
 
+#ifdef TWM_USE_SLOPPYFOCUS
+#define kw0_SloppyFocus			69
+#endif
+
 /* djhjr - 9/24/02
 #define kws_UsePPosition		1
 */
@@ -806,6 +810,9 @@ static TwmKeyword keytable[] = {
     { "f.setrealscreen",	FSKEYWORD, F_SETREALSCREEN },
     { "f.showdesktopdisplay",	FKEYWORD, F_SHOWDESKTOP },
     { "f.showiconmgr",		FKEYWORD, F_SHOWLIST },
+#ifdef TWM_USE_SLOPPYFOCUS
+    { "f.sloppyfocus",		FKEYWORD, F_SLOPPYFOCUS },
+#endif
     { "f.snap",			FKEYWORD, F_SNAP },
     { "f.snaprealscreen",			FKEYWORD, F_SNAPREALSCREEN },
     { "f.snugdesktop",        FKEYWORD, F_SNUGDESKTOP },
@@ -1083,6 +1090,9 @@ static TwmKeyword keytable[] = {
 
     { "shift",			SHIFT, 0 },
     { "showiconmanager",	KEYWORD, kw0_ShowIconManager },
+#ifdef TWM_USE_SLOPPYFOCUS
+    { "sloppyfocus",		KEYWORD, kw0_SloppyFocus },
+#endif
     { "snaprealscreen",		KEYWORD, kw0_SnapRealScreen },
     { "sorticonmanager",	KEYWORD, kw0_SortIconManager },
 
@@ -1524,6 +1534,11 @@ int do_single_keyword (keyword)
 	case kw0_EnableXftFontRenderer:
 		if (Scr->use_xft == 0) /*Xrender available?*/
 		    Scr->use_xft = +1;
+		return 1;
+#endif
+#ifdef TWM_USE_SLOPPYFOCUS
+	case kw0_SloppyFocus:
+		SloppyFocus = TRUE;
 		return 1;
 #endif
     }

@@ -1482,6 +1482,12 @@ area should be rendered with a "flatter" appearance. It is set by default if
 This variable indicates that the icon manager window should be displayed when
 \&\fBvtwm\fP is started.  It can always be brought up using the
 \&\fBf.showiconmgr\fP function.
+.IP "\fBSloppyFocus\fP"
+This boolean variable sets the vtwm client focusing model initially into sloppy mode:
+moving the mouse out of some client window doesn't unfocus it
+until some other client window is entered.
+Default value is FALSE and can be set to TRUE by \fIf.sloppyfocus\fP
+(\fIf.unfocus\fP and \fIf.focus\fP recover FALSE).
 .IP "\fBSnapRealScreen\fP" 8
 This variable causes the real screen to snap to a grid defined in
 \&\fBPanDistanceX\fP and \fBPanDistanceY\fP increments whenever the representation
@@ -2240,6 +2246,13 @@ This function maps the desktop display.
 .IP "\fBf.showiconmgr\fP" 8
 This function maps the current icon manager when selected from a client
 window, and maps all icon managers when selected from the root window.
+.IP "\fBf.sloppyfocus\fP"
+This function sets the \fISloppyFocus\fP state variable to TRUE
+so entering the sloppy mode of the vtwm client focusing policy.
+Executing \fIf.unfocus\fP or \fIf.focus\fP set this variable to FALSE,
+restoring the "focus strictly follows mouse" policy,
+or assigning focus to some client explicitly.
+Executing \fIf.sloppyfocus\fP on a root window revokes focus from the client.
 .IP "\fBf.snap\fP" 8
 This function snaps the real screen to a grid defined on virtual space with
 \&\fBPanDistanceX\fP and \fBPanDistanceY\fP increments.

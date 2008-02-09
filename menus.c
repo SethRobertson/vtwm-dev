@@ -3675,6 +3675,12 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	break;
 
     case F_FOCUS:
+#ifdef TWM_USE_SLOPPYFOCUS
+	if (SloppyFocus == TRUE) {
+	    SloppyFocus = FALSE;
+	    FocusOnRoot();
+	}
+#endif
 	if (DeferExecution(context, func, Scr->SelectCursor))
 	    return TRUE;
 
@@ -3686,28 +3692,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    }
 	    else
 	    {
-		if (Scr->Focus != NULL) {
-		    SetBorder (Scr->Focus, False);
-
-/* djhjr - 4/25/96
-		    if (Scr->Focus->hilite_w)
-		      XUnmapWindow (dpy, Scr->Focus->hilite_w);
-*/
-			PaintTitleHighlight(Scr->Focus, off);
-
-		}
-
-		InstallWindowColormaps (0, tmp_win);
-
-/* djhjr - 4/25/96
-		if (tmp_win->hilite_w) XMapWindow (dpy, tmp_win->hilite_w);
-*/
-		PaintTitleHighlight(tmp_win, on);
-
-		SetBorder (tmp_win, True);
-		SetFocus (tmp_win, eventp->xbutton.time);
-		Scr->FocusRoot = FALSE;
-		Scr->Focus = tmp_win;
+		FocusOnClient(tmp_win);
 	    }
 	}
 	break;
@@ -3872,8 +3857,18 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	break;
 
     case F_UNFOCUS:
+#ifdef TWM_USE_SLOPPYFOCUS
+	SloppyFocus = FALSE;
+#endif
 	FocusOnRoot();
 	break;
+
+#ifdef TWM_USE_SLOPPYFOCUS
+    case F_SLOPPYFOCUS:
+	SloppyFocus = TRUE;
+	FocusOnRoot();
+	break;
+#endif
 
     case F_CUT:
 	strcpy(tmp, action);
@@ -4856,22 +4851,41 @@ Execute(s)
  */
 
 void
-FocusOnRoot()
+FocusOnRoot (void)
 {
-    SetFocus ((TwmWindow *) NULL, LastTimestamp());
     if (Scr->Focus != NULL)
     {
 	SetBorder (Scr->Focus, False);
-
-/* djhjr - 4/25/96
-	if (Scr->Focus->hilite_w) XUnmapWindow (dpy, Scr->Focus->hilite_w);
-*/
 	PaintTitleHighlight(Scr->Focus, off);
-
     }
     InstallWindowColormaps(0, &Scr->TwmRoot);
+
+    SetFocus ((TwmWindow *) NULL, LastTimestamp());
     Scr->Focus = NULL;
     Scr->FocusRoot = TRUE;
+}
+
+void
+FocusOnClient (TwmWindow *tmp_win)
+{
+    /* assign focus if 'Passive'/'Locally Active' ICCCM model: */
+    if (!tmp_win->wmhints || tmp_win->wmhints->input)
+    {
+	if (Scr->Focus != NULL)
+	{
+	    SetBorder (Scr->Focus, False);
+	    PaintTitleHighlight (Scr->Focus, off);
+	}
+	InstallWindowColormaps (0, tmp_win);
+	SetBorder (tmp_win, True);
+	PaintTitleHighlight (tmp_win, on);
+
+	SetFocus (tmp_win, LastTimestamp());
+	Scr->Focus = tmp_win;
+	Scr->FocusRoot = FALSE;
+    }
+    else
+	FocusOnRoot();
 }
 
 void DeIconify(tmp_win)
@@ -5089,14 +5103,11 @@ int def_x, def_y;
 
 	    if (t->icon_w.win)
 	      XUnmapWindow(dpy, t->icon_w.win);
+
 	    SetMapStateProp(t, IconicState);
-	    SetBorder (t, False);
+
 	    if (t == Scr->Focus)
-	      {
-		SetFocus ((TwmWindow *) NULL, LastTimestamp());
-		Scr->Focus = NULL;
-		Scr->FocusRoot = TRUE;
-	      }
+		FocusOnRoot();
 
 	    /*
 	     * let current status ride, but "fake out" UpdateDesktop()
@@ -5141,13 +5152,8 @@ int def_x, def_y;
 
     SetMapStateProp(tmp_win, IconicState);
 
-    SetBorder (tmp_win, False);
     if (tmp_win == Scr->Focus)
-    {
-	SetFocus ((TwmWindow *) NULL, LastTimestamp());
-	Scr->Focus = NULL;
-	Scr->FocusRoot = TRUE;
-    }
+	FocusOnRoot();
 
     tmp_win->icon = TRUE;
     if (iconify)

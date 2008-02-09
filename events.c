@@ -3202,6 +3202,38 @@ HandleEnterNotify()
 	 * if we have an event for a specific one of our windows
 	 */
 	if (Tmp_win) {
+#ifdef TWM_USE_SLOPPYFOCUS
+	    if (SloppyFocus == TRUE)
+	    {
+		if (ewp->window == Tmp_win->frame) {
+		    /* mouse entered the vtwm frame of a client window: */
+		    if (ewp->detail != NotifyInferior) {
+			FocusOnClient (Tmp_win);
+			/*
+			 * send WM_TAKE_FOCUS if
+			 * 'Locally Active'/'Globally Active'
+			 * ICCCM focus model:
+			 */
+			if (Tmp_win->protocols & DoesWmTakeFocus)
+			    SendTakeFocusMessage (Tmp_win, ewp->time);
+		    }
+		    if (Tmp_win->list)
+			ActiveIconManager (Tmp_win->list);
+		}
+		else if (Tmp_win->list && ewp->window == Tmp_win->list->w.win) {
+		    /* mouse over iconmanager: */
+		    if (Tmp_win->mapped) {
+			FocusOnClient (Tmp_win);
+			if (Tmp_win->protocols & DoesWmTakeFocus)
+			    SendTakeFocusMessage (Tmp_win, ewp->time);
+		    }
+		    else
+			FocusOnRoot (); /* recover PointerRoot mode */
+		    ActiveIconManager (Tmp_win->list);
+		}
+	    }
+	    else
+#endif
 		/*
 		 * If currently in PointerRoot mode (indicated by FocusRoot), then
 		 * focus on this window
@@ -3214,10 +3246,6 @@ HandleEnterNotify()
 		     * unhighlight old focus window
 		     */
 
-/* djhjr - 4/25/96
-		    if (Scr->Focus && Scr->Focus != Tmp_win && Tmp_win->hilite_w)
-		      XUnmapWindow(dpy, Scr->Focus->hilite_w);
-*/
 		    if (Scr->Focus && Scr->Focus != Tmp_win)
 				PaintTitleHighlight(Scr->Focus, off);
 
@@ -3225,8 +3253,8 @@ HandleEnterNotify()
 		     * If entering the frame or the icon manager, then do
 		     * "window activation things":
 		     *
-		     *     1.  turn on highlight window (if any)
-		     *     2.  install frame colormap
+		     *     1.  install frame colormap
+		     *     2.  turn on highlight window (if any)
 		     *     3.  set frame and highlight window (if any) border
 		     *     3a. set titlebutton highlight (if button color is frame)
 		     *     if IconManagerFocus is set or not in icon mgr
@@ -3237,16 +3265,16 @@ HandleEnterNotify()
 		    if (ewp->window == Tmp_win->frame ||
 			(Tmp_win->list && ewp->window == Tmp_win->list->w.win)) {
 
-/* djhjr - 4/25/96
-			if (Tmp_win->hilite_w)				* 1 *
-			  XMapWindow (dpy, Tmp_win->hilite_w);
-*/
-			PaintTitleHighlight(Tmp_win, on);		/* 1 */
-
-			if (!scanArgs.leaves && !scanArgs.enters)	/* 2 */
+			if (!scanArgs.leaves && !scanArgs.enters)	/* 1 */
 			    InstallWindowColormaps (EnterNotify,
 						    &Scr->TwmRoot);
-			SetBorder (Tmp_win, True);			/* 3, 3a */
+
+			if (!Tmp_win->wmhints || Tmp_win->wmhints->input
+					|| (Tmp_win->protocols & DoesWmTakeFocus)) {
+			    /* highlight only if client is going to accept focus: */
+			    PaintTitleHighlight(Tmp_win, on);		/* 2 */
+			    SetBorder (Tmp_win, True);			/* 3, 3a */
+			}
 
 			/* added this 'if()' - djhjr - 5/27/98 */
 			/* added hack for StrictIconManager - djhjr - 10/2/01 */

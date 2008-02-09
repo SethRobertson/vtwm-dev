@@ -130,6 +130,10 @@ unsigned long black, white;
 
 Bool use_fontset;
 
+#ifdef TWM_USE_SLOPPYFOCUS
+int SloppyFocus;		/* TRUE if sloppy focus policy globally on all screens activated */
+#endif
+
 extern void assign_var_savecolor();
 
 /* djhjr - 4/26/99 */
@@ -171,6 +175,10 @@ main(argc, argv, environ)
 
 #ifdef TWM_USE_XFT
     int xft_available;
+#endif
+
+#ifdef TWM_USE_SLOPPYFOCUS
+    SloppyFocus = FALSE;
 #endif
 
     /* djhjr - 7/21/98 */

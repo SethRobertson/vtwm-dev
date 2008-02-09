@@ -173,6 +173,10 @@ extern void TwmOutput();
 /* djhjr - 11/15/02 */
 #define F_PLAYSOUND		127
 
+#ifdef TWM_USE_SLOPPYFOCUS
+#define F_SLOPPYFOCUS		128
+#endif
+
 #define D_NORTH			1
 #define D_SOUTH			2
 #define D_EAST			3
