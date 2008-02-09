@@ -1269,7 +1269,6 @@ AddToMenu(menu, item, action, sub, func, fore, back)
 {
 	MenuItem *tmp;
 	int width;
-	MyFont *font; /* DSE */
 
 #ifdef DEBUG_MENUS
 	fprintf(stderr, "adding menu item=\"%s\", action=%s, sub=%d, f=%d\n",
@@ -1302,14 +1301,13 @@ AddToMenu(menu, item, action, sub, func, fore, back)
 	/* djhjr - 4/22/96 */
 	tmp->separated = 0;
 
-    if ( func == F_TITLE && (Scr->MenuTitleFont.name != NULL) ) /* DSE */
-		font= &(Scr->MenuTitleFont);
-    else
-		font= &(Scr->MenuFont);
-
 	if (!Scr->HaveFonts) CreateFonts();
-	width = MyFont_TextWidth(font,
-			item, tmp->strlen);
+
+	if (func == F_TITLE) /* DSE */
+		width = MyFont_TextWidth (&Scr->MenuTitleFont, item, tmp->strlen);
+	else
+		width = MyFont_TextWidth (&Scr->MenuFont, item, tmp->strlen);
+
 	if (width <= 0)
 	width = 1;
 	if (width > menu->width)
@@ -1383,23 +1381,11 @@ MenuRoot *mr;
 	unsigned long valuemask;
 	XSetWindowAttributes attributes;
 	Colormap cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
-	MyFont *titleFont;
 
 #ifdef TWM_USE_SPACING
 	Scr->EntryHeight = 120*Scr->MenuFont.height/100; /*baselineskip 1.2*/
-	titleFont = &(Scr->MenuTitleFont);
 #else
-	if ( Scr->MenuTitleFont.name != NULL ) /* DSE */
-		{
-		Scr->EntryHeight = MAX(Scr->MenuFont.height,
-		                       Scr->MenuTitleFont.height) + 4;
-		titleFont = &(Scr->MenuTitleFont);
-		}
-	else
-		{
-		Scr->EntryHeight = Scr->MenuFont.height + 4;
-		titleFont= &(Scr->MenuFont);
-		}
+	Scr->EntryHeight = MAX(Scr->MenuFont.height, Scr->MenuTitleFont.height) + 4;
 #endif
 
 	/* lets first size the window accordingly */
@@ -1426,7 +1412,7 @@ MenuRoot *mr;
 		else
 		{
 		cur->x = width -
-			MyFont_TextWidth(titleFont,
+			MyFont_TextWidth(&Scr->MenuTitleFont,
 				cur->item, cur->strlen);
 		cur->x /= 2;
 		}
@@ -2191,11 +2177,31 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	case F_UNBINDKEYS:
 
 	break;
+
 	default:
-		XGrabPointer(dpy, Scr->Root, True,
+
+	    switch (func)
+	    {
+		/* restrict mouse to screen of function execution: */
+		case F_FORCEMOVE:
+		case F_MOVE:
+		case F_RESIZE:
+		case F_MOVESCREEN:
+		    JunkRoot = Scr->Root;
+		    break;
+
+		default:
+		/*
+		 * evtl. don't warp mouse to another screen
+		 * (as otherwise imposed by 'confine_to' Scr->Root):
+		 */
+		    JunkRoot = None;
+	    }
+
+	    XGrabPointer (dpy, Scr->Root, True,
 			ButtonPressMask | ButtonReleaseMask,
 			GrabModeAsync, GrabModeAsync,
-			Scr->Root, Scr->WaitCursor, CurrentTime);
+			JunkRoot, Scr->WaitCursor, CurrentTime);
 	break;
 	}
 

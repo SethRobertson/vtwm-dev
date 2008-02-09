@@ -1513,7 +1513,7 @@ void SetFocus (tmp_win, time)
 	printf ("Focusing on window \"%s\"\n", tmp_win->full_name);
     } else {
 	printf ("Unfocusing; Scr->Focus was \"%s\"\n",
-		Scr->Focus ? Scr->Focus->full_name : "(nil)");
+		Scr && Scr->Focus ? Scr->Focus->full_name : "(nil)");
     }
 #endif
 

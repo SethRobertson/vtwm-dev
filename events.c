@@ -2962,7 +2962,9 @@ HandleEnterNotify()
 	if (UnHighLight_win && ewp->window != UnHighLight_win->w) {
 	  SetBorder (UnHighLight_win, False);	/* application window */
 	  if (UnHighLight_win->list) /* in the icon box */
-	NotActiveIconManager(UnHighLight_win->list);
+	    /* Unhighlight only if previous and current window on the same root: */
+	    if (UnHighLight_win->attr.root == Scr->Root)
+		NotActiveIconManager(UnHighLight_win->list);
 	}
 	if (ewp->window == Scr->Root)
 	  UnHighLight_win = NULL;

@@ -1413,6 +1413,8 @@ void CreateFonts ()
     GetFont(&Scr->VirtualFont);
     GetFont(&Scr->DoorFont);
     GetFont(&Scr->DefaultFont);
+    if (Scr->MenuTitleFont.name == NULL)
+	Scr->MenuTitleFont.name = Scr->MenuFont.name;
     GetFont(&Scr->MenuTitleFont); /* DSE */
     Scr->HaveFonts = TRUE;
 }
