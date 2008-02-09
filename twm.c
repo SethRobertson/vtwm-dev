@@ -844,7 +844,7 @@ main(argc, argv, environ)
 
 					 /* djhjr - 5/9/96 */
 					 /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
-					 (unsigned int) (Scr->InfoBevelWidth > 0) ? 0 : BW, 0,
+					 (unsigned int) (Scr->InfoBevelWidth > 0 ? 0 : Scr->BorderWidth), 0,
 
 					 (unsigned int) CopyFromParent,
 					 (Visual *) CopyFromParent,
@@ -911,7 +911,7 @@ main(argc, argv, environ)
 
 					 /* djhjr - 5/9/96 */
 					 /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
-					 (unsigned int) (Scr->InfoBevelWidth > 0) ? 0 : BW, 0,
+					 (unsigned int) (Scr->InfoBevelWidth > 0 ? 0 : Scr->BorderWidth), 0,
 
 					 (unsigned int) CopyFromParent,
 					 (Visual *) CopyFromParent,

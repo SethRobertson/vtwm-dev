@@ -538,6 +538,8 @@ typedef struct _TwmKeyword {
 #define kws_SoundHost			15
 #endif
 
+#define kws_DefaultFont			16
+
 #define kwn_ConstrainedMoveTime     1
 #define kwn_MoveDelta               2
 #define kwn_XorValue                3
@@ -690,6 +692,7 @@ static TwmKeyword keytable[] = {
 
     { "decoratetransients",	KEYWORD, kw0_DecorateTransients },
     { "defaultbackground",	CKEYWORD, kwc_DefaultBackground },
+    { "defaultfont",		SKEYWORD, kws_DefaultFont },
     { "defaultforeground",	CKEYWORD, kwc_DefaultForeground },
     { "defaultfunction",	DEFAULT_FUNCTION, 0 },
     { "deiconifytoscreen",      KEYWORD, kw0_DeIconifyToScreen },
@@ -1598,6 +1601,10 @@ int do_string_keyword (keyword, s)
 	/* djhjr - 5/10/96 */
       case kws_InfoFont:
 	if (!Scr->HaveFonts) Scr->InfoFont.name = s;
+	return 1;
+
+      case kws_DefaultFont:
+	if (!Scr->HaveFonts) Scr->DefaultFont.name = s;
 	return 1;
 
       case kws_UnknownIcon:

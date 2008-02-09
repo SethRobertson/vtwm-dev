@@ -685,6 +685,9 @@ are not reparented.
 This variable specifies the background color to be used for sizing and
 information windows.  The default is \fI"maroon"\fP for color displays or
 \fI"gray50"\fP for monochrome displays.
+.IP "\fBDefaultFont\fP \fIstring\fP" 8
+This variable specifies the font to use if loading some other font
+fails for some reason. The default is \fI"fixed"\fP.
 .IP "\fBDefaultForeground\fP \fIstring\fP" 8
 This variable specifies the foreground color to be used for sizing and
 information windows.  The default is \fI"gray85"\fP.

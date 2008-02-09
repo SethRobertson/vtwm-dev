@@ -1732,6 +1732,25 @@ int state;
     XGCValues gcvalues;
     int lw;
 
+#define siconify_width 11
+#define siconify_height 11
+static unsigned char siconify_bits[] = {
+    0xff, 0x07, 0x01, 0x04, 0x0d, 0x05, 0x9d, 0x05, 0xb9, 0x04, 0x51, 0x04,
+    0xe9, 0x04, 0xcd, 0x05, 0x85, 0x05, 0x01, 0x04, 0xff, 0x07};
+
+    if (w <= siconify_width || h <= siconify_height) {
+	Pixmap p;
+	p = XCreatePixmapFromBitmapData (dpy, Scr->Root, (char*)siconify_bits,
+		siconify_width, siconify_height, 1, 0, 1);
+	if (p != None) {
+		FB(cp.fore, cp.back);
+		XCopyPlane (dpy, p, d, Scr->NormalGC,
+			0, 0, siconify_width, siconify_height, 0, 0, 1);
+		XFreePixmap (dpy, p);
+		return;
+	}
+    }
+
     gcBack = XCreateGC(dpy, Scr->Root, 0, &gcvalues);
     gcvalues.background = cp.back;
     gcvalues.foreground = cp.fore;

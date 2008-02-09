@@ -847,15 +847,19 @@ int exposure;
 		XFillRectangle(dpy, mr->w.win, Scr->NormalGC, 0, y_offset,
 			mr->width, Scr->EntryHeight);
 
-		XSetForeground(dpy, Scr->NormalGC, mi->normal.fore);
+		/* Draw separators only if menu has borders: */
+		if (Scr->BorderWidth > 0 || Scr->MenuBevelWidth > 0)
+		{
+		    XSetForeground(dpy, Scr->NormalGC, mi->normal.fore);
 
-		/* now draw the dividing lines */
-		if (y_offset)
+		    /* now draw the dividing lines */
+		    if (y_offset)
 			XDrawLine (dpy, mr->w.win, Scr->NormalGC, 0, y_offset,
 				mr->width, y_offset);
 
-		y = ((mi->item_num+1) * Scr->EntryHeight)-1;
-		XDrawLine(dpy, mr->w.win, Scr->NormalGC, 0, y, mr->width, y);
+		    y = ((mi->item_num+1) * Scr->EntryHeight)-1;
+		    XDrawLine(dpy, mr->w.win, Scr->NormalGC, 0, y, mr->width, y);
+		}
 
 		/* finally render the title */
 		MyFont_DrawString(dpy, &mr->w, &Scr->MenuTitleFont,
@@ -1428,7 +1432,7 @@ MenuRoot *mr;
 
 	/* djhjr - 4/22/96 */
 	/* was 'Scr->use3Dmenus' - djhjr - 8/11/98 */
-	borderwidth = (Scr->MenuBevelWidth > 0) ? 0 : 1;
+	borderwidth = (Scr->MenuBevelWidth > 0) ? 0 : Scr->BorderWidth;
 
 	/* djhjr - 5/22/00 */
 	if (mr->height > Scr->MyDisplayHeight)
@@ -5212,6 +5216,7 @@ TwmWindow *t;
 	(void) sprintf(Info[n++], "Name             = \"%s\"", t->full_name);
 	(void) sprintf(Info[n++], "Class.res_name   = \"%s\"", t->class.res_name);
 	(void) sprintf(Info[n++], "Class.res_class  = \"%s\"", t->class.res_class);
+	(void) sprintf(Info[n++], "Icon name        = \"%s\"", t->icon_name);
 	Info[n++][0] = '\0';
 	(void) sprintf(Info[n++], "Geometry/root    = %dx%d+%d+%d", wwidth, wheight, x, y);
 	(void) sprintf(Info[n++], "Border width     = %d", bw);
@@ -5220,6 +5225,7 @@ TwmWindow *t;
 	(void) sprintf(Info[n++], "Name:  \"%s\"", t->full_name);
 	(void) sprintf(Info[n++], "Class.res_name:  \"%s\"", t->class.res_name);
 	(void) sprintf(Info[n++], "Class.res_class:  \"%s\"", t->class.res_class);
+	(void) sprintf(Info[n++], "Icon name:  \"%s\"", t->icon_name);
 	Info[n++][0] = '\0';
 	(void) sprintf(Info[n++], "Geometry/root:  %dx%d+%d+%d", wwidth, wheight, x, y);
 	(void) sprintf(Info[n++], "Border width:  %d", bw);

@@ -48,24 +48,18 @@ int strcmp(); /* missing from string.h in AUX 2.0 */
 static int ComputeIconMgrWindowHeight (IconMgr *ip);
 
 /* see AddIconManager() - djhjr - 5/5/98
-int iconmgr_textx = siconify_width+11;
+int iconmgr_textx = xiconify_width+11;
 */
 int iconmgr_iconx = 0, iconmgr_textx = 0;
 
 WList *Active = NULL;
 WList *DownIconManager = NULL;
 
-/* was an external file - djhjr - 10/30/02 */
-#define siconify_width 11
-#define siconify_height 11
-/*
-static unsigned char siconify_bits[] = {
-   0xff, 0x07, 0x01, 0x04, 0x0d, 0x05, 0x9d, 0x05, 0xb9, 0x04, 0x51, 0x04,
-   0xe9, 0x04, 0xcd, 0x05, 0x85, 0x05, 0x01, 0x04, 0xff, 0x07};
-*/
+#define xiconify_width 11
+#define xiconify_height 11
 
-int iconifybox_width = siconify_width;
-int iconifybox_height = siconify_height;
+int iconifybox_width = xiconify_width;
+int iconifybox_height = xiconify_height;
 
 /* djhjr - 10/30/02 */
 void SetIconMgrPixmap(filename)
@@ -103,8 +97,8 @@ ColorPair cp;
     struct Colori *col;
     static struct Colori *colori = NULL;
 
-    w = (unsigned int) siconify_width;
-    h = (unsigned int) siconify_height;
+    w = (unsigned int) xiconify_width;
+    h = (unsigned int) xiconify_height;
 
     for (col = colori; col; col = col->next) {
 	if (col->color == cp.back) break;
@@ -140,14 +134,6 @@ void CreateIconManagers()
 
     if (Scr->NoIconManagers)
 	return;
-
-/* djhjr - 10/30/02
-    if (Scr->siconifyPm == None)
-    {
-	Scr->siconifyPm->pixmap = XCreatePixmapFromBitmapData(dpy, Scr->Root,
-	    (char *)siconify_bits, siconify_width, siconify_height, 1, 0, 1);
-    }
-*/
 
     for (p = &Scr->iconmgr; p != NULL; p = p->next)
     {
@@ -670,13 +656,13 @@ WList *AddIconManager(tmp_win)
 			iconmgr_iconx = Scr->IconMgrBevelWidth + 5;
 		else
 			iconmgr_iconx = Scr->BorderWidth + 5;
-		iconmgr_textx = iconmgr_iconx + siconify_width + 5;
+		iconmgr_textx = iconmgr_iconx + xiconify_width + 5;
 	}
 
 	/* 'iconmgr_iconx' was '5' - djhjr - 5/5/98 */
-    tmp->icon = XCreateWindow (dpy, tmp->w.win, iconmgr_iconx, (int) (h - siconify_height)/2,
-			       (unsigned int) siconify_width,
-			       (unsigned int) siconify_height,
+    tmp->icon = XCreateWindow (dpy, tmp->w.win, iconmgr_iconx, (int) (h - xiconify_height)/2,
+			       (unsigned int) xiconify_width,
+			       (unsigned int) xiconify_height,
 			       (unsigned int) 0, CopyFromParent,
 			       (unsigned int) CopyFromParent,
 			       (Visual *) CopyFromParent,
@@ -1061,7 +1047,7 @@ void PackIconManager(ip)
 
       /* limit the min and max sizes of an icon manager - djhjr - 3/1/99 */
       ip->twm_win->hints.flags |= (PMinSize | PMaxSize);
-      ip->twm_win->hints.min_width = maxcol * (2 * iconmgr_iconx + siconify_width);
+      ip->twm_win->hints.min_width = maxcol * (2 * iconmgr_iconx + xiconify_width);
       ip->twm_win->hints.min_height = ip->height;
       ip->twm_win->hints.max_width = Scr->MyDisplayWidth;
       ip->twm_win->hints.max_height = ip->height;
@@ -1099,8 +1085,8 @@ static int ComputeIconMgrWindowHeight (IconMgr *ip)
 #else
 	h = Scr->IconManagerFont.height + 2 * Scr->IconMgrBevelWidth + 4;
 #endif
-	if (h < (siconify_height + 2 * Scr->IconMgrBevelWidth + 4))
-		h = siconify_height + 2 * Scr->IconMgrBevelWidth + 4;
+	if (h < (xiconify_height + 2 * Scr->IconMgrBevelWidth + 4))
+		h = xiconify_height + 2 * Scr->IconMgrBevelWidth + 4;
     }
     else
     {
@@ -1113,8 +1099,8 @@ static int ComputeIconMgrWindowHeight (IconMgr *ip)
 #else
 	h = Scr->IconManagerFont.height + 10;
 #endif
-	if (h < (siconify_height + 4))
-	    h = siconify_height + 4;
+	if (h < (xiconify_height + 4))
+	    h = xiconify_height + 4;
 	}
 
     /* make height be odd so buttons look nice and centered */
