@@ -4,6 +4,78 @@ A COMPLETE LISTING OF CHANGES MADE TO VTWM SINCE VERSION 5.0
 IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 ============================================================
 
+    Jan 2008
+	Eeri Kask submitted 9 sets of patches with the following
+	functionality/fixes:
+	    * patchset 0 - remove the NO_I18N_SUPPORT compiler directive.
+		This is now handled in the code.
+
+	    * patchset 1 - GC changes/cleanup.
+
+	    * patchset 2 - Introduce MyWindow data structure to manage upcoming
+		Xft support.
+
+	    * patchset 3 - libXft font rendering (when supported by server).
+
+	    * patchset 4 - Interline spacing dependent upon font height. This
+		is selected with a compile time flag TWM_USE_SPACING in the
+		Imakefile.
+
+	    * patchset 5 - Opacity support for vtwm menus, icons and icon
+	       	manager. This is enabled with TWM_USE_OPACITY, and requires
+		the use of xcompmgr (see freedesktop.org).
+
+	    * patchset 6 - Various fixes:
+		(a) If MenuTitleFont was .vtwmrc-specified or not was
+		tested by checking if Scr->MenuTitleFont.name is NULL,
+		most notably in menus.c.  To avoid these runtime tests
+		MenuTitleFont.name is set to MenuFont.name in CreateFonts()
+		in twm.c prior to loading, if not already set in .vtwmrc
+		(otherwise GetFont() was called with NULL name and caused
+		Xft crash).
+
+		(b) Don't warp mouse to another screen if executing some
+		functions under XGrabPointer().  Window move, resize
+		operations (maybe others?) need forced staying on the
+		screen of function execution though.  (See
+		ExecuteFunction() in menus.c)
+
+		(c) Don't unhighlight iconmanager client label if entering
+		another screen in HandleEnterNotify() in events.c, it
+		is already unhighlighted and only causes an X11-protocol
+		error while drawing with a GC of a wrong screen.
+
+		(d) SetFocus() in util.c lacks 'Scr' null-pointer test
+		in TRACE-enclosed code (affected are notably f.quit,
+		f.restart).
+
+	    * patchset 7 - SloppyFocus feature. This needs to be enabled
+		with TWM_USE_SLOPPYFOCUS in addition to a vtwmrc setting.
+
+	    * patchset 8 - Modifications to warp behaviour.
+		+ Warp cursor into new client windows as per the same rules
+		as deiconifying.
+		+ Warp transients only to current client windows. As this
+		is not backward compatible it will be subsequently modified
+		to provide a range of behaviours controlled in vtwmrc.
+
+	    * patchset 9 - Various appearance changes:
+		(a) SizeWindow, InfoWindow, menu border width tied to
+		'BorderWidth'.
+
+		(b) Draw menu title separator only if menu has borders
+		or bevels.
+
+		(c) Add icon name to f.identify while presented in
+		InfoWindow.
+
+		(d) Restored twm's original siconify_bits[] Bitmap logo
+		in DrawXLogoImage() in util.c if logo size not greater
+		than this original bitmap.  Otherwise XmuDrawLogo() is
+		used (which is probably stale code as of now).
+
+		(e) 'DefaultFont' keyword introduced
+
 ============ vtwm-5.4.N.tar.gz =============
 hawkeyd@visi.com (D. J. Hawkey Jr. aka djhjr)
 
