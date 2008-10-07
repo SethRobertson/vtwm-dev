@@ -89,6 +89,11 @@ static void AddMoveAndResize();
 
 char NoName[] = "Untitled"; /* name if no name is specified */
 
+typedef struct _PlaceXY {
+    struct _PlaceXY *next;
+    int x, y, width, height;
+} PlaceXY;
+
 
 /************************************************************************
  *
@@ -153,6 +158,7 @@ int iconm;
 IconMgr *iconp;
 {
     TwmWindow *tmp_win;			/* new twm window structure */
+    TwmWindow **ptmp_win;
     unsigned long valuemask;		/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
     Atom actual_type;
@@ -496,11 +502,13 @@ IconMgr *iconp;
 	ppos_on = *ppos_ptr;
     else
 	ppos_on = Scr->UsePPosition;
+
     if (ppos_on == PPOS_NON_ZERO &&
 		(tmp_win->attr.x != 0 || tmp_win->attr.y != 0))
 	ppos_on = PPOS_ON;
 
     ask_user = TRUE;
+
     if (tmp_win->transient ||
 		(tmp_win->hints.flags & USPosition) ||
         	((tmp_win->hints.flags & PPosition) && ppos_on == PPOS_ON))
@@ -510,6 +518,14 @@ IconMgr *iconp;
     if (PlaceApplet(tmp_win, tmp_win->attr.x, tmp_win->attr.y,
 		    &tmp_win->attr.x, &tmp_win->attr.y))
 	ask_user = FALSE;
+
+    /* If we want the window to appear on-screen and it is off, ask the user/use random */
+    if (ppos_on == PPOS_ON_SCREEN &&
+	(tmp_win->attr.x < Scr->VirtualDesktopX ||
+	 tmp_win->attr.x >= Scr->VirtualDesktopX + Scr->MyDisplayWidth ||
+	 tmp_win->attr.y < Scr->VirtualDesktopY ||
+	 tmp_win->attr.y >= Scr->VirtualDesktopY + Scr->MyDisplayHeight))
+        ask_user = TRUE;
 
     if (LookInList(Scr->NailedDown, tmp_win->full_name, &tmp_win->class))
 	    tmp_win->nailed = TRUE;
@@ -601,12 +617,15 @@ IconMgr *iconp;
 	return(NULL);
     }
 
-    /* add the window into the twm list */
-    tmp_win->next = Scr->TwmRoot.next;
-    if (Scr->TwmRoot.next != NULL)
-	Scr->TwmRoot.next->prev = tmp_win;
+    /* _append_ the window into the twm list (simplify 'group leader' search) */
+    tmp_win->next = NULL;
     tmp_win->prev = &Scr->TwmRoot;
-    Scr->TwmRoot.next = tmp_win;
+    ptmp_win = &Scr->TwmRoot.next;
+    while (*ptmp_win) {
+	tmp_win->prev = (*ptmp_win);
+	ptmp_win = &((*ptmp_win)->next);
+    }
+    (*ptmp_win) = tmp_win;
 
     /* get all the colors for the window */
 
@@ -673,12 +692,9 @@ IconMgr *iconp;
 
 #ifdef TWM_USE_XFT
     if (Scr->use_xft > 0) {
-	CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
-			tmp_win->title.fore, &tmp_win->title.xft);
-	CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
-			tmp_win->iconc.fore, &tmp_win->iconc.xft);
-	CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
-			tmp_win->virtual.fore, &tmp_win->virtual.xft);
+	CopyPixelToXftColor (tmp_win->title.fore, &tmp_win->title.xft);
+	CopyPixelToXftColor (tmp_win->iconc.fore, &tmp_win->iconc.xft);
+	CopyPixelToXftColor (tmp_win->virtual.fore, &tmp_win->virtual.xft);
     }
 #endif
 
@@ -796,10 +812,8 @@ IconMgr *iconp;
 					  Scr->d_visual, valuemask,
 					  &attributes);
 #ifdef TWM_USE_XFT
-	if (Scr->use_xft > 0) {
-	    tmp_win->title_w.xft = MyXftDrawCreate (dpy, tmp_win->title_w.win,
-				Scr->d_visual, XDefaultColormap (dpy, Scr->screen));
-	}
+	if (Scr->use_xft > 0)
+	    tmp_win->title_w.xft = MyXftDrawCreate (tmp_win->title_w.win);
 #endif
     }
     else {
@@ -941,14 +955,7 @@ IconMgr *iconp;
     if (RootFunction != F_NOFUNCTION)
 	ReGrab();
 
-	Scr->Newest = tmp_win; /* PF */
-	if (tmp_win->transient && Scr->WarpToTransients /* PF */
-			/* warp to the transient only if top-level client has focus: */
-			&& Scr->Focus && Scr->Focus->w == tmp_win->transientfor)
-		WarpToWindow(tmp_win); /* PF,DSE */
-	/* warp mouse into client if listed in "WarpCursor": */
-	else if (Scr->WarpCursor || LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class))
-		WarpToWindow(tmp_win);
+    Scr->Newest = tmp_win; /* PF */
 
     return (tmp_win);
 }
@@ -992,6 +999,129 @@ int x, y;
 }
 
 
+/**
+ * Look for a nonoccupied rectangular area to place a new client.
+ * If found return this area in 'pos', otherwise don't change 'pos'.
+ * Begin with decomposing screen empty space into (overlapping) 'tiles'.
+ *
+ *  lst		TWM window list
+ *  twm		new client
+ *  tiles	tile list to search
+ *  pos		return found tile
+ */
+static int
+FindEmptyArea (TwmWindow *lst, TwmWindow *twm, PlaceXY *tiles, PlaceXY *pos)
+{
+    PlaceXY *t, **pt;
+
+#define OVERLAP(a,f)	((a)->x < (f)->frame_x+(f)->frame_width && (f)->frame_x < (a)->x+(a)->width \
+			&& (a)->y < (f)->frame_y+(f)->frame_height && (f)->frame_y < (a)->y+(a)->height)
+
+    /* skip unmapped windows, iconmanagers and vtwm-desktop: */
+    while (lst != NULL
+	    && (lst->mapped == FALSE
+		|| lst->iconmgr == TRUE
+		|| strcmp(lst->class.res_class, VTWM_DESKTOP_CLASS) == 0))
+	lst = lst->next;
+
+    if (lst == NULL) {
+	/* decomposition done, pick and return one 'tile': */
+	PlaceXY *m;
+	int w, h, d;
+
+	w = twm->attr.width + 2*(twm->frame_bw+twm->frame_bw3D);
+	h = twm->attr.height + 2*(twm->frame_bw+twm->frame_bw3D) + twm->title_height;
+	d = 2*Scr->TitleHeight;
+	m = t = NULL;
+
+	while (tiles != NULL) {
+	    if (tiles->width >= w && tiles->height >= h) {
+		int x, y;
+		x = tiles->x + twm->attr.width/4;
+		y = tiles->y + twm->attr.height/4;
+		if (tiles->width >= w+d && tiles->height >= h+d) {
+		    if ((m == NULL) || (m->y >= y) || (m->x > x))
+			m = tiles; /* best choice */
+		}
+		if ((t == NULL) || (t->y >= y) || (t->x > x))
+		    t = tiles; /* second choice */
+	    }
+	    tiles = tiles->next;
+	}
+
+	if (m != NULL)
+	    t = m;
+
+	if (t != NULL) {
+	    pos->x = t->x;
+	    pos->y = t->y;
+	    pos->width = t->width;
+	    pos->height = t->height;
+	    return TRUE;
+	}
+    } else {
+	/* proceed with screen 'tile' decomposition: */
+	for (pt = &tiles; (*pt) != NULL; pt = &((*pt)->next))
+	    if (OVERLAP((*pt), lst)) {
+		PlaceXY _buf[4], *buf = _buf;
+
+		t = (*pt)->next; /*remove current tile from list*/
+
+		if (lst->frame_x + lst->frame_width < (*pt)->x + (*pt)->width) {
+		    /* add right subtile: */
+		    buf[0].x = lst->frame_x + lst->frame_width;
+		    buf[0].y = (*pt)->y;
+		    buf[0].width = (*pt)->x + (*pt)->width - (lst->frame_x + lst->frame_width);
+		    buf[0].height = (*pt)->height;
+		    if (buf[0].width >= twm->attr.width) { /*preselection*/
+			buf[0].next = t;
+			t = &buf[0];
+		    }
+		}
+		if (lst->frame_y + lst->frame_height < (*pt)->y + (*pt)->height) {
+		    /* add bottom subtile: */
+		    buf[1].x = (*pt)->x;
+		    buf[1].y = lst->frame_y + lst->frame_height;
+		    buf[1].width = (*pt)->width;
+		    buf[1].height = (*pt)->y + (*pt)->height - (lst->frame_y + lst->frame_height);
+		    if (buf[1].height >= twm->attr.height) {
+			buf[1].next = t;
+			t = &buf[1];
+		    }
+		}
+		if (lst->frame_y > (*pt)->y) {
+		    /* add top subtile: */
+		    buf[2].x = (*pt)->x;
+		    buf[2].y = (*pt)->y;
+		    buf[2].width = (*pt)->width;
+		    buf[2].height = lst->frame_y - (*pt)->y;
+		    if (buf[2].height >= twm->attr.height) {
+			buf[2].next = t;
+			t = &buf[2];
+		    }
+		}
+		if (lst->frame_x > (*pt)->x) {
+		    /* add left subtile: */
+		    buf[3].x = (*pt)->x;
+		    buf[3].y = (*pt)->y;
+		    buf[3].width = lst->frame_x - (*pt)->x;
+		    buf[3].height = (*pt)->height;
+		    if (buf[3].width >= twm->attr.width) {
+			buf[3].next = t;
+			t = &buf[3];
+		    }
+		}
+
+		(*pt) = t;
+
+		return FindEmptyArea (lst, twm, tiles, pos); /*continue subtiling*/
+	    }
+	return FindEmptyArea (lst->next, twm, tiles, pos); /*start over with next client*/
+    }
+    return FALSE;
+}
+
+
 /*
  * AddMoveAndResize()
  *
@@ -1016,31 +1146,86 @@ int ask_user;
      */
     if (HandlingEvents && ask_user) {
       if (Scr->RandomPlacement) {	/* just stick it somewhere */
-	if (PlaceX + wd > Scr->MyDisplayWidth) {
+	PlaceXY area;
+
+#ifdef TILED_SCREEN
+	if (Scr->use_tiles == TRUE)
+	{
+	    TwmWindow *tmp;
+	    int k;
+
+	    /* look for 'group leader' tile: */
+	    for (tmp = Scr->TwmRoot.next; tmp != NULL; tmp = tmp->next)
+		if (tmp != tmp_win && tmp->group == tmp_win->group)
+		    break;
+	    if (tmp != NULL)
+		k = FindNearestTileToClient (tmp);
+	    else
+		k = FindNearestTileToMouse();
+
+	    area.x = Lft(Scr->tiles[k]);
+	    area.y = Bot(Scr->tiles[k]);
+	    area.width = AreaWidth(Scr->tiles[k]);
+	    area.height = AreaHeight(Scr->tiles[k]);
+	}
+	else
+#endif
+	{
+	    area.x = area.y = 0;
+	    area.width = Scr->MyDisplayWidth;
+	    area.height = Scr->MyDisplayHeight;
+	}
+	area.next = NULL;
+
+       if (FindEmptyArea(Scr->TwmRoot.next, tmp_win, &area, &area) == TRUE) {
+	    int x, y, b, d;
+	    b = Scr->TitleHeight + tmp_win->frame_bw + tmp_win->frame_bw3D;
+	    d = tmp_win->title_height;
+	    /* slightly off-centered: */
+	    x = (area.width - tmp_win->attr.width) / 3;
+	    y = (area.height - tmp_win->attr.height + d) / 2;
+	    /* tight placing: */
+	    if (y < b+d && x > b)
+	        x = b;
+	    if (x < b && y > b+d)
+	        y = b+d;
+	    /* loosen placing: */
+	    if (area.width > 4*b + tmp_win->attr.width && x > 2*b)
+		x = 2*b;
+	    if (area.height > 4*b + tmp_win->attr.height && y > 2*b)
+		y = 2*b;
+	    tmp_win->attr.x = area.x + x;
+	    tmp_win->attr.y = area.y + y;
+
+       } else {
+
+	if (PlaceX + wd > area.width) {
 	  /* submitted by Seth Robertson <seth@baka.org> - 8/25/02 */
-	  if (PLACEMENT_START + wd < Scr->MyDisplayWidth)
+	  if (PLACEMENT_START + wd < area.width)
 	    PlaceX = PLACEMENT_START;
 	  else {
 	    PlaceX = tmp_win->frame_bw;
-	    if (wd < Scr->MyDisplayWidth)
-	      PlaceX += (Scr->MyDisplayWidth - wd) / 2;
+	    if (wd < area.width)
+	      PlaceX += (area.width - wd) / 2;
 	  }
 	}
-	if (PlaceY + ht > Scr->MyDisplayHeight) {
+	if (PlaceY + ht > area.height) {
 	  /* submitted by Seth Robertson <seth@baka.org> - 8/25/02 */
-	  if (PLACEMENT_START + ht < Scr->MyDisplayHeight)
+	  if (PLACEMENT_START + ht < area.height)
 	    PlaceY = PLACEMENT_START;
 	  else {
 	    PlaceY = tmp_win->title_height + tmp_win->frame_bw;
-	    if (ht < Scr->MyDisplayHeight)
-	      PlaceY += (Scr->MyDisplayHeight - ht) / 2;
+	    if (ht < area.height)
+	      PlaceY += (area.height - ht) / 2;
 	  }
 	}
 
-	tmp_win->attr.x = PlaceX;
-	tmp_win->attr.y = PlaceY;
+	tmp_win->attr.x = area.x + PlaceX;
+	tmp_win->attr.y = area.y + PlaceY;
 	PlaceX += PLACEMENT_INCR;
 	PlaceY += PLACEMENT_INCR;
+       }
+
       } else if (Scr->PointerPlacement) {
 	  /* find pointer */
 	  if (!XQueryPointer (dpy, Scr->Root, &JunkRoot,
@@ -1134,6 +1319,12 @@ int ask_user;
 				Scr->SizeStringWidth, height);
 */
 
+#ifdef TILED_SCREEN
+	    if (Scr->use_tiles == TRUE) {
+		int k = FindNearestTileToMouse();
+		XMoveWindow (dpy, Scr->SizeWindow.win, Lft(Scr->tiles[k]), Bot(Scr->tiles[k]));
+	    }
+#endif
 	    XMapRaised(dpy, Scr->SizeWindow.win);
 	    InstallRootColormap();
 
@@ -1399,8 +1590,25 @@ Why?
 	    } /* if (event.xbutton.button == Button2) */
 	    else if (event.xbutton.button == Button3)
 	    {
-		int maxw = Scr->MyDisplayWidth - AddingX - bw2;
-		int maxh = Scr->MyDisplayHeight - AddingY - bw2;
+		int maxw, maxh;
+
+#ifdef TILED_SCREEN
+		if (Scr->use_tiles == TRUE) {
+		    int Area[4];
+		    Lft(Area) = AddingX;
+		    Rht(Area) = AddingX + AddingW - 1;
+		    Bot(Area) = AddingY;
+		    Top(Area) = AddingY + AddingH - 1;
+		    TilesFullZoom (Area);
+		    maxw = Rht(Area)+1 - AddingX - bw2;
+		    maxh = Top(Area)+1 - AddingY - bw2;
+		}
+		else
+#endif
+		{
+		    maxw = Scr->MyDisplayWidth  - AddingX - bw2;
+		    maxh = Scr->MyDisplayHeight - AddingY - bw2;
+		}
 
 		/*
 		 * Make window go to bottom of screen, and clip to right edge.
@@ -1463,6 +1671,44 @@ Why?
 			XMapWindow(dpy, Scr->VirtualDesktopDisplay);
 		}
     } else {				/* put it where asked, mod title bar */
+	if (tmp_win->transient) {
+	    /* some toolkits put transients beyond screen: */
+#ifdef TILED_SCREEN
+	    if (Scr->use_tiles == TRUE)
+	    {
+		TwmWindow *tmp;
+		int k = FindNearestTileToMouse();
+
+		/* look for 'parent' tile: */
+		for (tmp = Scr->TwmRoot.next; tmp != NULL; tmp = tmp->next)
+		    if (tmp != tmp_win && tmp->w == tmp_win->transientfor)
+			break;
+
+		if (tmp != NULL) {
+		    if ((Distance1D(tmp_win->attr.x, tmp_win->attr.x+tmp_win->attr.width-1,
+				Lft(Scr->tiles[k]), Rht(Scr->tiles[k])) < 0)
+			|| (Distance1D(tmp_win->attr.y, tmp_win->attr.y+tmp_win->attr.height-1,
+				Bot(Scr->tiles[k]), Top(Scr->tiles[k])) < 0))
+			k = FindNearestTileToClient (tmp);
+		}
+
+		EnsureRectangleOnTile (k, &tmp_win->attr.x, &tmp_win->attr.y,
+			tmp_win->attr.width, tmp_win->attr.height);
+	    }
+	    else
+#endif
+	    {
+		if (tmp_win->attr.x + tmp_win->attr.width > Scr->MyDisplayWidth)
+		    tmp_win->attr.x = Scr->MyDisplayWidth - tmp_win->attr.width;
+		if (tmp_win->attr.x < 0)
+		    tmp_win->attr.x = 0;
+		if (tmp_win->attr.y + tmp_win->attr.height > Scr->MyDisplayHeight)
+		    tmp_win->attr.y = Scr->MyDisplayHeight - tmp_win->attr.height;
+		if (tmp_win->attr.y < 0)
+		    tmp_win->attr.y = 0;
+	    }
+	}
+
 	/* interpret the position specified as a virtual one if asked */
 
 /* added 'FixManagedVirtualGeometries' - djhjr - 1/6/98 */

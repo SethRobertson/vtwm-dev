@@ -4,6 +4,52 @@ A COMPLETE LISTING OF CHANGES MADE TO VTWM SINCE VERSION 5.0
 IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 ============================================================
 
+    Oct 2008
+        Seth Robertson submitted patches to:
+	    * Resurrect ``UsePPosition "on-screen"'' which forces all
+              new windows to open on the current, visible screen.
+
+	    * Fix DeIconifyToScreen so that if the window you iconify
+	      is offscreen, it still deiconifies onscreen (you can
+	      actually map the window outside the virtual desktop
+	      geometry now, which makes finding the
+	      window...interesting).
+
+    Sep 2008
+	Eeri Kask submitted 7 sets of patches with the following
+	functionality/fixes:
+	    * patchset 1 - Clean up and fix minor bugs in Xft support,
+	        including conditional UTF8 Xft support.
+
+	    * patchset 2 - Promote the Focus&FocusRoot variable to a
+	        global variable (probably for future Xinerama
+	        support), extra safety checks, better sloppy focus
+	        colormap flashing WRT icon manager, execute
+	        programs/warp where pointer is,
+		not where focus is.  Only show icons if window would
+		have been visible.  Don't highlight if highlight has
+		been disabled.
+
+	    * patchset 3 - When focused on root, warp to transients or
+	        warp client list when requested when a window is
+	        mapped.  Add SloppyFocus to list of foci (currently
+	        unfocused) to allow warps.  Add warp to transients support.
+	        warptolocaltransients
+
+	    * patchset 4 - When doing random placement, look first for
+		unoccupied real estate.  Don't open transients offscreen
+		even if asked.
+
+	    * patchset 5 - Xinerama support(!!) aka TILED_SCREEN.
+
+	    * patchset 6 - XRANDR support(!!).  Support appearing and
+	        disappearing screens (by a vtwm restart?) with
+		restartonscreenchangenotify
+
+	    * patchset 7 - Bugfix for finding core font, correct test
+	        for success for function call, eliminate memory leak,
+
+
     Jan 2008
 	Eeri Kask submitted 9 sets of patches with the following
 	functionality/fixes:

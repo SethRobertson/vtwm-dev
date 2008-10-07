@@ -1440,6 +1440,12 @@ The default is \fI"-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"\fP.
 This variable specifies the area on the screen to display the resize window.
 The \fIlocation\fP should be one of \fBNorthWest\fP, \fBNorthEast\fP,
 \&\fBSouthWest\fP, \fBSouthEast\fP, or \fBCentered\fP.
+.IP "\fBRestartOnScreenChangeNotify\fP" 8
+This per-screen variable indicates that vtwm should automatically execute
+\fBf.restart\fP in case \fBRRScreenChangeNotify\fP event of
+XRANDR X11-extension occurs on the given screen.
+In order to preserve client window unzoomed sizes all zoomed clients
+are unzoomed first.
 .IP "\fBRestartPreviousState\fP" 8
 This variable indicates that
 \&\fBvtwm\fP should attempt to use the WM_STATE property on client windows
@@ -1669,7 +1675,9 @@ The argument \fIstring\fP may have one of three values:  \fI"off"\fP
 (the default) indicating that \fBvtwm\fP should ignore the program-supplied
 position, \fI"on"\fP indicating that the position should be used, and
 \&\fI"non-zero"\fP indicating that the position should used if it is other
-than (0,0) (for working around a bug in older toolkits).
+than (0,0) (for working around a bug in older toolkits) and finally
+\&\fI"non-zero"\fP indicating that the position should only be used it it
+resolves to something visible on the physical screen.
 The optional \fIwin-list\fP is a list of window names and arguments that
 will override the global \fIstring\fP argument. For example:
 .RS 12

@@ -140,36 +140,26 @@ void CreateIconManagers()
 	mask = XParseGeometry(p->geometry, &JunkX, &JunkY,
 			      (unsigned int *) &p->width, (unsigned int *)&p->height);
 
-	/* djhjr - 3/1/99 */
-	if (p->width > Scr->MyDisplayWidth) p->width = Scr->MyDisplayWidth;
+	if (p->width > Scr->MyDisplayWidth)
+	    p->width = Scr->MyDisplayWidth;
 
-	if (mask & XNegative)
-/* djhjr - 4/19/96
-	    JunkX = Scr->MyDisplayWidth - p->width - 
-	      (2 * Scr->BorderWidth) + JunkX;
-*/
-/* djhjr - 8/11/98
-	    JunkX += Scr->MyDisplayWidth - p->width - 
-	      (2 * (Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth));
-*/
-	    JunkX += Scr->MyDisplayWidth - p->width - 
-	      (2 * Scr->BorderWidth);
+	if (p->width  < 1)
+	    p->width  = 1;
+	if (p->height < 1)
+	    p->height = 1;
 
-	if (mask & YNegative)
-/* djhjr - 4/19/96
-	    JunkY = Scr->MyDisplayHeight - p->height -
-	      (2 * Scr->BorderWidth) + JunkY;
-*/
-/* djhjr - 8/11/98
-	    JunkY += Scr->MyDisplayHeight - p->height -
-	      (2 * (Scr->ThreeDBorderWidth ? Scr->ThreeDBorderWidth : Scr->BorderWidth));
-*/
-	    JunkY += Scr->MyDisplayHeight - p->height -
-	      (2 * Scr->BorderWidth);
-
-	/* djhjr - 9/10/98 */
-	if (p->width  < 1) p->width  = 1;
-	if (p->height < 1) p->height = 1;
+#ifdef TILED_SCREEN
+	if (Scr->use_tiles == TRUE)
+	    EnsureGeometryVisibility (mask, &JunkX, &JunkY,
+		    p->width + 2*Scr->BorderWidth, p->height + 2*Scr->BorderWidth);
+	else
+#endif
+	{
+	    if (mask & XNegative)
+		JunkX += Scr->MyDisplayWidth - p->width - (2 * Scr->BorderWidth);
+	    if (mask & YNegative)
+		JunkY += Scr->MyDisplayHeight - p->height - (2 * Scr->BorderWidth);
+	}
 
 	background = Scr->IconManagerC.back;
 	GetColorFromList(Scr->IconManagerBL, p->name, (XClassHint *)NULL,
@@ -629,10 +619,8 @@ WList *AddIconManager(tmp_win)
 
 #ifdef TWM_USE_XFT
     if (Scr->use_xft > 0) {
-	tmp->w.xft = MyXftDrawCreate (dpy, tmp->w.win, Scr->d_visual,
-				XDefaultColormap (dpy, Scr->screen));
-	CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen), 
-				tmp->cp.fore, &tmp->cp.xft);
+	tmp->w.xft = MyXftDrawCreate (tmp->w.win);
+	CopyPixelToXftColor (tmp->cp.fore, &tmp->cp.xft);
     }
 #endif
 
@@ -877,23 +865,27 @@ void DrawIconManagerBorder(tmp, fill)
     WList *tmp;
     int fill;
 {
+    ScreenInfo *scr;
+
     /* speedup: only draw if iconmanager window mapped: */
     if (!tmp->iconmgr->twm_win->mapped)
 	return;
 
+    scr = (ClientIsOnScreen(tmp->twm, Scr) ? Scr : FindWindowScreenInfo(&tmp->twm->attr));
+
 	/* was 'Scr->use3Diconmanagers' - djhjr - 8/11/98 */
-    if (Scr->IconMgrBevelWidth > 0) {
+    if (scr->IconMgrBevelWidth > 0) {
 	int shadow_width;
 
 /* djhjr - 4/28/98
 	shadow_width = 2;
 */
-	shadow_width = Scr->IconMgrBevelWidth;
+	shadow_width = scr->IconMgrBevelWidth;
 
 /* djhjr - 1/27/98
-	if (tmp->active && Scr->Highlight)
+	if (tmp->active && scr->Highlight)
 */
-	if (tmp->active && Scr->IconMgrHighlight)
+	if (tmp->active && scr->IconMgrHighlight)
 	    Draw3DBorder (tmp->w.win, 0, 0, tmp->width, tmp->height, shadow_width,
 				tmp->cp, on, fill, False);
 	else
@@ -902,26 +894,26 @@ void DrawIconManagerBorder(tmp, fill)
     }
     else {
 /*
-	XSetForeground(dpy, Scr->NormalGC, tmp->fore);
+	XSetForeground(dpy, scr->NormalGC, tmp->fore);
 */
-	XSetForeground(dpy, Scr->NormalGC, tmp->cp.fore);
-	    XDrawRectangle(dpy, tmp->w.win, Scr->NormalGC, 2, 2,
+	XSetForeground(dpy, scr->NormalGC, tmp->cp.fore);
+	    XDrawRectangle(dpy, tmp->w.win, scr->NormalGC, 2, 2,
 		tmp->width-5, tmp->height-5);
 
 /* djhjr - 1/27/98
-	if (tmp->active && Scr->Highlight)
+	if (tmp->active && scr->Highlight)
 */
-	if (tmp->active && Scr->IconMgrHighlight)
-	    XSetForeground(dpy, Scr->NormalGC, tmp->highlight);
+	if (tmp->active && scr->IconMgrHighlight)
+	    XSetForeground(dpy, scr->NormalGC, tmp->highlight);
 	else
 /*
-	    XSetForeground(dpy, Scr->NormalGC, tmp->back);
+	    XSetForeground(dpy, scr->NormalGC, tmp->back);
 */
-	    XSetForeground(dpy, Scr->NormalGC, tmp->cp.back);
+	    XSetForeground(dpy, scr->NormalGC, tmp->cp.back);
 
-	XDrawRectangle(dpy, tmp->w.win, Scr->NormalGC, 0, 0,
+	XDrawRectangle(dpy, tmp->w.win, scr->NormalGC, 0, 0,
 	    tmp->width-1, tmp->height-1);
-	XDrawRectangle(dpy, tmp->w.win, Scr->NormalGC, 1, 1,
+	XDrawRectangle(dpy, tmp->w.win, scr->NormalGC, 1, 1,
 	    tmp->width-3, tmp->height-3);
     }
 }

@@ -200,10 +200,18 @@ int grav1, grav2, stepx, stepy;
     rr->x = rr->y = rr->w = rr->h = 0;
 
     mask = XParseGeometry(geom, &rr->x, &rr->y, (unsigned int *)&rr->w, (unsigned int *)&rr->h);
-    if (mask & XNegative)
-        rr->x += Scr->MyDisplayWidth - rr->w;
-    if (mask & YNegative)
-        rr->y += Scr->MyDisplayHeight - rr->h;
+
+#ifdef TILED_SCREEN
+    if (Scr->use_tiles == TRUE)
+	EnsureGeometryVisibility (mask, &rr->x, &rr->y, rr->w, rr->h);
+    else
+#endif
+    {
+	if (mask & XNegative)
+	    rr->x += Scr->MyDisplayWidth - rr->w;
+	if (mask & YNegative)
+	    rr->y += Scr->MyDisplayHeight - rr->h;
+    }
 
     rr->entries = (RegionEntry *)malloc(sizeof(RegionEntry));
     rr->entries->next = 0;

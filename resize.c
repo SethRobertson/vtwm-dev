@@ -204,6 +204,13 @@ int context;
     if (Scr->AutoRelativeResize && !fromtitlebar)
       do_auto_clamp (tmp_win, evp);
 
+#ifdef TILED_SCREEN
+    if (Scr->use_tiles == TRUE) {
+	int k = FindNearestTileToMouse();
+	XMoveWindow (dpy, Scr->SizeWindow.win, Lft(Scr->tiles[k]), Bot(Scr->tiles[k]));
+    }
+#endif
+
 /* use initialized size... djhjr - 5/9/96
 	Scr->SizeStringOffset = SIZE_HINDENT;
     XResizeWindow (dpy, Scr->SizeWindow.win,
@@ -277,6 +284,13 @@ int context;
     clampTop = clampBottom = clampLeft = clampRight = clampDX = clampDY = 0;
     last_width = 0;
     last_height = 0;
+
+#ifdef TILED_SCREEN
+    if (Scr->use_tiles == TRUE) {
+	int k = FindNearestTileToMouse();
+	XMoveWindow (dpy, Scr->SizeWindow.win, Lft(Scr->tiles[k]), Bot(Scr->tiles[k]));
+    }
+#endif
 
 /* use initialized size... djhjr - 5/9/96
     Scr->SizeStringOffset = SIZE_HINDENT;
@@ -1541,6 +1555,597 @@ int x, y, w, h;
 }
 
 
+#ifdef TILED_SCREEN
+
+/*
+ * Attention: in the following tiled screen Zoom functions 'top-edge'
+ * is not towards the upper edge of the monitor but the edge having
+ * greater y-coordinate.  I.e. in fact, it is towards the 'lower-edge'.
+ * Imagine 'bot' having y0 and 'top' the y1 Cartesian coordinate,
+ * and y0 <= y1 imposed.
+ *
+ * (Thinking of Lft/Bot/Rht/Top-edges as x0/y0/x1/y1-edges instead
+ * is correct and probably less confusing.)
+ */
+
+int FindNearestTileToArea (int w[4])
+{
+    /*
+     * Find a screen tile having maximum overlap with 'w'
+     * (or, if 'w' is outside of all tiles, a tile with minimum
+     * distance to 'w').
+     */
+    int k, dx, dy, a, m, i;
+
+    m = -xmax(Scr->MyDisplayWidth, Scr->MyDisplayHeight); /*some large value*/
+    i = 0;
+    for (k = 0; k < Scr->ntiles; ++k) {
+	dx = Distance1D(Lft(w), Rht(w), Lft(Scr->tiles[k]), Rht(Scr->tiles[k]));
+	dy = Distance1D(Bot(w), Top(w), Bot(Scr->tiles[k]), Top(Scr->tiles[k]));
+	a  = Distance2D(dx,dy);
+	if (m < a)
+	    m = a, i = k;
+    }
+    return i;
+}
+
+int FindNearestTileToPoint (int x, int y)
+{
+    int k, dx, dy, a, m, i;
+
+    i = 0;
+    m = -xmax(Scr->MyDisplayWidth, Scr->MyDisplayHeight);
+    for (k = 0; k < Scr->ntiles; ++k) {
+	dx = Distance1D(x, x, Lft(Scr->tiles[k]), Rht(Scr->tiles[k]));
+	dy = Distance1D(y, y, Bot(Scr->tiles[k]), Top(Scr->tiles[k]));
+	a  = Distance2D(dx,dy);
+	if (m < a)
+	    m = a, i = k;
+    }
+    return i;
+}
+
+int FindNearestTileToClient (TwmWindow *tmp)
+{
+    int k, dx, dy, a, m, i, w[4];
+
+    Lft(w) = tmp->frame_x;
+    Rht(w) = tmp->frame_x + tmp->frame_width  - 1;
+    Bot(w) = tmp->frame_y;
+    Top(w) = tmp->frame_y + tmp->frame_height - 1;
+    return FindNearestTileToArea (w);
+}
+
+int FindNearestTileToMouse (void)
+{
+    if (False == XQueryPointer (dpy, Scr->Root, &JunkRoot, &JunkChild,
+		    &JunkX, &JunkY, &HotX, &HotY, &JunkMask))
+	/* emergency: mouse not on current X11-screen */
+	return 0;
+    else
+	return FindNearestTileToPoint (JunkX, JunkY);
+}
+
+void EnsureRectangleOnTile (int tile, int *x0, int *y0, int w, int h)
+{
+    if ((*x0) + w > Rht(Scr->tiles[tile])+1)
+	(*x0) = Rht(Scr->tiles[tile])+1 - w;
+    if ((*x0) < Lft(Scr->tiles[tile]))
+	(*x0) = Lft(Scr->tiles[tile]);
+    if ((*y0) + h > Top(Scr->tiles[tile])+1)
+	(*y0) = Top(Scr->tiles[tile])+1 - h;
+    if ((*y0) < Bot(Scr->tiles[tile]))
+	(*y0) = Bot(Scr->tiles[tile]);
+}
+
+void EnsureGeometryVisibility (int mask, int *x0, int *y0, int w, int h)
+{
+    int x, y, Area[4];
+
+    x = (*x0);
+    if (mask & XNegative)
+	x += Scr->MyDisplayWidth - w;
+    y = (*y0);
+    if (mask & YNegative)
+	y += Scr->MyDisplayHeight - h;
+
+    Lft(Area) = x;
+    Rht(Area) = x + w - 1;
+    Bot(Area) = y;
+    Top(Area) = y + h - 1;
+
+    TilesFullZoom (Area);
+
+    if (mask & XNegative)
+	(*x0) += Rht(Area)+1 - w;
+    else
+	(*x0) += Lft(Area);
+    if (mask & YNegative)
+	(*y0) += Top(Area)+1 - h;
+    else
+	(*y0) += Bot(Area);
+
+    /* final sanity check: */
+    if ((*x0) + w > Rht(Area)+1)
+	(*x0) = Rht(Area)+1 - w;
+    if ((*x0) < Lft(Area))
+	(*x0) = Lft(Area);
+    if ((*y0) + h > Top(Area)+1)
+	(*y0) = Top(Area)+1 - h;
+    if ((*y0) < Bot(Area))
+	(*y0) = Bot(Area);
+}
+
+#define IntersectsV(a,b,t)  (((Bot(a)) <= (t)) && ((b) <= (Top(a))))
+#define IntersectsH(a,l,r)  (((Lft(a)) <= (r)) && ((l) <= (Rht(a))))
+#define OverlapsV(a,w)	    IntersectsV(a,Bot(w),Top(w))
+#define OverlapsH(a,w)	    IntersectsH(a,Lft(w),Rht(w))
+#define ContainsV(a,p)	    IntersectsV(a,p,p)
+#define ContainsH(a,p)	    IntersectsH(a,p,p)
+
+static int BoundingBoxLeft (int w[4])
+{
+    int i, k;
+
+    i = -1; /* value '-1' is 'not found' */
+    /* zoom out: */
+    for (k = 0; k < Scr->ntiles; ++k)
+	/* consider tiles vertically overlapping the window "height" (along left edge): */
+	if (OverlapsV(Scr->tiles[k], w))
+	    /* consider tiles horizontally intersecting the window left edge: */
+	    if (ContainsH(Scr->tiles[k], Lft(w))) {
+		if ((i == -1) || (Lft(Scr->tiles[k]) < Lft(Scr->tiles[i])))
+		    i = k;
+	    }
+    if (i == -1)
+	/* zoom in (no intersecting tiles found): */
+	for (k = 0; k < Scr->ntiles; ++k)
+	    if (OverlapsV(Scr->tiles[k], w))
+		/* consider tiles having left edge right to the left edge of the window: */
+		if (Lft(Scr->tiles[k]) > Lft(w)) {
+		    if ((i == -1) || (Lft(Scr->tiles[k]) < Lft(Scr->tiles[i])))
+			i = k;
+		}
+    return i;
+}
+
+static int BoundingBoxBottom (int w[4])
+{
+    int i, k;
+
+    i = -1;
+    /* zoom out: */
+    for (k = 0; k < Scr->ntiles; ++k)
+	/* consider tiles horizontally overlapping the window "width" (along bottom edge): */
+	if (OverlapsH(Scr->tiles[k], w))
+	    /* consider tiles vertically interscting the window bottom edge: */
+	    if (ContainsV(Scr->tiles[k], Bot(w))) {
+		if ((i == -1) || (Bot(Scr->tiles[k]) < Bot(Scr->tiles[i])))
+		    i = k;
+	    }
+    if (i == -1)
+	/* zoom in (no intersecting tiles found): */
+	for (k = 0; k < Scr->ntiles; ++k)
+	    if (OverlapsH(Scr->tiles[k], w))
+		/* consider tiles having bottom edge ontop of the bottom edge of the window: */
+		if (Bot(Scr->tiles[k]) > Bot(w)) {
+		    if ((i == -1) || (Bot(Scr->tiles[k]) < Bot(Scr->tiles[i])))
+			i = k;
+		}
+    return i;
+}
+
+static int BoundingBoxRight (int w[4])
+{
+    int i, k;
+
+    i = -1;
+    /* zoom out: */
+    for (k = 0; k < Scr->ntiles; ++k)
+	/* consider tiles vertically overlapping the window "height" (along right edge): */
+	if (OverlapsV(Scr->tiles[k], w))
+	    /* consider tiles horizontally intersecting the window right edge: */
+	    if (ContainsH(Scr->tiles[k], Rht(w))) {
+		if ((i == -1) || (Rht(Scr->tiles[k]) > Rht(Scr->tiles[i])))
+		    i = k;
+	    }
+    if (i == -1)
+	/* zoom in (no intersecting tiles found): */
+	for (k = 0; k < Scr->ntiles; ++k)
+	    if (OverlapsV(Scr->tiles[k], w))
+		/* consider tiles having right edge left to the right edge of the window: */
+		if (Rht(Scr->tiles[k]) < Rht(w)) {
+		    if ((i == -1) || (Rht(Scr->tiles[k]) > Rht(Scr->tiles[i])))
+			i = k;
+		}
+    return i;
+}
+
+static int BoundingBoxTop (int w[4])
+{
+    int i, k;
+
+    i = -1;
+    /* zoom out: */
+    for (k = 0; k < Scr->ntiles; ++k)
+	/* consider tiles horizontally overlapping the window "width" (along top edge): */
+	if (OverlapsH(Scr->tiles[k], w))
+	    /* consider tiles vertically interscting the window top edge: */
+	    if (ContainsV(Scr->tiles[k], Top(w))) {
+		if ((i == -1) || (Top(Scr->tiles[k]) > Top(Scr->tiles[i])))
+		    i = k;
+	    }
+    if (i == -1)
+	/* zoom in (no intersecting tiles found): */
+	for (k = 0; k < Scr->ntiles; ++k)
+	    if (OverlapsH(Scr->tiles[k], w))
+		/* consider tiles having top edge below of the top edge of the window: */
+		if (Top(Scr->tiles[k]) < Top(w)) {
+		    if ((i == -1) || (Top(Scr->tiles[k]) > Top(Scr->tiles[i])))
+			i = k;
+		}
+    return i;
+}
+
+static int UncoveredLeft (int skip, int area[4], int thresh)
+{
+    int u, e, k, w[4];
+
+    u = Top(area) - Bot(area);
+    e = 0;
+    for (k = 0; k < Scr->ntiles && e == 0; ++k)
+	if (k != skip)
+	    /* consider tiles vertically intersecting area: */
+	    if (IntersectsV(Scr->tiles[k], Bot(area), Top(area)))
+		/* consider tiles horizontally intersecting boundingbox and outside window
+		 * (but touches the window on its left):
+		 */
+		if (ContainsH(Scr->tiles[k], Lft(area)-thresh)) {
+		    if (Top(Scr->tiles[k]) < Top(area)) {
+			Lft(w) = Lft(area);
+			Bot(w) = Top(Scr->tiles[k]) + 1;
+			Rht(w) = Rht(area);
+			Top(w) = Top(area);
+			u = UncoveredLeft (skip, w, thresh);
+			e = 1;
+		    }
+		    if (Bot(Scr->tiles[k]) > Bot(area)) {
+			Lft(w) = Lft(area);
+			Bot(w) = Bot(area);
+			Rht(w) = Rht(area);
+			Top(w) = Bot(Scr->tiles[k]) - 1;
+			if (e == 0)
+			    u  = UncoveredLeft (skip, w, thresh);
+			else
+			    u += UncoveredLeft (skip, w, thresh);
+			e = 1;
+		    }
+		    if (e == 0) {
+			u = 0;
+			e = 1;
+		    }
+		}
+    return u;
+}
+
+static int ZoomLeft (int bbl, int b, int t, int thresv, int thresh)
+{
+    int i, k, u;
+
+    i = bbl;
+    for (k = 0; k < Scr->ntiles; ++k)
+	if (k != bbl)
+	    /* consider tiles vertically intersecting bbl: */
+	    if (IntersectsV(Scr->tiles[k], b, t))
+		/* consider tiles having left edge in the bounding region
+		 * and to the right of the current best tile 'i':
+		 */
+		if (ContainsH(Scr->tiles[bbl], Lft(Scr->tiles[k]))
+			&& (Lft(Scr->tiles[i]) < Lft(Scr->tiles[k])))
+		{
+		    u = UncoveredLeft (k, Scr->tiles[k], thresh);
+		    if (u > thresv)
+			i = k;
+		}
+    return i;
+}
+
+static int UncoveredBottom (int skip, int area[4], int thresv)
+{
+    int u, e, k, w[4];
+
+    u = Rht(area) - Lft(area);
+    e = 0;
+    for (k = 0; k < Scr->ntiles && e == 0; ++k)
+	if (k != skip)
+	    /* consider tiles horizontally intersecting area: */
+	    if (IntersectsH(Scr->tiles[k], Lft(area), Rht(area)))
+		/* consider tiles vertically intersecting boundingbox and outside window
+		 * (but touches the window to its bottom):
+		 */
+		if (ContainsV(Scr->tiles[k], Bot(area)-thresv)) {
+		    if (Rht(Scr->tiles[k]) < Rht(area)) {
+			Lft(w) = Rht(Scr->tiles[k]) + 1;
+			Bot(w) = Bot(area);
+			Rht(w) = Rht(area);
+			Top(w) = Top(area);
+			u = UncoveredBottom (skip, w, thresv);
+			e = 1;
+		    }
+		    if (Lft(Scr->tiles[k]) > Lft(area)) {
+			Lft(w) = Lft(area);
+			Bot(w) = Bot(area);
+			Rht(w) = Lft(Scr->tiles[k]) - 1;
+			Top(w) = Top(area);
+			if (e == 0)
+			    u  = UncoveredBottom (skip, w, thresv);
+			else
+			    u += UncoveredBottom (skip, w, thresv);
+			e = 1;
+		    }
+		    if (e == 0) {
+			u = 0;
+			e = 1;
+		    }
+		}
+    return u;
+}
+
+static int ZoomBottom (int bbb, int l, int r, int thresh, int thresv)
+{
+    int i, k, u;
+
+    i = bbb;
+    for (k = 0; k < Scr->ntiles; ++k)
+	if (k != bbb)
+	    /* consider tiles horizontally intersecting bbb: */
+	    if (IntersectsH(Scr->tiles[k], l, r))
+		/* consider tiles having bottom edge in the bounding region
+		 * and above the current best tile 'i':
+		 */
+		if (ContainsV(Scr->tiles[bbb], Bot(Scr->tiles[k]))
+			&& (Bot(Scr->tiles[i]) < Bot(Scr->tiles[k])))
+		{
+		    u = UncoveredBottom (k, Scr->tiles[k], thresv);
+		    if (u > thresh)
+			i = k;
+		}
+    return i;
+}
+
+static int UncoveredRight(int skip, int area[4], int thresh)
+{
+    int u, e, k, w[4];
+
+    u = Top(area) - Bot(area);
+    e = 0;
+    for (k = 0; k < Scr->ntiles && e == 0; ++k)
+	if (k != skip)
+	    /* consider tiles vertically intersecting area: */
+	    if (IntersectsV(Scr->tiles[k], Bot(area), Top(area)))
+		/* consider tiles horizontally intersecting boundingbox and outside window
+		 * (but touches the window on its right):
+		 */
+		if (ContainsH(Scr->tiles[k], Rht(area)+thresh)) {
+		    if (Top(Scr->tiles[k]) < Top(area)) {
+			Lft(w) = Lft(area);
+			Bot(w) = Top(Scr->tiles[k]) + 1;
+			Rht(w) = Rht(area);
+			Top(w) = Top(area);
+			u = UncoveredRight (skip, w, thresh);
+			e = 1;
+		    }
+		    if (Bot(Scr->tiles[k]) > Bot(area)) {
+			Lft(w) = Lft(area);
+			Bot(w) = Bot(area);
+			Rht(w) = Rht(area);
+			Top(w) = Bot(Scr->tiles[k]) - 1;
+			if (e == 0)
+			    u  = UncoveredRight (skip, w, thresh);
+			else
+			    u += UncoveredRight (skip, w, thresh);
+			e = 1;
+		    }
+		    if (e == 0) {
+			u = 0;
+			e = 1;
+		    }
+		}
+    return u;
+}
+
+static int ZoomRight (int bbr, int b, int t, int thresv, int thresh)
+{
+    int i, k, u;
+
+    i = bbr;
+    for (k = 0; k < Scr->ntiles; ++k)
+	if (k != bbr)
+	    /* consider tiles vertically intersecting bbr: */
+	    if (IntersectsV(Scr->tiles[k], b, t))
+		/* consider tiles having right edge in the bounding region
+		 * and to the left of the current best tile 'i':
+		 */
+		if (ContainsH(Scr->tiles[bbr], Rht(Scr->tiles[k]))
+			&& (Rht(Scr->tiles[k]) < Rht(Scr->tiles[i])))
+		{
+		    u = UncoveredRight (k, Scr->tiles[k], thresh);
+		    if (u > thresv)
+			i = k;
+		}
+    return i;
+}
+
+static int UncoveredTop (int skip, int area[4], int thresv)
+{
+    int u, e, k, w[4];
+
+    u = Rht(area) - Lft(area);
+    e = 0;
+    for (k = 0; k < Scr->ntiles && e == 0; ++k)
+	if (k != skip)
+	    /* consider tiles horizontally intersecting area: */
+	    if (IntersectsH(Scr->tiles[k], Lft(area), Rht(area)))
+		/* consider tiles vertically intersecting boundingbox and outside window
+		 * (but touches the window on its top):
+		 */
+		if (ContainsV(Scr->tiles[k], Top(area)+thresv)) {
+		    if (Rht(Scr->tiles[k]) < Rht(area)) {
+			Lft(w) = Rht(Scr->tiles[k]) + 1;
+			Bot(w) = Bot(area);
+			Rht(w) = Rht(area);
+			Top(w) = Top(area);
+			u = UncoveredTop (skip, w, thresv);
+			e = 1;
+		    }
+		    if (Lft(Scr->tiles[k]) > Lft(area)) {
+			Lft(w) = Lft(area);
+			Bot(w) = Bot(area);
+			Rht(w) = Lft(Scr->tiles[k]) - 1;
+			Top(w) = Top(area);
+			if (e == 0)
+			    u  = UncoveredTop (skip, w, thresv);
+			else
+			    u += UncoveredTop (skip, w, thresv);
+			e = 1;
+		    }
+		    if (e == 0) {
+			u = 0;
+			e = 1;
+		    }
+		}
+    return u;
+}
+
+static int ZoomTop (int bbt, int l, int r, int thresh, int thresv)
+{
+    int i, k, u;
+
+    i = bbt;
+    for (k = 0; k < Scr->ntiles; ++k)
+	if (k != bbt)
+	    /* consider tiles horizontally intersecting bbt: */
+	    if (IntersectsH(Scr->tiles[k], l, r))
+		/* consider tiles having top edge in the bounding region
+		 * and below the current best tile 'i':
+		 */
+		if (ContainsV(Scr->tiles[bbt], Top(Scr->tiles[k]))
+			&& (Top(Scr->tiles[k]) < Top(Scr->tiles[i])))
+		{
+		    u = UncoveredTop (k, Scr->tiles[k], thresv);
+		    if (u > thresh)
+			i = k;
+		}
+    return i;
+}
+
+void TilesFullZoom (int Area[4])
+{
+    /*
+     * First step: find screen tiles (which overlap the 'Area')
+     * which define a "bounding box of maximum area".
+     * The following 4 functions return indices to these tiles.
+     */
+
+    int l, b, r, t, f;
+
+    f = 0;
+
+nxt:;
+
+    l = BoundingBoxLeft (Area);
+    b = BoundingBoxBottom (Area);
+    r = BoundingBoxRight (Area);
+    t = BoundingBoxTop (Area);
+
+    if (l >= 0 && b >=0 && r >= 0 && t >= 0) {
+	/*
+	 * Second step: take the above bounding box and move its borders
+	 * inwards minimising the total area of "dead areas" (i.e. X11-screen
+	 * regions not covered by any physical screen tiles) along borders.
+	 *    The following zoom functions return indices to screen tiles
+	 * defining the reduced area boundaries. (If screen tiles cover a
+	 * "compact area" (i.e. which does not have "slits") then the region
+	 * found here has no dead areas as well.)
+	 *    In general there may be slits between screen tiles and in
+	 * following thresh/thresv define tolerances (slit widths, cumulative
+	 * uncovered border) which define "coverage defects" not considered
+	 * as "dead areas".
+	 *    This treatment is considered only along reduced bounding box
+	 * boundaries and not in the "inner area". (So a screen tile
+	 * arrangement could cover e.g. a circular area and a reduced bounding
+	 * box is found without dead areas on borders but the inside of the
+	 * arrangement can include any number of topological holes, twists
+	 * and knots.)
+	 */
+	/*
+	 * thresh - width of a vertical slit between two horizontally
+	 *          adjacent screen tiles not considered as a "dead area".
+	 * thresv - height of a horizontal slit between two vertically
+	 *          adjacent screen tiles not considered as a "dead area".
+	 *
+	 * Or respectively how much uncovered border is not considered
+	 * "uncovered"/"dead" area.
+	 */
+
+	int i, j;
+
+	i = Bot(Scr->tiles[b]);
+	if (i < Bot(Area))
+	    i += Bot(Area), i /= 2;
+	j = Top(Scr->tiles[t]);
+	if (j > Top(Area))
+	    j += Top(Area), j /= 2;
+	l = ZoomLeft (l, i, j, /*uncovered*/10, /*slit*/10);
+
+	i = Lft(Scr->tiles[l]);
+	if (i < Lft(Area))
+	    i += Lft(Area), i /= 2;
+	j = Rht(Scr->tiles[r]);
+	if (j > Rht(Area))
+	    j += Rht(Area), j /= 2;
+	b = ZoomBottom (b, i, j, 10, 10);
+
+	i = Bot(Scr->tiles[b]);
+	if (i < Bot(Area))
+	    i += Bot(Area), i /= 2;
+	j = Top(Scr->tiles[t]);
+	if (j > Top(Area))
+	    j += Top(Area), j /= 2;
+	r = ZoomRight (r, i, j, 10, 10);
+
+	i = Lft(Scr->tiles[l]);
+	if (i < Lft(Area))
+	    i += Lft(Area), i /= 2;
+	j = Rht(Scr->tiles[r]);
+	if (j > Rht(Area))
+	    j += Rht(Area), j /= 2;
+	t = ZoomTop (t, i, j, 10, 10);
+
+	if (l >= 0 && b >=0 && r >= 0 && t >= 0) {
+	    Lft(Area) = Lft(Scr->tiles[l]);
+	    Bot(Area) = Bot(Scr->tiles[b]);
+	    Rht(Area) = Rht(Scr->tiles[r]);
+	    Top(Area) = Top(Scr->tiles[t]);
+	    return;
+	}
+    }
+
+    /* fallback: */
+    Lft(Area) = Lft(Scr->tiles_bb);
+    Bot(Area) = Bot(Scr->tiles_bb);
+    Rht(Area) = Rht(Scr->tiles_bb);
+    Top(Area) = Top(Scr->tiles_bb);
+
+    if (f == 0) {
+	f = 1;
+	goto nxt;
+    }
+}
+
+#endif /*TILED_SCREEN*/
+
+
 /**********************************************************************
  *  Rutgers mod #1   - rocky.
  *  Procedure:
@@ -1557,21 +2162,8 @@ int x, y, w, h;
  */
 
 void
-fullzoom(tmp_win,flag)
-TwmWindow *tmp_win;
-int flag;
+fullzoom (TwmWindow *tmp_win, int flag)
 {
-	Window junkRoot;
-	unsigned int junkbw, junkDepth;
-	int basex, basey;
-	int frame_bw_times_2;
-
-	XGetGeometry(dpy, (Drawable) tmp_win->frame, &junkRoot, &dragx, &dragy,
-		(unsigned int *)&dragWidth, (unsigned int *)&dragHeight, &junkbw,
-		&junkDepth);
-
-	basex = basey = 0;
-
 	if (tmp_win->zoomed == flag)
 	{
 		dragHeight = tmp_win->save_frame_height;
@@ -1582,6 +2174,33 @@ int flag;
 	}
 	else
 	{
+		int basex, basey;
+		int frame_bw_times_2;
+
+#ifdef TILED_SCREEN
+
+		int Area[4];
+
+		if (Scr->use_tiles == TRUE) {
+			Lft(Area) = tmp_win->frame_x;
+			Rht(Area) = tmp_win->frame_x + tmp_win->frame_width  - 1;
+			Bot(Area) = tmp_win->frame_y;
+			Top(Area) = tmp_win->frame_y + tmp_win->frame_height - 1;
+
+			TilesFullZoom (Area);
+
+			basex = Lft(Area); /* Cartesian origin:   */
+			basey = Bot(Area); /* (x0,y0) = (Lft,Bot) */
+		}
+		else
+#endif
+			basex = basey = 0;
+
+		XGetGeometry (dpy, (Drawable) tmp_win->frame, &JunkRoot,
+			&dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight,
+			&JunkBW, &JunkDepth);
+
+
 		if (tmp_win->zoomed == ZOOM_NONE)
 		{
 			tmp_win->save_frame_x = dragx;
@@ -1602,43 +2221,100 @@ int flag;
 				dragx = tmp_win->save_frame_x;
 				dragy=basey;
 				dragWidth = tmp_win->save_frame_width;
-				dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
+#ifdef TILED_SCREEN
+				if (Scr->use_tiles == TRUE)
+					dragHeight = AreaHeight(Area) - frame_bw_times_2;
+				else
+#endif
+					dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
 				break;
 			case F_HORIZOOM:
 				dragx = basex;
 				dragy = tmp_win->save_frame_y;
-				dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
+#ifdef TILED_SCREEN
+				if (Scr->use_tiles == TRUE)
+					dragWidth = AreaWidth(Area) - frame_bw_times_2;
+				else
+#endif
+					dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
 				dragHeight = tmp_win->save_frame_height;
 				break;
 			case F_FULLZOOM:
 				dragx = basex;
 				dragy = basey;
-				dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
-				dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
+#ifdef TILED_SCREEN
+				if (Scr->use_tiles == TRUE) {
+					dragWidth = AreaWidth(Area) - frame_bw_times_2;
+					dragHeight = AreaHeight(Area) - frame_bw_times_2;
+				}
+				else
+#endif
+				{
+					dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
+					dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
+				}
 				break;
 			case F_LEFTZOOM:
 				dragx = basex;
 				dragy = basey;
-				dragWidth = Scr->MyDisplayWidth / 2 - frame_bw_times_2;
-				dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
+#ifdef TILED_SCREEN
+				if (Scr->use_tiles == TRUE) {
+					dragWidth = AreaWidth(Area) / 2 - frame_bw_times_2;
+					dragHeight = AreaHeight(Area) - frame_bw_times_2;
+				}
+				else
+#endif
+				{
+					dragWidth = Scr->MyDisplayWidth / 2 - frame_bw_times_2;
+					dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
+				}
 				break;
 			case F_RIGHTZOOM:
-				dragx = basex + Scr->MyDisplayWidth / 2;
 				dragy = basey;
-				dragWidth = Scr->MyDisplayWidth / 2 - frame_bw_times_2;
-				dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
+#ifdef TILED_SCREEN
+				if (Scr->use_tiles == TRUE) {
+					dragx = basex + AreaWidth(Area) / 2;
+					dragWidth = AreaWidth(Area) / 2 - frame_bw_times_2;
+					dragHeight = AreaHeight(Area) - frame_bw_times_2;
+				}
+				else
+#endif
+				{
+					dragx = basex + Scr->MyDisplayWidth / 2;
+					dragWidth = Scr->MyDisplayWidth / 2 - frame_bw_times_2;
+					dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
+				}
 				break;
 			case F_TOPZOOM:
 				dragx = basex;
 				dragy = basey;
-				dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
-				dragHeight = Scr->MyDisplayHeight / 2 - frame_bw_times_2;
+#ifdef TILED_SCREEN
+				if (Scr->use_tiles == TRUE) {
+					dragWidth = AreaWidth(Area) - frame_bw_times_2;
+					dragHeight = AreaHeight(Area) / 2 - frame_bw_times_2;
+				}
+				else
+#endif
+				{
+					dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
+					dragHeight = Scr->MyDisplayHeight / 2 - frame_bw_times_2;
+				}
 				break;
 			case F_BOTTOMZOOM:
 				dragx = basex;
-				dragy = basey + Scr->MyDisplayHeight / 2;
-				dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
-				dragHeight = Scr->MyDisplayHeight / 2 - frame_bw_times_2;
+#ifdef TILED_SCREEN
+				if (Scr->use_tiles == TRUE) {
+					dragy = basey + AreaHeight(Area) / 2;
+					dragWidth = AreaWidth(Area) - frame_bw_times_2;
+					dragHeight = AreaHeight(Area) / 2 - frame_bw_times_2;
+				}
+				else
+#endif
+				{
+					dragy = basey + Scr->MyDisplayHeight / 2;
+					dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
+					dragHeight = Scr->MyDisplayHeight / 2 - frame_bw_times_2;
+				}
 				break;
 		}
 	}

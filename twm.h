@@ -49,6 +49,9 @@
 #ifdef TWM_USE_XFT
 #include <X11/Xft/Xft.h>
 #endif
+#ifdef TWM_USE_XRANDR
+#include <X11/extensions/Xrandr.h>
+#endif
 
 /*
  * This accomodates systems that simply cannot handle the
@@ -173,10 +176,10 @@ typedef struct
 /* defines for zooming/unzooming */
 #define ZOOM_NONE 0
 
-#define FB(fix_fore, fix_back)\
+#define FB(scr, fix_fore, fix_back)\
     Gcv.foreground = fix_fore;\
     Gcv.background = fix_back;\
-    XChangeGC(dpy, Scr->NormalGC, GCForeground|GCBackground,&Gcv)
+    XChangeGC(dpy, (scr)->NormalGC, GCForeground|GCBackground,&Gcv)
 
 typedef enum {on, off} ButtonState;
 
@@ -503,6 +506,9 @@ extern char *ProgramName;
 extern Display *dpy;
 extern Window ResizeWindow;	/* the window we are resizing */
 extern int HasShape;		/* this server supports Shape extension */
+#ifdef TWM_USE_XRANDR
+extern int HasXrandr;		/* this server supports XRANDR extension */
+#endif
 
 extern int PreviousScreen;
 extern int NumButtons;
@@ -559,6 +565,9 @@ extern Bool RestartPreviousState;
 extern Bool GetWMState();
 
 extern Bool use_fontset;
+
+extern TwmWindow *Focus;
+extern short FocusRoot;
 
 extern Atom _XA_MIT_PRIORITY_COLORS;
 extern Atom _XA_WM_CHANGE_STATE;

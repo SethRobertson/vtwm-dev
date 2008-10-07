@@ -512,6 +512,12 @@ typedef struct _TwmKeyword {
 #define kw0_SloppyFocus			69
 #endif
 
+#define kw0_WarpToLocalTransients	70
+
+#ifdef TWM_USE_XRANDR
+#define kw0_RestartOnScreenChangeNotify	71
+#endif
+
 /* djhjr - 9/24/02
 #define kws_UsePPosition		1
 */
@@ -1078,6 +1084,9 @@ static TwmKeyword keytable[] = {
     /* djhjr - 10/20/01 */
     { "resname",		MKEYWORD, kwm_ResName },
 
+#ifdef TWM_USE_XRANDR
+    { "restartonscreenchangenotify", KEYWORD, kw0_RestartOnScreenChangeNotify },
+#endif
     { "restartpreviousstate",	KEYWORD, kw0_RestartPreviousState },
     { "rhspulldownmenus", KEYWORD, kw0_RightHandSidePulldownMenus }, /* DSE */
     { "right",			JKEYWORD, J_RIGHT },
@@ -1192,6 +1201,7 @@ static TwmKeyword keytable[] = {
 
     { "warpcursor",		WARP_CURSOR, 0 },
     { "warpsnug",		KEYWORD, kw0_WarpSnug }, /* DSE */
+    { "warptolocaltransients",	KEYWORD, kw0_WarpToLocalTransients },
     { "warptotransients",	KEYWORD, kw0_WarpToTransients }, /* PF */
     { "warpunmapped",		KEYWORD, kw0_WarpUnmapped },
 
@@ -1371,6 +1381,10 @@ int do_single_keyword (keyword)
 	Scr->WarpToTransients = TRUE;
 	return 1;
 
+      case kw0_WarpToLocalTransients:
+	Scr->WarpToLocalTransients = TRUE;
+	return 1;
+
       case kw0_ShowIconManager:
 	Scr->ShowIconManager = TRUE;
 	return 1;
@@ -1542,6 +1556,11 @@ int do_single_keyword (keyword)
 #ifdef TWM_USE_SLOPPYFOCUS
 	case kw0_SloppyFocus:
 		SloppyFocus = TRUE;
+		return 1;
+#endif
+#ifdef TWM_USE_XRANDR
+	case kw0_RestartOnScreenChangeNotify:
+		Scr->RRScreenChangeRestart = TRUE;
 		return 1;
 #endif
     }

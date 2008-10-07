@@ -1216,8 +1216,10 @@ GetFont (MyFont *font)
 	}
 
 	/* test if core font: */
+	fnum = 0;
+	xlfd = NULL;
 	font_names = XListFontsWithInfo (dpy, font->name, 5, &fnum, &xlfd);
-	if (font_names != NULL) {
+	if (font_names != NULL && xlfd != NULL) {
 	    for (i = 0; i < fnum; ++i)
 		if (XGetFontProperty (xlfd+i, XA_FONT, &atom) == True) {
 		    atom_name = XGetAtomName (dpy, atom);
@@ -1241,8 +1243,10 @@ GetFont (MyFont *font)
 	    else
 		deffontname = "fixed";
 
+	    fnum = 0;
+	    xlfd = NULL;
 	    font_names = XListFontsWithInfo (dpy, deffontname, 5, &fnum, &xlfd);
-	    if (font_names != NULL) {
+	    if (font_names != NULL && xlfd != NULL) {
 		for (i = 0; i < fnum; ++i)
 		    if (XGetFontProperty (xlfd+i, XA_FONT, &atom) == True) {
 			atom_name = XGetAtomName (dpy, atom);
@@ -1369,9 +1373,11 @@ MyFont_TextWidth (MyFont *font, char *string, int len)
     XGlyphInfo size;
 
     if (Scr->use_xft > 0) {
+#ifdef X_HAVE_UTF8_STRING
 	if (use_fontset)
 	    XftTextExtentsUtf8 (dpy, font->xft, (XftChar8*)(string), len, &size);
 	else
+#endif
 	    XftTextExtents8 (dpy, font->xft, (XftChar8*)(string), len, &size);
 	return size.width;
     }
@@ -1391,10 +1397,12 @@ MyFont_DrawImageString (Display *dpy, MyWindow *win, MyFont *font, ColorPair *co
 #ifdef TWM_USE_XFT
     if (Scr->use_xft > 0) {
 	if (win->xft) {
-	    XClearArea (dpy, XftDrawDrawable(win->xft), 0, 0, 0, 0, False);
+	    XClearArea (dpy, win->win, 0, 0, 0, 0, False);
+#ifdef X_HAVE_UTF8_STRING
 	    if (use_fontset)
 		XftDrawStringUtf8 (win->xft, &col->xft, font->xft, x, y, (XftChar8*)(string), len);
 	    else
+#endif
 		XftDrawString8 (win->xft, &col->xft, font->xft, x, y, (XftChar8*)(string), len);
 	}
 	return;
@@ -1420,9 +1428,11 @@ MyFont_DrawString (Display *dpy, MyWindow *win, MyFont *font, ColorPair *col,
 #ifdef TWM_USE_XFT
     if (Scr->use_xft > 0) {
 	if (win->xft) {
+#ifdef X_HAVE_UTF8_STRING
 	    if (use_fontset)
 		XftDrawStringUtf8 (win->xft, &col->xft, font->xft, x, y, (XftChar8*)(string), len);
 	    else
+#endif
 		XftDrawString8 (win->xft, &col->xft, font->xft, x, y, (XftChar8*)(string), len);
 	}
 	return;
@@ -1457,18 +1467,27 @@ I18N_FetchName (Display *dpy, Window w, char **winname)
     char **list;
     int    num;
 
+    text_prop.value = NULL;
     status = XGetWMName(dpy, w, &text_prop);
     if (!status || !text_prop.value || !text_prop.nitems) {
+	if (text_prop.value)
+	    XFree(text_prop.value);
 	*winname = NULL;
 	return 0;
     }
-    status = XmbTextPropertyToTextList(dpy, &text_prop, &list, &num);
-    if (status != Success || !num || !*list)
+    list = NULL;
+#if defined TWM_USE_XFT && defined X_HAVE_UTF8_STRING
+    if (use_fontset)
+	status = Xutf8TextPropertyToTextList(dpy, &text_prop, &list, &num);
+    else
+#endif
+	status = XmbTextPropertyToTextList(dpy, &text_prop, &list, &num);
+    if (status < Success || !list || !*list)
 	*winname = strdup((char *)text_prop.value);
-    else {
+    else
 	*winname = strdup(*list);
+    if (list)
 	XFreeStringList(list);
-    }
     XFree(text_prop.value);
     return 1;
 }
@@ -1481,18 +1500,27 @@ I18N_GetIconName (Display *dpy, Window w, char **iconname)
     char **list;
     int    num;
 
+    text_prop.value = NULL;
     status = XGetWMIconName(dpy, w, &text_prop);
     if (!status || !text_prop.value || !text_prop.nitems) {
+	if (text_prop.value)
+	    XFree(text_prop.value);
 	*iconname = NULL;
 	return 0;
     }
-    status = XmbTextPropertyToTextList(dpy, &text_prop, &list, &num);
-    if (status != Success || !num || !*list)
+    list = NULL;
+#if defined TWM_USE_XFT && defined X_HAVE_UTF8_STRING
+    if (use_fontset)
+	status = Xutf8TextPropertyToTextList(dpy, &text_prop, &list, &num);
+    else
+#endif
+	status = XmbTextPropertyToTextList(dpy, &text_prop, &list, &num);
+    if (status < Success || !list || !*list)
 	*iconname = strdup((char *)text_prop.value);
-    else {
+    else
 	*iconname = strdup(*list);
+    if (list)
 	XFreeStringList(list);
-    }
     XFree(text_prop.value);
     return 1;
 }
@@ -1512,8 +1540,8 @@ void SetFocus (tmp_win, time)
     if (tmp_win) {
 	printf ("Focusing on window \"%s\"\n", tmp_win->full_name);
     } else {
-	printf ("Unfocusing; Scr->Focus was \"%s\"\n",
-		Scr && Scr->Focus ? Scr->Focus->full_name : "(nil)");
+	printf ("Unfocusing; Focus was \"%s\"\n",
+		Focus ? Focus->full_name : "(nil)");
     }
 #endif
 
@@ -1743,7 +1771,7 @@ static unsigned char siconify_bits[] = {
 	p = XCreatePixmapFromBitmapData (dpy, Scr->Root, (char*)siconify_bits,
 		siconify_width, siconify_height, 1, 0, 1);
 	if (p != None) {
-		FB(cp.fore, cp.back);
+		FB(Scr, cp.fore, cp.back);
 		XCopyPlane (dpy, p, d, Scr->NormalGC,
 			0, 0, siconify_width, siconify_height, 0, 0, 1);
 		XFreePixmap (dpy, p);
@@ -2029,9 +2057,9 @@ int state;
 	{
 		/* draw highlights */
 		if (state)
-		{ FB (cp.shadc, cp.shadd); }
+		{ FB (Scr, cp.shadc, cp.shadd); }
 		else
-		{ FB (cp.shadd, cp.shadc); }
+		{ FB (Scr, cp.shadd, cp.shadc); }
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
 		{
 			XDrawLine(dpy, d, Scr->NormalGC,
@@ -2044,9 +2072,9 @@ int state;
 
 		/* draw shadows */
 		if (state)
-		{ FB (cp.shadd, cp.shadc); }
+		{ FB (Scr, cp.shadd, cp.shadc); }
 		else
-		{ FB (cp.shadc, cp.shadd); }
+		{ FB (Scr, cp.shadc, cp.shadd); }
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
 			XDrawLine (dpy, d, Scr->NormalGC,
 				x + mw - 1 + i, y + h - mw - i,
@@ -2118,9 +2146,9 @@ int state;
 	{
 		/* draw highlights */
 		if (state)
-		{ FB (cp.shadc, cp.shadd); }
+		{ FB (Scr, cp.shadc, cp.shadd); }
 		else
-		{ FB (cp.shadd, cp.shadc); }
+		{ FB (Scr, cp.shadd, cp.shadc); }
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
 		{
 			XDrawLine(dpy, d, Scr->NormalGC,
@@ -2133,9 +2161,9 @@ int state;
 
 		/* draw shadows */
 		if (state)
-		{ FB (cp.shadd, cp.shadc); }
+		{ FB (Scr, cp.shadd, cp.shadc); }
 		else
-		{ FB (cp.shadc, cp.shadd); }
+		{ FB (Scr, cp.shadc, cp.shadd); }
 		for (i = 0; i < Scr->ShallowReliefWindowButton; i++)
 			XDrawLine (dpy, d, Scr->NormalGC,
 				x + w / 2, y + mh - 1 - i + h / 2,
@@ -2188,7 +2216,7 @@ int state;
 }
 
 /* ick - djhjr - 10/30/02 */
-static void DrawBackground(d, x, y, w, h, cp, use_rootGC)
+static void DrawBackground(d, x, y, w, h, cp, use_rootGC) /*not used?*/
 Drawable d;
 int x, y, w, h;
 ColorPair cp;
@@ -2210,7 +2238,7 @@ int use_rootGC;
     }
     else
     {
-	FB(cp.back, cp.fore);
+	FB(Scr, cp.back, cp.fore);
 	XFillRectangle(dpy, d, Scr->NormalGC, x, y, w, h);
     }
 }
@@ -2255,24 +2283,23 @@ int state;
 	ColorPair cp;
 	register int i;
 	int h, w;
-	
+
+	ScreenInfo *scr;
+	scr = (ClientIsOnScreen(t, Scr) ? Scr : FindWindowScreenInfo(&t->attr));
+
 	cp = t->title;
 	w = ComputeHighlightWindowWidth(t);
-	h = Scr->TitleHeight - 2 * Scr->FramePadding - 2;
-		
+	h = scr->TitleHeight - 2 * scr->FramePadding - 2;
+	
 	for (i = 0; i < sizeof(pmtab) / sizeof(pmtab[0]); i++)
 	{
-		if (XmuCompareISOLatin1(pmtab[i].name, Scr->hiliteName) == 0)
+		if (XmuCompareISOLatin1(pmtab[i].name, scr->hiliteName) == 0)
 		{
 			if (state == off)
 			{
-				DrawBackground(t->title_w.win,
-					       t->highlightx,
-					       Scr->FramePadding + 1,
-					       w, h, cp,
-					       pmtab[i].use_rootGC | (Scr->Monochrome != COLOR));
+				XClearArea (dpy, t->title_w.win, t->highlightx, 0, 0, 0, False);
 			}
-			else
+			else if (scr == Scr) /* draw only onto the 'event screen' */
 			{
 				/* ick - djhjr - 10/30/02 */
 				if (pmtab[i].use_rootGC)
@@ -2349,35 +2376,38 @@ void Draw3DBorder (Drawable w, int x, int y, int width, int height, int bw,
 			ColorPair cp, int state, int fill, int forcebw)
 {
 	int				i;
+	ScreenInfo *scr;
 
 	if (width < 1 || height < 1) return;
 
-	if (Scr->Monochrome != COLOR)
+	scr = FindDrawableScreenInfo (w); /* frame, pixmap, client */
+
+	if (scr->Monochrome != COLOR)
 	{
 		/* set main color */
 		if (fill)
 		{
-			setBorderGC(0, Scr->GreyGC, cp, state, forcebw);
-			XFillRectangle (dpy, w, Scr->GreyGC, x, y, width, height);
+			setBorderGC(0, scr->GreyGC, cp, state, forcebw);
+			XFillRectangle (dpy, w, scr->GreyGC, x, y, width, height);
 		}
 
 		/* draw highlights */
-		setBorderGC(1, Scr->GreyGC, cp, state, forcebw);
+		setBorderGC(1, scr->GreyGC, cp, state, forcebw);
 		for (i = 0; i < bw; i++)
 		{
-			XDrawLine (dpy, w, Scr->GreyGC, x, y + i,
+			XDrawLine (dpy, w, scr->GreyGC, x, y + i,
 				x + width - i - 1, y + i);
-			XDrawLine (dpy, w, Scr->GreyGC, x + i, y,
+			XDrawLine (dpy, w, scr->GreyGC, x + i, y,
 				x + i, y + height - i - 1);
 		}
 
 		/* draw shadows */
-		setBorderGC(2, Scr->GreyGC, cp, state, forcebw);
+		setBorderGC(2, scr->GreyGC, cp, state, forcebw);
 		for (i = 0; i < bw; i++)
 		{
-			XDrawLine (dpy, w, Scr->GreyGC, x + width - i - 1, y + i,
+			XDrawLine (dpy, w, scr->GreyGC, x + width - i - 1, y + i,
 				x + width - i - 1, y + height - 1);
-			XDrawLine (dpy, w, Scr->GreyGC, x + i, y + height - i - 1,
+			XDrawLine (dpy, w, scr->GreyGC, x + i, y + height - i - 1,
 				x + width - 1, y + height - i - 1);
 		}
 
@@ -2387,25 +2417,25 @@ void Draw3DBorder (Drawable w, int x, int y, int width, int height, int bw,
 	/* set main color */
 	if (fill)
 	{
-		FB (cp.back, cp.fore);
-		XFillRectangle (dpy, w, Scr->NormalGC, x, y, width, height);
+		FB (scr, cp.back, cp.fore);
+		XFillRectangle (dpy, w, scr->NormalGC, x, y, width, height);
 	}
 
-	if (Scr->BeNiceToColormap)
+	if (scr->BeNiceToColormap)
 	{
-		setBorderGC(3, Scr->ShadGC, cp, state, forcebw);
+		setBorderGC(3, scr->ShadGC, cp, state, forcebw);
 	    
 		/* draw highlights */
 		if (state == on)
-			XSetForeground (dpy, Scr->ShadGC, Scr->Black);
+			XSetForeground (dpy, scr->ShadGC, scr->Black);
 		else
-			XSetForeground (dpy, Scr->ShadGC, Scr->White);
+			XSetForeground (dpy, scr->ShadGC, scr->White);
 		for (i = 0; i < bw; i++)
 		{
-			XDrawLine (dpy, w, Scr->ShadGC,
+			XDrawLine (dpy, w, scr->ShadGC,
 				x + i, y + borderdashoffset,
 				x + i, y + height - i - 1);
-			XDrawLine (dpy, w, Scr->ShadGC,
+			XDrawLine (dpy, w, scr->ShadGC,
 				x + borderdashoffset, y + i,
 				x + width - i - 1, y + i);
 			borderdashoffset = 1 - borderdashoffset;
@@ -2413,14 +2443,14 @@ void Draw3DBorder (Drawable w, int x, int y, int width, int height, int bw,
 
 		/* draw shadows */
 		if (state == on)
-			XSetForeground (dpy, Scr->ShadGC, Scr->White);
+			XSetForeground (dpy, scr->ShadGC, scr->White);
 		else
-			XSetForeground (dpy, Scr->ShadGC, Scr->Black);
+			XSetForeground (dpy, scr->ShadGC, scr->Black);
 		for (i = 0; i < bw; i++)
 		{
-			XDrawLine (dpy, w, Scr->ShadGC, x + i, y + height - i - 1,
+			XDrawLine (dpy, w, scr->ShadGC, x + i, y + height - i - 1,
 				x + width - 1, y + height - i - 1);
-			XDrawLine (dpy, w, Scr->ShadGC, x + width - i - 1, y + i,
+			XDrawLine (dpy, w, scr->ShadGC, x + width - i - 1, y + i,
 				x + width - i - 1, y + height - 1);
 		}
 
@@ -2429,27 +2459,27 @@ void Draw3DBorder (Drawable w, int x, int y, int width, int height, int bw,
 
 	/* draw highlights */
 	if (state == on)
-		{ FB (cp.shadd, cp.shadc); }
+		{ FB (scr, cp.shadd, cp.shadc); }
 	else
-		{ FB (cp.shadc, cp.shadd); }
+		{ FB (scr, cp.shadc, cp.shadd); }
 	for (i = 0; i < bw; i++)
 	{
-		XDrawLine (dpy, w, Scr->NormalGC, x, y + i,
+		XDrawLine (dpy, w, scr->NormalGC, x, y + i,
 			x + width - i - 1, y + i);
-		XDrawLine (dpy, w, Scr->NormalGC, x + i, y,
+		XDrawLine (dpy, w, scr->NormalGC, x + i, y,
 			x + i, y + height - i - 1);
 	}
 
 	/* draw shadows */
 	if (state == on)
-		{ FB (cp.shadc, cp.shadd); }
+		{ FB (scr, cp.shadc, cp.shadd); }
 	else
-		{ FB (cp.shadd, cp.shadc); }
+		{ FB (scr, cp.shadd, cp.shadc); }
 	for (i = 0; i < bw; i++)
 	{
-		XDrawLine (dpy, w, Scr->NormalGC, x + width - i - 1, y + i,
+		XDrawLine (dpy, w, scr->NormalGC, x + width - i - 1, y + i,
 			x + width - i - 1, y + height - 1);
-		XDrawLine (dpy, w, Scr->NormalGC, x + i, y + height - i - 1,
+		XDrawLine (dpy, w, scr->NormalGC, x + i, y + height - i - 1,
 			x + width - 1, y + height - i - 1);
 	}
 }
@@ -2518,9 +2548,9 @@ ColorPair	cp;
 	{
 		gc = Scr->NormalGC;
 		if (state == on)
-			{ FB (cp.shadc, cp.shadd); }
+			{ FB (Scr, cp.shadc, cp.shadd); }
 		else
-			{ FB (cp.shadd, cp.shadc); }
+			{ FB (Scr, cp.shadd, cp.shadc); }
 	}
 
 	return (gc);
@@ -2576,7 +2606,7 @@ int			state, type;
 			else
 			{
 				gc = Scr->NormalGC;
-				FB (cp.back, cp.fore);
+				FB (Scr, cp.back, cp.fore);
 			}
 			XFillRectangle (dpy, w, gc, x, y, bw, bw);
 			gc = setBevelGC(1, (Scr->BeNiceToColormap) ? state : !state, cp);
@@ -2601,7 +2631,7 @@ int			state, type;
 			else
 			{
 				gc = Scr->NormalGC;
-				FB (cp.back, cp.fore);
+				FB (Scr, cp.back, cp.fore);
 			}
 			XFillRectangle (dpy, w, gc, x, y, bw, bw);
 			gc = setBevelGC(1, (Scr->BeNiceToColormap) ? state : !state, cp);
@@ -2667,7 +2697,7 @@ int		state, forcebw;
 	}
 
 	/* set main color */
-	FB (cp.back, cp.fore);
+	FB (Scr, cp.back, cp.fore);
 	XFillRectangle (dpy, w, Scr->NormalGC,
 		x + Scr->BorderBevelWidth, upr,
 		(unsigned int)(bw - Scr->BorderBevelWidth * 2),
@@ -2710,18 +2740,18 @@ int		state, forcebw;
 
 	/* draw highlight */
 	if (state == on)
-		{ FB (cp.shadc, cp.shadd); }
+		{ FB (Scr, cp.shadc, cp.shadd); }
 	else
-		{ FB (cp.shadd, cp.shadc); }
+		{ FB (Scr, cp.shadd, cp.shadc); }
 	for (i = 0; i < Scr->BorderBevelWidth; i++)
 		XDrawLine (dpy, w, Scr->NormalGC,
 			x + i, upr, x + i, lwr);
 
 	/* draw shadow */
 	if (state == on)
-		{ FB (cp.shadd, cp.shadc); }
+		{ FB (Scr, cp.shadd, cp.shadc); }
 	else
-		{ FB (cp.shadc, cp.shadd); }
+		{ FB (Scr, cp.shadc, cp.shadd); }
 	for (i = bw - Scr->BorderBevelWidth; i < bw; i++)
 		XDrawLine (dpy, w, Scr->NormalGC,
 			x + i, upr, x + i, lwr);
@@ -2929,6 +2959,9 @@ Bool		focus;
 #ifdef USE_ORIGINAL_CORNERS
 	int			THbw, fhbwchbw, fhTHchbw;
 #endif
+
+	if (!ClientIsOnScreen(tmp_win, Scr))
+	    return;
 
 	cp = (focus && tmp_win->highlight) ? tmp_win->border : tmp_win->border_tile;
 
@@ -3249,6 +3282,9 @@ Bool		focus;
 void PaintIcon (tmp_win)
 TwmWindow *tmp_win;
 {
+    if (!ClientIsOnScreen(tmp_win, Scr))
+	return;
+
 /* djhjr - 5/5/98
     if (Scr->use3Diconmanagers) {
 */
@@ -3266,7 +3302,7 @@ TwmWindow *tmp_win;
 		Scr->IconBevelWidth, tmp_win->iconc, off, False, False);
     }
 
-	MyFont_DrawString (dpy, &tmp_win->icon_w, &Scr->IconFont,
+	MyFont_DrawImageString (dpy, &tmp_win->icon_w, &Scr->IconFont,
 		&tmp_win->iconc, tmp_win->icon_x, tmp_win->icon_y, 
 		tmp_win->icon_name, strlen(tmp_win->icon_name));
 }
@@ -3290,6 +3326,9 @@ TwmWindow *tmp_win;
 	int max_avail_scrlen;
 	int cur_string_len = strlen(tmp_win->name);
 	char *a = NULL;
+
+	if (!ClientIsOnScreen(tmp_win, Scr))
+	    return;
 
 	en = Scr->TitleBarFont.height/2;
 
@@ -3413,6 +3452,9 @@ int onoroff; /* 0 = no hilite    1 = hilite off    2 = hilite on */
     /* djhjr - 5/23/98 8/10/98 */
     ColorPair cp;
 
+    if (!ClientIsOnScreen(tmp_win, Scr))
+	return;
+
     if (!tbw->window) return;
 
     tb = tbw->info;
@@ -3469,9 +3511,10 @@ TwmWindow *tmp_win;
 
 #ifdef TWM_USE_XFT
 XftDraw *
-MyXftDrawCreate (Display *dpy, Drawable d, Visual *vis, Colormap  col)
+MyXftDrawCreate (Window win)
 {
-    XftDraw * draw = XftDrawCreate (dpy, d, vis, col);
+    Colormap cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
+    XftDraw *draw = XftDrawCreate (dpy, win, Scr->d_visual, cmap);
     if (!draw)
 	fprintf (stderr, "%s: XftDrawCreate() failed.\n", ProgramName);
     return draw;
@@ -3485,16 +3528,17 @@ MyXftDrawDestroy (XftDraw *draw)
 }
 
 void
-CopyPixelToXftColor (Colormap cmap, unsigned long pixel, XftColor *col)
+CopyPixelToXftColor (unsigned long pixel, XftColor *col)
 {
     /* color already allocated, extract RGB values (for Xft rendering): */
+    Colormap cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
     XColor tmp;
     tmp.pixel = col->pixel = pixel;
     XQueryColor (dpy, cmap, &tmp);
     col->color.red = tmp.red;
     col->color.green = tmp.green;
     col->color.blue = tmp.blue;
-    col->color.alpha = 65535;
+    col->color.alpha = 0xffff;
 }
 #endif
 

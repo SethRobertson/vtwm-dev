@@ -44,6 +44,11 @@
 #include "iconmgr.h"
 #include "doors.h"
 
+#if defined TWM_USE_XINERAMA || defined TWM_USE_XRANDR
+/* Xinerama and Xrandr enable screen tiling: */
+#define TILED_SCREEN
+#endif
+
 
 typedef struct _StdCmap {
     struct _StdCmap *next;		/* next link in chain */
@@ -310,6 +315,17 @@ typedef struct ScreenInfo
     int use_xft;		/* >0 if using Xft fonts, otherwise X11 core fonts */
 #endif
 
+#ifdef TILED_SCREEN
+    short use_tiles;		/* TRUE if screen decomposed into tiles */
+    int tiles_bb[4];		/* (x0,y0) and (x1,y1) coordinates of tiled screen bounding-box */
+    int ntiles;			/* number of tiles */
+    int (*tiles)[4];		/* tiles vertices coordinates: (x0,y0), (x1,y1) */
+#endif
+
+#ifdef TWM_USE_XRANDR
+    short RRScreenChangeRestart;/* if TRUE restart vtwm on RRScreenChangeNotify events */
+#endif
+
     IconMgr iconmgr;		/* default icon manager */
     struct RootRegion *FirstIconRegion;	/* pointer to icon regions */
     struct RootRegion *LastIconRegion;	/* pointer to the last icon region */
@@ -357,7 +373,6 @@ typedef struct ScreenInfo
 
     int IconBorderWidth;	/* border width of icon windows */
     int TitleHeight;		/* height of the title bar window */
-    TwmWindow *Focus;		/* the twm window that has focus */
     TwmWindow *Newest;		/* the most newly added twm window -- PF */
     int EntryHeight;		/* menu entry height */
     int FramePadding;		/* distance between decorations and border */
@@ -386,7 +401,6 @@ typedef struct ScreenInfo
 */
 
     short AutoRelativeResize;	/* start resize relative to position in quad */
-    short FocusRoot;		/* is the input focus on the root ? */
 
     /* djhjr - 10/16/02 */
     short WarpCentered;		/* warp to center of windows? */
@@ -456,6 +470,7 @@ typedef struct ScreenInfo
 	short StayUpMenus;
     short StayUpOptionalMenus; /* PF */
     short WarpToTransients;    /* PF */
+    short WarpToLocalTransients;
 	short EnhancedExecResources;      /* instead of normal behavior - DSE */
 	short RightHandSidePulldownMenus; /* instead of left-right center - DSE */
 	short LessRandomZoomZoom;         /* makes zoomzoom a better visual bell - DSE */
@@ -529,7 +544,6 @@ typedef struct ScreenInfo
 */
 
     	unsigned int AutoRelativeResize					: 1;
-    	unsigned int FocusRoot							: 1;
 
 	/* djhjr - 10/16/02 */
 	unsigned int WarpCentered						: 2;
@@ -599,6 +613,7 @@ typedef struct ScreenInfo
 		unsigned int StayUpMenus						: 1;
     	unsigned int StayUpOptionalMenus				: 1;
     	unsigned int WarpToTransients					: 1;
+    	unsigned int WarpToLocalTransients				: 1;
 		unsigned int EnhancedExecResources				: 1;
 		unsigned int RightHandSidePulldownMenus			: 1;
 		unsigned int LessRandomZoomZoom					: 1;
@@ -663,7 +678,6 @@ typedef struct ScreenInfo
 */
 
 #define AutoRelativeResize					userflags.AutoRelativeResize
-#define FocusRoot							userflags.FocusRoot
 
 /* djhjr - 10/16/02 */
 #define WarpCentered							userflags.WarpCentered
@@ -733,6 +747,7 @@ typedef struct ScreenInfo
 #define StayUpMenus							userflags.StayUpMenus
 #define StayUpOptionalMenus					userflags.StayUpOptionalMenus
 #define WarpToTransients					userflags.WarpToTransients
+#define WarpToLocalTransients					userflags.WarpToLocalTransients
 #define EnhancedExecResources				userflags.EnhancedExecResources
 #define RightHandSidePulldownMenus			userflags.RightHandSidePulldownMenus
 #define LessRandomZoomZoom					userflags.LessRandomZoomZoom
@@ -809,6 +824,7 @@ extern int FirstScreen;
 #define PPOS_OFF 0
 #define PPOS_ON 1
 #define PPOS_NON_ZERO 2
+#define PPOS_ON_SCREEN 3
 /* may eventually want an option for having the PPosition be the initial
    location for the drag lines */
 
@@ -817,5 +833,46 @@ extern int FirstScreen;
 #define WARPC_TITLED	1
 #define WARPC_UNTITLED	2
 #define WARPC_ON	3
+
+
+/*
+ * Check if "TwmWindow *win" is on the root window of "ScreenInfo *scr":
+ */
+#define ClientIsOnScreen(win,scr)   ((win)->attr.root == (scr)->Root)
+
+extern ScreenInfo * FindPointerScreenInfo (void);
+extern ScreenInfo * FindDrawableScreenInfo (Drawable d);
+extern ScreenInfo * FindWindowScreenInfo (XWindowAttributes *attr);
+extern ScreenInfo * FindScreenInfo (Window w);
+
+#ifdef TILED_SCREEN
+
+#define AreaHeight(a)	    (Top(a) - Bot(a) + 1)
+#define AreaWidth(a)	    (Rht(a) - Lft(a) + 1)
+
+#define Lft(t)		    ((t)[0]) /* See "int (*tiles)[4];" above and            */
+#define Rht(t)		    ((t)[2]) /* initialisation of (x0,y0), (x1,y1) in twm.c */
+
+#define Bot(t)		    ((t)[1]) /* As a matter of notation: Reflect y-axis as  */
+#define Top(t)		    ((t)[3]) /* "Text-Editor- to Cartesian Coordinates"     */
+				     /* transform: 'Top' must be >= 'Bot'.          */
+
+#define xmin(a,b)	    ((a) < (b) ? (a) : (b))
+#define xmax(a,b)	    ((a) > (b) ? (a) : (b))
+/* if overlapping return intersection;  else return gapsize as negative value: */
+#define Distance1D(a,b,u,v) (xmin((b),(v)) - xmax((a),(u)))
+/* if overlapping return area; else return (larger) gapsize as negative value: */
+#define Distance2D(dx,dy)   ((dx)>=0?((dy)>=0?((dx)+1)*((dy)+1):(dy)):((dy)>=0?(dx):((dx)>(dy)?(dy):(dx))))
+
+extern int  FindNearestTileToArea (int x0y0x1y1[4]);
+extern int  FindNearestTileToPoint (int x, int y);
+extern int  FindNearestTileToClient (TwmWindow *tmp);
+extern int  FindNearestTileToMouse (void);
+
+extern void EnsureRectangleOnTile (int tile, int *x0, int *y0, int w, int h);
+extern void EnsureGeometryVisibility (int mask, int *x0, int *y0, int w, int h);
+extern void TilesFullZoom (int x0y0x1y1[4]);
+
+#endif /*TILED_SCREEN*/
 
 #endif /* _SCREEN_ */

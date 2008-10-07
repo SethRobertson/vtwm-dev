@@ -63,6 +63,9 @@
 #include <X11/Xatom.h>
 #include <X11/Xmu/Error.h>
 #include <X11/Xlocale.h>
+#ifdef TWM_USE_XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
 
 Display *dpy;			/* which display are we talking to */
 Window ResizeWindow;		/* the window we are resizing */
@@ -72,6 +75,10 @@ int NumScreens;			/* number of screens in ScreenList */
 int NumButtons;			/* number of mouse buttons */
 int HasShape;			/* server supports shape extension? */
 int ShapeEventBase, ShapeErrorBase;
+#ifdef TWM_USE_XRANDR
+int HasXrandr;			/* server supports XRANDR extension? */
+int XrandrEventBase, XrandrErrorBase;
+#endif
 ScreenInfo **ScreenList;	/* structures for each screen */
 ScreenInfo *Scr = NULL;		/* the cur and prev screens */
 int PreviousScreen;		/* last screen that we were on */
@@ -130,6 +137,9 @@ unsigned long black, white;
 
 Bool use_fontset;
 
+TwmWindow *Focus;		/* the twm window that has focus */
+short FocusRoot;		/* is the input focus on the root ? */
+
 #ifdef TWM_USE_SLOPPYFOCUS
 int SloppyFocus;		/* TRUE if sloppy focus policy globally on all screens activated */
 #endif
@@ -176,6 +186,11 @@ main(argc, argv, environ)
 #ifdef TWM_USE_XFT
     int xft_available;
 #endif
+
+#ifdef TWM_USE_XINERAMA
+    short xinerama_available;
+#endif
+
 
 #ifdef TWM_USE_SLOPPYFOCUS
     SloppyFocus = FALSE;
@@ -308,9 +323,7 @@ main(argc, argv, environ)
     }
 
 #ifdef TWM_USE_XFT
-    if (True == XftDefaultHasRender(dpy)
-		&& FcTrue == XftInit(0)
-		&& FcTrue == XftInitFtLibrary()) {
+    if (FcTrue == XftInit(0) && FcTrue == XftInitFtLibrary()) {
 	xft_available = TRUE;
 	if (PrintErrorMessages) {
 	    i = XftGetVersion();
@@ -325,6 +338,36 @@ main(argc, argv, environ)
 		"%s: FreeType/Xft(%d.%d.%d)/Xrender not available (using X11 core fonts).\n",
 		ProgramName, i / 10000, (i / 100) % 100, i % 100);
 	}
+    }
+#endif
+
+#ifdef TWM_USE_XINERAMA
+    xinerama_available = FALSE;
+    if (XineramaQueryExtension(dpy, &JunkX, &JunkY) == True)
+	if (XineramaQueryVersion(dpy, &JunkX, &JunkY))
+	    if (XineramaIsActive(dpy) == True)
+		xinerama_available = TRUE;
+    if (PrintErrorMessages) {
+	if (xinerama_available == TRUE)
+	    fprintf (stderr, "%s: Xinerama extension (version %d.%d) is available.\n",
+			ProgramName, JunkX, JunkY);
+	else
+	    fprintf (stderr, "%s: Xinerama extension is not available.\n",
+			ProgramName);
+    }
+#endif
+
+#ifdef TWM_USE_XRANDR
+    HasXrandr = XRRQueryExtension (dpy, &XrandrEventBase, &XrandrErrorBase);
+    if (PrintErrorMessages) {
+	if (HasXrandr == True) {
+	    if (!XRRQueryVersion(dpy, &JunkX, &JunkY))
+		JunkX = JunkY = -1;
+	    fprintf (stderr, "%s: Xrandr extension (version %d.%d) is available.\n",
+		    ProgramName, JunkX, JunkY);
+	} else
+	    fprintf (stderr, "%s: Xrandr extension is not available.\n",
+		    ProgramName);
     }
 #endif
 
@@ -532,6 +575,8 @@ main(argc, argv, environ)
 
 	if (FirstScreen)
 	{
+	    FocusRoot = TRUE;
+	    Focus = NULL;
 	    SetFocus ((TwmWindow *)NULL, CurrentTime);
 
 	    /* define cursors */
@@ -595,6 +640,111 @@ main(argc, argv, environ)
 	    Scr->use_xft = 0;  /* evtl. .vtwmrc sets this to '+1' */
 	else
 	    Scr->use_xft = -1; /* remains '-1' */
+#endif
+
+#ifdef TILED_SCREEN
+	Scr->use_tiles = FALSE;
+	Scr->tiles = NULL;
+#endif
+
+#ifdef TWM_USE_XINERAMA
+	if (xinerama_available == TRUE)
+	{
+	    XineramaScreenInfo * si = XineramaQueryScreens (dpy, &Scr->ntiles);
+	    if (si != (XineramaScreenInfo*)(0)) {
+		/* allocate memory which is automatically free()'d by exit(): */
+		Scr->tiles = (int(*)[4]) malloc (Scr->ntiles*sizeof(Scr->tiles[0]));
+		if (Scr->tiles != (int(*)[4])(0)) {
+		    for (i = 0; i < Scr->ntiles; ++i) { /* unused: si[i].screen_number */
+			Lft(Scr->tiles[i]) = si[i].x_org; /* x0 */
+			Bot(Scr->tiles[i]) = si[i].y_org; /* y0 */
+			Rht(Scr->tiles[i]) = si[i].x_org + si[i].width  - 1; /* x1 */
+			Top(Scr->tiles[i]) = si[i].y_org + si[i].height - 1; /* y1 */
+#if 1
+			if (PrintErrorMessages)
+			    fprintf (stderr,
+				"%s: Xinerama tile %d at x = %d, y = %d, width = %d, height = %d detected.\n",
+				ProgramName, si[i].screen_number,
+				si[i].x_org, si[i].y_org, si[i].width, si[i].height);
+#endif
+		    }
+		    /* bypass Xinerama if the only tile exactly covers the X11-screen: */
+		    if (Scr->ntiles > 1
+			    || Lft(Scr->tiles[0]) != 0 || Bot(Scr->tiles[0]) != 0
+			    || AreaWidth(Scr->tiles[0]) != Scr->MyDisplayWidth
+			    || AreaHeight(Scr->tiles[0]) != Scr->MyDisplayHeight)
+			Scr->use_tiles = TRUE;
+		}
+		XFree (si);
+	    }
+	}
+#endif
+
+#ifdef TWM_USE_XRANDR
+#if RANDR_MAJOR > 1 || (RANDR_MAJOR == 1 && RANDR_MINOR >= 2)
+	if (HasXrandr == True && Scr->tiles == NULL)
+	{
+	    XRRScreenResources * res = XRRGetScreenResources (dpy, Scr->Root);
+	    if (res != (XRRScreenResources*)(0)) {
+		/* allocate memory which is automatically free()'d by exit(): */
+		Scr->tiles = (int(*)[4]) malloc (res->ncrtc*sizeof(Scr->tiles[0]));
+		if (Scr->tiles != (int(*)[4])(0)) {
+		    Scr->ntiles = 0;
+		    for (i = 0; i < res->ncrtc; ++i) {
+			XRRCrtcInfo * crt = XRRGetCrtcInfo (dpy, res, res->crtcs[i]);
+			if (crt != (XRRCrtcInfo*)(0)) {
+			    if (crt->mode != None) {
+				Lft(Scr->tiles[Scr->ntiles]) = crt->x; /* x0 */
+				Bot(Scr->tiles[Scr->ntiles]) = crt->y; /* y0 */
+				Rht(Scr->tiles[Scr->ntiles]) = crt->x + crt->width  - 1; /* x1 */
+				Top(Scr->tiles[Scr->ntiles]) = crt->y + crt->height - 1; /* y1 */
+#if 1
+				if (PrintErrorMessages)
+				    fprintf (stderr,
+					"%s: Xrandr tile %d on screen %d at x = %d, y = %d, width = %d, height = %d detected.\n",
+					ProgramName, Scr->ntiles, Scr->screen,
+					crt->x, crt->y, crt->width, crt->height);
+#endif
+				++Scr->ntiles;
+			    }
+			    XRRFreeCrtcInfo (crt);
+			}
+		    }
+		    if (Scr->ntiles > 0) {
+			/* bypass "tile management" if the only tile exactly covers the X11-screen: */
+			if (Scr->ntiles > 1
+				|| Lft(Scr->tiles[0]) != 0 || Bot(Scr->tiles[0]) != 0
+				|| AreaWidth(Scr->tiles[0]) != Scr->MyDisplayWidth
+				|| AreaHeight(Scr->tiles[0]) != Scr->MyDisplayHeight)
+			    Scr->use_tiles = TRUE;
+		    }
+		}
+		XRRFreeScreenResources (res);
+	    }
+	}
+#endif
+#endif
+
+#ifdef TILED_SCREEN
+	if (Scr->use_tiles == TRUE)
+	{
+	    Lft(Scr->tiles_bb) = Lft(Scr->tiles[0]);
+	    Bot(Scr->tiles_bb) = Bot(Scr->tiles[0]);
+	    Rht(Scr->tiles_bb) = Rht(Scr->tiles[0]);
+	    Top(Scr->tiles_bb) = Top(Scr->tiles[0]);
+
+	    for (i = 1; i < Scr->ntiles; ++i) {
+		/* (x0,y0), (x1,y1) of tiled area bounding-box: */
+		if (Lft(Scr->tiles_bb) > Lft(Scr->tiles[i]))
+		    Lft(Scr->tiles_bb) = Lft(Scr->tiles[i]);
+		if (Bot(Scr->tiles_bb) > Bot(Scr->tiles[i]))
+		    Bot(Scr->tiles_bb) = Bot(Scr->tiles[i]);
+		if (Rht(Scr->tiles_bb) < Rht(Scr->tiles[i]))
+		    Rht(Scr->tiles_bb) = Rht(Scr->tiles[i]);
+		if (Top(Scr->tiles_bb) < Top(Scr->tiles[i]))
+		    Top(Scr->tiles_bb) = Top(Scr->tiles[i]);
+	    }
+	}
 #endif
 
 	InitVariables();
@@ -919,16 +1069,18 @@ main(argc, argv, environ)
 
 #ifdef TWM_USE_XFT
 	if (Scr->use_xft > 0) {
-	    Scr->InfoWindow.xft = MyXftDrawCreate (dpy, Scr->InfoWindow.win, Scr->d_visual,
-					 XDefaultColormap (dpy, Scr->screen));
-	    Scr->SizeWindow.xft = MyXftDrawCreate (dpy, Scr->SizeWindow.win, Scr->d_visual,
-					 XDefaultColormap (dpy, Scr->screen));
-	    CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
-					 Scr->DefaultC.fore, &Scr->DefaultC.xft);
+	    Scr->InfoWindow.xft = MyXftDrawCreate (Scr->InfoWindow.win);
+	    Scr->SizeWindow.xft = MyXftDrawCreate (Scr->SizeWindow.win);
+	    CopyPixelToXftColor (Scr->DefaultC.fore, &Scr->DefaultC.xft);
 	}
 #endif
 #if defined TWM_USE_OPACITY  &&  1 /* "infowindows" get MenuOpacity */
 	SetWindowOpacity (Scr->InfoWindow.win, Scr->MenuOpacity);
+#endif
+
+#ifdef TWM_USE_XRANDR
+	if (HasXrandr == True)
+	    XRRSelectInput (dpy, Scr->Root, RRScreenChangeNotifyMask);
 #endif
 
 	XUngrabServer(dpy);
@@ -1153,9 +1305,7 @@ void InitVariables()
 	Scr->NoDefaultMouseOrKeyboardBindings = FALSE; /* DSE */
 	Scr->NoDefaultTitleButtons = FALSE; /* DSE */
     Scr->UsePPosition = PPOS_OFF;
-    Scr->FocusRoot = TRUE;
     Scr->Newest = NULL; /* PF */
-    Scr->Focus = NULL;
 
     /* djhjr - 9/10/03 */
     Scr->IgnoreModifiers = 0;
@@ -1233,6 +1383,7 @@ void InitVariables()
     Scr->DeIconifyToScreen = FALSE;
     Scr->WarpWindows = FALSE;
     Scr->WarpToTransients = FALSE; /* PF */
+    Scr->WarpToLocalTransients = FALSE;
 
 	/* djhjr - 6/25/96 */
     Scr->ShallowReliefWindowButton = 2;
@@ -1310,6 +1461,10 @@ void InitVariables()
     Scr->VirtualFont.xft = NULL;
     Scr->DoorFont.xft = NULL;
     Scr->DefaultFont.xft = NULL;
+#endif
+
+#ifdef TWM_USE_XRANDR
+    Scr->RRScreenChangeRestart = FALSE;
 #endif
 
     /* no names unless they say so */

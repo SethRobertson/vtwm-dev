@@ -581,7 +581,7 @@ int exposure;
 			 * ("non-TWM_USE_XFT" does it in MyFont_DrawString() already):
 			 */
 			if (Scr->use_xft > 0)
-			    FB(mi->highlight.fore, mi->highlight.back);
+			    FB(Scr, mi->highlight.fore, mi->highlight.back);
 #endif
 			gc = Scr->NormalGC;
 		}
@@ -603,7 +603,7 @@ int exposure;
 					mr->width - 2 * Scr->MenuBevelWidth, Scr->EntryHeight - 1);
 #ifdef TWM_USE_XFT
 				if (Scr->use_xft > 0)
-				    FB(mi->normal.fore, mi->normal.back);
+				    FB(Scr, mi->normal.fore, mi->normal.back);
 #endif
 				gc = Scr->NormalGC;
 		    }
@@ -621,7 +621,7 @@ int exposure;
 				/* this 'if (...)' - djhjr - 1/19/98 */
 				if (!Scr->BeNiceToColormap)
 				{
-					FB (Scr->MenuC.shadd, Scr->MenuC.shadc);
+					FB (Scr, Scr->MenuC.shadd, Scr->MenuC.shadc);
 
 /* djhjr - 9/25/96
 					XDrawLine (dpy, mr->w.win, Scr->NormalGC, 1, y_offset + Scr->MenuFont.y + 5,
@@ -635,7 +635,7 @@ int exposure;
 						mr->width - Scr->MenuBevelWidth - 3, y_offset + Scr->EntryHeight - 1);
 				}
 
-				FB (Scr->MenuC.shadc, Scr->MenuC.shadd);
+				FB (Scr, Scr->MenuC.shadc, Scr->MenuC.shadd);
 
 /* djhjr - 9/25/96
 				XDrawLine (dpy, mr->w.win, Scr->NormalGC, 2, y_offset + Scr->MenuFont.y + 6,
@@ -751,7 +751,7 @@ int exposure;
 			 * ("non-TWM_USE_XFT" does it in MyFont_DrawString() already):
 			 */
 			if (Scr->use_xft > 0)
-			    FB(mi->highlight.fore, mi->highlight.back);
+			    FB(Scr, mi->highlight.fore, mi->highlight.back);
 #endif
 			gc = Scr->NormalGC;
 		}
@@ -765,7 +765,7 @@ int exposure;
 					mr->width, Scr->EntryHeight);
 #ifdef TWM_USE_XFT
 				if (Scr->use_xft > 0)
-				    FB(mi->normal.fore, mi->normal.back);
+				    FB(Scr, mi->normal.fore, mi->normal.back);
 #endif
 				gc = Scr->NormalGC;
 			}
@@ -908,7 +908,12 @@ XEvent *e;
 	if (e->xexpose.y < (y_offset + Scr->EntryHeight) &&
 	    (e->xexpose.y + e->xexpose.height) > y_offset - ((mr->shadow) ? Scr->EntryHeight : 0))
 	{
-	    PaintEntry(mr, mi, True);
+#ifdef TWM_USE_XFT
+	    if (Scr->use_xft > 0)
+		PaintEntry(mr, mi, False); /* enforce clear area first */
+	    else
+#endif
+		PaintEntry(mr, mi, True);
 	}
     }
     XSync(dpy, 0);
@@ -1499,8 +1504,7 @@ MenuRoot *mr;
 
 #ifdef TWM_USE_XFT
 	if (Scr->use_xft > 0)
-	    mr->w.xft = MyXftDrawCreate (dpy, mr->w.win, Scr->d_visual,
-				XDefaultColormap (dpy, Scr->screen));
+	    mr->w.xft = MyXftDrawCreate (mr->w.win);
 #endif
 #ifdef TWM_USE_OPACITY
 	SetWindowOpacity (mr->w.win, Scr->MenuOpacity);
@@ -1601,10 +1605,8 @@ MenuRoot *mr;
 
 #ifdef TWM_USE_XFT
 	if (Scr->use_xft > 0) {
-	    CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
-			    tmp->normal.fore, &tmp->normal.xft);
-	    CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
-			    tmp->highlight.fore, &tmp->highlight.xft);
+	    CopyPixelToXftColor (tmp->normal.fore, &tmp->normal.xft);
+	    CopyPixelToXftColor (tmp->highlight.fore, &tmp->highlight.xft);
 	}
 #endif
 
@@ -1704,10 +1706,8 @@ MenuRoot *mr;
 		b3 = save_back;
 #ifdef TWM_USE_XFT
 		if (Scr->use_xft > 0) {
-		    CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
-				cur->normal.fore, &cur->normal.xft);
-		    CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
-				cur->highlight.fore, &cur->highlight.xft);
+		    CopyPixelToXftColor (cur->normal.fore, &cur->normal.xft);
+		    CopyPixelToXftColor (cur->highlight.fore, &cur->highlight.xft);
 		}
 #endif
 	}
@@ -1895,16 +1895,25 @@ Bool PopUpMenu (menu, x, y, center)
 	/*
 	 * clip to screen
 	 */
-	/* next line and " - i" to "x = " and "y = " - djhjr - 5/22/00 */
-	i = (Scr->MenuBevelWidth > 0) ? 0 : 2;
-	if (x + menu->width > Scr->MyDisplayWidth) {
+	i = (Scr->MenuBevelWidth > 0) ? 0 : 2*Scr->BorderWidth;
+#ifdef TILED_SCREEN
+	if (Scr->use_tiles == TRUE)
+	{
+	    int k = FindNearestTileToMouse();
+	    EnsureRectangleOnTile (k, &x, &y, menu->width + i, menu->height + i);
+	}
+	else
+#endif
+	{
+	    if (x + menu->width + i > Scr->MyDisplayWidth)
 		x = Scr->MyDisplayWidth - menu->width - i;
-	}
-	if (x < 0) x = 0;
-	if (y + menu->height > Scr->MyDisplayHeight) {
+	    if (x < 0)
+		x = 0;
+	    if (y + menu->height + i > Scr->MyDisplayHeight)
 		y = Scr->MyDisplayHeight - menu->height - i;
+	    if (y < 0)
+		y = 0;
 	}
-	if (y < 0) y = 0;
 
 	MenuOrigins[MenuDepth].x = x;
 	MenuOrigins[MenuDepth].y = y;
@@ -2056,7 +2065,7 @@ TwmWindow *tmp_win;
 		SetBorder(tmp_win, (hilite) ? True : False);
 		tmp_win->highlight = hilite;
 
-		Scr->Focus = tmp_win;
+		Focus = tmp_win;
 	}
 
 	if (!tmp_win->opaque_move) XGrabServer(dpy);
@@ -2179,6 +2188,9 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	case F_BINDKEYS:
 	case F_UNBINDBUTTONS:
 	case F_UNBINDKEYS:
+#ifdef TWM_USE_SLOPPYFOCUS
+	case F_SLOPPYFOCUS:
+#endif
 
 	break;
 
@@ -2614,9 +2626,9 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 			     tmp_win->frame_y + tmp_win->frame_height / 2);
 
 		/* grr - djhjr - 5/27/03 */
-		focused = Scr->Focus;
-		Scr->Focus = tmp_win;
-		SetBorder(Scr->Focus, True);
+		focused = Focus;
+		Focus = tmp_win;
+		SetBorder(Focus, True);
 
 		/* save positions so we can tell if it was moved or not */
 		ResizeOrigX = tmp_win->frame_x + tmp_win->frame_width / 2;
@@ -2846,8 +2858,8 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 			     0, 0, 0, 0, SCALE_D(JunkX), SCALE_D(JunkY));
 
 		/* grr - djhjr - 5/27/03 */
-		SetBorder(Scr->Focus, False);
-		Scr->Focus = focused;
+		SetBorder(Focus, False);
+		Focus = focused;
 	    }
 
 	    /* djhjr - 6/4/98 */
@@ -2992,6 +3004,12 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 		w = tmp_win->frame;
 	    }
 
+#ifdef TILED_SCREEN
+	    if (Scr->use_tiles == TRUE) {
+		int k = FindNearestTileToMouse();
+		XMoveWindow (dpy, Scr->SizeWindow.win, Lft(Scr->tiles[k]), Bot(Scr->tiles[k]));
+	    }
+#endif
 	    XMapRaised (dpy, Scr->SizeWindow.win);
 
 	    DragWindow = None;
@@ -3690,7 +3708,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
 	if (tmp_win->icon == FALSE)
 	{
-	    if (!Scr->FocusRoot && Scr->Focus == tmp_win)
+	    if (!FocusRoot && Focus == tmp_win)
 	    {
 		FocusOnRoot();
 	    }
@@ -3845,19 +3863,33 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	break;
 
     case F_EXEC:
-	PopDownMenu();
-	if (!Scr->NoGrabServer) {
-	    XUngrabServer (dpy);
-	    XSync (dpy, 0);
-	}
+	{
+	    ScreenInfo *scr;
+	    if (FocusRoot != TRUE)
+	    /*
+	     * f.focus / f.sloppyfocus:  Execute external program
+	     * on the screen where the mouse is and not where
+	     * the current X11-event occurred.  (The XGrabPointer()
+	     * above should not 'confine_to' the mouse onto that
+	     * screen as well.)
+	     */
+		scr = FindPointerScreenInfo();
+	    else
+		scr = Scr;
+
+	    PopDownMenu();
+	    if (!scr->NoGrabServer) {
+		XUngrabServer (dpy);
+		XSync (dpy, False);
+	    }
 
 /* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
-	/* flag for the handler */
-	if (PlaySound(func)) createSoundFromFunction = TRUE;
+	    /* flag for the handler */
+	    if (PlaySound(func)) createSoundFromFunction = TRUE;
 #endif
-
-	Execute(action);
+	    Execute (scr, action);
+	}
 	break;
 
     case F_UNFOCUS:
@@ -3909,14 +3941,29 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 
     case F_WARPTOSCREEN:
 	{
+	    ScreenInfo *scr;
+	    if (FocusRoot != TRUE) {
+		/*
+		 * f.focus / f.sloppyfocus is active:  KeyPress X11-events
+		 * are delivered into the focused window probably on
+		 * another screen, then "Scr" is not where the mouse is:
+		 */
+		scr = FindPointerScreenInfo();
+#ifdef TWM_USE_SLOPPYFOCUS
+		if (SloppyFocus == TRUE)
+		    FocusOnRoot(); /* drop client focus before screen switch */
+#endif
+	    } else
+		scr = Scr;
+
 	    if (strcmp (action, WARPSCREEN_NEXT) == 0) {
-		WarpToScreen (Scr->screen + 1, 1);
+		WarpToScreen (scr, scr->screen + 1, 1);
 	    } else if (strcmp (action, WARPSCREEN_PREV) == 0) {
-		WarpToScreen (Scr->screen - 1, -1);
+		WarpToScreen (scr, scr->screen - 1, -1);
 	    } else if (strcmp (action, WARPSCREEN_BACK) == 0) {
-		WarpToScreen (PreviousScreen, 0);
+		WarpToScreen (scr, PreviousScreen, 0);
 	    } else {
-		WarpToScreen (atoi (action), 0);
+		WarpToScreen (scr, atoi (action), 0);
 	    }
 	}
 	break;
@@ -4777,8 +4824,7 @@ MenuRoot *root;
 
 
 void
-Execute(s)
-    char *s;
+Execute (ScreenInfo *scr, char *s)
 {
     static char buf[256];
     char *ds = DisplayString (dpy);
@@ -4792,7 +4838,7 @@ Execute(s)
     sprintf(es,s);
     	/* a new copy of s, with extra space incase -- DSE */
 
-	if (Scr->EnhancedExecResources) /* DSE */
+    if (scr->EnhancedExecResources) /* DSE */
 		{    
 	    /* chop all space characters from the end of the string */
     	while ( isspace ( es[strlen(es)-1] ) )
@@ -4830,7 +4876,7 @@ Execute(s)
 	colon = buf + 8 + (colon - ds);	/* use version in buf */
 	dot1 = index (colon, '.');	/* first period after colon */
 	if (!dot1) dot1 = colon + strlen (colon);  /* if not there, append */
-	(void) sprintf (dot1, ".%d", Scr->screen);
+	(void) sprintf (dot1, ".%d", scr->screen);
 	putenv (buf);
 	restorevar = 1;
     }
@@ -4857,16 +4903,16 @@ Execute(s)
 void
 FocusOnRoot (void)
 {
-    if (Scr->Focus != NULL)
+    if (Focus != NULL)
     {
-	SetBorder (Scr->Focus, False);
-	PaintTitleHighlight(Scr->Focus, off);
+	SetBorder (Focus, False);
+	PaintTitleHighlight(Focus, off);
     }
     InstallWindowColormaps(0, &Scr->TwmRoot);
 
     SetFocus ((TwmWindow *) NULL, LastTimestamp());
-    Scr->Focus = NULL;
-    Scr->FocusRoot = TRUE;
+    Focus = NULL;
+    FocusRoot = TRUE;
 }
 
 void
@@ -4875,18 +4921,18 @@ FocusOnClient (TwmWindow *tmp_win)
     /* assign focus if 'Passive'/'Locally Active' ICCCM model: */
     if (!tmp_win->wmhints || tmp_win->wmhints->input)
     {
-	if (Scr->Focus != NULL)
+	if (Focus != NULL)
 	{
-	    SetBorder (Scr->Focus, False);
-	    PaintTitleHighlight (Scr->Focus, off);
+	    SetBorder (Focus, False);
+	    PaintTitleHighlight (Focus, off);
 	}
 	InstallWindowColormaps (0, tmp_win);
 	SetBorder (tmp_win, True);
 	PaintTitleHighlight (tmp_win, on);
 
 	SetFocus (tmp_win, LastTimestamp());
-	Scr->Focus = tmp_win;
-	Scr->FocusRoot = FALSE;
+	Focus = tmp_win;
+	FocusRoot = FALSE;
     }
     else
 	FocusOnRoot();
@@ -4962,6 +5008,28 @@ TwmWindow *tmp_win;
     tmp_win->icon = FALSE;
     tmp_win->icon_on = FALSE;
 
+    /* Force the windows onto this virtual screen */
+    if (Scr->DeIconifyToScreen) {
+      int noraisemove = Scr->NoRaiseMove;
+      Scr->NoRaiseMove = 1;
+      if (tmp_win->frame_x < 0 || tmp_win->frame_x >= Scr->MyDisplayWidth) {
+	tmp_win->frame_x = tmp_win->virtual_frame_x % Scr->MyDisplayWidth;
+	if (tmp_win->frame_x + tmp_win->frame_width > Scr->MyDisplayWidth)
+	  tmp_win->frame_x = Scr->MyDisplayWidth - tmp_win->frame_width;
+	if (tmp_win->frame_x < 0)
+	  tmp_win->frame_x = 0;
+      }
+      if (tmp_win->frame_y < 0 || tmp_win->frame_y >= Scr->MyDisplayHeight) {
+	tmp_win->frame_y = tmp_win->virtual_frame_y % Scr->MyDisplayHeight;
+	if (tmp_win->frame_y + tmp_win->frame_height > Scr->MyDisplayHeight)
+	  tmp_win->frame_y = Scr->MyDisplayHeight - tmp_win->frame_height;
+	if (tmp_win->frame_y < 0)
+	  tmp_win->frame_y = 0;
+      }
+      VirtualMoveWindow(tmp_win, tmp_win->frame_x + Scr->VirtualDesktopX, tmp_win->frame_y + Scr->VirtualDesktopY);
+      Scr->NoRaiseMove = noraisemove;
+    }
+
     if (tmp_win->list)
 	XUnmapWindow(dpy, tmp_win->list->icon);
 
@@ -5035,11 +5103,16 @@ TwmWindow *tmp_win;
      * see the kludge in ExecuteFunction(F_ICONIFY, ...).
      * djhjr - 1/24/98
      */
-    if (((Scr->WarpCursor ||
+#ifdef TWM_USE_SLOPPYFOCUS
+    if (SloppyFocus == TRUE || FocusRoot == TRUE)
+#else
+    if (FocusRoot == TRUE) /* only warp if f.focus is not active */
+#endif
+	if (((Scr->WarpCursor ||
 		LookInList(Scr->WarpCursorL, tmp_win->full_name,
 				&tmp_win->class)) &&
 		tmp_win->icon) && Scr->WarpWindows)
-	WarpToWindow (tmp_win);
+	    WarpToWindow (tmp_win);
 
     XSync (dpy, 0);
 }
@@ -5110,7 +5183,7 @@ int def_x, def_y;
 
 	    SetMapStateProp(t, IconicState);
 
-	    if (t == Scr->Focus)
+	    if (t == Focus)
 		FocusOnRoot();
 
 	    /*
@@ -5156,7 +5229,7 @@ int def_x, def_y;
 
     SetMapStateProp(tmp_win, IconicState);
 
-    if (tmp_win == Scr->Focus)
+    if (tmp_win == Focus)
 	FocusOnRoot();
 
     tmp_win->icon = TRUE;
@@ -5326,24 +5399,38 @@ TwmWindow *t;
 	/* added this 'if ()' - djhjr - 4/29/98 */
 	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 	if (Scr->InfoBevelWidth > 0)
+	    dummy = 2 * Scr->InfoBevelWidth;
+	else
+	    dummy = 2 * Scr->BorderWidth;
+
+#ifdef TILED_SCREEN
+	if (Scr->use_tiles == TRUE)
 	{
-		if (px + width + 2 * Scr->InfoBevelWidth >= Scr->MyDisplayWidth)
-		  px = Scr->MyDisplayWidth - width - 2 * Scr->InfoBevelWidth;
-		if (py + height + 2 * Scr->InfoBevelWidth >= Scr->MyDisplayHeight)
-		  py = Scr->MyDisplayHeight - height - 2 * Scr->InfoBevelWidth;
+	    i = FindNearestTileToMouse();
+	    EnsureRectangleOnTile (i, &px, &py, width + dummy, height + dummy);
 	}
 	else
+#endif
 	{
-		if (px + width + BW2 >= Scr->MyDisplayWidth)
-		  px = Scr->MyDisplayWidth - width - BW2;
-		if (py + height + BW2 >= Scr->MyDisplayHeight)
-		  py = Scr->MyDisplayHeight - height - BW2;
+	    if (px + width + dummy > Scr->MyDisplayWidth)
+		px = Scr->MyDisplayWidth - width - dummy;
+	    if (px < 0)
+		px = 0;
+	    if (py + height + dummy > Scr->MyDisplayHeight)
+		py = Scr->MyDisplayHeight - height - dummy;
+	    if (py < 0)
+		py = 0;
 	}
-
-	if (px < 0) px = 0;
-	if (py < 0) py = 0;
     } else {
-	px = py = 0;
+#ifdef TILED_SCREEN
+	if (Scr->use_tiles == TRUE) {
+	    /* emergency: mouse not on current X11-screen */
+	    px = Lft(Scr->tiles[0]);
+	    py = Bot(Scr->tiles[0]);
+	}
+	else
+#endif
+	    px = py = 0;
     }
 
     XMoveResizeWindow(dpy, Scr->InfoWindow.win, px, py, width, height);
@@ -5825,9 +5912,9 @@ void WarpClass(next, t, class)
 	{
 		if (t)
 			class = t->class.res_class;
-		else if (Scr->Focus)
+		else if (Focus)
 		{
-			i = XGetClassHint(dpy, Scr->Focus->w, &ch);
+			i = XGetClassHint(dpy, Focus->w, &ch);
 			if (i && !strncmp(class, ch.res_class, strlen(class)))
 				class = ch.res_class;
 		}
@@ -6017,8 +6104,8 @@ void WarpAlongRing (ev, forward)
 
 
 
-void WarpToScreen (n, inc)
-    int n, inc;
+void
+WarpToScreen (ScreenInfo *scr, int n, int inc)
 {
     Window dumwin;
     int x, y, dumint;
@@ -6045,10 +6132,10 @@ void WarpToScreen (n, inc)
 	}
     }
 
-    if (Scr->screen == n) return;	/* already on that screen */
+    if (scr->screen == n) return;	/* already on that screen */
 
-    PreviousScreen = Scr->screen;
-    XQueryPointer (dpy, Scr->Root, &dumwin, &dumwin, &x, &y,
+    PreviousScreen = scr->screen;
+    XQueryPointer (dpy, scr->Root, &dumwin, &dumwin, &x, &y,
 		   &dumint, &dumint, &dummask);
 
 /* djhjr - 6/3/03 */
@@ -6057,7 +6144,6 @@ void WarpToScreen (n, inc)
 #endif
 
     XWarpPointer (dpy, None, newscr->Root, 0, 0, 0, 0, x, y);
-    return;
 }
 
 

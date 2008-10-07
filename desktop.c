@@ -673,12 +673,8 @@ TwmWindow *tmp_win;
 				1, border, background);
 
 #ifdef TWM_USE_XFT
-		if (Scr->use_xft > 0) {
-		    tmp_win->VirtualDesktopDisplayWindow.xft = MyXftDrawCreate (dpy,
-					tmp_win->VirtualDesktopDisplayWindow.win,
-					Scr->d_visual,
-					XDefaultColormap (dpy, Scr->screen));
-		}
+		if (Scr->use_xft > 0)
+		    tmp_win->VirtualDesktopDisplayWindow.xft = MyXftDrawCreate (tmp_win->VirtualDesktopDisplayWindow.win);
 #endif
 
 /*RFBCURSOR*/XDefineCursor( dpy, tmp_win->VirtualDesktopDisplayWindow.win,
@@ -1009,7 +1005,7 @@ XMotionEvent ev;
 			SetBorder(moving_twindow, (hilite) ? True : False);
 			moving_twindow->highlight = hilite;
 
-			Scr->Focus = moving_twindow; /* evil */
+			Focus = moving_twindow; /* evil */
 
 			EventHandler[EnterNotify] = HandleUnknown;
 			EventHandler[LeaveNotify] = HandleUnknown;
@@ -1115,7 +1111,7 @@ int x, y;
 					moving_twindow->title_height + moving_twindow->frame_bw3D);
 
 			/* djhjr - 9/28/99 */
-			Scr->Focus = moving_twindow; /* evil */
+			Focus = moving_twindow; /* evil */
 		}
 }
 
@@ -1174,7 +1170,7 @@ void EndMoveWindowOnDesktop()
 			SetBorder(moving_twindow, False);
 			moving_twindow->highlight = hilite;
 
-			Scr->Focus = NULL; /* evil */
+			Focus = NULL; /* evil */
 
 			EventHandler[EnterNotify] = HandleEnterNotify;
 			EventHandler[LeaveNotify] = HandleLeaveNotify;
@@ -1283,23 +1279,39 @@ int scale;
 	}
         /* else specified as size of panner window */
 
-	/* tar@math.ksu.edu: fix handling of -0 X and Y geometry */
-/* account for VirtualDesktopBevelWidth - djhjr - 9/26/01 */
-	if (JunkMask & XValue) {
+#ifdef TILED_SCREEN
+	if ((Scr->use_tiles == TRUE) && (JunkMask & XValue) && (JunkMask & YValue))
+	{
+	    EnsureGeometryVisibility (JunkMask, &JunkX, &JunkY,
+		    JunkWidth  + 2*(Scr->BorderWidth + Scr->VirtualDesktopBevelWidth),
+		    JunkHeight + 2*(Scr->BorderWidth + Scr->VirtualDesktopBevelWidth));
+
+	    Scr->VirtualDesktopDX = JunkX;
+	    Scr->VirtualDesktopDY = JunkY;
+	}
+	else
+#endif
+	{
+	    /* tar@math.ksu.edu: fix handling of -0 X and Y geometry */
+	    /* account for VirtualDesktopBevelWidth - djhjr - 9/26/01 */
+	    if (JunkMask & XValue) {
 		if (JunkMask & XNegative) {
-			Scr->VirtualDesktopDX = Scr->MyDisplayWidth
+		    Scr->VirtualDesktopDX = Scr->MyDisplayWidth
 			    - JunkWidth - (2 * Scr->BorderWidth)
 			    - (2 * Scr->VirtualDesktopBevelWidth) + JunkX;
 		}
-		else	Scr->VirtualDesktopDX = JunkX;
-	}
-	if (JunkMask & YValue) {
+		else
+		    Scr->VirtualDesktopDX = JunkX;
+	    }
+	    if (JunkMask & YValue) {
 		if (JunkMask & YNegative) {
-			Scr->VirtualDesktopDY = Scr->MyDisplayHeight
+		    Scr->VirtualDesktopDY = Scr->MyDisplayHeight
 			    - JunkHeight - (2 * Scr->BorderWidth)
 			    - (2 * Scr->VirtualDesktopBevelWidth) + JunkY;
 		}
-		else	Scr->VirtualDesktopDY = JunkY;
+		else
+		    Scr->VirtualDesktopDY = JunkY;
+	    }
 	}
 
 	JunkWidth *= Scr->VirtualDesktopDScale;

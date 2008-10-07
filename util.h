@@ -110,9 +110,9 @@ extern int SetPixmapsBackground();
 #endif
 
 #ifdef TWM_USE_XFT
-extern XftDraw * MyXftDrawCreate (Display *dpy, Drawable d, Visual *vis, Colormap  col);
+extern XftDraw * MyXftDrawCreate (Window win);
 extern void MyXftDrawDestroy (XftDraw *draw);
-extern void CopyPixelToXftColor (Colormap cmap, unsigned long pixel, XftColor *col);
+extern void CopyPixelToXftColor (unsigned long pixel, XftColor *col);
 #endif
 #ifdef TWM_USE_OPACITY	 /*opacity: 0 = transparent ... 255 = opaque*/
 extern void SetWindowOpacity (Window win, unsigned int opacity);

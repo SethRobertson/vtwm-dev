@@ -1077,6 +1077,8 @@ char *s;
 	return PPOS_ON;
     else if (strcmp(s, "non-zero") == 0 || strcmp(s, "nonzero") == 0)
 	return PPOS_NON_ZERO;
+    else if (strcmp(s, "on-screen") == 0 || strcmp(s, "onscreen") == 0)
+	return PPOS_ON_SCREEN;
 
     twmrc_error_prefix();
     fprintf(stderr, "ignoring invalid UsePPosition argument \"%s\"\n", s);

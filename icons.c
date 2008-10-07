@@ -216,7 +216,7 @@ int def_x, def_y;
 	/* was 'Scr->use3Dicons' - djhjr - 8/11/98 */
 	if (Scr->IconBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors(&tmp_win->iconc);
 
-    FB(tmp_win->iconc.fore, tmp_win->iconc.back);
+    FB(Scr, tmp_win->iconc.fore, tmp_win->iconc.back);
 
     tmp_win->forced = FALSE;
     tmp_win->icon_not_ours = FALSE;
@@ -425,8 +425,7 @@ int def_x, def_y;
 	event_mask = ExposureMask;
 #ifdef TWM_USE_XFT
 	if (Scr->use_xft > 0)
-	    tmp_win->icon_w.xft = MyXftDrawCreate (dpy, tmp_win->icon_w.win,
-			Scr->d_visual, XDefaultColormap (dpy, Scr->screen));
+	    tmp_win->icon_w.xft = MyXftDrawCreate (tmp_win->icon_w.win);
 #endif
 #ifdef TWM_USE_OPACITY
 	SetWindowOpacity (tmp_win->icon_w.win, Scr->IconOpacity);
@@ -621,7 +620,7 @@ int def_x, def_y;
 	/* was 'Scr->use3Dicons' - djhjr - 8/11/98 */
 	if (Scr->IconBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors(&tmp_win->iconc);
 
-    FB(tmp_win->iconc.fore, tmp_win->iconc.back);
+    FB(Scr, tmp_win->iconc.fore, tmp_win->iconc.back);
 
     tmp_win->forced = FALSE;
     tmp_win->icon_not_ours = FALSE;
@@ -881,8 +880,7 @@ int def_x, def_y;
 	event_mask = ExposureMask;
 #ifdef TWM_USE_XFT
 	if (Scr->use_xft > 0)
-	    tmp_win->icon_w.xft = MyXftDrawCreate (dpy, tmp_win->icon_w.win,
-			Scr->d_visual, XDefaultColormap (dpy, Scr->screen));
+	    tmp_win->icon_w.xft = MyXftDrawCreate (tmp_win->icon_w.win);
 #endif
 #ifdef TWM_USE_OPACITY
 	SetWindowOpacity (tmp_win->icon_w.win, Scr->IconOpacity);

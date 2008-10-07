@@ -112,7 +112,6 @@ static int enter_flag;
 static int ColortableThrashing;
 static TwmWindow *enter_win, *raise_win;
 
-ScreenInfo *FindScreenInfo();
 int ButtonPressed = -1;
 int Cancel = FALSE;
 int GlobalFirstTime = True;
@@ -122,6 +121,12 @@ void HandleCreateNotify();
 
 void HandleShapeNotify ();
 extern int ShapeEventBase, ShapeErrorBase;
+
+#ifdef TWM_USE_XRANDR
+void HandleXrandrScreenChangeNotify ();
+extern int XrandrEventBase;
+extern int XrandrErrorBase;
+#endif
 
 void AutoRaiseWindow (tmp)
 	TwmWindow *tmp;
@@ -192,6 +197,10 @@ InitEvents()
 	EventHandler[VisibilityNotify] = HandleVisibilityNotify;
 	if (HasShape)
 	EventHandler[ShapeEventBase+ShapeNotify] = HandleShapeNotify;
+#ifdef TWM_USE_XRANDR
+	if (HasXrandr)
+	    EventHandler[XrandrEventBase+RRScreenChangeNotify] = HandleXrandrScreenChangeNotify;
+#endif
 }
 
 
@@ -658,26 +667,26 @@ Simply remove it...
 	 *
 	 * djhjr - 6/5/98 7/2/98 7/14/98
 	 */
-	if (Scr->Focus && (Context == C_NO_CONTEXT || Context == C_ROOT))
+	if (Focus && (Context == C_NO_CONTEXT || Context == C_ROOT))
 	{
 		/* ugly, but it works! see also iconmgr.c:RemoveIconManager() */
-		if (Scr->Focus->iconmgr)
+		if (Focus->iconmgr)
 		{
 #ifdef NEVER /* warps to icon managers uniquely handled in menus.c:WarpToWindow() */
-			if (!Scr->Focus->iconmgrp->active)
+			if (!Focus->iconmgrp->active)
 			{
-				ActiveIconManager(Scr->Focus->iconmgrp->last);
-				Tmp_win = Scr->Focus;
+				ActiveIconManager(Focus->iconmgrp->last);
+				Tmp_win = Focus;
 			}
 			else
-				Tmp_win = Scr->Focus->iconmgrp->active->twm;
+				Tmp_win = Focus->iconmgrp->active->twm;
 #endif
 
 			have_ScrFocus = 1;
 		}
-		else if (Scr->VirtualDesktopDisplayTwin == Scr->Focus)
+		else if (Scr->VirtualDesktopDisplayTwin == Focus)
 		{
-			Tmp_win = Scr->Focus;
+			Tmp_win = Focus;
 			Context = C_VIRTUAL;
 		}
 		/* XFindContext() doesn't seem to work here!?! */
@@ -687,17 +696,17 @@ Simply remove it...
 
 			for (door_win = Scr->Doors; door_win != NULL;
 					door_win = door_win->next)
-				if (door_win->twin == Scr->Focus)
+				if (door_win->twin == Focus)
 				{
-					Tmp_win = Scr->Focus;
+					Tmp_win = Focus;
 					Context = C_DOOR;
 
 					break;
 				}
 		}
-		else if (Scr->Focus->frame && !Scr->Focus->title_w.win)
+		else if (Focus->frame && !Focus->title_w.win)
 		{
-			Tmp_win = Scr->Focus;
+			Tmp_win = Focus;
 			Event.xany.window = Tmp_win->frame;
 			Context = C_FRAME;
 		}
@@ -730,11 +739,11 @@ Simply remove it...
 			case F_WARPCLASSPREV:
 			case F_WARPRING:
 				if (Context == C_ICONMGR)
-					Scr->Focus = Tmp_win = Tmp_win->list->iconmgr->twm_win;
+					Focus = Tmp_win = Tmp_win->list->iconmgr->twm_win;
 
 				if (have_ScrFocus)
 				{
-					Tmp_win = Scr->Focus;
+					Tmp_win = Focus;
 					Context = C_ICONMGR;
 				}
 
@@ -1064,7 +1073,7 @@ HandlePropertyNotify()
 				Tmp_win->icon_height, Scr->d_depth);
 	    if (!pm) return;
 
-	    FB(Tmp_win->iconc.fore, Tmp_win->iconc.back);
+	    FB(Scr, Tmp_win->iconc.fore, Tmp_win->iconc.back);
 
 /*
  * adapted from CTWM-3.5 - djhjr - 9/4/98
@@ -1443,7 +1452,7 @@ TwmWindow *twin;
 		(a) ? a : twin->icon_name, slen);
 	else
 */
-		MyFont_DrawString (dpy, &twin->list->w,
+		MyFont_DrawImageString (dpy, &twin->list->w,
 				&Scr->IconManagerFont,
 		&twin->list->cp, iconmgr_textx,
 
@@ -1549,6 +1558,7 @@ HandleExpose()
 #else
 	height = Scr->InfoFont.height+2;
 #endif
+	XClearArea (dpy, Scr->InfoWindow.win, 0, 0, 0, 0, False);
 	for (i = 0; i < InfoLines; i++)
 	{
 		j = strlen(Info[i]);
@@ -1596,7 +1606,7 @@ HandleExpose()
 	/* djhjr - 4/20/96 */
 	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 	if (Scr->BorderBevelWidth > 0 && (Event.xany.window == Tmp_win->frame)) {
-	    PaintBorders (Tmp_win, ((Tmp_win == Scr->Focus) ? True : False));
+	    PaintBorders (Tmp_win, ((Tmp_win == Focus) ? True : False));
 	    flush_expose (Event.xany.window);
 	    return;
 	}
@@ -1607,7 +1617,7 @@ HandleExpose()
 		PaintTitle (Tmp_win);
 
 		/* djhjr - 10/25/02 */
-		PaintTitleHighlight(Tmp_win, (Tmp_win == Scr->Focus) ? on : off);
+		PaintTitleHighlight(Tmp_win, (Tmp_win == Focus) ? on : off);
 
 	    flush_expose (Event.xany.window);
 		return;
@@ -1629,7 +1639,7 @@ HandleExpose()
 /* djhjr - 4/19/96
 			    register TitleButton *tb = tbw->info;
 
-			    FB(Tmp_win->title.fore, Tmp_win->title.back);
+			    FB(Scr, Tmp_win->title.fore, Tmp_win->title.back);
 			    XCopyPlane (dpy, tb->bitmap, w, Scr->NormalGC,
 					tb->srcx, tb->srcy, tb->width, tb->height,
 					tb->dstx, tb->dsty, 1);
@@ -1638,7 +1648,7 @@ HandleExpose()
 				/* added the test for window highlighting - djhjr - 3/14/98 */
 				/* collapsed two functions - djhjr - 8/10/98 */
 				if (Scr->ButtonColorIsFrame && Tmp_win->highlight)
-					PaintTitleButton(Tmp_win, tbw, (Scr->Focus == Tmp_win) ? 2 : 1);
+					PaintTitleButton(Tmp_win, tbw, (Focus == Tmp_win) ? 2 : 1);
 				else
 					PaintTitleButton(Tmp_win, tbw, 0);
 
@@ -1658,7 +1668,7 @@ HandleExpose()
 	    if (Event.xany.window == Tmp_win->list->icon)
 	    {
 /* djhjr - 4/19/96
-		FB(Tmp_win->list->cp.fore, Tmp_win->list->cp.back);
+		FB(Scr, Tmp_win->list->cp.fore, Tmp_win->list->cp.back);
 		XCopyPlane(dpy, Scr->siconifyPm, Tmp_win->list->icon,
 		    Scr->NormalGC,
 		    0,0, iconifybox_width, iconifybox_height, 0, 0, 1);
@@ -1670,7 +1680,7 @@ HandleExpose()
 				Scr->NormalGC, 0, 0,
 				iconifybox_width, iconifybox_height, 0, 0);
 		else {
-		    FB(Tmp_win->list->cp.fore, Tmp_win->list->cp.back);
+		    FB(Scr, Tmp_win->list->cp.fore, Tmp_win->list->cp.back);
 		    XCopyPlane(dpy, Scr->siconifyPm->pixmap, Tmp_win->list->icon, Scr->NormalGC,
 			0,0, iconifybox_width, iconifybox_height, 0, 0, 1);
 		}
@@ -1754,7 +1764,7 @@ HandleDestroyNotify()
 		destroySoundFromFunction = FALSE;
 #endif
 
-	if (Tmp_win == Scr->Focus)
+	if (Tmp_win == Focus)
 	{
 	FocusOnRoot();
 	}
@@ -1913,6 +1923,26 @@ HandleMapRequest()
 	if (Tmp_win == NULL)
 	    return;
 
+#ifdef TWM_USE_SLOPPYFOCUS
+	if (SloppyFocus == TRUE || FocusRoot == TRUE)
+#else
+	if (FocusRoot == TRUE) /* only warp if f.focus is not active */
+#endif
+	{
+	    if (Tmp_win->transient) {
+		if (Scr->WarpToTransients)
+		    WarpToWindow(Tmp_win);
+		else if (Scr->WarpToLocalTransients && Focus != NULL) {
+		    if (Tmp_win->transientfor == Focus->w
+			    || Tmp_win->group == Focus->group)
+			WarpToWindow(Tmp_win);
+		}
+	    }
+	    /* warp mouse into client if listed in "WarpCursor": */
+	    else if (Scr->WarpCursor || LookInList(Scr->WarpCursorL, Tmp_win->full_name, &Tmp_win->class))
+		WarpToWindow(Tmp_win);
+	}
+
 /* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
 	if (createSoundFromFunction == FALSE)
@@ -2021,10 +2051,10 @@ HandleMapNotify()
 	XMapSubwindows(dpy, Tmp_win->frame);
 
 /* djhjr - 4/25/96
-	if (Scr->Focus != Tmp_win && Tmp_win->hilite_w)
+	if (Focus != Tmp_win && Tmp_win->hilite_w)
 	XUnmapWindow(dpy, Tmp_win->hilite_w);
 */
-	if (Scr->Focus != Tmp_win)
+	if (Focus != Tmp_win)
 		PaintTitleHighlight(Tmp_win, off);
 
 	XMapWindow(dpy, Tmp_win->frame);
@@ -2959,13 +2989,12 @@ HandleEnterNotify()
 	 * Save the id of the window entered.  This will be used to remove
 	 * border highlight on entering the next application window.
 	 */
-	if (UnHighLight_win && ewp->window != UnHighLight_win->w) {
-	  SetBorder (UnHighLight_win, False);	/* application window */
-	  if (UnHighLight_win->list) /* in the icon box */
-	    /* Unhighlight only if previous and current window on the same root: */
-	    if (UnHighLight_win->attr.root == Scr->Root)
-		NotActiveIconManager(UnHighLight_win->list);
+	if (UnHighLight_win && UnHighLight_win->w != ewp->window) {
+	    SetBorder (UnHighLight_win, False); /* application window */
+	    if (UnHighLight_win->list && UnHighLight_win->list->w.win != ewp->window)
+		NotActiveIconManager(UnHighLight_win->list); /* in the icon box */
 	}
+
 	if (ewp->window == Scr->Root)
 	  UnHighLight_win = NULL;
 	else if (Tmp_win)
@@ -3206,8 +3235,8 @@ HandleEnterNotify()
 	    if (SloppyFocus == TRUE)
 	    {
 		if (ewp->window == Tmp_win->frame) {
-		    /* mouse entered the vtwm frame of a client window: */
 		    if (ewp->detail != NotifyInferior) {
+			/* mouse entered client frame (from outside): */
 			FocusOnClient (Tmp_win);
 			/*
 			 * send WM_TAKE_FOCUS if
@@ -3216,12 +3245,12 @@ HandleEnterNotify()
 			 */
 			if (Tmp_win->protocols & DoesWmTakeFocus)
 			    SendTakeFocusMessage (Tmp_win, ewp->time);
+			if (Tmp_win->list)
+			    ActiveIconManager (Tmp_win->list);
 		    }
-		    if (Tmp_win->list)
-			ActiveIconManager (Tmp_win->list);
 		}
 		else if (Tmp_win->list && ewp->window == Tmp_win->list->w.win) {
-		    /* mouse over iconmanager: */
+		    /* mouse entered iconmanager: */
 		    if (Tmp_win->mapped) {
 			FocusOnClient (Tmp_win);
 			if (Tmp_win->protocols & DoesWmTakeFocus)
@@ -3231,6 +3260,10 @@ HandleEnterNotify()
 			FocusOnRoot (); /* recover PointerRoot mode */
 		    ActiveIconManager (Tmp_win->list);
 		}
+		else if (Tmp_win->wmhints != NULL &&
+			ewp->window == Tmp_win->wmhints->icon_window &&
+			(!scanArgs.leaves || scanArgs.inferior))
+		    InstallWindowColormaps(EnterNotify, Tmp_win);
 	    }
 	    else
 #endif
@@ -3238,7 +3271,7 @@ HandleEnterNotify()
 		 * If currently in PointerRoot mode (indicated by FocusRoot), then
 		 * focus on this window
 		 */
-		if (Scr->FocusRoot && (!scanArgs.leaves || scanArgs.inferior)) {
+		if (FocusRoot && (!scanArgs.leaves || scanArgs.inferior)) {
 		if (Tmp_win->list) ActiveIconManager(Tmp_win->list);
 
 		if (Tmp_win->mapped) {
@@ -3246,8 +3279,8 @@ HandleEnterNotify()
 		     * unhighlight old focus window
 		     */
 
-		    if (Scr->Focus && Scr->Focus != Tmp_win)
-				PaintTitleHighlight(Scr->Focus, off);
+		    if (Focus && Focus != Tmp_win)
+				PaintTitleHighlight(Focus, off);
 
 		    /*
 		     * If entering the frame or the icon manager, then do
@@ -3280,7 +3313,7 @@ HandleEnterNotify()
 			/* added hack for StrictIconManager - djhjr - 10/2/01 */
 			/* added test for transients - djhjr - 4/9/02 */
 			if (Scr->IconManagerFocus ||
-					(Scr->FocusRoot &&
+					(FocusRoot &&
 					Scr->StrictIconManager &&
 					!Tmp_win->list) ||
 					(Tmp_win->list && Tmp_win->list->w.win &&
@@ -3298,7 +3331,7 @@ HandleEnterNotify()
 
 			if (Tmp_win->protocols & DoesWmTakeFocus)	/* 5 */
 			  SendTakeFocusMessage (Tmp_win, ewp->time);
-			Scr->Focus = Tmp_win;
+			Focus = Tmp_win;
 		    } else if (ewp->window == Tmp_win->w) {
 			/*
 			 * If we are entering the application window, install
@@ -3486,7 +3519,7 @@ HandleLeaveNotify()
 	}
 */
 
-	if (Scr->FocusRoot) {
+	if (FocusRoot) {
 
 		if (Event.xcrossing.detail != NotifyInferior) {
 
@@ -3513,7 +3546,7 @@ HandleLeaveNotify()
 		    if (Scr->TitleFocus ||
 			Tmp_win->protocols & DoesWmTakeFocus)
 		      SetFocus ((TwmWindow *) NULL, Event.xcrossing.time);
-		    Scr->Focus = NULL;
+		    Focus = NULL;
 		} else if (Event.xcrossing.window == Tmp_win->w &&
 				!scanArgs.enters) {
 		    InstallWindowColormaps (LeaveNotify, &Scr->TwmRoot);
@@ -3718,6 +3751,42 @@ HandleShapeNotify ()
 
 
 
+#ifdef TWM_USE_XRANDR
+/***********************************************************************
+ *
+ *  Procedure:
+ *	HandleXrandrScreenChangeNotify - XRANDR screen change notification event handler
+ *
+ ***********************************************************************
+ */
+void
+HandleXrandrScreenChangeNotify ()
+{
+    if (Scr->RRScreenChangeRestart == TRUE)
+    {
+	int i;
+	TwmWindow *tmp;
+	XEvent button;
+
+	/* to preserve size unzoom all windows on all screens: */
+	for (i = 0; i < NumScreens; ++i)
+	    if (ScreenList[i] != NULL)
+		for (tmp = ScreenList[i]->TwmRoot.next; tmp != NULL; tmp = tmp->next)
+		    if (tmp->zoomed != ZOOM_NONE)
+			fullzoom (tmp, tmp->zoomed);
+
+	/* prepare a faked button event: */
+	button.xany = Event.xany;
+	button.xbutton.time = CurrentTime;
+
+	/* initiate "f.restart": */
+	ExecuteFunction (F_RESTART, NULLSTR, Event.xany.window, NULL, &button, C_ROOT, FALSE);
+    }
+}
+#endif
+
+
+
 /***********************************************************************
  *
  *  Procedure:
@@ -3775,22 +3844,51 @@ Transient(w, propw)
  */
 
 ScreenInfo *
-FindScreenInfo(w)
-	Window w;
+FindPointerScreenInfo (void)
+{
+    int scrnum;
+
+    XQueryPointer (dpy, /*dummy*/Scr->Root, &JunkRoot, &JunkChild,
+		    &JunkX, &JunkY, &HotX, &HotY, &JunkMask);
+    for (scrnum = 0; scrnum < NumScreens; scrnum++) {
+	if (ScreenList[scrnum] != NULL && ScreenList[scrnum]->Root == JunkRoot)
+	    return ScreenList[scrnum];
+    }
+    return NULL;
+}
+
+ScreenInfo *
+FindDrawableScreenInfo (Drawable d)
+{
+    if (XGetGeometry(dpy, d, &JunkRoot, &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth)) {
+	int scrnum;
+	for (scrnum = 0; scrnum < NumScreens; scrnum++)
+	    if (ScreenList[scrnum] != NULL && ScreenList[scrnum]->Root == JunkRoot)
+		return ScreenList[scrnum];
+    }
+    return NULL;
+}
+
+ScreenInfo *
+FindWindowScreenInfo (XWindowAttributes *attr)
+{
+    int scrnum;
+
+    for (scrnum = 0; scrnum < NumScreens; scrnum++) {
+	if (ScreenList[scrnum] != NULL && ScreenOfDisplay(dpy, ScreenList[scrnum]->screen) == attr->screen)
+	    return ScreenList[scrnum];
+    }
+    return NULL;
+}
+
+ScreenInfo *
+FindScreenInfo (Window w)
 {
 	XWindowAttributes attr;
-	int scrnum;
 
 	attr.screen = NULL;
-	if (XGetWindowAttributes(dpy, w, &attr)) {
-	for (scrnum = 0; scrnum < NumScreens; scrnum++) {
-		if (ScreenList[scrnum] != NULL &&
-		(ScreenOfDisplay(dpy, ScreenList[scrnum]->screen) ==
-		 attr.screen))
-		  return ScreenList[scrnum];
-	}
-	}
-
+	if (XGetWindowAttributes(dpy, w, &attr))
+	    return FindWindowScreenInfo (&attr);
 	return NULL;
 }
 

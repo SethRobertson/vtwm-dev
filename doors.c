@@ -50,14 +50,22 @@ char *name, *position, *destination;
 	JunkMask = XParseGeometry (position, &JunkX, &JunkY,
 				   &JunkWidth, &JunkHeight);
 
-	/* we have some checking for negative (x,y) to do 
-	   sorta taken from desktop.c by DSE */
-	if ((JunkMask & XNegative) == XNegative) {
+#ifdef TILED_SCREEN
+	if ((Scr->use_tiles == TRUE) && (JunkMask & XValue) && (JunkMask & YValue))
+	    EnsureGeometryVisibility (JunkMask, &JunkX, &JunkY,
+		    JunkWidth + 2*bw, JunkHeight + 2*bw);
+	else
+#endif
+	{
+	    /* we have some checking for negative (x,y) to do
+	       sorta taken from desktop.c by DSE */
+	    if ((JunkMask & XNegative) == XNegative) {
 		JunkX += Scr->MyDisplayWidth - JunkWidth - (2 * bw);
 		}
-	if ((JunkMask & YNegative) == YNegative) {
+	    if ((JunkMask & YNegative) == YNegative) {
 		JunkY += Scr->MyDisplayHeight - JunkHeight - (2 * bw);
 		}
+	}
 
 /* allow position to be omitted - djhjr - 5/10/99
 	if ((JunkMask & (XValue | YValue)) !=
@@ -205,10 +213,8 @@ TwmDoor *tmp_door;
 
 #ifdef TWM_USE_XFT
 	if (Scr->use_xft > 0) {
-	    tmp_door->w.xft = MyXftDrawCreate (dpy, tmp_door->w.win, Scr->d_visual,
-					  XDefaultColormap (dpy, Scr->screen));
-	    CopyPixelToXftColor (XDefaultColormap (dpy, Scr->screen),
-				tmp_door->colors.fore, &tmp_door->colors.xft);
+	    tmp_door->w.xft = MyXftDrawCreate (tmp_door->w.win);
+	    CopyPixelToXftColor (tmp_door->colors.fore, &tmp_door->colors.xft);
 	}
 #endif
 #if defined TWM_USE_OPACITY  &&  1 /* "door" windows get MenuOpacity */
