@@ -5249,7 +5249,7 @@ int def_x, def_y;
     if (iconify)
 	Zoom(tmp_win->frame, NULL, tmp_win->icon_w.win, NULL);
     else if (tmp_win->list) /* djhjr - 10/11/01 */
-	Zoom(tmp_win->frame, NULL, tmp_win->list->w, tmp_win->list->iconmgr);
+	Zoom(tmp_win->frame, NULL, tmp_win->list->w.win, tmp_win->list->iconmgr);
 
     if (tmp_win->list)
 	XMapWindow(dpy, tmp_win->list->icon);
