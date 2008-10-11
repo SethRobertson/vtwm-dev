@@ -16,7 +16,7 @@
 #include "screen.h"
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
-
+#include <X11/Xmu/Drawing.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -272,10 +272,8 @@ img_ptr++;
 int ReadPNG(char *Path, unsigned char **ImgData, int *width, int *length)
 {
 FILE *f;
-int result;
-int x, y;
 unsigned char *tmpRow=NULL;
-char *Tempstr=NULL;
+unsigned char *Tempstr=NULL;
 png_structp png_ptr;
 png_infop info_ptr;
 png_uint_32 png_width, png_height, scanline_width;
@@ -422,7 +420,8 @@ char *path;
 Image *img;
 {
 XImage *ximg;
-unsigned char *PngData=NULL, *ClipData=NULL, *ptr, *clip_ptr;
+unsigned char *PngData=NULL, *ptr;
+char *ClipData=NULL, *clip_ptr;
 int  x, y, clipcellmask=1;
 XColor Color;
 Colormap cmap;

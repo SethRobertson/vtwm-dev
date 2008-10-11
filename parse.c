@@ -2193,7 +2193,7 @@ void do_squeeze_entry (list, name, type, justify, num, denom)
 
 	if (!sinfo) {
 	    twmrc_error_prefix();
-	    fprintf (stderr, "unable to allocate %d bytes for squeeze info\n",
+	    fprintf (stderr, "unable to allocate %lu bytes for squeeze info\n",
 		     sizeof(SqueezeInfo));
 	    return;
 	}

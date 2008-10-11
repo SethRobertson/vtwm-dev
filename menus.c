@@ -314,7 +314,7 @@ int CreateTitleButton (name, func, action, menuroot, rightside, append)
 
     if (!tb) {
 	fprintf (stderr,
-		 "%s:  unable to allocate %d bytes for title button\n",
+		 "%s:  unable to allocate %lu bytes for title button\n",
 		 ProgramName, sizeof(TitleButton));
 	return 0;
     }
@@ -2333,7 +2333,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 				if (new_argv == NULL)
 				{
 					fprintf(stderr,
-						"%s: unable to allocate %d bytes for execvp()\n",
+						"%s: unable to allocate %lu bytes for execvp()\n",
 						ProgramName, i * sizeof(char *));
 					break;
 				}
@@ -2901,12 +2901,12 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 	    Window rootw;
 	    Bool fromtitlebar = False;
 	    int moving_icon = FALSE;
-	    int constMoveDir, constMoveX, constMoveY;
-	    int constMoveXL, constMoveXR, constMoveYT, constMoveYB;
+	    int constMoveDir, constMoveX = 0, constMoveY = 0;
+	    int constMoveXL = 0, constMoveXR = 0, constMoveYT = 0, constMoveYB = 0;
 	    int origX, origY;
 	    long releaseEvent;
 	    long movementMask;
-	    int xl, yt, xr, yb;
+	    int xl = 0, yt = 0, xr = 0, yb = 0;
 	    int movefromcenter = 0;	/* djhjr - 10/4/02 */
 /* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
@@ -4315,6 +4315,7 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 /*SNUG*/ 	  int		right, left, up, down;
 /*SNUG*/ 	  int		inited;
 /*SNUG*/    case F_SNUGDESKTOP:
+		  right = left = up = down = 0;
 /*SNUG*/
 /*SNUG*/ 	  inited = 0;
 /*SNUG*/ 	  for (scan = Scr->TwmRoot.next; scan!=NULL; scan = scan->next)
@@ -6170,26 +6171,16 @@ TwmWindow *t;
 		}
 #else
 	/* added this 'if (...) else' - djhjr - 6/10/98 */
-	if (t->iconmgr)
+	if (t->iconmgr && t->iconmgrp->count > 0)
 	{
-/* djhjr - 5/30/00
-		if (t->iconmgrp->count > 0)
-			XWarpPointer(dpy, None, t->iconmgrp->first->icon, 0,0,0,0,
-					EDGE_OFFSET, EDGE_OFFSET);
+		w = t->iconmgrp->twm_win->frame;
 
-		return;
-*/
-		if (t->iconmgrp->count > 0)
-		{
-			w = t->iconmgrp->twm_win->frame;
-
-			/* was 'Scr->BorderWidth' - djhjr - 9/9/02 */
-			x = t->iconmgrp->x + bw + EDGE_OFFSET + 5;
-			x += (Scr->IconMgrBevelWidth > 0) ? Scr->IconMgrBevelWidth : bw;
-			y = t->iconmgrp->y + bw + t->iconmgrp->first->height / 2;
-			y += (Scr->IconMgrBevelWidth > 0) ? Scr->IconMgrBevelWidth : bw;
-			y += t->iconmgrp->twm_win->title_height;
-		}
+		/* was 'Scr->BorderWidth' - djhjr - 9/9/02 */
+		x = t->iconmgrp->x + bw + EDGE_OFFSET + 5;
+		x += (Scr->IconMgrBevelWidth > 0) ? Scr->IconMgrBevelWidth : bw;
+		y = t->iconmgrp->y + bw + t->iconmgrp->first->height / 2;
+		y += (Scr->IconMgrBevelWidth > 0) ? Scr->IconMgrBevelWidth : bw;
+		y += t->iconmgrp->twm_win->title_height;
 	}
 	else if (!t->title_w.win)
 	{

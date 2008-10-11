@@ -566,7 +566,7 @@ char *name;
     newname = (char *) malloc (HomeLen + strlen(name) + 2);
     if (!newname) {
 	fprintf (stderr,
-		 "%s:  unable to allocate %d bytes to expand filename %s/%s\n",
+		 "%s:  unable to allocate %lu bytes to expand filename %s/%s\n",
 		 ProgramName, HomeLen + strlen(name) + 2, Home, &name[1]);
     } else {
 	(void) sprintf (newname, "%s/%s", Home, &name[1]);
@@ -593,7 +593,7 @@ void InsertRGBColormap (a, maps, nmaps, replace)
     if (!sc) {				/* no existing, allocate new */
 	sc = (StdCmap *) malloc (sizeof (StdCmap));
 	if (!sc) {
-	    fprintf (stderr, "%s:  unable to allocate %d bytes for StdCmap\n",
+	    fprintf (stderr, "%s:  unable to allocate %lu bytes for StdCmap\n",
 		     ProgramName, sizeof (StdCmap));
 	    return;
 	}
@@ -2433,7 +2433,7 @@ int w, h, depth;
     image = (Image *)malloc(sizeof(struct _Image));
     if (!image)
     {
-	fprintf(stderr, "%s: cannot allocate %d bytes for Image \"%s\"\n",
+	fprintf(stderr, "%s: cannot allocate %lu bytes for Image \"%s\"\n",
 			ProgramName, sizeof(struct _Image), name);
 	return (None);
     }
@@ -2441,7 +2441,7 @@ int w, h, depth;
     image->pixmap = XCreatePixmap(dpy, Scr->Root, w, h, depth);
     if (image->pixmap == None)
     {
-	fprintf(stderr, "%s: cannot allocate %d bytes for pixmap \"%s\"\n",
+	fprintf(stderr, "%s: cannot allocate %lu bytes for pixmap \"%s\"\n",
 			ProgramName, sizeof(image->pixmap), name);
 	free((void *)image);
 	return (None);
@@ -2552,7 +2552,6 @@ ColorPair cp;
 		/* djhjr - 3/20/98 */
 		/* added color argument - djhjr - 9/28/99 */
 		image = FindImage(name, cp.back);
-		fprintf(stderr,"ReallyGetImage %s == %d\n",name,image);
 #else
 		;
 #endif

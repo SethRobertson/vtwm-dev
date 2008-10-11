@@ -195,7 +195,7 @@ short type;
     if (nptr == NULL)
     {
 	twmrc_error_prefix();
-	fprintf (stderr, "unable to allocate %d bytes for RegionEntry\n",
+	fprintf (stderr, "unable to allocate %lu bytes for RegionEntry\n",
 		 sizeof(RegionEntry));
 	Done();
     }

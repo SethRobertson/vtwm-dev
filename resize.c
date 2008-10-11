@@ -1608,7 +1608,7 @@ int FindNearestTileToPoint (int x, int y)
 
 int FindNearestTileToClient (TwmWindow *tmp)
 {
-    int k, dx, dy, a, m, i, w[4];
+    int w[4];
 
     Lft(w) = tmp->frame_x;
     Rht(w) = tmp->frame_x + tmp->frame_width  - 1;

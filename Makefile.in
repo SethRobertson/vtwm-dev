@@ -249,7 +249,9 @@ xrandr_LIBS = @xrandr_LIBS@
 AM_YFLAGS = -d
 rcdir = ${datadir}/X11/twm
 dist_rc_DATA = system.vtwmrc
-vtwm_CFLAGS = $(VWM_CFLAGS) -D_BSD_SOURCE \
+vtwm_CFLAGS = $(VWM_CFLAGS) -D_BSD_SOURCE -fno-strict-aliasing \
+	-D_POSIX_C_SOURCE=199309L -D_POSIX_SOURCE -D_XOPEN_SOURCE \
+	-D_SVID_SOURCE \
 	-DSYSTEM_VTWMRC=\"${datadir}/X11/twm/system.vtwmrc\" \
 	-DSYSTEM_TWMRC=\"${datadir}/X11/twm/system.twmrc\" \
 	@SOUND_SUPPORT@ @xpm_CFLAGS@ @regex_CFLAGS@ @xft_CFLAGS@ \

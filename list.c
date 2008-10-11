@@ -157,7 +157,7 @@ char *ptr;
     nptr = (name_list *)malloc(sizeof(name_list));
     if (nptr == NULL)
     {
-	fprintf (stderr, "%s: unable to allocate %d bytes for name_list\n",
+	fprintf (stderr, "%s: unable to allocate %lu bytes for name_list\n",
 		 ProgramName, sizeof(name_list));
 	Done();
     }

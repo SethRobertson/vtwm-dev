@@ -193,4 +193,7 @@ extern void TwmOutput();
 #define R_NORTHWEST		8
 #define R_CENTERED		9
 
+int yyparse(void);
+int yywrap(void);
+
 #endif /* _PARSE_ */

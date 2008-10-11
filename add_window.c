@@ -2312,8 +2312,8 @@ void ComputeTitleLocation (tmp)
 	if (tmp->squeeze_info)
 	{
 		SqueezeInfo *si = tmp->squeeze_info;
-		int basex;
 		int fw = tmp->frame_bw + tmp->frame_bw3D;
+		int basex = fw;
 
 		if (si->denom != 0 && si->num != 0)
 			basex = ((tmp->frame_width - tmp->title_width) / si->denom) * si->num + fw;
