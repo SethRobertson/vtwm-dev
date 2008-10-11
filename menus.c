@@ -801,7 +801,7 @@ int exposure;
 				Image *image;
 				ColorPair cp;
 
-				cp.back = Scr->MenuC.back;
+				cp.fore = cp.back = Scr->MenuC.back;
 				if (strncmp(Scr->menuIconName, ":xpm:", 5) != 0)
 				{
 					cp.fore = Scr->MenuC.fore;
