@@ -39,7 +39,7 @@
 #include <X11/extensions/shape.h>
 #include <X11/cursorfont.h>
 #endif
-
+#include <X11/Xmu/WinUtil.h>
 #include <X11/xpm.h>
 
 Window window_by_name();
@@ -121,20 +121,16 @@ char *point_txt[] = {
 XColor NameToXColor();
 unsigned long NameToPixel();
 
-main(argc, argv)
-    unsigned int argc;
+int main(argc, argv)
+    int argc;
     char **argv;
 {
     int ErrorStatus;
     unsigned int stdinf = 0;
     unsigned int sSolid = 0;
-    unsigned int w_rtn;
-    unsigned int h_rtn;
     char *input = NULL;
     unsigned int numsymbols = 0;
     XpmColorSymbol symbols[10];
-    char *stype;
-    XrmValue val;
     unsigned long valuemask = 0;
     int n;
     char *solid_color = NULL;
@@ -275,6 +271,8 @@ main(argc, argv)
 	XClearWindow(dpy, win);
 	XFlush( dpy );
     Punt(0);
+    /*notreached*/
+    exit(0);
 }
 
 void
@@ -379,8 +377,8 @@ char *name;
     Window *offspring;		/* Any children */
     Window junk;		/* Just that */
     Window w = 0;		/* Found window */
-    int count;			/* Number of kids */
-    int loop;			/* Loop counter */
+    unsigned int count;		/* Number of kids */
+    unsigned int loop;		/* Loop counter */
     char *wdw_name;		/* Returnewd name */
     if (XFetchName(dpy,wdw,&wdw_name) && !strcmp(wdw_name,name))
       return(wdw);
