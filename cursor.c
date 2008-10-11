@@ -33,6 +33,7 @@
 #include "twm.h"
 #include <X11/Xos.h>
 #include "screen.h"
+#include "image_formats.h"
 #include "util.h"
 
 void NewBitmapCursor();

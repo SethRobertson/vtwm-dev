@@ -18,6 +18,12 @@ XCOMM and comment these
            XPMINC =
 XCOMM (version 3.4h of the XPM library is the earliest supported I know of)
 
+XCOMM To omit PNG image support, uncomment this
+   NO_PNG_SUPPORT = -DNO_PNG_SUPPORT
+XCOMM and comment these
+XCOMM           PNGLIB = -lpng
+XCOMM           PNGINC =
+
 XCOMM To omit regular expressions ("RE"s) support, uncomment this
 XCOMM NO_REGEX_SUPPORT = -DNO_REGEX_SUPPORT
 XCOMM and comment these
@@ -106,11 +112,11 @@ XCOMM ========= Editing below here should not be necessary ==========
            YFLAGS = -d
           DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
   LOCAL_LIBRARIES = $(LEXLIB) $(XPMLIB) $(REGEXLIB) $(SOUNDLIB) \
-                    $(XMULIB) $(EXTENSIONLIB) $(XLIB)
+                    $(XMULIB) $(EXTENSIONLIB) $(XLIB) $(PNGLIB)
          LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
-   EXTRA_INCLUDES = $(XPMINC) $(REGEXINC) $(SOUNDINC) $(XFTINCLUDES)
+   EXTRA_INCLUDES = $(XPMINC) $(REGEXINC) $(SOUNDINC) $(XFTINCLUDES) $(PNGINC)
           DEFINES = $(SIGNAL_DEFINES) $(NO_XPM_SUPPORT) $(NO_REGEX_SUPPORT) \
-                    $(NO_SOUND_SUPPORT) $(NO_M4_SUPPORT) \
+                    $(NO_SOUND_SUPPORT) $(NO_M4_SUPPORT) $(NO_PNG_SUPPORT) \
 		    $(TWM_USE_XFT) $(TWM_USE_SPACING) $(TWM_USE_OPACITY) \
 		    $(TWM_USE_XINERAMA) \
 		    $(TWM_USE_XRANDR) \
@@ -119,12 +125,12 @@ XCOMM ========= Editing below here should not be necessary ==========
              SRCS = gram.c lex.c deftwmrc.c add_window.c gc.c list.c \
                     twm.c sound.c parse.c menus.c events.c resize.c util.c \
                     version.c iconmgr.c cursor.c regions.c applets.c \
-                    icons.c desktop.c doors.c lastmake.c
+                    icons.c desktop.c doors.c lastmake.c image_formats.c
 
              OBJS = gram.o lex.o deftwmrc.o add_window.o gc.o list.o \
                     twm.o sound.o parse.o menus.o events.o resize.o util.o \
                     version.o iconmgr.o cursor.o regions.o applets.o \
-                    icons.o desktop.o doors.o lastmake.o
+                    icons.o desktop.o doors.o lastmake.o image_formats.o
 
 AllTarget(vtwm)
 

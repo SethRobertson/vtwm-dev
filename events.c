@@ -46,6 +46,7 @@
 #include "resize.h"
 #include "parse.h"
 #include "gram.h"
+#include "image_formats.h"
 #include "util.h"
 #include "screen.h"
 #include "iconmgr.h"

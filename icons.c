@@ -37,6 +37,7 @@
 #include "list.h"
 #include "gram.h"
 #include "parse.h"
+#include "image_formats.h"
 #include "util.h"
 
 extern void splitRegionEntry();
@@ -565,13 +566,11 @@ unsigned int *numcolors;
 
 			XFreePixmap(dpy, bm);
 		}
-#ifndef NO_XPM_SUPPORT
 		else
 		{
 			/* added color argument - djhjr - 9/28/99 */
 			iconimage = FindImage(name, background);
 		}
-#endif
 
 		if (iconimage != NULL)
 			/* added 'type' argument - djhjr - 10/20/01 */
@@ -643,7 +642,7 @@ int def_x, def_y;
 			/* added background and XPM indicator - djhjr - 12/28/98 */
 			iconimage = GetIconImage(icon_name, tmp_win->iconc.back,
 					&pm_numcolors);
-      
+     
 		if (iconimage != NULL)
 		{
 			tmp_win->icon_width = iconimage->width;
@@ -659,6 +658,7 @@ int def_x, def_y;
 	 * that could mean that ForceIcon was not set, or that the window
 	 * was not in the Icons list, now check the WM hints for an icon
 	 */
+
 	if (pm == None && tmp_win->wmhints &&
 			tmp_win->wmhints->flags & IconPixmapHint)
 	{
@@ -734,7 +734,7 @@ int def_x, def_y;
 	 * if we still haven't got an icon, let's look in the Icon list 
 	 * if ForceIcon is not set
 	 */
-	if (pm == None && !Scr->ForceIcon)
+	if ((pm == None) && (!Scr->ForceIcon))
 	{
 		icon_name = LookInNameList(Scr->IconNames, tmp_win->full_name);
 		if (icon_name == NULL)
@@ -780,6 +780,9 @@ int def_x, def_y;
 		iconimage = GetIconImage(Scr->unknownName, tmp_win->iconc.back,
 				&pm_numcolors);
 
+
+
+
 		if (iconimage != NULL)
 		{
 			tmp_win->icon_width = iconimage->width;
@@ -801,7 +804,7 @@ int def_x, def_y;
 	attributes.background_pixmap = pm;
 
 		/* djhjr - 12/28/98 */
-		if (pm_numcolors <= 2) /* not a pixmap */
+		if ((iconimage->type==IMAGE_TYPE_XPM) && (pm_numcolors <= 2)) /* not a pixmap */
 		{
 			valuemask |= CWBackPixel;
 			attributes.background_pixel = tmp_win->iconc.fore;
@@ -925,6 +928,7 @@ int def_x, def_y;
 					    (unsigned int) CopyFromParent,
 					    Scr->d_visual, valuemask,
 					    &attributes);
+
 
     if (HasShape)
 		if (iconimage != NULL && iconimage->mask != None)

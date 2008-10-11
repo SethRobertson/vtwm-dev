@@ -37,6 +37,7 @@
 #include "regions.h"
 #include "gram.h"
 #include "parse.h"
+#include "image_formats.h"
 #include "util.h"
 
 void

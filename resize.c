@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include "twm.h"
 #include "parse.h"
+#include "image_formats.h"
 #include "util.h"
 #include "resize.h"
 #include "add_window.h"

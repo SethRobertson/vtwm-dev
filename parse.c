@@ -45,6 +45,7 @@
 #include "screen.h"
 #include "menus.h"
 #include "list.h"
+#include "image_formats.h"
 #include "util.h"
 #include "gram.h"
 #include "parse.h"

@@ -39,6 +39,7 @@
 #include "menus.h"
 /* djhjr - 5/17/98 */
 #ifndef ORIGINAL_PIXMAPS
+#include "image_formats.h"
 #include "util.h" /* for Image structure */
 #endif
 #include "iconmgr.h"

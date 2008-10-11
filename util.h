@@ -39,20 +39,9 @@
 #ifndef _UTIL_
 #define _UTIL_
 
-typedef struct _Image {
-    Pixmap pixmap;
-    Pixmap mask;
-    int    width;
-    int    height;
-    struct _Image *next;
-} Image;
 
 extern void	Zoom();
 extern void	MoveOutline();
-extern Pixmap	GetBitmap(), FindBitmap();
-#ifndef NO_XPM_SUPPORT
-extern Image *FindImage();
-#endif
 extern void	GetUnknownIcon();
 extern char 	*ExpandFilename();
 extern void		GetColor();

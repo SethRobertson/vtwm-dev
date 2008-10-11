@@ -49,6 +49,7 @@
 #include "version.h"
 #include "menus.h"
 #include "events.h"
+#include "image_formats.h"
 #include "util.h"
 #include "gram.h"
 #include "screen.h"

@@ -44,6 +44,7 @@
 
 #include <stdio.h>
 #include "twm.h"
+#include "image_formats.h"
 #include "util.h"
 #include "screen.h"
 

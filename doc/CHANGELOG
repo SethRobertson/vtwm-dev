@@ -15,6 +15,9 @@ IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 	      geometry now, which makes finding the
 	      window...interesting).
 
+         Colum Paget <colum@hovel2.demon.co.uk> submitted patches to:
+	    * Add PNG Icon support
+
     Sep 2008
 	Eeri Kask submitted 7 sets of patches with the following
 	functionality/fixes:

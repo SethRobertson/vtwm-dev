@@ -45,6 +45,7 @@
 #include "twm.h"
 #include "menus.h"
 #include "list.h"
+#include "image_formats.h"
 #include "util.h"
 #include "screen.h"
 #include "parse.h"

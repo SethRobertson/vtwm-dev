@@ -46,6 +46,7 @@
 #endif
 
 #include "add_window.h"
+#include "image_formats.h"
 #include "util.h"
 #include "resize.h"
 #include "parse.h"

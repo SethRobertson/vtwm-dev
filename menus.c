@@ -56,6 +56,7 @@
 #include "menus.h"
 #include "resize.h"
 #include "events.h"
+#include "image_formats.h"
 #include "util.h"
 #include "parse.h"
 #include "gram.h"
