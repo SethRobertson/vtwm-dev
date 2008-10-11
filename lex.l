@@ -97,14 +97,14 @@ number				[0-9]+
 				  ParseError = 1;
 				}
 %%
-#ifndef FLEX_SCANNER
+#ifndef yywrap
 yywrap() { return(1);}
+#endif
 
 #undef input
 #undef feof
 #define feof()		(1)
 #define input()		(*twmInputFunc)()
-#endif
 #undef output
 #define output(c)	TwmOutput(c)
 #undef unput
