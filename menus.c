@@ -3583,6 +3583,48 @@ ExecuteFunction(func, action, w, tmp_win, eventp, context, pulldown)
 			{
 				/* icon manager not mapped or not shown in one */
 
+				if (mr)
+				{
+				  /*
+Yes, this is an intentional uninitialized variable dereference, the
+sole purpose of which is to draw your attention to the problem
+expressed herewithin:
+
+Eeri Kask writes:
+Actually the whole concept of 'have_twmwindows', 'have_showdesktop',
+'have_showdesktop' being 'global' variables is defect because one can
+have different vtwm-configurations for different screens: .vtwmrc.0,
+.vtwmrc.1, etc. and then it is not apparent which of these screens
+state do these three variables then denote.  (At least they should be
+enclosed into 'Scr'.)
+
+
+It seems the whole idea of
+
+     "don't iconify if there's no way to get it back - not fool-proof"
+
+snippet is to guard the user from losing windows by iconifying "by 
+unmapping" and the same time not having e.g.
+
+     f.menu "TwmWindows"
+
+(a) attached to any hotkey/hotbutton (FindMenuOrFuncInBindings()), or
+(b) attached to any context (frame, titlebar) or titlebar-buttons
+     (FindMenuOrFuncInWindows()).
+
+
+Further, the 'mr' pointer cannot be made 'static' as well because of the 
+same reason as the three 'global' context bitmap variables above.
+
+The 'mr' pointer is checked in FindMenuOrFuncInWindows() against window 
+title buttons: i.e. a window is assumed deiconifiable if the 
+"TwmWindows" menu is attached to some title-bar-button.  In case there 
+is only one client then it remains to be figured out how to push that 
+button in emergency in order to deiconify if the window is iconified.
+				   */
+				  mr = NULL;
+				}
+
 				if (have_twmwindows == -1)
 				{
 					have_twmwindows = 0;
