@@ -8,6 +8,7 @@ AC_PREFIX_DEFAULT([/usr])
 
 AM_CONFIG_HEADER(config.h)
 
+AC_PATH_PROG(LN, ln)
 AC_PATH_PROG(CP, cp)
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -24,10 +25,15 @@ AC_SUBST(SOUND_SUPPORT)
 dnl Checks for pkg-config packages
 PKG_CHECK_MODULES(VTWM, x11 xext xt xmu)
 
+dnl Font height dependent text layout spacing
+AC_ARG_ENABLE(nexpm,AC_HELP_STRING([--disable-nexpm],[Turn off nexpm building]),[if test "$enable_nexpm" = "yes"; then ENABLE_NEXPM=yes; fi ],[ENABLE_NEXPM=yes])
+
 dnl xpm library checks
-PKG_CHECK_EXISTS(xpm,[PKG_CHECK_MODULES(xpm, xpm)],[xpm_CFLAGS=-DNO_XPM_SUPPORT])
+PKG_CHECK_EXISTS(xpm,[PKG_CHECK_MODULES(xpm, xpm)],[xpm_CFLAGS=-DNO_XPM_SUPPORT; unset ENABLE_NEXPM])
 AC_SUBST(xpm_CFLAGS)
 AC_SUBST(xpm_LIBS)
+AC_SUBST(ENABLE_NEXPM)
+AM_CONDITIONAL(ENABLE_NEXPM, test x$ENABLE_NEXPM = xyes)
 
 dnl png library checks
 PKG_CHECK_EXISTS(libpng,[PKG_CHECK_MODULES(png, libpng)],[png_CFLAGS=-DNO_PNG_SUPPORT])

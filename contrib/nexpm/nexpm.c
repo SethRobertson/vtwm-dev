@@ -25,6 +25,7 @@
 \*****************************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef VMS
 #include "decw$include:Xlib.h"

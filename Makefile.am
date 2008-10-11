@@ -2,7 +2,13 @@
 ## automake --foreign && autoconf && ./configure
 
 AM_YFLAGS = -d
+
+
+if ENABLE_NEXPM
+bin_PROGRAMS = vtwm nexpm
+else
 bin_PROGRAMS = vtwm
+endif
 
 rcdir = ${datadir}/X11/twm
 dist_rc_DATA = system.vtwmrc
@@ -18,6 +24,9 @@ vtwm_CFLAGS += -Wall -Werror
 endif
 
 vtwm_LDADD = $(VTWM_LIBS) $(xpm_LIBS) $(png_LIBS) $(regex_LIBS) $(xft_LIBS) $(xrandr_LIBS) $(xinerama_LIBS)
+
+nexpm_CFLAGS = $(vtwm_CFLAGS) -Icontrib/nexpm
+nexpm_LDADD = $(vtwm_LDADD)
 
 vtwm_SOURCES =   \
 	add_window.c \
@@ -62,9 +71,12 @@ vtwm_SOURCES =   \
 	gram.y \
 	lex.l
 
+nexpm_SOURCES = contrib/nexpm/nexpm.c
+
 BUILT_SOURCES = gram.h gram.c lex.c deftwmrc.c lastmake.c
 MAINTAINERCLEANFILES =
-DISTCLEANFILES=$(BUILT_SOURCES) system.vtwmrc autom4te.cache/*
+DISTCLEANFILES=$(BUILT_SOURCES) system.vtwmrc vtwm.man vtwm.1 nexpm
+DISTCLEANDIRS=autom4te.cache
 
 
 deftwmrc.c: system.vtwmrc
@@ -92,10 +104,16 @@ lastmake.c: FORCE
 
 gram.h: gram.c
 
+#nexpm: contrib/nexpm/nexpm.c
+#	$(vtwm_LINK) -o $@ -Icontrib/nexpm $^ $(vtwm_LDADD) $(LIBS)
+
 system.vtwmrc:
 	$(RM) $@
 	$(CP) $@.$(SYS_VTWMRC_LOOK) $@
 
-vtwm.man:
+man1_MANS = vtwm.man
+EXRTA_DIST = $(man1_MANS)
+
+vtwm.man: doc/vtwm.man
 	$(RM) $@
 	$(LN) doc/$@ $@

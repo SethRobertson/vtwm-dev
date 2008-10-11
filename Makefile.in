@@ -33,7 +33,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = vtwm$(EXEEXT)
+@ENABLE_NEXPM_FALSE@bin_PROGRAMS = vtwm$(EXEEXT)
+@ENABLE_NEXPM_TRUE@bin_PROGRAMS = vtwm$(EXEEXT) nexpm$(EXEEXT)
 @MAINTAINER_MODE_TRUE@am__append_1 = -Wall -Werror
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(dist_rc_DATA) \
@@ -50,9 +51,20 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(rcdir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" \
+	"$(DESTDIR)$(rcdir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
+am_nexpm_OBJECTS = nexpm-nexpm.$(OBJEXT)
+nexpm_OBJECTS = $(am_nexpm_OBJECTS)
+am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+nexpm_DEPENDENCIES = $(am__DEPENDENCIES_2)
+nexpm_LINK = $(CCLD) $(nexpm_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_vtwm_OBJECTS = vtwm-add_window.$(OBJEXT) vtwm-applets.$(OBJEXT) \
 	vtwm-cursor.$(OBJEXT) vtwm-deftwmrc.$(OBJEXT) \
 	vtwm-desktop.$(OBJEXT) vtwm-doors.$(OBJEXT) \
@@ -64,7 +76,6 @@ am_vtwm_OBJECTS = vtwm-add_window.$(OBJEXT) vtwm-applets.$(OBJEXT) \
 	vtwm-sound.$(OBJEXT) vtwm-twm.$(OBJEXT) vtwm-util.$(OBJEXT) \
 	vtwm-version.$(OBJEXT) vtwm-gram.$(OBJEXT) vtwm-lex.$(OBJEXT)
 vtwm_OBJECTS = $(am_vtwm_OBJECTS)
-am__DEPENDENCIES_1 =
 vtwm_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -83,8 +94,11 @@ LEXCOMPILE = $(LEX) $(LFLAGS) $(AM_LFLAGS)
 YLWRAP = $(top_srcdir)/ylwrap
 @MAINTAINER_MODE_FALSE@am__skipyacc = test -f $@ ||
 YACCCOMPILE = $(YACC) $(YFLAGS) $(AM_YFLAGS)
-SOURCES = $(vtwm_SOURCES)
-DIST_SOURCES = $(vtwm_SOURCES)
+SOURCES = $(nexpm_SOURCES) $(vtwm_SOURCES)
+DIST_SOURCES = $(nexpm_SOURCES) $(vtwm_SOURCES)
+man1dir = $(mandir)/man1
+NROFF = nroff
+MANS = $(man1_MANS)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -131,6 +145,7 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
+ENABLE_NEXPM = @ENABLE_NEXPM@
 EXEEXT = @EXEEXT@
 FILE_MAN_DIR = @FILE_MAN_DIR@
 FILE_MAN_SUFFIX = @FILE_MAN_SUFFIX@
@@ -148,6 +163,7 @@ LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIB_MAN_DIR = @LIB_MAN_DIR@
 LIB_MAN_SUFFIX = @LIB_MAN_SUFFIX@
+LN = @LN@
 LTLIBOBJS = @LTLIBOBJS@
 M4_BIN = @M4_BIN@
 MAINT = @MAINT@
@@ -261,6 +277,8 @@ vtwm_CFLAGS = $(VWM_CFLAGS) -D_BSD_SOURCE -fno-strict-aliasing \
 	@NEED_SELECT_H@ @NEED_PROCESS_H@ @NEED_PUTENV_F@ \
 	@NO_M4_SUPPORT@ @png_CFLAGS@ $(am__append_1)
 vtwm_LDADD = $(VTWM_LIBS) $(xpm_LIBS) $(png_LIBS) $(regex_LIBS) $(xft_LIBS) $(xrandr_LIBS) $(xinerama_LIBS)
+nexpm_CFLAGS = $(vtwm_CFLAGS) -Icontrib/nexpm
+nexpm_LDADD = $(vtwm_LDADD)
 vtwm_SOURCES = \
 	add_window.c \
 	add_window.h \
@@ -304,9 +322,13 @@ vtwm_SOURCES = \
 	gram.y \
 	lex.l
 
+nexpm_SOURCES = contrib/nexpm/nexpm.c
 BUILT_SOURCES = gram.h gram.c lex.c deftwmrc.c lastmake.c
 MAINTAINERCLEANFILES = 
-DISTCLEANFILES = $(BUILT_SOURCES) system.vtwmrc autom4te.cache/*
+DISTCLEANFILES = $(BUILT_SOURCES) system.vtwmrc vtwm.man vtwm.1 nexpm
+DISTCLEANDIRS = autom4te.cache
+man1_MANS = vtwm.man
+EXRTA_DIST = $(man1_MANS)
 all: $(BUILT_SOURCES) config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -385,6 +407,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+nexpm$(EXEEXT): $(nexpm_OBJECTS) $(nexpm_DEPENDENCIES) 
+	@rm -f nexpm$(EXEEXT)
+	$(nexpm_LINK) $(nexpm_OBJECTS) $(nexpm_LDADD) $(LIBS)
 vtwm$(EXEEXT): $(vtwm_OBJECTS) $(vtwm_DEPENDENCIES) 
 	@rm -f vtwm$(EXEEXT)
 	$(vtwm_LINK) $(vtwm_OBJECTS) $(vtwm_LDADD) $(LIBS)
@@ -395,6 +420,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nexpm-nexpm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vtwm-add_window.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vtwm-applets.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vtwm-cursor.Po@am__quote@
@@ -432,6 +458,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+nexpm-nexpm.o: contrib/nexpm/nexpm.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nexpm_CFLAGS) $(CFLAGS) -MT nexpm-nexpm.o -MD -MP -MF $(DEPDIR)/nexpm-nexpm.Tpo -c -o nexpm-nexpm.o `test -f 'contrib/nexpm/nexpm.c' || echo '$(srcdir)/'`contrib/nexpm/nexpm.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/nexpm-nexpm.Tpo $(DEPDIR)/nexpm-nexpm.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='contrib/nexpm/nexpm.c' object='nexpm-nexpm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nexpm_CFLAGS) $(CFLAGS) -c -o nexpm-nexpm.o `test -f 'contrib/nexpm/nexpm.c' || echo '$(srcdir)/'`contrib/nexpm/nexpm.c
+
+nexpm-nexpm.obj: contrib/nexpm/nexpm.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nexpm_CFLAGS) $(CFLAGS) -MT nexpm-nexpm.obj -MD -MP -MF $(DEPDIR)/nexpm-nexpm.Tpo -c -o nexpm-nexpm.obj `if test -f 'contrib/nexpm/nexpm.c'; then $(CYGPATH_W) 'contrib/nexpm/nexpm.c'; else $(CYGPATH_W) '$(srcdir)/contrib/nexpm/nexpm.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/nexpm-nexpm.Tpo $(DEPDIR)/nexpm-nexpm.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='contrib/nexpm/nexpm.c' object='nexpm-nexpm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nexpm_CFLAGS) $(CFLAGS) -c -o nexpm-nexpm.obj `if test -f 'contrib/nexpm/nexpm.c'; then $(CYGPATH_W) 'contrib/nexpm/nexpm.c'; else $(CYGPATH_W) '$(srcdir)/contrib/nexpm/nexpm.c'; fi`
 
 vtwm-add_window.o: add_window.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(vtwm_CFLAGS) $(CFLAGS) -MT vtwm-add_window.o -MD -MP -MF $(DEPDIR)/vtwm-add_window.Tpo -c -o vtwm-add_window.o `test -f 'add_window.c' || echo '$(srcdir)/'`add_window.c
@@ -760,6 +800,51 @@ vtwm-lex.obj: lex.c
 
 .y.c:
 	$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE)
+install-man1: $(man1_MANS) $(man_MANS)
+	@$(NORMAL_INSTALL)
+	test -z "$(man1dir)" || $(MKDIR_P) "$(DESTDIR)$(man1dir)"
+	@list='$(man1_MANS) $(dist_man1_MANS) $(nodist_man1_MANS)'; \
+	l2='$(man_MANS) $(dist_man_MANS) $(nodist_man_MANS)'; \
+	for i in $$l2; do \
+	  case "$$i" in \
+	    *.1*) list="$$list $$i" ;; \
+	  esac; \
+	done; \
+	for i in $$list; do \
+	  if test -f $(srcdir)/$$i; then file=$(srcdir)/$$i; \
+	  else file=$$i; fi; \
+	  ext=`echo $$i | sed -e 's/^.*\\.//'`; \
+	  case "$$ext" in \
+	    1*) ;; \
+	    *) ext='1' ;; \
+	  esac; \
+	  inst=`echo $$i | sed -e 's/\\.[0-9a-z]*$$//'`; \
+	  inst=`echo $$inst | sed -e 's/^.*\///'`; \
+	  inst=`echo $$inst | sed '$(transform)'`.$$ext; \
+	  echo " $(INSTALL_DATA) '$$file' '$(DESTDIR)$(man1dir)/$$inst'"; \
+	  $(INSTALL_DATA) "$$file" "$(DESTDIR)$(man1dir)/$$inst"; \
+	done
+uninstall-man1:
+	@$(NORMAL_UNINSTALL)
+	@list='$(man1_MANS) $(dist_man1_MANS) $(nodist_man1_MANS)'; \
+	l2='$(man_MANS) $(dist_man_MANS) $(nodist_man_MANS)'; \
+	for i in $$l2; do \
+	  case "$$i" in \
+	    *.1*) list="$$list $$i" ;; \
+	  esac; \
+	done; \
+	for i in $$list; do \
+	  ext=`echo $$i | sed -e 's/^.*\\.//'`; \
+	  case "$$ext" in \
+	    1*) ;; \
+	    *) ext='1' ;; \
+	  esac; \
+	  inst=`echo $$i | sed -e 's/\\.[0-9a-z]*$$//'`; \
+	  inst=`echo $$inst | sed -e 's/^.*\///'`; \
+	  inst=`echo $$inst | sed '$(transform)'`.$$ext; \
+	  echo " rm -f '$(DESTDIR)$(man1dir)/$$inst'"; \
+	  rm -f "$(DESTDIR)$(man1dir)/$$inst"; \
+	done
 install-dist_rcDATA: $(dist_rc_DATA)
 	@$(NORMAL_INSTALL)
 	test -z "$(rcdir)" || $(MKDIR_P) "$(DESTDIR)$(rcdir)"
@@ -959,9 +1044,9 @@ distcleancheck: distclean
 check-am: all-am
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
-all-am: Makefile $(PROGRAMS) $(DATA) config.h
+all-am: Makefile $(PROGRAMS) $(MANS) $(DATA) config.h
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(rcdir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(rcdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -1016,7 +1101,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-dist_rcDATA
+install-data-am: install-dist_rcDATA install-man
 
 install-dvi: install-dvi-am
 
@@ -1026,7 +1111,7 @@ install-html: install-html-am
 
 install-info: install-info-am
 
-install-man:
+install-man: install-man1
 
 install-pdf: install-pdf-am
 
@@ -1053,7 +1138,10 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-dist_rcDATA
+uninstall-am: uninstall-binPROGRAMS uninstall-dist_rcDATA \
+	uninstall-man
+
+uninstall-man: uninstall-man1
 
 .MAKE: install-am install-strip
 
@@ -1066,12 +1154,13 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_rcDATA
 	install-binPROGRAMS install-data install-data-am \
 	install-dist_rcDATA install-dvi install-dvi-am install-exec \
 	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
+	install-info-am install-man install-man1 install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-binPROGRAMS uninstall-dist_rcDATA
+	uninstall-am uninstall-binPROGRAMS uninstall-dist_rcDATA \
+	uninstall-man uninstall-man1
 
 
 deftwmrc.c: system.vtwmrc
@@ -1099,11 +1188,14 @@ lastmake.c: FORCE
 
 gram.h: gram.c
 
+#nexpm: contrib/nexpm/nexpm.c
+#	$(vtwm_LINK) -o $@ -Icontrib/nexpm $^ $(vtwm_LDADD) $(LIBS)
+
 system.vtwmrc:
 	$(RM) $@
 	$(CP) $@.$(SYS_VTWMRC_LOOK) $@
 
-vtwm.man:
+vtwm.man: doc/vtwm.man
 	$(RM) $@
 	$(LN) doc/$@ $@
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
