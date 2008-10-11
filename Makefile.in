@@ -34,6 +34,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = vtwm$(EXEEXT)
+@MAINTAINER_MODE_TRUE@am__append_1 = -Wall -Werror
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(dist_rc_DATA) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
@@ -56,8 +57,9 @@ am_vtwm_OBJECTS = vtwm-add_window.$(OBJEXT) vtwm-applets.$(OBJEXT) \
 	vtwm-cursor.$(OBJEXT) vtwm-deftwmrc.$(OBJEXT) \
 	vtwm-desktop.$(OBJEXT) vtwm-doors.$(OBJEXT) \
 	vtwm-events.$(OBJEXT) vtwm-gc.$(OBJEXT) vtwm-iconmgr.$(OBJEXT) \
-	vtwm-icons.$(OBJEXT) vtwm-lastmake.$(OBJEXT) \
-	vtwm-list.$(OBJEXT) vtwm-menus.$(OBJEXT) vtwm-parse.$(OBJEXT) \
+	vtwm-icons.$(OBJEXT) vtwm-image_formats.$(OBJEXT) \
+	vtwm-lastmake.$(OBJEXT) vtwm-list.$(OBJEXT) \
+	vtwm-menus.$(OBJEXT) vtwm-parse.$(OBJEXT) \
 	vtwm-regions.$(OBJEXT) vtwm-resize.$(OBJEXT) \
 	vtwm-sound.$(OBJEXT) vtwm-twm.$(OBJEXT) vtwm-util.$(OBJEXT) \
 	vtwm-version.$(OBJEXT) vtwm-gram.$(OBJEXT) vtwm-lex.$(OBJEXT)
@@ -247,8 +249,7 @@ xrandr_LIBS = @xrandr_LIBS@
 AM_YFLAGS = -d
 rcdir = ${datadir}/X11/twm
 dist_rc_DATA = system.vtwmrc
-vtwm_CFLAGS = $(VWM_CFLAGS) -DXVENDORNAME=\"The\ Vtwm\ Mailing\ List\" \
-	-DVTWM_RELEASE=\"Release\ $(VERSION)\" -D_BSD_SOURCE \
+vtwm_CFLAGS = $(VWM_CFLAGS) -D_BSD_SOURCE \
 	-DSYSTEM_VTWMRC=\"${datadir}/X11/twm/system.vtwmrc\" \
 	-DSYSTEM_TWMRC=\"${datadir}/X11/twm/system.twmrc\" \
 	@SOUND_SUPPORT@ @xpm_CFLAGS@ @regex_CFLAGS@ @xft_CFLAGS@ \
@@ -256,7 +257,7 @@ vtwm_CFLAGS = $(VWM_CFLAGS) -DXVENDORNAME=\"The\ Vtwm\ Mailing\ List\" \
 	@TWM_USE_SPACING@ @TWM_USE_OPACITY@ @TWM_USE_SLOPPYFOCUS@ \
 	@xinerama_CFLAGS@ @xinerama_AUX_CFLAGS@ @NO_BUILD_INFO@ \
 	@NEED_SELECT_H@ @NEED_PROCESS_H@ @NEED_PUTENV_F@ \
-	@NO_M4_SUPPORT@ @png_CFLAGS@ $(am__empty)
+	@NO_M4_SUPPORT@ @png_CFLAGS@ $(am__append_1)
 vtwm_LDADD = $(VTWM_LIBS) $(xpm_LIBS) $(png_LIBS) $(regex_LIBS) $(xft_LIBS) $(xrandr_LIBS) $(xinerama_LIBS)
 vtwm_SOURCES = \
 	add_window.c \
@@ -276,6 +277,8 @@ vtwm_SOURCES = \
 	iconmgr.c \
 	iconmgr.h \
 	icons.c \
+	image_formats.c \
+	image_formats.h \
 	lastmake.c \
 	list.c \
 	list.h \
@@ -401,6 +404,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vtwm-gram.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vtwm-iconmgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vtwm-icons.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vtwm-image_formats.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vtwm-lastmake.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vtwm-lex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vtwm-list.Po@am__quote@
@@ -566,6 +570,20 @@ vtwm-icons.obj: icons.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='icons.c' object='vtwm-icons.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(vtwm_CFLAGS) $(CFLAGS) -c -o vtwm-icons.obj `if test -f 'icons.c'; then $(CYGPATH_W) 'icons.c'; else $(CYGPATH_W) '$(srcdir)/icons.c'; fi`
+
+vtwm-image_formats.o: image_formats.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(vtwm_CFLAGS) $(CFLAGS) -MT vtwm-image_formats.o -MD -MP -MF $(DEPDIR)/vtwm-image_formats.Tpo -c -o vtwm-image_formats.o `test -f 'image_formats.c' || echo '$(srcdir)/'`image_formats.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/vtwm-image_formats.Tpo $(DEPDIR)/vtwm-image_formats.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='image_formats.c' object='vtwm-image_formats.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(vtwm_CFLAGS) $(CFLAGS) -c -o vtwm-image_formats.o `test -f 'image_formats.c' || echo '$(srcdir)/'`image_formats.c
+
+vtwm-image_formats.obj: image_formats.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(vtwm_CFLAGS) $(CFLAGS) -MT vtwm-image_formats.obj -MD -MP -MF $(DEPDIR)/vtwm-image_formats.Tpo -c -o vtwm-image_formats.obj `if test -f 'image_formats.c'; then $(CYGPATH_W) 'image_formats.c'; else $(CYGPATH_W) '$(srcdir)/image_formats.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/vtwm-image_formats.Tpo $(DEPDIR)/vtwm-image_formats.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='image_formats.c' object='vtwm-image_formats.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(vtwm_CFLAGS) $(CFLAGS) -c -o vtwm-image_formats.obj `if test -f 'image_formats.c'; then $(CYGPATH_W) 'image_formats.c'; else $(CYGPATH_W) '$(srcdir)/image_formats.c'; fi`
 
 vtwm-lastmake.o: lastmake.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(vtwm_CFLAGS) $(CFLAGS) -MT vtwm-lastmake.o -MD -MP -MF $(DEPDIR)/vtwm-lastmake.Tpo -c -o vtwm-lastmake.o `test -f 'lastmake.c' || echo '$(srcdir)/'`lastmake.c

@@ -83,7 +83,7 @@ AC_SUBST(NEED_PUTENV_F)
 
 dnl M4
 AC_ARG_ENABLE(m4,AC_HELP_STRING([--disable-m4],[Turn off m4 vtwmrc processing]),[if test "$enable_m4" = "no"; then NO_M4_SUPPORT=-DNO_M4_SUPPORT; fi ])
-AC_PATH_PROG(M4_BIN, m5)
+AC_PATH_PROG(M4_BIN, m4)
 if test -z "$M4_BIN"; then NO_M4_SUPPORT=-DNO_M4_SUPPORT; fi
 AC_SUBST(NO_M4_SUPPORT)
 

@@ -25,5 +25,5 @@
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
 
-char *Version = "Virtual Desktop TWM (VTWM) - X11R4-6 Release 5.4.8-pre";
+char *Version = "Virtual Desktop TWM (VTWM) - X11R4-6 Release 5.5.0-pre";
 

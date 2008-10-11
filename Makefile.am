@@ -1,16 +1,20 @@
+## Process this file with automake to produce Makefile.in
+## automake --foreign && autoconf && ./configure
+
 AM_YFLAGS = -d
 bin_PROGRAMS = vtwm
 
 rcdir = ${datadir}/X11/twm
 dist_rc_DATA = system.vtwmrc
 
-vtwm_CFLAGS = $(VWM_CFLAGS) -DXVENDORNAME=\"The\ Vtwm\ Mailing\ List\" -DVTWM_RELEASE=\"Release\ $(VERSION)\" -D_BSD_SOURCE
+vtwm_CFLAGS = $(VWM_CFLAGS) -D_BSD_SOURCE
 vtwm_CFLAGS += -DSYSTEM_VTWMRC=\"${datadir}/X11/twm/system.vtwmrc\" -DSYSTEM_TWMRC=\"${datadir}/X11/twm/system.twmrc\"
 vtwm_CFLAGS += @SOUND_SUPPORT@ @xpm_CFLAGS@ @regex_CFLAGS@ @xft_CFLAGS@ @xft_AUX_CFLAGS@ @xrandr_CFLAGS@ @xrandr_AUX_CFLAGS@
 vtwm_CFLAGS += @TWM_USE_SPACING@ @TWM_USE_OPACITY@ @TWM_USE_SLOPPYFOCUS@ @xinerama_CFLAGS@ @xinerama_AUX_CFLAGS@
 vtwm_CFLAGS += @NO_BUILD_INFO@ @NEED_SELECT_H@ @NEED_PROCESS_H@ @NEED_PUTENV_F@ @NO_M4_SUPPORT@ @png_CFLAGS@
-
-
+if MAINTAINER_MODE
+vtwm_CFLAGS += -Wall -Werror
+endif
 
 vtwm_LDADD = $(VTWM_LIBS) $(xpm_LIBS) $(png_LIBS) $(regex_LIBS) $(xft_LIBS) $(xrandr_LIBS) $(xinerama_LIBS)
 
@@ -32,6 +36,8 @@ vtwm_SOURCES =   \
 	iconmgr.c \
 	iconmgr.h \
 	icons.c \
+	image_formats.c \
+	image_formats.h \
 	lastmake.c \
 	list.c \
 	list.h \
