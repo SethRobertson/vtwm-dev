@@ -1924,24 +1924,24 @@ HandleMapRequest()
 	if (Tmp_win == NULL)
 	    return;
 
-#ifdef TWM_USE_SLOPPYFOCUS
-	if (SloppyFocus == TRUE || FocusRoot == TRUE)
-#else
-	if (FocusRoot == TRUE) /* only warp if f.focus is not active */
-#endif
+	if (HandlingEvents == TRUE)
 	{
-	    if (Tmp_win->transient) {
-		if (Scr->WarpToTransients)
-		    WarpToWindow(Tmp_win);
-		else if (Scr->WarpToLocalTransients && Focus != NULL) {
-		    if (Tmp_win->transientfor == Focus->w
-			    || Tmp_win->group == Focus->group)
+#ifdef TWM_USE_SLOPPYFOCUS
+	    if (SloppyFocus == TRUE || FocusRoot == TRUE)
+#else
+	    if (FocusRoot == TRUE) /* only warp if f.focus is not active */
+#endif
+	    {
+		if (Tmp_win->transient) {
+		    if (Scr->WarpToTransients)
 			WarpToWindow(Tmp_win);
+		    else if (Scr->WarpToLocalTransients && Focus != NULL) {
+			if (Tmp_win->transientfor == Focus->w
+				|| Tmp_win->group == Focus->group)
+			    WarpToWindow(Tmp_win);
+		    }
 		}
 	    }
-	    /* warp mouse into client if listed in "WarpCursor": */
-	    else if (Scr->WarpCursor || LookInList(Scr->WarpCursorL, Tmp_win->full_name, &Tmp_win->class))
-		WarpToWindow(Tmp_win);
 	}
 
 /* djhjr - 6/22/01 */
