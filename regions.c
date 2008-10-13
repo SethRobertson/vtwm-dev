@@ -56,7 +56,6 @@ splitRegionEntry (re, grav1, grav2, w, h)
 	if (h != re->h) {
 	    new = (RegionEntry *)malloc (sizeof (RegionEntry));
 	    new->u.twm_win = 0;
-	    /* djhjr - 10/20/01 */
 	    new->type = LTYPE_EXACT_NAME;
 	    new->usedby = 0;
 	    new->next = re->next;
@@ -79,7 +78,6 @@ splitRegionEntry (re, grav1, grav2, w, h)
 	if (w != re->w) {
 	    new = (RegionEntry *)malloc (sizeof (RegionEntry));
 	    new->u.twm_win = 0;
-	    /* djhjr - 10/20/01 */
 	    new->type = LTYPE_EXACT_NAME;
 	    new->usedby = 0;
 	    new->next = re->next;
@@ -156,7 +154,6 @@ RegionEntry	*re;
 			mergeRegionEntries (re, ep);
 			if (re->usedby == USEDBY_NAME)
 				free(re->u.name);
-/* djhjr - 10/20/01 */
 #ifndef NO_REGEX_SUPPORT
 			if (re->type & LTYPE_C_REGEXP)
 				regfree(&re->re);
@@ -172,7 +169,6 @@ RegionEntry	*re;
 			mergeRegionEntries (en, re);
 			if (en->usedby == USEDBY_NAME)
 				free(en->u.name);
-/* djhjr - 10/20/01 */
 #ifndef NO_REGEX_SUPPORT
 			if (en->type & LTYPE_C_REGEXP)
 				regfree(&en->re);
@@ -221,7 +217,6 @@ int grav1, grav2, stepx, stepy;
     rr->entries->w = rr->w;
     rr->entries->h = rr->h;
     rr->entries->u.twm_win = 0;
-    /* djhjr - 10/20/01 */
     rr->entries->type = LTYPE_EXACT_NAME;
     rr->entries->usedby = 0;
 
@@ -239,7 +234,6 @@ FreeRegionEntries (rr)
 	tmp = re->next;
 	if (re->usedby == USEDBY_NAME)
 		free(re->u.name);
-/* djhjr - 10/20/01 */
 #ifndef NO_REGEX_SUPPORT
 	if (re->type & LTYPE_C_REGEXP)
 		regfree(&re->re);

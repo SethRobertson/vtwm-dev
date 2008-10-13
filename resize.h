@@ -51,13 +51,9 @@ extern void SetupWindow();
 extern void SetupFrame();
 extern void SetFrameShape();
 extern void ConstrainSize();
-/* depreciated - djhjr - 10/6/02
-extern void MenuDoResize();
-*/
 extern void MenuStartResize();
 extern void MenuEndResize();
 
-/* djhjr - 4/6/98 */
 void PaintBorderAndTitlebar();
 
 extern void fullzoom();

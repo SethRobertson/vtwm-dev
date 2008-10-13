@@ -39,7 +39,7 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h> /* for sleep() */
+#include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
 #include "twm.h"
@@ -55,7 +55,6 @@
 #include "screen.h"
 #include "iconmgr.h"
 #include "desktop.h"
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
 #include "sound.h"
 #endif
@@ -96,7 +95,7 @@ char Info[INFO_LINES][INFO_SIZE];		/* info strings to print */
 int InfoLines;
 
 char *InitFile = NULL;
-int parseInitFile = TRUE;	/* djhjr - 10/7/02 */
+int parseInitFile = TRUE;
 
 Cursor UpperLeftCursor;		/* upper Left corner cursor */
 Cursor RightButt;
@@ -127,7 +126,7 @@ int JunkX;			/* junk variable */
 int JunkY;			/* junk variable */
 unsigned int JunkWidth, JunkHeight, JunkBW, JunkDepth, JunkMask;
 
-char *ProgramName, *PidName = "vtwm.pid"; /* PID file - djhjr - 12/2/01 */
+char *ProgramName, *PidName = "vtwm.pid";
 int Argc;
 char **Argv;
 char **Environ;
@@ -147,7 +146,6 @@ int SloppyFocus;		/* TRUE if sloppy focus policy globally on all screens activat
 
 extern void assign_var_savecolor();
 
-/* djhjr - 4/26/99 */
 extern void FreeRegions();
 
 /***********************************************************************
@@ -177,11 +175,10 @@ main(argc, argv, environ)
     int m4_preprocess = False;	/* filter the *twmrc file through m4 */
     char *m4_option = NULL; /* pass these options to m4 - djhjr - 2/20/98 */
 #endif
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
     int sound_state = 0;
 #endif
-    extern char *defTwmrc[];	/* djhjr - 10/7/02 */
+    extern char *defTwmrc[];
     char *loc;
 
 #ifdef TWM_USE_XFT
@@ -197,9 +194,8 @@ main(argc, argv, environ)
     SloppyFocus = FALSE;
 #endif
 
-    /* djhjr - 7/21/98 */
     SIGNAL_T QueueRestartVtwm();
-    
+
 	if ((ProgramName = strrchr(argv[0], '/')))
 		ProgramName++;
 	else
@@ -243,11 +239,6 @@ main(argc, argv, environ)
 	      case 'v':				/* -verbose */
 		PrintErrorMessages = True;
 		continue;
-#ifdef NEVER /* djhjr - 2/20/99 */
-	      case 'q':				/* -quiet */
-		PrintErrorMessages = False;
-		continue;
-#endif
 	    }
 	}
       usage:
@@ -272,7 +263,6 @@ main(argc, argv, environ)
 	fprintf(stderr, "%s: L10N %sabled.\n",
 		ProgramName, (use_fontset) ? "en" : "dis");
 
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
 #define sounddonehandler(sig) \
     if (signal (sig, SIG_IGN) != SIG_IGN) (void) signal (sig, PlaySoundDone)
@@ -288,7 +278,6 @@ main(argc, argv, environ)
     sounddonehandler (SIGQUIT);
     sounddonehandler (SIGTERM);
 
-    /* djhjr - 12/2/01 */
     donehandler (SIGABRT);
     donehandler (SIGFPE);
     donehandler (SIGSEGV);
@@ -298,7 +287,6 @@ main(argc, argv, environ)
 #undef sounddonehandler
 #undef donehandler
 
-    /* djhjr - 7/31/98 */
     signal (SIGUSR1, QueueRestartVtwm);
 
     Home = getenv("HOME");
@@ -417,8 +405,8 @@ main(argc, argv, environ)
     FirstScreen = TRUE;
     for (scrnum = firstscrn ; scrnum <= lastscrn; scrnum++)
     {
-        /* Make sure property priority colors is empty */
-        XChangeProperty (dpy, RootWindow(dpy, scrnum), _XA_MIT_PRIORITY_COLORS,
+	/* Make sure property priority colors is empty */
+	XChangeProperty (dpy, RootWindow(dpy, scrnum), _XA_MIT_PRIORITY_COLORS,
 			 XA_CARDINAL, 32, PropModeReplace, NULL, 0);
 	RedirectError = FALSE;
 	XSetErrorHandler(CatchRedirectError);
@@ -445,13 +433,13 @@ main(argc, argv, environ)
 	/* Note:  ScreenInfo struct is calloc'ed to initialize to zero. */
 	Scr = ScreenList[scrnum] =
 	    (ScreenInfo *) calloc(1, sizeof(ScreenInfo));
-  	if (Scr == NULL)
-  	{
-  	    fprintf (stderr, "%s: unable to allocate memory for ScreenInfo structure for screen %d.\n",
-  		     ProgramName, scrnum);
-  	    continue;
-  	}
-        Scr->Mouse = calloc((NumButtons+1)*NUM_CONTEXTS*MOD_SIZE,sizeof(MouseButton));
+	if (Scr == NULL)
+	{
+	    fprintf (stderr, "%s: unable to allocate memory for ScreenInfo structure for screen %d.\n",
+		     ProgramName, scrnum);
+	    continue;
+	}
+	Scr->Mouse = calloc((NumButtons+1)*NUM_CONTEXTS*MOD_SIZE,sizeof(MouseButton));
 	if (!Scr->Mouse)
 	{
 	  fprintf (stderr, "%s: Unable to allocate memory for mouse buttons, exiting.\n",
@@ -490,24 +478,19 @@ main(argc, argv, environ)
 	Scr->DontSqueezeTitleL = NULL;
 	Scr->WindowRingL = NULL;
 
-	/* submitted by Jonathan Paisley - 10/27/02 */
 	Scr->NoWindowRingL = NULL;
 
 	Scr->WarpCursorL = NULL;
 
-	/* djhjr - 4/22/96 */
 	Scr->ImageCache = NULL;
 
-	/* djhjr - 4/7/98 */
 	Scr->OpaqueMoveL = NULL;
 	Scr->NoOpaqueMoveL = NULL;
 	Scr->OpaqueResizeL = NULL;
 	Scr->NoOpaqueResizeL = NULL;
 
-	/* djhjr - 5/2/98 */
 	Scr->NoBorder = NULL;
 
-	/* djhjr - 9/24/02 */
 	Scr->UsePPositionL = NULL;
 
 	/* remember to put an initialization in InitVariables also
@@ -519,7 +502,6 @@ main(argc, argv, environ)
 	Scr->Root = RootWindow(dpy, scrnum);
 	XSaveContext (dpy, Scr->Root, ScreenContext, (caddr_t) Scr);
 
-	/* djhjr - 1/31/99 */
 	if ((def = XGetDefault(dpy, "*", "bitmapFilePath")))
 		Scr->BitmapFilePath = strdup(def);
 	else
@@ -546,9 +528,6 @@ main(argc, argv, environ)
 	Scr->TBInfo.nleft = Scr->TBInfo.nright = 0;
 	Scr->TBInfo.head = NULL;
 
-/* djhjr - 4/19/96
-	Scr->TBInfo.border = 1;
-*/
 	Scr->TBInfo.border = -100;
 
 	Scr->TBInfo.width = 0;
@@ -606,29 +585,15 @@ main(argc, argv, environ)
 
 	Scr->IconDirectory = NULL;
 
-	/* djhjr - 10/30/02 */
 	Scr->hiliteName = NULL;
 	Scr->menuIconName = TBPM_MENU;
 	Scr->iconMgrIconName = TBPM_XLOGO;
 
-/* djhjr - 10/30/02
-	Scr->siconifyPm = NULL;
-	Scr->pullPm = NULL;
-*/
-
-/* djhjr - 5/17/98 */
-#ifdef ORIGINAL_PIXMAPS
-	Scr->hilitePm = None;
-	Scr->virtualPm = None; /* RFB PIXMAP */
-	Scr->RealScreenPm = None; /* RFB PIXMAP */
-#else /* ORIGINAL_PIXMAPS */
-	/* djhjr - 10/25/02 */
 	Scr->hiliteName = NULL;
 
 	Scr->hilitePm = NULL;
 	Scr->virtualPm = NULL;
 	Scr->realscreenPm = NULL;
-#endif /* ORIGINAL_PIXMAPS */
 
 	if ( Scr->FirstTime )
 	{	/* retain max size on restart. */
@@ -661,13 +626,11 @@ main(argc, argv, environ)
 			Bot(Scr->tiles[i]) = si[i].y_org; /* y0 */
 			Rht(Scr->tiles[i]) = si[i].x_org + si[i].width  - 1; /* x1 */
 			Top(Scr->tiles[i]) = si[i].y_org + si[i].height - 1; /* y1 */
-#if 1
 			if (PrintErrorMessages)
 			    fprintf (stderr,
 				"%s: Xinerama tile %d at x = %d, y = %d, width = %d, height = %d detected.\n",
 				ProgramName, si[i].screen_number,
 				si[i].x_org, si[i].y_org, si[i].width, si[i].height);
-#endif
 		    }
 		    /* bypass Xinerama if the only tile exactly covers the X11-screen: */
 		    if (Scr->ntiles > 1
@@ -699,13 +662,11 @@ main(argc, argv, environ)
 				Bot(Scr->tiles[Scr->ntiles]) = crt->y; /* y0 */
 				Rht(Scr->tiles[Scr->ntiles]) = crt->x + crt->width  - 1; /* x1 */
 				Top(Scr->tiles[Scr->ntiles]) = crt->y + crt->height - 1; /* y1 */
-#if 1
 				if (PrintErrorMessages)
 				    fprintf (stderr,
 					"%s: Xrandr tile %d on screen %d at x = %d, y = %d, width = %d, height = %d detected.\n",
 					ProgramName, Scr->ntiles, Scr->screen,
 					crt->x, crt->y, crt->width, crt->height);
-#endif
 				++Scr->ntiles;
 			    }
 			    XRRFreeCrtcInfo (crt);
@@ -751,21 +712,18 @@ main(argc, argv, environ)
 	InitVariables();
 	InitMenus();
 
-	/* added this 'if (...) else' - djhjr - 10/7/02 */
 	if (!parseInitFile)
 		ParseStringList(defTwmrc);
 	else
 	{
 		/* Parse it once for each screen. */
 #ifndef NO_M4_SUPPORT
-		/* added 'm4_option' - djhjr - 2/20/99 */
 		ParseTwmrc(InitFile, display_name, m4_preprocess, m4_option);
 #else
 		ParseTwmrc(InitFile);
 #endif
 	}
 
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
 	OpenSound();
 
@@ -782,73 +740,27 @@ main(argc, argv, environ)
 
 	assign_var_savecolor(); /* storeing pixels for twmrc "entities" */
 
-/* djhjr - 10/17/02 */
-#if 0
-	/* djhjr - 4/19/96 */
-	/* was 'Scr->use3Dtitles' - djhjr - 8/11/98 */
-	if (Scr->TitleBevelWidth > 0) {
-/* djhjr - 10/17/02
-	    if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 0;
-*/
-
-/* djhjr - 3/12/97
-	    if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 0;
-	    if (Scr->FramePadding  == -100) Scr->FramePadding  = 0;
-	    if (Scr->TitlePadding  == -100) Scr->TitlePadding  = 0;
-*/
-	    Scr->ButtonIndent  = 0;
-	    Scr->FramePadding  = 0;
-	    Scr->TitlePadding  = 0;
-
-/* djhjr - 4/3/98
-		* djhjr - 4/26/96 *
-		if (Scr->SunkFocusWindowTitle) Scr->TitleHighlight = FALSE;
-*/
-	}
-	else {
-		/* djhjr - 4/5/98 */
-		Scr->SunkFocusWindowTitle = FALSE;
-	}
-#endif
-
-	/* was only if Scr->TitleBevelWidth == 0 - djhjr - 10/17/02 */
 	if (Scr->FramePadding  == -100) Scr->FramePadding  = 2; /* values that look */
 	if (Scr->TitlePadding  == -100) Scr->TitlePadding  = 8; /* "nice" on */
 	if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 1; /* 75 and 100dpi displays */
 	if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 1;
 
-	/* was 'Scr->use3D*' - djhjr - 8/11/98 */
-	/* rem'd 'Scr->*BevelWidth > 0' - djhjr - 10/30/02 */
-	if (/*Scr->TitleBevelWidth > 0 && */!Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
-	if (/*Scr->MenuBevelWidth > 0 && */!Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
+	if (!Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
+	if (!Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
 	if (Scr->MenuBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuTitleC);
 	if (Scr->BorderBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->BorderColorC);
 
-	/* djhjr - 2/7/99 */
 	if (Scr->DoorBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->DoorC);
 	if (Scr->VirtualDesktopBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->VirtualC);
 
-/* djhjr - 8/11/98
-	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
-	if (Scr->BorderBevelWidth == 0)
-		Scr->ThreeDBorderWidth = 0;
-	else
-*/
 	{
-/* djhjr - 8/11/98
-		* djhjr - 4/29/98 *
-		if (2 * Scr->BorderBevelWidth > Scr->ThreeDBorderWidth)
-			Scr->ThreeDBorderWidth = 2 * Scr->BorderBevelWidth;
-*/
 		if (2 * Scr->BorderBevelWidth > Scr->BorderWidth)
 			Scr->BorderWidth = 2 * Scr->BorderBevelWidth;
 
-    	if (!Scr->BeNiceToColormap)
+	if (!Scr->BeNiceToColormap)
 			GetShadeColors(&Scr->DefaultC);
 	}
 
-	/* djhjr - 5/5/98 */
-	/* was 'Scr->use3Dicons' - djhjr - 8/11/98 */
 	if (Scr->IconBevelWidth > 0)
 		Scr->IconBorderWidth = 0;
 
@@ -857,46 +769,18 @@ main(argc, argv, environ)
 	CreateGCs();
 	MakeMenus();
 
-/* djhjr - 10/18/02 */
-#if 0
-	/*
-	 * Set titlebar height from font height and padding,
-	 * then adjust to titlebutton height - djhjr - 12/10/98
-	 */
-	Scr->TitleBarFont.y += Scr->FramePadding;
-	i = Scr->TitleBarFont.height;
-	do
-	{
-		Scr->TitleBarFont.y += (i - Scr->TitleBarFont.height) / 2;
-		Scr->TitleHeight = i + Scr->FramePadding * 2;
-
-/* djhjr - 4/29/98
-		* djhjr - 4/19/96 *
-		if (Scr->use3Dtitles) Scr->TitleHeight += 4;
-*/
-/* djhjr - 10/18/02
-		* was 'Scr->use3Dtitles' - djhjr - 8/11/98 *
-		if (Scr->TitleBevelWidth > 0)
-			Scr->TitleHeight += 2 * Scr->TitleBevelWidth + 2;
-*/
-
-		/* make title height be odd so buttons look nice and centered */
-		if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
-	} while ((i = InitTitlebarButtons()) > Scr->TitleHeight - Scr->FramePadding * 2);
-#else
 	/* set titlebar height to font height plus frame padding */
 	Scr->TitleHeight = Scr->TitleBarFont.height + Scr->FramePadding * 2;
 	if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
 
 	i = InitTitlebarButtons();	/* returns the button height */
-	
- 	/* adjust titlebar height to button height */
+
+	/* adjust titlebar height to button height */
 	if (i > Scr->TitleHeight) Scr->TitleHeight = i + Scr->FramePadding * 2;
 	if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
 
 	/* adjust font baseline */
 	Scr->TitleBarFont.y += ((Scr->TitleHeight - Scr->TitleBarFont.height) / 2);
-#endif
 
 	XGrabServer(dpy);
 	XSync(dpy, 0);
@@ -909,8 +793,8 @@ main(argc, argv, environ)
 	if (!Scr->NoIconManagers)
 	    Scr->iconmgr.twm_win->icon = TRUE;
 
- 	if (Scr->VirtualDesktopWidth > 0)
- 		CreateDesktopDisplay();
+	if (Scr->VirtualDesktopWidth > 0)
+		CreateDesktopDisplay();
 
 	/* create all of the door windows */
 	door_open_all();
@@ -959,8 +843,6 @@ main(argc, argv, environ)
 	    }
 	}
 
-	/* djhjr - 5/9/96 */
-	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 	if (!Scr->BorderBevelWidth > 0)
 		attributes.border_pixel = Scr->DefaultC.fore;
 
@@ -969,32 +851,15 @@ main(argc, argv, environ)
 				 KeyPressMask | ButtonReleaseMask);
 	attributes.backing_store = NotUseful;
 
-#ifdef ORIGINAL_INFOCURSOR
-	attributes.cursor = XCreateFontCursor (dpy, Scr->WaitCursor);
-
-	/* djhjr - 5/9/96 */
-	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
-	if (!Scr->BorderBevelWidth > 0)
-		valuemask = (CWBorderPixel | CWBackPixel | CWEventMask |
-			     CWBackingStore | CWCursor);
-	else
-		valuemask = (CWBackPixel | CWEventMask | CWBackingStore | CWCursor);
-#else
-
-	/* djhjr - 5/9/96 */
-	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 	if (!Scr->BorderBevelWidth > 0)
 		valuemask = (CWBorderPixel | CWBackPixel | CWEventMask |
 			     CWBackingStore);
 	else
 		valuemask = (CWBackPixel | CWEventMask | CWBackingStore);
-#endif
 
 	Scr->InfoWindow.win = XCreateWindow (dpy, Scr->Root, 0, 0,
 					 (unsigned int) 5, (unsigned int) 5,
 
-					 /* djhjr - 5/9/96 */
-					 /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 					 (unsigned int) (Scr->InfoBevelWidth > 0 ? 0 : Scr->BorderWidth), 0,
 
 					 (unsigned int) CopyFromParent,
@@ -1002,23 +867,13 @@ main(argc, argv, environ)
 					 valuemask, &attributes);
 
 	Scr->SizeStringWidth = MyFont_TextWidth (&Scr->SizeFont,
-/* djhjr - 5/9/96
-					   " 8888 x 8888 ", 13);
-*/
-/* djhjr - 4/29/98
-					   "nnnnnnnnnnnnn", 13);
-*/
-					   /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 					   "nnnnnnnnnnnnn", 13) + ((Scr->InfoBevelWidth > 0) ? 2 * Scr->InfoBevelWidth : 0);
 
-	/* djhjr - 5/9/96 */
-	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 	if (!Scr->InfoBevelWidth > 0)
 		valuemask = (CWBorderPixel | CWBackPixel | CWBitGravity);
 	else
 		valuemask = (CWBackPixel | CWBitGravity);
 
-	/* djhjr - 5/15/96 */
 	switch (Scr->ResizeX)
 	{
 		case R_NORTHWEST:
@@ -1046,22 +901,13 @@ main(argc, argv, environ)
 	attributes.bit_gravity = NorthWestGravity;
 	Scr->SizeWindow.win = XCreateWindow (dpy, Scr->Root,
 
-/* djhjr - 5/15/96
-					 0,0,
-*/
 					 Scr->ResizeX, Scr->ResizeY,
 
 					 (unsigned int) Scr->SizeStringWidth,
 
-/* djhjr - 4/29/98
-					 (unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2),
-*/
-					 /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 					 (unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2) +
 						((Scr->InfoBevelWidth > 0) ? 2 * Scr->InfoBevelWidth : 0),
 
-					 /* djhjr - 5/9/96 */
-					 /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 					 (unsigned int) (Scr->InfoBevelWidth > 0 ? 0 : Scr->BorderWidth), 0,
 
 					 (unsigned int) CopyFromParent,
@@ -1075,7 +921,7 @@ main(argc, argv, environ)
 	    CopyPixelToXftColor (Scr->DefaultC.fore, &Scr->DefaultC.xft);
 	}
 #endif
-#if defined TWM_USE_OPACITY  &&  1 /* "infowindows" get MenuOpacity */
+#if defined TWM_USE_OPACITY
 	SetWindowOpacity (Scr->InfoWindow.win, Scr->MenuOpacity);
 #endif
 
@@ -1087,7 +933,7 @@ main(argc, argv, environ)
 	XUngrabServer(dpy);
 
 	FirstScreen = FALSE;
-    	Scr->FirstTime = FALSE;
+	Scr->FirstTime = FALSE;
     } /* for */
 
     if (numManaged == 0) {
@@ -1095,15 +941,15 @@ main(argc, argv, environ)
 	  fprintf (stderr, "%s:  unable to find any unmanaged screens\n",
 		   ProgramName);
 	exit (1);
-	
+
     }
 
     RestartPreviousState = False;
     HandlingEvents = TRUE;
 
-	RaiseStickyAbove(); /* DSE */    
+	RaiseStickyAbove();
     RaiseAutoPan(); /* autopan windows should have been raised
-                       after [re]starting vtwm -- DSE */
+		       after [re]starting vtwm -- DSE */
 
     InitEvents();
 
@@ -1114,13 +960,12 @@ main(argc, argv, environ)
 			&Scr->TwmRoot, &Event, C_NO_CONTEXT, FALSE);
 	}
 
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
 	/* restore setting from resource file */
 	if (sound_state == 1) ToggleSounds();
 #endif
 
-    
+
     /* write out a PID file - djhjr - 12/2/01 */
     if (PrintPID)
     {
@@ -1189,7 +1034,6 @@ void InitVariables()
     FreeList(&Scr->DontSqueezeTitleL);
     FreeList(&Scr->WindowRingL);
 
-    /* submitted by Jonathan Paisley - 10/27/02 */
     FreeList(&Scr->NoWindowRingL);
 
     FreeList(&Scr->WarpCursorL);
@@ -1199,25 +1043,20 @@ void InitVariables()
     FreeList(&Scr->VirtualDesktopColorBoL);
     FreeList(&Scr->DontShowInDisplay);
 
-	/* Submitted by Erik Agsjo <erik.agsjo@aktiedirekt.com> */
     FreeList(&Scr->DontShowInTWMWindows);
 
     FreeList(&Scr->DoorForegroundL);
     FreeList(&Scr->DoorBackgroundL);
 
-	/* djhjr - 4/22/96 */
 	FreeList(&Scr->ImageCache);
 
-	/* djhjr - 4/7/98 */
 	FreeList(&Scr->OpaqueMoveL);
 	FreeList(&Scr->NoOpaqueMoveL);
 	FreeList(&Scr->OpaqueResizeL);
 	FreeList(&Scr->NoOpaqueResizeL);
 
-	/* djhjr - 5/2/98 */
 	FreeList(&Scr->NoBorder);
 
-	/* djhjr - 9/24/02 */
 	FreeList(&Scr->UsePPositionL);
 
     NewFontCursor(&Scr->FrameCursor, "top_left_arrow");
@@ -1231,9 +1070,9 @@ void InitVariables()
     NewFontCursor(&Scr->WaitCursor, "watch");
     NewFontCursor(&Scr->SelectCursor, "dot");
     NewFontCursor(&Scr->DestroyCursor, "pirate");
-    NewFontCursor(&Scr->DoorCursor, "exchange");/*RFBCURSOR*/
-    NewFontCursor(&Scr->VirtualCursor, "rtl_logo");/*RFBCURSOR*/
-    NewFontCursor(&Scr->DesktopCursor, "dotbox");/*RFBCURSOR*/
+    NewFontCursor(&Scr->DoorCursor, "exchange");
+    NewFontCursor(&Scr->VirtualCursor, "rtl_logo");
+    NewFontCursor(&Scr->DesktopCursor, "dotbox");
     Scr->NoCursor = NoCursor();
 
     Scr->Ring = NULL;
@@ -1258,29 +1097,23 @@ void InitVariables()
     Scr->IconManagerC.back = white;
     Scr->IconManagerHighlight = black;
 
-	/* djhjr - 4/19/96 */
     Scr->FramePadding = -100;
     Scr->TitlePadding = -100;
     Scr->ButtonIndent = -100;
 
-/* djhjr - 8/11/98
-    Scr->ThreeDBorderWidth = 6;
-*/
-
-	/* djhjr - 5/15/96 */
 	Scr->ResizeX = Scr->ResizeY = 0;
 
-    Scr->VirtualC.fore = black;/*RFB VCOLOR*/
-    Scr->VirtualC.back = white;/*RFB VCOLOR*/
-	Scr->RealScreenC.back = black;/*RFB 4/92 */
-	Scr->RealScreenC.fore = white;/*RFB 4/92 */
+    Scr->VirtualC.fore = black;
+    Scr->VirtualC.back = white;
+	Scr->RealScreenC.back = black;
+	Scr->RealScreenC.fore = white;
     Scr->VirtualDesktopDisplayC.fore = black;
     Scr->VirtualDesktopDisplayC.back = white;
     Scr->VirtualDesktopDisplayBorder = black;
     Scr->DoorC.fore = black;
     Scr->DoorC.back = white;
 
-	Scr->AutoRaiseDefault = FALSE;/*RAISEDELAY*/
+	Scr->AutoRaiseDefault = FALSE;
     Scr->FramePadding = 2;		/* values that look "nice" on */
     Scr->TitlePadding = 8;		/* 75 and 100dpi displays */
     Scr->ButtonIndent = 1;
@@ -1288,13 +1121,7 @@ void InitVariables()
     Scr->BorderWidth = BW;
     Scr->IconBorderWidth = BW;
 
-/* djhjr - 8/13/98 */
-#ifdef ORIGINAL_PIXMAPS
-    Scr->UnknownWidth = 0;
-    Scr->UnknownHeight = 0;
-#else
     Scr->unknownName = NULL;
-#endif
 
 #ifdef TWM_USE_OPACITY
     Scr->MenuOpacity = 255;		/* 0 = transparent ... 255 = opaque */
@@ -1302,16 +1129,13 @@ void InitVariables()
 #endif
 
     Scr->NumAutoRaises = 0;
-/*  Scr->NoDefaults = FALSE;  */
-	Scr->NoDefaultMouseOrKeyboardBindings = FALSE; /* DSE */
-	Scr->NoDefaultTitleButtons = FALSE; /* DSE */
+	Scr->NoDefaultMouseOrKeyboardBindings = FALSE;
+	Scr->NoDefaultTitleButtons = FALSE;
     Scr->UsePPosition = PPOS_OFF;
-    Scr->Newest = NULL; /* PF */
+    Scr->Newest = NULL;
 
-    /* djhjr - 9/10/03 */
     Scr->IgnoreModifiers = 0;
 
-    /* djhjr - 10/16/02 */
     Scr->WarpCentered = WARPC_OFF;
 
     Scr->WarpCursor = FALSE;
@@ -1325,16 +1149,12 @@ void InitVariables()
     Scr->DoZoom = FALSE;
     Scr->TitleFocus = TRUE;
 
-    /* djhjr - 5/27/98 */
     Scr->IconManagerFocus = TRUE;
 
-    /* djhjr - 12/14/98 */
     Scr->StaticIconPositions = FALSE;
 
-    /* djhjr - 10/2/01 */
     Scr->StrictIconManager = FALSE;
 
-    /* djhjr - 8/23/02 */
     Scr->NoBorders = FALSE;
 
     Scr->NoTitlebar = FALSE;
@@ -1348,12 +1168,10 @@ void InitVariables()
     Scr->PointerPlacement = FALSE;
     Scr->OpaqueMove = FALSE;
 
-	/* djhjr - 4/6/98 */
 	Scr->OpaqueResize = FALSE;
 
     Scr->Highlight = TRUE;
 
-	/* djhjr - 1/27/98 */
     Scr->IconMgrHighlight = TRUE;
 
     Scr->StackMode = TRUE;
@@ -1364,17 +1182,12 @@ void InitVariables()
     Scr->Shadow = TRUE;
     Scr->InterpolateMenuColors = FALSE;
     Scr->NoIconManagers = FALSE;
-    Scr->NoIconifyIconManagers = FALSE; /* PF */
+    Scr->NoIconifyIconManagers = FALSE;
     Scr->ClientBorderWidth = FALSE;
     Scr->SqueezeTitle = -1;
 
-/* djhjr - 4/26/99
-    Scr->FirstIconRegion = NULL;
-    Scr->LastIconRegion = NULL;
-*/
     FreeRegions(Scr->FirstIconRegion, Scr->LastIconRegion);
 
-	/* djhjr - 4/26/99 */
     FreeRegions(Scr->FirstAppletRegion, Scr->LastAppletRegion);
 
     Scr->FirstTime = TRUE;
@@ -1383,38 +1196,16 @@ void InitVariables()
     Scr->WarpUnmapped = FALSE;
     Scr->DeIconifyToScreen = FALSE;
     Scr->WarpWindows = FALSE;
-    Scr->WarpToTransients = FALSE; /* PF */
+    Scr->WarpToTransients = FALSE;
     Scr->WarpToLocalTransients = FALSE;
 
-	/* djhjr - 6/25/96 */
     Scr->ShallowReliefWindowButton = 2;
-
-/* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
-	* djhjr - 4/19/96 *
-    Scr->use3Diconmanagers = FALSE;
-    Scr->use3Dmenus = FALSE;
-    Scr->use3Dtitles = FALSE;
-    Scr->use3Dborders = FALSE;
-*/
 
     Scr->ClearBevelContrast = 50;
     Scr->DarkBevelContrast  = 40;
     Scr->BeNiceToColormap = FALSE;
-
-/* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
-	* djhjr - 5/5/98 *
-    Scr->use3Dicons = FALSE;
-*/
-
-/* obsoleted by the ":xpm:*" built-in pixmaps - djhjr - 10/26/02
-	* djhjr - 4/26/96 *
-    Scr->SunkFocusWindowTitle = FALSE;
-*/
-
-	/* for rader - djhjr - 2/9/99 */
 	Scr->NoPrettyTitles = FALSE;
 
-	/* djhjr - 9/21/96 */
     Scr->ButtonColorIsFrame = FALSE;
 
     Scr->snapRealScreen = FALSE;
@@ -1431,14 +1222,13 @@ void InitVariables()
     Scr->TitleBarFont.name = DEFAULT_NICE_FONT;
     Scr->MenuFont.font = NULL;
     Scr->MenuFont.name = DEFAULT_NICE_FONT;
-    Scr->MenuTitleFont.font = NULL; /* DSE */
+    Scr->MenuTitleFont.font = NULL;
     Scr->MenuTitleFont.name = NULL; /* uses MenuFont unless set -- DSE */
     Scr->IconFont.font = NULL;
     Scr->IconFont.name = DEFAULT_NICE_FONT;
     Scr->SizeFont.font = NULL;
     Scr->SizeFont.name = DEFAULT_FAST_FONT;
 
-	/* djhjr - 5/10/96 */
     Scr->InfoFont.font = NULL;
     Scr->InfoFont.name = DEFAULT_FAST_FONT;
 
@@ -1487,7 +1277,6 @@ void InitVariables()
     Scr->VirtualDesktopPanDistanceX = 50;
     Scr->VirtualDesktopPanDistanceY = 50;
 
-	/* djhjr - 9/8/98 */
 	Scr->VirtualDesktopPanResistance = 0;
 
     /* default scale is 1:25 */
@@ -1500,65 +1289,54 @@ void InitVariables()
     /* by default no autopan */
     Scr->AutoPanX = 0;
     Scr->StayUpMenus = FALSE;
-    Scr->StayUpOptionalMenus = FALSE; /* PF */
+    Scr->StayUpOptionalMenus = FALSE;
 
-	Scr->AutoPanWarpWithRespectToRealScreen = 0;   /* DSE */
-	Scr->AutoPanBorderWidth = 5;                   /* DSE */
-	Scr->AutoPanExtraWarp = 2;                     /* DSE */
-	Scr->EnhancedExecResources = FALSE;            /* DSE */
-	Scr->RightHandSidePulldownMenus = FALSE;       /* DSE */
+	Scr->AutoPanWarpWithRespectToRealScreen = 0;
+	Scr->AutoPanBorderWidth = 5;
+	Scr->AutoPanExtraWarp = 2;
+	Scr->EnhancedExecResources = FALSE;
+	Scr->RightHandSidePulldownMenus = FALSE;
 
 	/* was '2' for when UseRealScreenBorderWidth existed - djhjr - 2/15/99 */
-	Scr->RealScreenBorderWidth = 0;                /* DSE */
+	Scr->RealScreenBorderWidth = 0;
 
-	/* djhjr - 10/11/01 */
 	Scr->ZoomZoom = FALSE;
 
-	Scr->LessRandomZoomZoom = FALSE;               /* DSE */
-	Scr->PrettyZoom = FALSE;                       /* DSE */
-	Scr->StickyAbove = FALSE;                      /* DSE */
-	Scr->DontInterpolateTitles = FALSE;            /* DSE */
+	Scr->LessRandomZoomZoom = FALSE;
+	Scr->PrettyZoom = FALSE;
+	Scr->StickyAbove = FALSE;
+	Scr->DontInterpolateTitles = FALSE;
 
-	/* djhjr - 1/6/98 */
 	Scr->FixManagedVirtualGeometries = FALSE;
 
-	Scr->FixTransientVirtualGeometries = FALSE;    /* DSE */
-	Scr->WarpSnug = FALSE;                         /* DSE */
+	Scr->FixTransientVirtualGeometries = FALSE;
+	Scr->WarpSnug = FALSE;
 
-	/* djhjr - 4/17/98 */
 	Scr->VirtualReceivesMotionEvents = FALSE;
 	Scr->VirtualSendsMotionEvents = FALSE;
 
-	/* djhjr - 5/2/98 */
 	Scr->BorderBevelWidth = 0;
 	Scr->TitleBevelWidth = 0;
 	Scr->MenuBevelWidth = 0;
 	Scr->IconMgrBevelWidth = 0;
 	Scr->InfoBevelWidth = 0;
 
-	/* djhjr - 8/11/98 */
 	Scr->IconBevelWidth = 0;
 	Scr->ButtonBevelWidth = 0;
 
-	/* djhjr - 2/7/99 */
 	Scr->DoorBevelWidth = 0;
 	Scr->VirtualDesktopBevelWidth = 0;
 
-	/* djhjr - 5/22/00 */
 	Scr->MenuScrollBorderWidth = 2;
 	Scr->MenuScrollJump = 3;
 
-	/* djhjr - 6/22/99 */
 	Scr->DontDeiconifyTransients = FALSE;
 
-	/* submitted by Ugen Antsilevitch - 5/28/00 */
 	Scr->WarpVisible = FALSE;
 
-	/* djhjr - 6/22/01 */
 	Scr->PauseOnExit = 0;
 	Scr->PauseOnQuit = 0;
 
-	/* djhjr - 11/3/03 */
 	Scr->RaiseOnStart = FALSE;
 }
 
@@ -1570,7 +1348,6 @@ void CreateFonts ()
     GetFont(&Scr->IconFont);
     GetFont(&Scr->SizeFont);
 
-	/* djhjr - 5/10/96 */
     GetFont(&Scr->InfoFont);
 
     GetFont(&Scr->IconManagerFont);
@@ -1579,7 +1356,7 @@ void CreateFonts ()
     GetFont(&Scr->DefaultFont);
     if (Scr->MenuTitleFont.name == NULL)
 	Scr->MenuTitleFont.name = Scr->MenuFont.name;
-    GetFont(&Scr->MenuTitleFont); /* DSE */
+    GetFont(&Scr->MenuTitleFont);
     Scr->HaveFonts = TRUE;
 }
 
@@ -1597,7 +1374,6 @@ void RestoreWithdrawnLocation (tmp)
 	GetGravityOffsets (tmp, &gravx, &gravy);
 	if (gravy < 0) xwc.y -= tmp->title_height;
 
-	/* djhjr - 4/19/96 */
 	xwc.x += gravx * tmp->frame_bw3D;
 	xwc.y += gravy * tmp->frame_bw3D;
 
@@ -1668,7 +1444,7 @@ void delete_pidfile()
     char *fn;
 
     if (PrintPID)
-    {    
+    {
 	fn = malloc(HomeLen + strlen(PidName) + 2);
 	sprintf(fn, "%s/%s", Home, PidName);
 	unlink(fn);
@@ -1685,7 +1461,6 @@ void delete_pidfile()
  *    QueueRestartVtwm()
  */
 
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
 SIGNAL_T PlaySoundDone()
 {
@@ -1706,8 +1481,8 @@ void Done()
     SetRealScreen(0,0);
     Reborder (CurrentTime);
     XCloseDisplay(dpy);
-    
-    delete_pidfile(); /* djhjr - 12/2/01 */
+
+    delete_pidfile();
 
     exit(0);
 }
@@ -1717,21 +1492,20 @@ SIGNAL_T Done()
     SetRealScreen(0,0);
     Reborder (CurrentTime);
     XCloseDisplay(dpy);
-    
-    delete_pidfile(); /* djhjr - 12/2/01 */
+
+    delete_pidfile();
 
     exit(0);
     SIGNAL_RETURN;
 }
 #endif
 
-/* djhjr - 7/31/98 */
 SIGNAL_T
 QueueRestartVtwm()
 {
     XClientMessageEvent ev;
 
-    delete_pidfile(); /* djhjr - 12/2/01 */
+    delete_pidfile();
 
     ev.type = ClientMessage;
     ev.window = Scr->Root;
@@ -1761,7 +1535,7 @@ static int TwmErrorHandler(dpy, event)
     LastErrorEvent = *event;
     ErrorOccurred = True;
 
-    if (PrintErrorMessages && 			/* don't be too obnoxious */
+    if (PrintErrorMessages &&			/* don't be too obnoxious */
 	event->error_code != BadWindow &&	/* watch for dead puppies */
 	(event->request_code != X_GetGeometry &&	 /* of all styles */
 	 event->error_code != BadDrawable))
@@ -1770,7 +1544,6 @@ static int TwmErrorHandler(dpy, event)
 }
 
 
-/* ARGSUSED*/
 static int CatchRedirectError(dpy, event)
     Display *dpy;
     XErrorEvent *event;
@@ -1790,7 +1563,6 @@ Atom _XA_WM_TAKE_FOCUS;
 Atom _XA_WM_SAVE_YOURSELF;
 Atom _XA_WM_DELETE_WINDOW;
 
-/* djhjr - 7/31/98 */
 Atom _XA_TWM_RESTART;
 
 #ifdef TWM_USE_OPACITY
@@ -1811,7 +1583,6 @@ void InternUsefulAtoms ()
     _XA_WM_SAVE_YOURSELF = XInternAtom (dpy, "WM_SAVE_YOURSELF", False);
     _XA_WM_DELETE_WINDOW = XInternAtom (dpy, "WM_DELETE_WINDOW", False);
 
-    /* djhjr - 7/31/98 */
     _XA_TWM_RESTART = XInternAtom (dpy, "_TWM_RESTART", False);
 
 #ifdef TWM_USE_OPACITY

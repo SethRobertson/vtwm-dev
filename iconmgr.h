@@ -44,9 +44,7 @@ typedef struct WList
     int row, col;
     int me;
 
-    /* djhjr - 4/19/96 */
     ColorPair cp;
-    /* was Pixmap - djhjr - 10/30/02 */
     Image *iconifypm;
 
     Pixel fore, back, highlight;
@@ -91,7 +89,6 @@ extern void DrawIconManagerBorder();
 extern void SortIconManager();
 extern void PackIconManager();
 
-/* djhjr - 5/19/98 */
 #define VTWM_ICONMGR_CLASS "VTWM Icon Manager"
 
 #endif /* _ICONMGR_ */

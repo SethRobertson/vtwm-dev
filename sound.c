@@ -30,7 +30,7 @@
 #ifdef NO_SOUND_SUPPORT
 
 /* stub function for gram.y */
-int 
+int
 SetSound(function, filename, volume)
 char *function, *filename;
 int volume;
@@ -93,7 +93,7 @@ static int sound_state = 0;
 static char sound_host[MAXHOSTNAMELEN + 1] = "";
 
 /* for qsort() */
-static int 
+static int
 compare(p, q)
 void *p, *q;
 {
@@ -102,14 +102,14 @@ void *p, *q;
     return (pp->func - qq->func);
 }
 
-static int 
+static int
 adjustVolume(volume)
 int volume;
 {
     float vol;
 
     if (volume > 100)
-        volume = 100;
+	volume = 100;
 
     /* volume for rplay is 1 to 255, not 1 to 100 */
     vol = (float) volume / 100.0;
@@ -118,7 +118,7 @@ int volume;
     return (volume);
 }
 
-int 
+int
 OpenSound()
 {
     if (sound_fd < 0)
@@ -141,7 +141,7 @@ OpenSound()
     return (sound_fd);
 }
 
-void 
+void
 CloseSound()
 {
     int i;
@@ -165,7 +165,7 @@ CloseSound()
     sound_host[0] = '\0';
 }
 
-int 
+int
 SetSound(function, filename, volume)
 char *function, *filename;
 int volume;
@@ -178,7 +178,7 @@ int volume;
     {
 	XmuCopyISOLatin1Lowered(function, function);
 
-  	for (i = 0; i < MAX_SOUNDKEYWORDS; i++)
+	for (i = 0; i < MAX_SOUNDKEYWORDS; i++)
 	    if (strcmp(function, sound_keywords[i].name) == 0)
 	    {
 		func = FKEYWORD;
@@ -241,7 +241,7 @@ int volume;
     return (0);
 }
 
-int 
+int
 PlaySound(function)
 int function;
 {
@@ -270,7 +270,7 @@ int function;
     return (0);
 }
 
-int 
+int
 PlaySoundAdhoc(filename)
 char *filename;
 {
@@ -303,7 +303,7 @@ char *filename;
     return (1);
 }
 
-void 
+void
 SetSoundHost(host)
 char *host;
 {
@@ -311,7 +311,7 @@ char *host;
     sound_host[MAXHOSTNAMELEN] = '\0';
 }
 
-void 
+void
 SetSoundVolume(volume)
 int volume;
 {
@@ -321,7 +321,7 @@ int volume;
     sound_vol = adjustVolume(volume);
 }
 
-int 
+int
 ToggleSounds()
 {
     return ((sound_state ^= 1));

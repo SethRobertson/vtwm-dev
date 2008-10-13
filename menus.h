@@ -43,7 +43,6 @@
 
 #define TWM_WINDOWS		"TwmWindows" /* for f.menu "TwmWindows" */
 
-/* djhjr - 5/4/98 */
 #define VTWM_WINDOWS	"VTWM Windows" /* for f.menu "VTWM Windows" */
 
 #define MAX_FILE_SIZE	4096 /* max chars to read from file for cut */
@@ -57,12 +56,6 @@ typedef struct MenuItem
     char *item;			/* the character string displayed */
     char *action;		/* action to be performed */
 
-/* djhjr - 4/22/96
-    Pixel fore;			* foreground color *
-    Pixel back;			* background color *
-    Pixel hi_fore;		* highlight foreground *
-    Pixel hi_back;		* highlight background *
-*/
     ColorPair normal;		/* unhiglight colors */
     ColorPair highlight;	/* highlight colors */
 
@@ -73,7 +66,6 @@ typedef struct MenuItem
     short strlen;		/* strlen(item) */
     short user_colors;		/* colors were specified */
 
-	/* djhjr - 4/22/96 */
     short separated;		/* separated from the next item */
 
 } MenuItem;
@@ -88,10 +80,6 @@ typedef struct MenuRoot
     MyWindow w;			/* the window of the menu */
     Window shadow;		/* the shadow window */
 
-/* djhjr - 4/22/96
-    Pixel hi_fore;		* highlight foreground *
-    Pixel hi_back;		* highlight background *
-*/
     ColorPair highlight;	/* highlight colors */
 
     short mapped;		/* NEVER_MAPPED, UNMAPPED, or MAPPED */
@@ -102,7 +90,6 @@ typedef struct MenuRoot
     short entered;		/* EnterNotify following pop up */
     short real_menu;		/* this is a real menu */
 
-    /* djhjr - 5/22/00 */
     short too_tall;		/* menu taller than display? */
     short top;			/* first item displayed */
 } MenuRoot;
@@ -150,15 +137,6 @@ extern MenuItem *ActiveItem;
 extern int MoveFunction;
 extern int WindowMoved;
 extern int ConstMove;
-/* private variables now - djhjr - 10/6/02
-extern int ConstMoveDir;
-extern int ConstMoveX;
-extern int ConstMoveY;
-extern int ConstMoveXL;
-extern int ConstMoveXR;
-extern int ConstMoveYT;
-extern int ConstMoveYB;
-*/
 
 #define MAXMENUDEPTH	10	/* max number of nested menus */
 extern int MenuDepth;
@@ -204,18 +182,14 @@ extern int CreateTitleButton();
 extern void MakeMenus();
 extern void PaintMenu();
  
-/* djhjr - 4/27/96 */
 extern void DisplayPosition ();
 
-/* djhjr - 5/30/00 */
 extern void WarpWindowOrScreen();
 extern void WarpInIconMgr();
 
-/* djhjr - 10/27/02 */
 extern void AddWindowToRing();
 extern void RemoveWindowFromRing();
 
-/* djhjr - 6/22/01 */
 extern void DoAudible();
 
 #endif /* _MENUS_ */

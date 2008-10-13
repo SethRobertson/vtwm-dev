@@ -15,7 +15,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL M.I.T.
  * BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN 
+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
@@ -140,7 +140,7 @@ void NewFontCursor (cp, str)
 	    return;
 	}
     }
-    fprintf (stderr, "%s:  unable to find font cursor \"%s\"\n", 
+    fprintf (stderr, "%s:  unable to find font cursor \"%s\"\n",
 	     ProgramName, str);
 }
 
@@ -171,7 +171,7 @@ char *source, *mask;
     XGetGeometry(dpy, mpm, &JunkRoot, &mx, &my, &mw, &mh, &JunkBW,&JunkDepth);
     if (sw != mw || sh != mh)
     {
-	fprintf (stderr, 
+	fprintf (stderr,
 		 "%s:  cursor bitmaps \"%s\" and \"%s\" not the same size\n",
 		 ProgramName, source, mask);
 	return;

@@ -35,7 +35,6 @@
 #define USEDBY_TWIN 1
 #define USEDBY_NAME 2
 
-/* djhjr - 10/20/01 */
 #ifndef NO_REGEX_SUPPORT
 #include <sys/types.h>
 #include <regex.h>
@@ -62,7 +61,6 @@ typedef struct RegionEntry
         char		*name;
     } u;
 
-/* djhjr - 10/20/01 */
 #ifndef NO_REGEX_SUPPORT
     regex_t		re;
 #else

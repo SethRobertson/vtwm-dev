@@ -48,9 +48,6 @@ extern void SimulateMapRequest();
 extern void AutoRaiseWindow();
 #define LastTimestamp() lastTimestamp
 extern Bool DispatchEvent();
-/* depreciated - djhjr - 10/6/02
-extern Bool DispatchEvent2();
-*/
 extern void HandleEvents();
 extern void HandleExpose();
 extern void HandleDestroyNotify();
@@ -74,8 +71,8 @@ extern void InstallRootColormap();
 extern int Transient();
 extern void UninstallRootColormap();
 extern void InstallWindowColormaps();
-extern void RedoDoorName(); /* djhjr - 2/28/99 */
-extern void RedoListWindow(); /* djhjr - 3/1/99 */
+extern void RedoDoorName();
+extern void RedoListWindow();
 
 extern event_proc EventHandler[];
 extern Window DragWindow;

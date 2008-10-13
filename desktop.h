@@ -21,7 +21,6 @@ extern Window moving_window; /* indicates that we are doing a move in the vd dis
 
 extern void CreateDesktopDisplay();
 extern void UpdateDesktop();
-/* extern void RemoveFromDesktop(); */
 extern void MoveResizeDesktop();
 extern void NailDesktop();
 
@@ -35,8 +34,8 @@ extern void VirtualMoveWindow();
 extern void SnapRealScreen();
 extern void SetRealScreen();
 extern void PanRealScreen();
-extern void RaiseStickyAbove(); /* DSE */
-extern void LowerSticky(); /* DSE */
+extern void RaiseStickyAbove();
+extern void LowerSticky();
 extern void RaiseAutoPan();
 
 /* convert real space to virtual space */
@@ -48,7 +47,6 @@ extern void RaiseAutoPan();
 #define V_TO_R_Y(y) (-(Scr->VirtualDesktopY - (y)))
 
 /* scale up and down from desktop display to real sizes */
-/* #define SCALE_D(x) (((x)/Scr->VirtualDesktopDScale)+1) */
 /* don't pass me something like `x++' - please */
 #define SCALE_D(x) ((((x)/Scr->VirtualDesktopDScale) < 1) ? 1 : (x)/Scr->VirtualDesktopDScale)
 #define SCALE_U(x) ((x)*Scr->VirtualDesktopDScale)
@@ -56,6 +54,5 @@ extern void RaiseAutoPan();
 /* how wide/high the autopan windows are */
 #define AP_SIZE (Scr->AutoPanBorderWidth) /* DSE */
 
-/* djhjr - 5/19/98 */
 #define VTWM_DESKTOP_CLASS "VTWM Desktop"
 

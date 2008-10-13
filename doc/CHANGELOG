@@ -17,6 +17,8 @@ IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 
 	    * Set up autoconf as an alternative to Imakefiles
 
+	    * Remove SCM via comments and #ifdefs
+
          Colum Paget <colum@hovel2.demon.co.uk> submitted patches to:
 	    * Add PNG Icon support
 

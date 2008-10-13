@@ -39,8 +39,6 @@
 #define _VERSION_
 
 extern char *Version;
-
-/* djhjr - 9/19/96 */
 extern char *lastmake[];
 
 #endif /* _VERSION_ */

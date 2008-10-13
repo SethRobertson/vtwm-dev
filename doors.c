@@ -28,11 +28,9 @@ extern void SetMapStateProp();
 extern TwmDoor *door_add_internal();
 extern void twmrc_error_prefix();
 
-/* djhjr - 4/20/98 */
 extern void HandleExpose();
 extern void SetupWindow();
 
-/* djhjr - 4/27/99 */
 extern void AppletDown();
 
 TwmDoor *door_add(name, position, destination)
@@ -40,11 +38,6 @@ char *name, *position, *destination;
 {
 	int px, py, pw, ph, dx, dy;
 
-	/* djhjr - 4/26/96 */
-/* djhjr - 8/11/98
-	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
-	int	bw = (Scr->BorderBevelWidth > 0) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
-*/
 	int	bw = Scr->BorderWidth;
 
 	JunkMask = XParseGeometry (position, &JunkX, &JunkY,
@@ -67,16 +60,6 @@ char *name, *position, *destination;
 		}
 	}
 
-/* allow position to be omitted - djhjr - 5/10/99
-	if ((JunkMask & (XValue | YValue)) !=
-	    (XValue | YValue)) {
-		twmrc_error_prefix();
-		fprintf (stderr, "bad Door position \"%s\"\n", position);
-		return NULL;
-	}
-*/
-
-	/* added this 'if (...) else' - djhjr - 5/10/99 */
 	if ((JunkMask & (XValue | YValue)) != (XValue | YValue))
 	{
 		/* allow AddWindow() to position it - djhjr - 5/10/99 */
@@ -84,8 +67,7 @@ char *name, *position, *destination;
 	}
 	else
 	{
-/*		if (JunkX <= 0 || JunkY <= 0) {  */
-		if (JunkX < 0 || JunkY < 0) { /* 0,0 accepted now -- DSE */
+		if (JunkX < 0 || JunkY < 0) {
 			twmrc_error_prefix();
 			fprintf (stderr, "silly Door position \"%s\"\n", position);
 			return NULL;
@@ -162,11 +144,6 @@ TwmDoor *tmp_door;
 {
 	Window w;
 
-	/* djhjr - 4/26/96 */
-/* djhjr - 8/11/98
-	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
-	int	bw = (Scr->BorderBevelWidth > 0) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
-*/
 	int	bw = Scr->BorderWidth;
 
 	/* look up colours */
@@ -184,7 +161,6 @@ TwmDoor *tmp_door;
 					     tmp_door->name,
 					     strlen(tmp_door->name))
 
-			/* djhjr - 2/7/99 */
 			+ (Scr->DoorBevelWidth * 2)
 
 			+ SIZE_HINDENT;
@@ -192,7 +168,6 @@ TwmDoor *tmp_door;
 	if (tmp_door->height < 0)
 		tmp_door->height = Scr->DoorFont.height
 
-			/* djhjr - 2/7/99 */
 			+ (Scr->DoorBevelWidth * 2)
 
 			+ SIZE_VINDENT;
@@ -221,30 +196,6 @@ TwmDoor *tmp_door;
 	SetWindowOpacity (w, Scr->MenuOpacity);
 #endif
 
-/* reworked to limit the minimum size of a door - djhjr - 3/1/99
-	if ((tmp_door->x < 0) || (tmp_door->y < 0)) {
-		XSizeHints *hints = NULL;
-		long ret;
-
-		 *
-		 * set the wmhints so that add_window() will allow
-		 * the user to place the window
-		 *
-		if (XGetWMNormalHints(dpy, w, hints, &ret) > 0) {
-			hints->flags = hints->flags &
-				(!USPosition & !PPosition);
-			XSetStandardProperties(dpy, w,
-					       tmp_door->class->res_name,
-					       tmp_door->class->res_name,
-					       None, NULL, 0, hints);
-		}
-	} else {
-		XSetStandardProperties(dpy, w,
-				       tmp_door->class->res_name,
-				       tmp_door->class->res_name,
-				       None, NULL, 0, NULL);
-	}
-*/
 	{
 		XSizeHints *hints = NULL;
 
@@ -278,10 +229,9 @@ TwmDoor *tmp_door;
 	XStoreName(dpy, tmp_door->w.win, tmp_door->name);
 	XStoreName(dpy, w, tmp_door->name);
 
-	XDefineCursor( dpy, w, Scr->FrameCursor );/*RFB*/
-	XDefineCursor( dpy, tmp_door->w.win, Scr->DoorCursor );/*RFBCURSOR*/
+	XDefineCursor( dpy, w, Scr->FrameCursor );
+	XDefineCursor( dpy, tmp_door->w.win, Scr->DoorCursor );
 
-	/* moved these 'cuz AddWindow() will need 'em - djhjr - 11/15/01 */
 	/* store the address of the door on the window */
 	XSaveContext(dpy,
 		     tmp_door->w.win, DoorContext, (caddr_t) tmp_door);
@@ -344,7 +294,7 @@ TwmDoor *d;
 void door_delete(w, d)
 Window w;
 TwmDoor *d;
-{	/*marcel@duteca.et.tudelft.nl*/
+{
 	if (!d)
 		/* find the door */
 		if (XFindContext(dpy, w, DoorContext, (caddr_t *)&d)
@@ -360,7 +310,6 @@ TwmDoor *d;
 	if (d->next != NULL)
 		d->next->prev = d->prev;
 
-	/* djhjr - 4/27/99 */
 	AppletDown(d->twin);
 
 /*
@@ -381,9 +330,9 @@ TwmDoor *d;
 	    MyXftDrawDestroy (d->w.xft);
 #endif
 	XDestroyWindow(dpy, w);
-	free(d->class->res_class); /* djhjr - 2/25/99 */
+	free(d->class->res_class);
 	XFree(d->class);
-	free(d->name); /* djhjr - 2/25/99 */
+	free(d->name);
 	free(d);
 }
 
@@ -415,11 +364,6 @@ TwmDoor* d;
 {
 	int width, height, count;
 	char *ptr;
-/* djhjr - 8/11/98
-	* was 'Scr->use3Dborders' - djhjr - 8/11/98 *
-	int	bw = (Scr->BorderBevelWidth > 0) ? Scr->ThreeDBorderWidth : Scr->BorderWidth;
-*/
-	/* added initialization and test - djhjr - 3/1/99 */
 	int bw = 0;
 	if (Scr->BorderBevelWidth) bw = Scr->BorderWidth;
  
@@ -427,7 +371,6 @@ TwmDoor* d;
 		if (XFindContext(dpy, w, DoorContext, (caddr_t *)&d) == XCNOENT)
 			return;
 
-	/* sanity check - djhjr - 10/31/00 */
 	if (!(ptr = XFetchBytes(dpy, &count)) || count == 0) return;
 	if (count > 128) count = 128;
 
@@ -439,10 +382,8 @@ TwmDoor* d;
 	sprintf(d->name, "%*s", count, ptr);
 	XFree(ptr);
 
-	/* djhjr - 1/14/99 */
 	XClearWindow(dpy, d->w.win);
 
-	/* added 'Scr->DoorBevelWidth * 2' - djhjr - 2/7/99 */
 	width = MyFont_TextWidth(&Scr->DoorFont, d->name, count) +
 			SIZE_HINDENT + (Scr->DoorBevelWidth * 2);
 	height = Scr->DoorFont.height + SIZE_VINDENT + (Scr->DoorBevelWidth * 2);

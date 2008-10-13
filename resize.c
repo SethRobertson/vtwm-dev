@@ -76,16 +76,12 @@ static int resize_context;
 /* set in menus.c:ExecuteFunction(), cleared in *EndResize() - djhjr - 9/5/98 */
 int resizing_window = 0;
 
-/* djhjr - 4/6/98 */
 void PaintBorderAndTitlebar();
 
-/* djhjr - 4/17/98 */
 static void DoVirtualMoveResize();
 
-/* djhjr - 9/10/99 */
 void ResizeTwmWindowContents();
 
-/* djhjr - 9/13/02 */
 static void SetVirtualDesktopIncrs();
 static void EndResizeAdjPointer();
 
@@ -159,22 +155,15 @@ int context;
 
     resize_context = context;
 
-    SetVirtualDesktopIncrs(tmp_win);	/* djhjr - 9/13/02 */
+    SetVirtualDesktopIncrs(tmp_win);
 
     if (context == C_VIRTUAL_WIN)
 	    ResizeWindow = tmp_win->VirtualDesktopDisplayWindow.win;
     else
 	    ResizeWindow = tmp_win->frame;
 
-/* djhjr - 7/17/98
-	* djhjr - 4/15/98 *
-	if (!Scr->NoGrabServer)
-*/
-	{
-		/* added test - djhjr - 4/7/98 */
 		if (!tmp_win->opaque_resize)
 			XGrabServer(dpy);
-	}
     if (context == C_VIRTUAL_WIN)
 	    XGrabPointer(dpy, Scr->VirtualDesktopDisplay, True,
 			 ButtonPressMask | ButtonReleaseMask |
@@ -212,12 +201,6 @@ int context;
     }
 #endif
 
-/* use initialized size... djhjr - 5/9/96
-	Scr->SizeStringOffset = SIZE_HINDENT;
-    XResizeWindow (dpy, Scr->SizeWindow.win,
-		   Scr->SizeStringWidth + SIZE_HINDENT * 2,
-		   Scr->SizeFont.height + SIZE_VINDENT * 2);
-*/
 
     XMapRaised(dpy, Scr->SizeWindow.win);
     if (!tmp_win->opaque_resize) InstallRootColormap();
@@ -231,7 +214,6 @@ int context;
 			 dragHeight,
 			 tmp_win->frame_bw, 0);
     else
-	/* added this 'if ... else' - djhjr - 4/6/98 */
 	if (tmp_win->opaque_resize)
 	{
 		SetupWindow (tmp_win,
@@ -243,35 +225,22 @@ int context;
 	    MoveOutline (Scr->Root, dragx - tmp_win->frame_bw,
 			 dragy - tmp_win->frame_bw, dragWidth + 2 * tmp_win->frame_bw,
 			 dragHeight + 2 * tmp_win->frame_bw,
-/* djhjr - 4/24/96
-			 tmp_win->frame_bw, tmp_win->title_height);
-*/
 		tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 }
 
-
 
-/* added the passed 'context' - djhjr - 2/22/99 */
 void
 MenuStartResize(tmp_win, x, y, w, h, context)
 TwmWindow *tmp_win;
 int x, y, w, h;
 int context;
 {
-	/* djhjr - 2/22/99 */
 	resize_context = context;
 
-    SetVirtualDesktopIncrs(tmp_win);	/* djhjr - 9/13/02 */
+    SetVirtualDesktopIncrs(tmp_win);
 
-/* djhjr - 7/17/98
-	* djhjr - 4/15/98 *
-	if (!Scr->NoGrabServer)
-*/
-	{
-		/* added test - djhjr - 4/7/98 */
 		if (!tmp_win->opaque_resize)
 			XGrabServer(dpy);
-	}
     XGrabPointer(dpy, Scr->Root, True,
         ButtonPressMask | ButtonMotionMask | PointerMotionMask,
         GrabModeAsync, GrabModeAsync,
@@ -280,8 +249,8 @@ int context;
     dragy = y + tmp_win->frame_bw;
     origx = dragx;
     origy = dragy;
-    dragWidth = origWidth = w; /* - 2 * tmp_win->frame_bw; */
-    dragHeight = origHeight = h; /* - 2 * tmp_win->frame_bw; */
+    dragWidth = origWidth = w;
+    dragHeight = origHeight = h;
     clampTop = clampBottom = clampLeft = clampRight = clampDX = clampDY = 0;
     last_width = 0;
     last_height = 0;
@@ -293,18 +262,11 @@ int context;
     }
 #endif
 
-/* use initialized size... djhjr - 5/9/96
-    Scr->SizeStringOffset = SIZE_HINDENT;
-    XResizeWindow (dpy, Scr->SizeWindow.win,
-		   Scr->SizeStringWidth + SIZE_HINDENT * 2,
-		   Scr->SizeFont.height + SIZE_VINDENT * 2);
-*/
 
     XMapRaised(dpy, Scr->SizeWindow.win);
     if (!tmp_win->opaque_resize) InstallRootColormap();
     DisplaySize(tmp_win, origWidth, origHeight);
 
-	/* added this 'if ... else' - djhjr - 4/6/98 */
 	if (tmp_win->opaque_resize)
 	{
 		SetupWindow (tmp_win,
@@ -317,9 +279,6 @@ int context;
 		 dragy - tmp_win->frame_bw,
 		 dragWidth + 2 * tmp_win->frame_bw,
 		 dragHeight + 2 * tmp_win->frame_bw,
-/* djhjr - 4/23/96
-		 tmp_win->frame_bw, tmp_win->title_height);
-*/
 		 tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 }
 
@@ -339,20 +298,12 @@ AddStartResize(tmp_win, x, y, w, h)
 TwmWindow *tmp_win;
 int x, y, w, h;
 {
-	/* djhjr - 2/22/99 */
 	resize_context = C_WINDOW;
 
-    SetVirtualDesktopIncrs(tmp_win);	/* djhjr - 9/13/02 */
+    SetVirtualDesktopIncrs(tmp_win);
 
-/* djhjr - 7/17/98
-	* djhjr - 4/15/98 *
-	if (!Scr->NoGrabServer)
-*/
-	{
-		/* added test - djhjr - 4/7/98 */
 		if (!tmp_win->opaque_resize)
 			XGrabServer(dpy);
-	}
 
     XGrabPointer(dpy, Scr->Root, True,
         ButtonReleaseMask | ButtonMotionMask | PointerMotionHintMask,
@@ -366,211 +317,12 @@ int x, y, w, h;
     dragWidth = origWidth = w - 2 * tmp_win->frame_bw;
     dragHeight = origHeight = h - 2 * tmp_win->frame_bw;
     clampTop = clampBottom = clampLeft = clampRight = clampDX = clampDY = 0;
-/*****
-    if (Scr->AutoRelativeResize) {
-	clampRight = clampBottom = 1;
-    }
-*****/
     last_width = 0;
     last_height = 0;
     DisplaySize(tmp_win, origWidth, origHeight);
 }
 
-
 
-/*
- * Functionally identical with DoResize(), except that this
- * handles a virtual window differently, but it isn't used anyway.
- * djhjr - 10/6/02
- */
-#if 0
-void
-MenuDoResize(x_root, y_root, tmp_win)
-int x_root;
-int y_root;
-TwmWindow *tmp_win;
-{
-    int action;
-
-    action = 0;
-
-    x_root -= clampDX;
-    y_root -= clampDY;
-
-    if (clampTop) {
-        int         delta = y_root - dragy;
-        if (dragHeight - delta < MINHEIGHT) {
-            delta = dragHeight - MINHEIGHT;
-            clampTop = 0;
-        }
-        dragy += delta;
-        dragHeight -= delta;
-        action = 1;
-    }
-    else if (y_root <= dragy/* ||
-             y_root == findRootInfo(root)->rooty*/) {
-        dragy = y_root;
-        dragHeight = origy + origHeight -
-            y_root;
-        clampBottom = 0;
-        clampTop = 1;
-	clampDY = 0;
-        action = 1;
-    }
-    if (clampLeft) {
-        int         delta = x_root - dragx;
-        if (dragWidth - delta < MINWIDTH) {
-            delta = dragWidth - MINWIDTH;
-            clampLeft = 0;
-        }
-        dragx += delta;
-        dragWidth -= delta;
-        action = 1;
-    }
-    else if (x_root <= dragx/* ||
-             x_root == findRootInfo(root)->rootx*/) {
-        dragx = x_root;
-        dragWidth = origx + origWidth -
-            x_root;
-        clampRight = 0;
-        clampLeft = 1;
-	clampDX = 0;
-        action = 1;
-    }
-    if (clampBottom) {
-        int         delta = y_root - dragy - dragHeight;
-        if (dragHeight + delta < MINHEIGHT) {
-            delta = MINHEIGHT - dragHeight;
-            clampBottom = 0;
-        }
-        dragHeight += delta;
-        action = 1;
-    }
-    else if (y_root >= dragy + dragHeight - 1/* ||
-           y_root == findRootInfo(root)->rooty
-           + findRootInfo(root)->rootheight - 1*/) {
-        dragy = origy;
-        dragHeight = 1 + y_root - dragy;
-        clampTop = 0;
-        clampBottom = 1;
-	clampDY = 0;
-        action = 1;
-    }
-    if (clampRight) {
-        int         delta = x_root - dragx - dragWidth;
-        if (dragWidth + delta < MINWIDTH) {
-            delta = MINWIDTH - dragWidth;
-            clampRight = 0;
-        }
-        dragWidth += delta;
-        action = 1;
-    }
-    else if (x_root >= dragx + dragWidth - 1/* ||
-             x_root == findRootInfo(root)->rootx +
-             findRootInfo(root)->rootwidth - 1*/) {
-        dragx = origx;
-        dragWidth = 1 + x_root - origx;
-        clampLeft = 0;
-        clampRight = 1;
-	clampDX = 0;
-        action = 1;
-    }
-
-    if (action) {
-        ConstrainSize (tmp_win, &dragWidth, &dragHeight);
-        if (clampLeft)
-            dragx = origx + origWidth - dragWidth;
-        if (clampTop)
-            dragy = origy + origHeight - dragHeight;
-
-	if (resize_context == C_VIRTUAL_WIN)
-		MoveOutline(Scr->VirtualDesktopDisplay,
-			    dragx,
-			    dragy,
-			    dragWidth,
-			    dragHeight,
-			    tmp_win->frame_bw, 0);
-	else {
-	/* added this 'if ... else' - djhjr - 4/6/98 */
-	if (tmp_win->opaque_resize)
-	{
-		SetupWindow (tmp_win,
-			dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
-			dragWidth, dragHeight, -1);
-
-		/* force the redraw of a door - djhjr - 2/28/99 */
-		{
-			TwmDoor *door;
-
-			if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *)&door) != XCNOENT)
-				RedoDoorName(tmp_win, door);
-		}
-
-		/* force the redraw of the desktop - djhjr - 2/28/99 */
-		if (!strcmp(tmp_win->class.res_class, VTWM_DESKTOP_CLASS))
-		{
-			ResizeDesktopDisplay(dragWidth, dragHeight);
-
-			Draw3DBorder(Scr->VirtualDesktopDisplayOuter, 0, 0,
-					Scr->VirtualDesktopMaxWidth + (Scr->VirtualDesktopBevelWidth * 2),
-					Scr->VirtualDesktopMaxHeight + (Scr->VirtualDesktopBevelWidth * 2),
-					Scr->VirtualDesktopBevelWidth, Scr->VirtualC, off, False, False);
-		}
-
-		/* force the redraw of an icon manager - djhjr - 3/1/99 */
-		if (tmp_win->iconmgr)
-		{
-			struct WList *list;
-			int ncols = tmp_win->iconmgrp->cur_columns;
-			if (ncols == 0) ncols = 1;
-
-/* djhjr - 4/24/96
-			tmp_win->iconmgrp->width = (int) ((dragWidth *
-*/
-			tmp_win->iconmgrp->width = (int) (((dragWidth - 2 * tmp_win->frame_bw3D) *
-
-				   (long) tmp_win->iconmgrp->columns)
-				  / ncols);
-			PackIconManager(tmp_win->iconmgrp);
-
-			list = tmp_win->iconmgrp->first;
-			while (list)
-			{
-				RedoListWindow(list->twm);
-				list = list->next;
-			}
-		}
-
-		PaintBorderAndTitlebar(tmp_win);
-
-		/* djhjr - 4/15/98 */
-		/* added '&& !resizing_window' - djhjr - 11/7/03 */
-		if (!Scr->NoGrabServer && !resizing_window)
-		{
-			/* these let the application window be drawn - djhjr - 4/14/98 */
-			XUngrabServer(dpy); XSync(dpy, 0); XGrabServer(dpy);
-		}
-	}
-	else
-		MoveOutline(Scr->Root,
-			    dragx - tmp_win->frame_bw,
-			    dragy - tmp_win->frame_bw,
-			    dragWidth + 2 * tmp_win->frame_bw,
-			    dragHeight + 2 * tmp_win->frame_bw,
-/* djhjr - 4/24/96
-			    tmp_win->frame_bw, tmp_win->title_height);
-*/
-	    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
-
-		/* djhjr - 4/17/98 */
-		if (Scr->VirtualReceivesMotionEvents)
-			DoVirtualMoveResize(tmp_win, dragx, dragy, dragWidth, dragHeight);
-	}
-    }
-
-    DisplaySize(tmp_win, dragWidth, dragHeight);
-}
-#endif
 
 /***********************************************************************
  *
@@ -609,8 +361,7 @@ TwmWindow *tmp_win;
         dragHeight -= delta;
         action = 1;
     }
-    else if (y_root <= dragy/* ||
-             y_root == findRootInfo(root)->rooty*/) {
+    else if (y_root <= dragy) {
         dragy = y_root;
         dragHeight = origy + origHeight -
             y_root;
@@ -629,8 +380,7 @@ TwmWindow *tmp_win;
         dragWidth -= delta;
         action = 1;
     }
-    else if (x_root <= dragx/* ||
-             x_root == findRootInfo(root)->rootx*/) {
+    else if (x_root <= dragx) {
         dragx = x_root;
         dragWidth = origx + origWidth -
             x_root;
@@ -648,9 +398,7 @@ TwmWindow *tmp_win;
         dragHeight += delta;
         action = 1;
     }
-    else if (y_root >= dragy + dragHeight - 1/* ||
-           y_root == findRootInfo(root)->rooty
-           + findRootInfo(root)->rootheight - 1*/) {
+    else if (y_root >= dragy + dragHeight - 1) {
         dragy = origy;
         dragHeight = 1 + y_root - dragy;
         clampTop = 0;
@@ -667,9 +415,7 @@ TwmWindow *tmp_win;
         dragWidth += delta;
         action = 1;
     }
-    else if (x_root >= dragx + dragWidth - 1/* ||
-             x_root == findRootInfo(root)->rootx +
-             findRootInfo(root)->rootwidth - 1*/) {
+    else if (x_root >= dragx + dragWidth - 1) {
         dragx = origx;
         dragWidth = 1 + x_root - origx;
         clampLeft = 0;
@@ -685,7 +431,6 @@ TwmWindow *tmp_win;
         if (clampTop)
             dragy = origy + origHeight - dragHeight;
 
-		/* added this 'if() ... else' - djhjr - 4/6/98 */
 		if (tmp_win->opaque_resize)
 		{
 			SetupWindow(tmp_win,
@@ -718,9 +463,6 @@ TwmWindow *tmp_win;
 				int ncols = tmp_win->iconmgrp->cur_columns;
 				if (ncols == 0) ncols = 1;
 
-/* djhjr - 4/24/96
-				tmp_win->iconmgrp->width = (int) ((dragWidth *
-*/
 				tmp_win->iconmgrp->width = (int) (((dragWidth - 2 * tmp_win->frame_bw3D) *
 
 					   (long) tmp_win->iconmgrp->columns)
@@ -737,8 +479,6 @@ TwmWindow *tmp_win;
 
 			PaintBorderAndTitlebar(tmp_win);
 
-			/* djhjr - 4/15/98 */
-			/* added '&& !resizing_window' - djhjr - 11/7/03 */
 			if (!Scr->NoGrabServer && !resizing_window)
 			{
 				/* these let the application window be drawn - djhjr - 4/14/98 */
@@ -751,12 +491,8 @@ TwmWindow *tmp_win;
             dragy - tmp_win->frame_bw,
             dragWidth + 2 * tmp_win->frame_bw,
             dragHeight + 2 * tmp_win->frame_bw,
-/* djhjr - 4/24/96
-	    tmp_win->frame_bw, tmp_win->title_height);
-*/
 	    tmp_win->frame_bw, tmp_win->title_height + tmp_win->frame_bw3D);
 
-		/* djhjr - 4/17/98 */
 		if (Scr->VirtualReceivesMotionEvents)
 			DoVirtualMoveResize(tmp_win, dragx, dragy, dragWidth, dragHeight);
     }
@@ -764,7 +500,6 @@ TwmWindow *tmp_win;
     DisplaySize(tmp_win, dragWidth, dragHeight);
 }
 
-/* djhjr - 9/13/02 */
 static void
 SetVirtualDesktopIncrs(tmp_win)
 TwmWindow *tmp_win;
@@ -819,10 +554,6 @@ int height;
 	    dheight = SCALE_U(height) - tmp_win->title_height;
 	    dwidth = SCALE_U(width);
     } else {
-/* djhjr - 4/24/96
-	    dheight = height - tmp_win->title_height;
-	    dwidth = width;
-*/
 		dheight = height - tmp_win->title_height - 2 * tmp_win->frame_bw3D;
 		dwidth = width - 2 * tmp_win->frame_bw3D;
 
@@ -855,7 +586,6 @@ int height;
 /*
  * Non-SysV systems - specifically, BSD-derived systems - return a
  * pointer to the string, not its length. Submitted by Goran Larsson
-    i = sprintf (str, "%5d x %-5d", dwidth, dheight);
  */
     sprintf (str, "%5d x %-5d", dwidth, dheight);
     i = strlen (str);
@@ -864,9 +594,6 @@ int height;
     MyFont_DrawImageString (dpy, &Scr->SizeWindow, &Scr->SizeFont,
 			  &Scr->DefaultC,
 
-/* djhjr - 5/9/96
-		      Scr->SizeStringOffset,
-*/
 			  (Scr->SizeStringWidth -
 			   MyFont_TextWidth(&Scr->SizeFont,
 					str, i)) / 2,
@@ -879,16 +606,10 @@ int height;
 			str, i);
 
 	/* I know, I know, but the above code overwrites it... djhjr - 5/9/96 */
-	/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 	if (Scr->InfoBevelWidth > 0)
 	    Draw3DBorder(Scr->SizeWindow.win, 0, 0,
 				Scr->SizeStringWidth,
 
-/* djhjr - 4/29/98
-				(unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2),
-				BW, Scr->DefaultC, off, False, False);
-*/
-				/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 				(unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2) +
 					((Scr->InfoBevelWidth > 0) ? 2 * Scr->InfoBevelWidth : 0),
 				Scr->InfoBevelWidth, Scr->DefaultC, off, False, False);
@@ -936,59 +657,24 @@ EndResize()
     SetupWindow (tmp_win, dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
 		 dragWidth, dragHeight, -1);
 
-    EndResizeAdjPointer(tmp_win);	/* djhjr - 9/13/02 */
+    EndResizeAdjPointer(tmp_win);
 
 	/* added test for opaque resizing - djhjr - 2/28/99, 3/1/99 */
 	if (!tmp_win->opaque_resize)
 	{
-		/* was inline code - djhjr - 9/10/99 */
 		ResizeTwmWindowContents(tmp_win, dragWidth, dragHeight);
 	}
 
-#if 0 /* done in menus.c:ExecuteFunction() - djhjr - 10/6/02 */
-    if (!Scr->NoRaiseResize) {
-        XRaiseWindow(dpy, tmp_win->frame);
-        
-	RaiseStickyAbove (); /* DSE */
-	RaiseAutoPan();
-    }
-
-    UninstallRootColormap();
-
-    /* the resize can have cause the window to move on the screen, hence on the virtual
-     * desktop - need to fix the virtual coords */
-    tmp_win->virtual_frame_x = R_TO_V_X(dragx);
-    tmp_win->virtual_frame_y = R_TO_V_Y(dragy);
-
-    /* UpdateDesktop(tmp_win); Stig */
-    MoveResizeDesktop(tmp_win, Scr->NoRaiseResize); /* Stig */
-#endif
-
-#if 0 /* done in menus.c:ExecuteFunction() - djhjr - 10/11/01 */
-	/* djhjr - 6/4/98 */
-	/* don't re-map if the window is the virtual desktop - djhjr - 2/28/99 */
-	if (Scr->VirtualReceivesMotionEvents &&
-			/* !tmp_win->opaque_resize && */
-			tmp_win->w != Scr->VirtualDesktopDisplayOuter)
-	{
-		XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
-		XMapWindow(dpy, Scr->VirtualDesktopDisplay);
-	}
-#endif
-
     ResizeWindow = None;
 
-	/* djhjr - 9/5/98 */
 	resizing_window = 0;
 }
 
-/* added the passed 'context' - djhjr - 9/30/02 */
 void
 MenuEndResize(tmp_win, context)
 TwmWindow *tmp_win;
 int context;
 {
-    /* added this 'if (...) ... else' - djhjr - 2/22/99 */
     if (resize_context == C_VIRTUAL_WIN)
 	    MoveOutline(Scr->VirtualDesktopDisplay, 0, 0, 0, 0, 0, 0);
     else
@@ -997,48 +683,23 @@ int context;
 
     ConstrainSize (tmp_win, &dragWidth, &dragHeight);
 
-	/* djhjr - 9/19/96 */
 	if (dragWidth != tmp_win->frame_width || dragHeight != tmp_win->frame_height)
 		tmp_win->zoomed = ZOOM_NONE;
 
-/* djhjr - 10/6/02
-    AddingX = dragx;
-    AddingY = dragy;
-    AddingW = dragWidth + (2 * tmp_win->frame_bw);
-    AddingH = dragHeight + (2 * tmp_win->frame_bw);
-    SetupWindow (tmp_win, AddingX, AddingY, AddingW, AddingH, -1);
-*/
     SetupWindow (tmp_win, dragx - tmp_win->frame_bw, dragy - tmp_win->frame_bw,
 		 dragWidth, dragHeight, -1);
 
-    /* djhjr - 9/13/02 9/30/02 */
     if (context != C_VIRTUAL_WIN)
 	EndResizeAdjPointer(tmp_win);
 
-	/* added test for opaque resizing - djhjr - 2/28/99, 3/1/99 */
 	if (!tmp_win->opaque_resize)
 	{
-		/* was inline code - djhjr - 9/10/99 */
 		ResizeTwmWindowContents(tmp_win, dragWidth, dragHeight);
 	}
 
-#if 0 /* done in menus.c:ExecuteFunction() - djhjr - 10/11/01 */
-	/* djhjr - 6/4/98 */
-	/* don't re-map if the window is the virtual desktop - djhjr - 2/28/99 */
-	if (Scr->VirtualReceivesMotionEvents &&
-			/* !tmp_win->opaque_resize && */
-			tmp_win->w != Scr->VirtualDesktopDisplayOuter)
-	{
-		XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
-		XMapWindow(dpy, Scr->VirtualDesktopDisplay);
-	}
-#endif
-
-	/* djhjr - 9/5/98 */
 	resizing_window = 0;
 }
 
-
 
 /***********************************************************************
  *
@@ -1057,7 +718,6 @@ TwmWindow *tmp_win;
     fprintf(stderr, "AddEndResize\n");
 #endif
 
-    /* djhjr - 2/22/99 */
     MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
     XUnmapWindow(dpy, Scr->SizeWindow.win);
 
@@ -1067,26 +727,14 @@ TwmWindow *tmp_win;
     AddingW = dragWidth + (2 * tmp_win->frame_bw);
     AddingH = dragHeight + (2 * tmp_win->frame_bw);
 
-    EndResizeAdjPointer(tmp_win);	/* djhjr - 9/13/02 */
+    EndResizeAdjPointer(tmp_win);
 
-	/* djhjr - 9/19/96 */
 	if (dragWidth != tmp_win->frame_width || dragHeight != tmp_win->frame_height)
 		tmp_win->zoomed = ZOOM_NONE;
 
-#if 0 /* done in add_window.c:AddMoveAndResize() - djhjr - 10/11/01 */
-	/* djhjr - 6/4/98 */
-	if (Scr->VirtualReceivesMotionEvents/* && !tmp_win->opaque_resize*/)
-	{
-		XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
-		XMapWindow(dpy, Scr->VirtualDesktopDisplay);
-	}
-#endif
-
-	/* djhjr - 9/5/98 */
 	resizing_window = 0;
 }
 
-/* djhjr - 9/13/02 */
 static void
 EndResizeAdjPointer(tmp_win)
 TwmWindow *tmp_win;
@@ -1164,9 +812,6 @@ void ConstrainSize (tmp_win, widthp, heightp)
     int dwidth = *widthp, dheight = *heightp;
 
 
-/* djhjr - 4/24/96
-    dheight -= tmp_win->title_height;
-*/
     dwidth  -= 2 * tmp_win->frame_bw3D;
     dheight -= (tmp_win->title_height + 2 * tmp_win->frame_bw3D);
 
@@ -1294,10 +939,6 @@ void ConstrainSize (tmp_win, widthp, heightp)
     /*
      * Fourth, account for border width and title height
      */
-/* djhjr - 4/26/96
-    *widthp = dwidth;
-    *heightp = dheight + tmp_win->title_height;
-*/
     *widthp = dwidth + 2 * tmp_win->frame_bw3D;
     *heightp = dheight + tmp_win->title_height + 2 * tmp_win->frame_bw3D;
 
@@ -1366,10 +1007,6 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
       bw = tmp_win->frame_bw;		/* -1 means current frame width */
 
     if (tmp_win->iconmgr) {
-/* djhjr - 4/24/96
-		tmp_win->iconmgrp->width = w;
-        h = tmp_win->iconmgrp->height + tmp_win->title_height;
-*/
 		tmp_win->iconmgrp->width = w - (2 * tmp_win->frame_bw3D);
         h = tmp_win->iconmgrp->height + tmp_win->title_height + (2 * tmp_win->frame_bw3D);
 
@@ -1386,9 +1023,6 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
       sendEvent = TRUE;
 
     xwcm = CWWidth;
-/* djhjr 8 4/24/96
-    title_width = xwc.width = w;
-*/
     title_width  = xwc.width = w - (2 * tmp_win->frame_bw3D);
     title_height = Scr->TitleHeight + bw;
 
@@ -1420,10 +1054,6 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     if (tmp_win->title_w.win) {
 	if (bw != tmp_win->frame_bw) {
 	    xwc.border_width = bw;
-/* djhjr - 4/24/96
-	    tmp_win->title_x = xwc.x = -bw;
-	    tmp_win->title_y = xwc.y = -bw;
-*/
 	    tmp_win->title_x = xwc.x = tmp_win->frame_bw3D - bw;
 	    tmp_win->title_y = xwc.y = tmp_win->frame_bw3D - bw;
 
@@ -1433,17 +1063,9 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 	XConfigureWindow(dpy, tmp_win->title_w.win, xwcm, &xwc);
     }
 
-/* djhjr - 4/24/96
-    tmp_win->attr.width = w;
-    tmp_win->attr.height = h - tmp_win->title_height;
-*/
     tmp_win->attr.width  = w - (2 * tmp_win->frame_bw3D);
     tmp_win->attr.height = h - tmp_win->title_height - (2 * tmp_win->frame_bw3D);
 
-/* djhjr - 4/25/96
-    XMoveResizeWindow (dpy, tmp_win->w, 0, tmp_win->title_height,
-		       w, h - tmp_win->title_height);
-*/
 
     /*
      * fix up frame and assign size/location values in tmp_win
@@ -1463,7 +1085,6 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     tmp_win->virtual_frame_x = R_TO_V_X(tmp_win->frame_x);
     tmp_win->virtual_frame_y = R_TO_V_Y(tmp_win->frame_y);
 
-	/* djhjr - 4/24/96 */
     XMoveResizeWindow (dpy, tmp_win->w, tmp_win->frame_bw3D,
 			tmp_win->title_height + tmp_win->frame_bw3D,
 			tmp_win->attr.width, tmp_win->attr.height);
@@ -1474,13 +1095,6 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
 
     if (tmp_win->title_height && tmp_win->hilite_w)
     {
-/* djhjr - 4/2/98
-	xwc.width = (tmp_win->rightx - tmp_win->highlightx);
-	if (Scr->TBInfo.nright > 0) xwc.width -= Scr->TitlePadding;
-
-	* djhjr - 4/24/96 *
-	if (Scr->use3Dtitles) xwc.width -= 4;
-*/
 	xwc.width = ComputeHighlightWindowWidth(tmp_win);
 
         if (xwc.width <= 0) {
@@ -1504,7 +1118,6 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     }
 }
 
-/* djhjr - 4/6/98 */
 void
 PaintBorderAndTitlebar(tmp_win)
 TwmWindow *tmp_win;
@@ -1513,7 +1126,6 @@ TwmWindow *tmp_win;
 		SetBorder(tmp_win, True);
 	else
 	{
-		/* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 		if (Scr->BorderBevelWidth > 0) PaintBorders(tmp_win, True);
 
 		if (tmp_win->titlebuttons)
@@ -1527,11 +1139,10 @@ TwmWindow *tmp_win;
 	}
 
 	PaintTitle(tmp_win);
-	PaintTitleHighlight(tmp_win, on);	/* djhjr - 10/25/02 */
+	PaintTitleHighlight(tmp_win, on);
 }
 
 
-/* djhjr - 4/17/98 */
 static void
 DoVirtualMoveResize(tmp_win, x, y, w, h)
 TwmWindow *tmp_win;
@@ -1547,9 +1158,6 @@ int x, y, w, h;
 		tmp_win->frame_height = h + 2 * tmp_win->frame_bw;
 	}
 
-/* djhjr - 5/27/03
-	MoveResizeDesktop(tmp_win, Scr->NoRaiseResize);
-*/
 	MoveResizeDesktop(tmp_win, TRUE);
 
 	tmp_win->frame_width = fw; tmp_win->frame_height = fh;
@@ -2323,17 +1931,15 @@ fullzoom (TwmWindow *tmp_win, int flag)
 	if (!Scr->NoRaiseResize) {
 		XRaiseWindow(dpy, tmp_win->frame);
 
-		RaiseStickyAbove(); /* DSE */
+		RaiseStickyAbove();
 		RaiseAutoPan();
 	}
 
 	ConstrainSize(tmp_win, &dragWidth, &dragHeight);
 	SetupWindow (tmp_win, dragx , dragy , dragWidth, dragHeight, -1);
 
-	/* djhjr - 9/10/99 */
 	ResizeTwmWindowContents(tmp_win, dragWidth, dragHeight);
 
-	/* 9/21/96 - djhjr */
 	if ((Scr->WarpCursor || LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)))
 		WarpToWindow (tmp_win);
 
@@ -2356,9 +1962,6 @@ void ResizeTwmWindowContents(tmp_win, width, height)
 		ncols = tmp_win->iconmgrp->cur_columns;
 		if (ncols == 0) ncols = 1;
 
-/* djhjr - 4/24/96
-		tmp_win->iconmgrp->width = (int) ((width *
-*/
 		tmp_win->iconmgrp->width =
 				(int)(((width - 2 * tmp_win->frame_bw3D) *
 
@@ -2394,9 +1997,6 @@ void SetFrameShape (tmp)
 	 * need to do general case
 	 */
 	XShapeCombineShape (dpy, tmp->frame, ShapeBounding,
-/* djhjr - 4/24/96
-			    0, tmp->title_height, tmp->w,
-*/
 			    tmp->frame_bw3D, tmp->title_height + tmp->frame_bw3D, tmp->w,
 
 			    ShapeBounding, ShapeSet);
@@ -2425,26 +2025,14 @@ void SetFrameShape (tmp)
 	     * The frame_width and frame_height do *not* include borders.
 	     */
 	    /* border */
-/* djhjr - 4/24/96
-	    newBounding[0].x = tmp->title_x;
-	    newBounding[0].y = tmp->title_y;
-	    newBounding[0].width = tmp->title_width + fbw2;
-	    newBounding[0].height = tmp->title_height;
-	    newBounding[1].x = -tmp->frame_bw;
-	    newBounding[1].y = Scr->TitleHeight;
-	    newBounding[1].width = tmp->attr.width + fbw2;
-	    newBounding[1].height = tmp->attr.height + fbw2;
-*/
 	    newBounding[0].x = tmp->title_x - tmp->frame_bw3D;
 	    newBounding[0].y = tmp->title_y - tmp->frame_bw3D;
 	    newBounding[0].width = tmp->title_width + fbw2 + 2 * tmp->frame_bw3D;
 	    newBounding[0].height = tmp->title_height + tmp->frame_bw3D;
 
-	    /* was 'Scr->use3Dborders' - djhjr - 8/11/98 */
 	    if (Scr->BorderBevelWidth > 0 &&
 			newBounding[0].width < client_width)
 	    {
-		/* re-ordered arrays for XYSorted - djhjr - 11/5/03 */
 		newBounding[1].x = -tmp->frame_bw3D;
 		newBounding[1].y = tmp->title_height;
 		newBounding[1].width = tmp->attr.width + 3 * tmp->frame_bw3D;
@@ -2465,16 +2053,6 @@ void SetFrameShape (tmp)
 	    }
 
 	    /* insides */
-/* djhjr - 4/24/96
-	    newClip[0].x = tmp->title_x + tmp->frame_bw;
-	    newClip[0].y = 0;
-	    newClip[0].width = tmp->title_width;
-	    newClip[0].height = Scr->TitleHeight;
-	    newClip[1].x = 0;
-	    newClip[1].y = tmp->title_height;
-	    newClip[1].width = tmp->attr.width;
-	    newClip[1].height = tmp->attr.height;
-*/
 	    newClip[0].x = tmp->title_x + tmp->frame_bw - tmp->frame_bw3D;
 	    newClip[0].y = 0;
 	    newClip[0].width = tmp->title_width + 2 * tmp->frame_bw3D;
@@ -2482,7 +2060,6 @@ void SetFrameShape (tmp)
 
 	    if (count == 3)
 	    {
-		/* re-ordered arrays for XYSorted - djhjr - 11/5/03 */
 		newClip[1].x = newBounding[1].x;
 		newClip[1].y = newBounding[1].y;
 		newClip[1].width = newBounding[1].width;

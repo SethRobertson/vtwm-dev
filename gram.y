@@ -50,14 +50,11 @@
 #include "screen.h"
 #include "parse.h"
 #include "doors.h"
-/* djhjr - 10/30/02 */
 #include "iconmgr.h"
-/* djhjr - 4/26/99 */
 #include "regions.h"
 #include <X11/Xos.h>
 #include <X11/Xmu/CharSet.h>
 
-/* Submitted by Nelson H. F. Beebe */
 #ifdef __NeXT__
 #undef isascii
 #define isascii(c) ((0 <= (int)(c)) && ((int)(c) <= 127))
@@ -68,17 +65,12 @@ static char *Name = "";
 static MenuRoot	*root, *pull = NULL;
 
 static MenuRoot *GetRoot();
-/* was type 'void' - djhjr - 10/20/01 */
 static char *RemoveDQuote();
-/* djhjr - 10/20/01 */
 static char *RemoveRESlash();
-/* djhjr - 10/16/02 */
 static int ParseWarpCentered();
-/* djhjr - 9/24/02 */
 static int ParseUsePPosition();
 void twmrc_error_prefix();
 
-/* djhjr - 4/30/96 */
 static MenuItem *lastmenuitem = (MenuItem*) 0;
 
 static Bool CheckWarpScreenArg(), CheckWarpRingArg();
@@ -86,36 +78,29 @@ static Bool CheckColormapArg();
 static void GotButton(), GotKey(), GotTitleButton();
 static void yyerror();
 static name_list **list;
-/* djhjr - 4/26/99 */
 static RootRegion *ARlist;
 static int cont = 0;
 static int color;
 int mods = 0;
 unsigned int mods_used = (ShiftMask | ControlMask | Mod1Mask);
-/* djhjr - 9/24/02 */
 static int ppos;
-/* djhjr - 10/16/02 */
 static int warpc;
 
 extern void SetHighlightPixmap();
 extern void SetVirtualPixmap(), SetVirtualDesktop(), SetRealScreenPixmap();
 extern void NewBitmapCursor();
 extern void AddIconRegion();
-/* next two - djhjr - 4/26/99 */
 extern RootRegion *AddAppletRegion();
 extern int AddToAppletList();
 extern int do_single_keyword(), do_string_keyword(), do_number_keyword();
 extern name_list **do_colorlist_keyword();
 extern int do_color_keyword();
 extern void do_string_savecolor(), do_var_savecolor(), do_squeeze_entry();
-/* djhjr - 6/22/01 */
 extern int SetSound();
 
 /*
  * this used to be the definition - now making the assumption it's
  * defined in lex's skeleton file (submitted by Nelson H. F. Beebe)
- *
- * djhjr - 1/16/98
  */
 extern int yylineno;
 
@@ -125,7 +110,6 @@ extern int yylineno;
 {
     int num;
     char *ptr;
-    /* djhjr - 10/20/01 */
     struct
     {
 	short ltype;
@@ -139,48 +123,31 @@ extern int yylineno;
 %token <num> ICONMGR_GEOMETRY ICONMGR_NOSHOW MAKE_TITLE
 %token <num> ICONIFY_BY_UNMAPPING DONT_ICONIFY_BY_UNMAPPING
 %token <num> NO_TITLE AUTO_RAISE NO_HILITE NO_ICONMGR_HILITE ICON_REGION
-/* djhjr - 10/16/02 */
 %token <num> WARP_CENTERED
-/* djhjr - 9/24/02 */
 %token <num> USE_PPOSITION
-/* submitted by Tim Wiess - 8/23/02 */
 %token <num> NO_BORDER
-/* djhjr - 4/26/99 */
 %token <num> APPLET_REGION
 %token <num> META SHIFT LOCK CONTROL WINDOW TITLE ICON ROOT FRAME VIRTUAL VIRTUAL_WIN
-/* TILDE - djhjr - 10/20/01 */
 %token <num> COLON EQUALS TILDE SQUEEZE_TITLE DONT_SQUEEZE_TITLE
-/* opaque stuff - djhjr - 4/7/98 */
 %token <num> OPAQUE_MOVE NO_OPAQUE_MOVE OPAQUE_RESIZE NO_OPAQUE_RESIZE
 %token <num> START_ICONIFIED NO_TITLE_HILITE TITLE_HILITE
 %token <num> MOVE RESIZE WAIT SELECT KILL LEFT_TITLEBUTTON RIGHT_TITLEBUTTON
-/* MKEYWORD - djhjr - 10/20/01 */
 %token <num> NUMBER KEYWORD MKEYWORD NKEYWORD CKEYWORD CLKEYWORD FKEYWORD FSKEYWORD
-/* SNKEYWORD - djhjr - 10/18/02 */
-/* NO_WINDOW_RING submitted by Jonathan Paisley - 10/27/02 */
 %token <num> SNKEYWORD SKEYWORD DKEYWORD JKEYWORD WINDOW_RING NO_WINDOW_RING WARP_CURSOR
 %token <num> ERRORTOKEN NO_STACKMODE NAILEDDOWN VIRTUALDESKTOP NO_SHOW_IN_DISPLAY
-/* Submitted by Erik Agsjo <erik.agsjo@aktiedirekt.com> */
 %token <num> NO_SHOW_IN_TWMWINDOWS
 %token DOORS DOOR
-/*RFB PIXMAP:*/
 %token <num> VIRTUALMAP
 %token <num> REALSCREENMAP
-/* two pixmaps - djhjr - 10/30/02 */
 %token <num> ICONMGRICONMAP
 %token <num> MENUICONMAP
-/*<RFB PIXMAP*/
-/* djhjr - 6/22/01 */
 %token SOUNDS
-/* REGEXP - djhjr - 10/20/01 */
 %token <ptr> STRING REGEXP
-/* djhjr - 9/10/03 */
 %token <num> IGNORE_MODS
 %token SAVECOLOR
 %token LB
 %token RB
 
-/* regex stuff - djhjr - 10/20/01 */
 %type <match> matcher
 %type <ptr> string regexp
 %type <num> action button number signed_number full fullkey
@@ -251,7 +218,7 @@ stmt		: error
 					  GotTitleButton ($2, $4, True);
 					}
 		| button string		{ root = GetRoot($2, NULLSTR, NULLSTR);
-		                          if ($1 <= NumButtons) {
+					  if ($1 <= NumButtons) {
 					    Scr->Mouse[MOUSELOC($1,C_ROOT,0)].func = F_MENU;
 					    Scr->Mouse[MOUSELOC($1,C_ROOT,0)].menu = root;
 					  }
@@ -272,7 +239,7 @@ stmt		: error
 					    }
 					    Action = "";
 					    pull = NULL;
-		                          }
+					  }
 					}
 		| string fullkey	{ GotKey($1, $2); }
 		| button full		{ GotButton($1, $2); }
@@ -338,20 +305,20 @@ stmt		: error
 		| MENU string LP string COLON string RP	{
 					root = GetRoot($2, $4, $6); }
 		  menu			{ root->real_menu = TRUE;}
-		| MENU string 		{ root = GetRoot($2, NULLSTR, NULLSTR); }
+		| MENU string		{ root = GetRoot($2, NULLSTR, NULLSTR); }
 		  menu			{ root->real_menu = TRUE; }
 		| FUNCTION string	{ root = GetRoot($2, NULLSTR, NULLSTR); }
 		  function
-		| ICONS 		{ list = &Scr->IconNames; }
+		| ICONS		{ list = &Scr->IconNames; }
 		  icon_list
 		| SOUNDS
 		  sound_list
-		| COLOR 		{ color = COLOR; }
+		| COLOR		{ color = COLOR; }
 		  color_list
-                | SAVECOLOR
-                  save_color_list
-                | MONOCHROME 		{ color = MONOCHROME; }
-	          color_list
+		| SAVECOLOR
+		  save_color_list
+		| MONOCHROME		{ color = MONOCHROME; }
+		  color_list
 		| DEFAULT_FUNCTION action { Scr->DefaultFunction.func = $2;
 					  if ($2 == F_MENU)
 					  {
@@ -427,7 +394,6 @@ narg		: NKEYWORD number	{ if (!do_number_keyword ($1, $2)) {
 					}
 		;
 
-/* djhjr - 10/18/02 */
 snarg		: SNKEYWORD signed_number	{ if (!do_number_keyword ($1, $2)) {
 					    twmrc_error_prefix();
 					    fprintf (stderr,
@@ -513,10 +479,10 @@ pixmap_entries	: /* Empty */
 		;
 
 pixmap_entry	: TITLE_HILITE string { SetHighlightPixmap ($2); }
-		| VIRTUALMAP string { SetVirtualPixmap ($2); }/*RFB PIXMAP*/
-		| REALSCREENMAP string { SetRealScreenPixmap ($2); }/*RFB PIXMAP*/
-		| ICONMGRICONMAP string { SetIconMgrPixmap($2); } /* djhjr - 10/30/02 */
-		| MENUICONMAP string { SetMenuIconPixmap($2); } /* djhjr - 10/30/02 */
+		| VIRTUALMAP string { SetVirtualPixmap ($2); }
+		| REALSCREENMAP string { SetRealScreenPixmap ($2); }
+		| ICONMGRICONMAP string { SetIconMgrPixmap($2); }
+		| MENUICONMAP string { SetMenuIconPixmap($2); }
 		;
 
 
@@ -571,18 +537,18 @@ cursor_entry	: FRAME string string {
 			NewBitmapCursor(&Scr->DestroyCursor, $2, $3); }
 		| KILL string {
 			NewFontCursor(&Scr->DestroyCursor, $2); }
-		| DOOR string string {/*RFBCURSOR*/
-			NewBitmapCursor(&Scr->DoorCursor, $2, $3); }/*RFBCURSOR*/
-		| DOOR string {/*RFBCURSOR*/
-			NewFontCursor(&Scr->DoorCursor, $2); }/*RFBCURSOR*/
-		| VIRTUAL string string {/*RFBCURSOR*/
-			NewBitmapCursor(&Scr->VirtualCursor, $2, $3); }/*RFBCURSOR*/
-		| VIRTUAL string {/*RFBCURSOR*/
-			NewFontCursor(&Scr->VirtualCursor, $2); }/*RFBCURSOR*/
-		| VIRTUAL_WIN string string {/*RFBCURSOR*/
-			NewBitmapCursor(&Scr->DesktopCursor, $2, $3); }/*RFBCURSOR*/
-		| VIRTUAL_WIN string {/*RFBCURSOR*/
-			NewFontCursor(&Scr->DesktopCursor, $2); }/*RFBCURSOR*/
+		| DOOR string string {
+			NewBitmapCursor(&Scr->DoorCursor, $2, $3); }
+		| DOOR string {
+			NewFontCursor(&Scr->DoorCursor, $2); }
+		| VIRTUAL string string {
+			NewBitmapCursor(&Scr->VirtualCursor, $2, $3); }
+		| VIRTUAL string {
+			NewFontCursor(&Scr->VirtualCursor, $2); }
+		| VIRTUAL_WIN string string {
+			NewBitmapCursor(&Scr->DesktopCursor, $2, $3); }
+		| VIRTUAL_WIN string {
+			NewFontCursor(&Scr->DesktopCursor, $2); }
 		;
 
 color_list	: LB color_entries RB
@@ -625,15 +591,15 @@ color_entry	: CLKEYWORD string	{ if (!do_colorlist_keyword ($1, color,
 		;
 
 save_color_list : LB s_color_entries RB
-                ;
+		;
 
 s_color_entries : /* Empty */
-                | s_color_entries s_color_entry
-                ;
+		| s_color_entries s_color_entry
+		;
 
 s_color_entry   : string            { do_string_savecolor(color, $1); }
-                | CLKEYWORD         { do_var_savecolor($1); }
-                ;
+		| CLKEYWORD         { do_var_savecolor($1); }
+		;
 
 win_color_list	: LB win_color_entries RB
 		;
@@ -642,7 +608,6 @@ win_color_entries	: /* Empty */
 		| win_color_entries win_color_entry
 		;
 
-/* 'matcher', mods to 'AddToList()' - djhjr - 10/20/01 */
 win_color_entry	: matcher string	{ if (Scr->FirstTime &&
 					      color == Scr->Monochrome)
 					    AddToList(list, $1.lval, $1.ltype,
@@ -662,7 +627,6 @@ squeeze		: SQUEEZE_TITLE {
 		  win_list
 		;
 
-/* 'matcher', mods to 'do_sqeeze_entry()' - djhjr - 10/20/01 */
 win_sqz_entries	: /* Empty */
 		| win_sqz_entries matcher JKEYWORD signed_number signed_number	{
 				if (Scr->FirstTime) {
@@ -692,7 +656,6 @@ iconm_entries	: /* Empty */
 		| iconm_entries iconm_entry
 		;
 
-/* 'matcher', mods to 'AddToList()', 'AllocateIconManager()' - djhjr - 10/20/01 */
 iconm_entry	: matcher string number	{ if (Scr->FirstTime)
 					    AddToList(list, $1.lval, $1.ltype, (char *)
 						AllocateIconManager($1.lval,
@@ -713,7 +676,6 @@ win_entries	: /* Empty */
 		| win_entries win_entry
 		;
 
-/* 'matcher', mods to 'AddToList()' - djhjr - 10/20/01 */
 win_entry	: matcher		{ if (Scr->FirstTime)
 					    AddToList(list, $1.lval, $1.ltype, 0);
 					}
@@ -726,13 +688,11 @@ icon_entries	: /* Empty */
 		| icon_entries icon_entry
 		;
 
-/* 'matcher', mods to 'AddToList()' - djhjr - 10/20/01 */
 icon_entry	: matcher string	{ if (Scr->FirstTime)
 					    AddToList(list, $1.lval, $1.ltype, $2);
 					}
 		;
 
-/* djhjr - 9/24/02 */
 ppos_list	: LB ppos_entries RB
 		;
 
@@ -740,7 +700,6 @@ ppos_entries	: /* Empty */
 		| ppos_entries ppos_entry
 		;
 
-/* 'matcher', mods to 'AddToList()' - djhjr - 10/20/01 */
 ppos_entry	: matcher string	{ if (Scr->FirstTime) {
 					    if ((ppos = ParseUsePPosition($2)) != -1)
 					      AddToList(list, $1.lval, $1.ltype, (char *)&ppos);
@@ -748,32 +707,25 @@ ppos_entry	: matcher string	{ if (Scr->FirstTime) {
 					}
 		;
 
-/* djhjr - 6/22/01 */
 sound_list	: LB sound_entries RB
 		;
 
-/* djhjr - 6/22/01 */
 sound_entries	: /* Empty */
 		| sound_entries sound_entry
 		;
 
-/* djhjr - 8/16/01 */
 sound_entry	: string string		{ if (Scr->FirstTime) SetSound($1, $2, -1); }
 		| string string number	{ if (Scr->FirstTime) SetSound($1, $2, $3); }
 		;
 
-/* djhjr - 4/26/99 */
 applet_list	: LB applet_entries RB
 		;
 
-/* djhjr - 4/26/99 */
 applet_entries	: /* Empty */
 		| applet_entries applet_entry
 		;
 
-/* djhjr - 4/26/99 */
-/* 'matcher', mods to 'AddToAppletList()' - djhjr - 10/20/01 */
-applet_entry	: matcher 		{ if (Scr->FirstTime)
+applet_entry	: matcher		{ if (Scr->FirstTime)
 					      AddToAppletList(ARlist,
 							$1.lval, $1.ltype);
 					}
@@ -792,9 +744,6 @@ function_entry	: action		{ AddToMenu(root, "", Action, NULLSTR, $1,
 					}
 		;
 
-/* djhjr - 4/30/96
-menu		: LB menu_entries RB
-*/
 menu		: LB menu_entries RB {lastmenuitem = (MenuItem*) 0;}
 		;
 
@@ -802,20 +751,6 @@ menu_entries	: /* Empty */
 		| menu_entries menu_entry
 		;
 
-/* djhjr - 4/30/96
-menu_entry	: string action		{ AddToMenu(root, $1, Action, pull, $2,
-						NULLSTR, NULLSTR);
-					  Action = "";
-					  pull = NULL;
-					}
-		| string LP string COLON string RP action {
-					  AddToMenu(root, $1, Action, pull, $7,
-						$3, $5);
-					  Action = "";
-					  pull = NULL;
-					}
-		;
-*/
 menu_entry	: string action		{
 			if ($2 == F_SEPARATOR) {
 			    if (lastmenuitem) lastmenuitem->separated = 1;
@@ -860,7 +795,7 @@ action		: FKEYWORD	{ $$ = $1; }
 					twmrc_error_prefix();
 					fprintf (stderr,
 			"ignoring invalid f.warptoscreen argument \"%s\"\n",
-					         Action);
+						 Action);
 					$$ = F_NOP;
 				    }
 				    break;
@@ -892,7 +827,6 @@ button		: BUTTON number		{ $$ = $2;
 					}
 		;
 
-/* djhjr - 10/20/01 */
 matcher		: string		{ $$.ltype = LTYPE_ANY_STRING;
 					  $$.lval = $1;
 					}
@@ -910,7 +844,6 @@ matcher		: string		{ $$.ltype = LTYPE_ANY_STRING;
 string		: STRING		{ $$ = RemoveDQuote($1); }
 		;
 
-/* djhjr - 10/20/01 */
 regexp		: REGEXP		{ $$ = RemoveRESlash($1); }
 		;
 
@@ -931,7 +864,6 @@ yyerror(s) char *s;
     ParseError = 1;
 }
 
-/* do manipulations in place, then copy it - djhjr - 10/20/01 */
 static char *RemoveDQuote(str)
 char *str;
 {
@@ -1039,7 +971,6 @@ char *str;
     return (ptr);
 }
 
-/* djhjr - 10/20/01 */
 static char *RemoveRESlash(str)
 char *str;
 {
@@ -1066,7 +997,6 @@ char *str;
     return (ptr);
 }
 
-/* was in parse.c - djhjr - 9/24/02 */
 static int ParseUsePPosition(s)
 char *s;
 {
@@ -1086,7 +1016,6 @@ char *s;
     return -1;
 }
 
-/* djhjr - 10/16/02 */
 static int ParseWarpCentered(s)
 char *s;
 {
@@ -1123,10 +1052,6 @@ char *fore, *back;
 	save = Scr->FirstTime;
 	Scr->FirstTime = TRUE;
 
-/* djhjr - 4/22/96
-	GetColor(COLOR, &tmp->hi_fore, fore);
-	GetColor(COLOR, &tmp->hi_back, back);
-*/
 	GetColor(COLOR, &tmp->highlight.fore, fore);
 	GetColor(COLOR, &tmp->highlight.back, back);
 

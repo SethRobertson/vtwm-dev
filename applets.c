@@ -15,7 +15,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL M.I.T.
  * BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN 
+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
@@ -52,7 +52,6 @@ extern RootRegion *AddRegion();
 int appletWidth(tmp_win)
 TwmWindow *tmp_win;
 {
-	/* submitted by Tim Wiess - 8/23/02 */
 	if (Scr->NoBorders || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
 		return tmp_win->attr.width;
 	else
@@ -62,8 +61,6 @@ TwmWindow *tmp_win;
 int appletHeight(tmp_win)
 TwmWindow *tmp_win;
 {
-	/* submitted by Tim Wiess - 8/23/02 */
-	/* added 'tmp_win->title_height +' - djhjr - 11/11/03 */
 	if (Scr->NoBorders || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
 		return tmp_win->title_height + tmp_win->attr.height;
 	else
@@ -89,7 +86,6 @@ int *final_x, *final_y;
 		{
 			if (!matched)
 			{
-				/* these were 'match()' - djhjr - 10/20/01 */
 				if (MatchName(tmp_win->full_name, re->u.name, &re->re, re->type))
 					if (MatchName(tmp_win->class.res_name, re->u.name, &re->re, re->type))
 						if (MatchName(tmp_win->class.res_class, re->u.name, &re->re, re->type))
@@ -99,9 +95,6 @@ int *final_x, *final_y;
 			}
 
 			if (re->usedby) continue;
-/* don't include grid spacing - djhjr - 5/22/99
-			if (re->w < w || re->h < h) continue;
-*/
 			if (re->w < appletWidth(tmp_win) || re->h < appletHeight(tmp_win))
 				continue;
 
@@ -109,14 +102,9 @@ int *final_x, *final_y;
 			re->usedby = USEDBY_TWIN;
 			re->u.twm_win = tmp_win;
 
-/* evenly spaced applet placement - djhjr - 4/24/99
-			*final_x = re->x + (re->w - appletWidth (tmp_win)) / 2;
-			*final_y = re->y + (re->h - appletHeight (tmp_win)) / 2;
-*/
 			*final_x = re->x;
 			*final_y = re->y;
 
-			/* adjust for region gravity - djhjr 4/26/99 */
 			if (rr->grav2 == D_EAST)
 				*final_x += re->w - appletWidth(tmp_win);
 			if (rr->grav1 == D_SOUTH)
@@ -160,7 +148,7 @@ AppletDown (tmp_win)
 
     re = FindAppletEntry (tmp_win, &rr);
     if (re)
-        downRegionEntry(rr, re);
+	downRegionEntry(rr, re);
 }
 
 RootRegion *
@@ -173,10 +161,10 @@ int grav1, grav2, stepx, stepy;
     rr = AddRegion(geom, grav1, grav2, stepx, stepy);
 
     if (Scr->LastAppletRegion)
-        Scr->LastAppletRegion->next = rr;
+	Scr->LastAppletRegion->next = rr;
     Scr->LastAppletRegion = rr;
     if (!Scr->FirstAppletRegion)
-        Scr->FirstAppletRegion = rr;
+	Scr->FirstAppletRegion = rr;
 
 	return rr;
 }
@@ -201,10 +189,8 @@ short type;
     }
 
     nptr->next = list_head->entries;
-    /* djhjr - 10/20/01 */
     nptr->type = type;
     nptr->usedby = USEDBY_NAME;
     nptr->u.name = (char*)strdup(name);
     list_head->entries = nptr;
-}    
-
+}

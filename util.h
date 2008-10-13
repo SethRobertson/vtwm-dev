@@ -75,7 +75,7 @@ extern void MyFont_DrawString (Display *dpy, MyWindow *win, MyFont *font,
 extern Status I18N_FetchName (Display *dpy, Window w, char **winname);
 extern Status I18N_GetIconName (Display *dpy, Window w, char **iconname);
 
-/* djhjr - 1/13/98 */
+
 void setBorderGC();
 #ifdef USE_ORIGINAL_CORNERS
 void Draw3DCorner();
@@ -84,16 +84,10 @@ GC setBevelGC();
 void Draw3DBevel();
 #endif
 
-/* djhjr - 4/25/96 */
 void PaintTitleHighlight();
-
-/* djhjr - 4/2/98 */
 int ComputeHighlightWindowWidth();
-
-/* djhjr - 5/17/98 */
 extern Image *SetPixmapsPixmap();
 
-/* djhjr - 5/23/98 */
 #ifndef NO_XPM_SUPPORT
 extern int SetPixmapsBackground();
 #endif

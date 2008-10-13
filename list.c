@@ -127,26 +127,25 @@ name_list *nptr;
  *
  *  Inputs:
  *	list	- the address of the pointer to the head of a list
- *	name	- a pointer to the name of the window 
+ *	name	- a pointer to the name of the window
  *	type	- a bitmask of what to match against
  *	property- a window propery to match against
  *	ptr	- pointer to list dependent data
  *
  *  Special Considerations
- *	If the list does not use the ptr value, a non-null value 
+ *	If the list does not use the ptr value, a non-null value
  *	should be placed in it.  LookInList returns this ptr value
- *	and procedures calling LookInList will check for a non-null 
+ *	and procedures calling LookInList will check for a non-null
  *	return value as an indication of success.
  *
  ***********************************************************************
  */
 
 void
-AddToList(list_head, name, type, /*property, */ptr)
+AddToList(list_head, name, type, ptr)
 name_list **list_head;
 char *name;
 short type;
-/* Atom property; */
 char *ptr;
 {
     Atom property = None;
@@ -162,14 +161,7 @@ char *ptr;
 	Done();
     }
 
-#if 0
-    while (*list_head)
-	list_head = &((*list_head)->next);
-
-    nptr->next = NULL;
-#else
     nptr->next = *list_head;
-#endif
 
     nptr->name = strdup(name);
     if (type & LTYPE_HOST)
@@ -185,7 +177,7 @@ char *ptr;
     nptr->ptr = (ptr == NULL) ? (char *)TRUE : ptr;
 
     *list_head = nptr;
-}    
+}
 
  /********************************************************************\
  *                                                                    *
@@ -235,7 +227,7 @@ short type;
 	    regfree(&re);
 
 	    fprintf(stderr, "%s: (1) regcomp(\"%s\") error: %s\n",
-	    		ProgramName, pattern, buffer);
+			ProgramName, pattern, buffer);
 	    return (result);
 	}
 
@@ -270,17 +262,13 @@ short type;
 }
 
 static char *
-MultiLookInList(list_head, name, class, /*win, */continuation)
+MultiLookInList(list_head, name, class, continuation)
 name_list *list_head;
 char *name;
 XClassHint *class;
-/* Window win; */
 name_list **continuation;
 {
     name_list *nptr;
-#if 0
-    Window win = None;
-#endif
 
 #ifdef DEBUG
     fprintf(stderr, "MultiLookInList(): looking for '%s'\n", name);
@@ -316,7 +304,7 @@ name_list **continuation;
 	    nptr->type &= ~LTYPE_REGEXP;
 	}
 
-	if (nptr->type & LTYPE_NOTHING) 
+	if (nptr->type & LTYPE_NOTHING)
 	    continue;				/* skip illegal entry */
 
 	if (nptr->type & LTYPE_ANYTHING)
@@ -351,22 +339,6 @@ name_list **continuation;
 		}
 	}
 
-#if 0
-	if (win && (nptr->type & LTYPE_PROPERTY))
-	{
-	    char *s = GetPropertyString(win, nptr->property);
-
-	    if (s && MatchName(s, nptr->name, &nptr->re, nptr->type) == 0)
-	    {
-		free(s);
-
-		*continuation = nptr->next;
-		return (nptr->ptr);
-	    }
-
-	    if (s) free(s);
-	}
-#endif
     }
 
     *continuation = NULL;
@@ -374,86 +346,24 @@ name_list **continuation;
 }
 
 char *
-LookInList(list_head, name, class/*, win*/)
+LookInList(list_head, name, class)
 name_list *list_head;
 char *name;
 XClassHint *class;
-/* Window win; */
 {
-#if 0
-    name_list *nptr;
-#endif
     name_list *rest;
-    char *return_name = MultiLookInList(list_head, name, class, /*win, */&rest);
+    char *return_name = MultiLookInList(list_head, name, class, &rest);
 
-#if 0
-    if ((Scr->ListRings == TRUE) && (return_name != NULL)
-	&& (list_head->next != NULL)) 
-    {
-	/* To implement a ring on the linked list where we cant change the */
-	/* list_head, use a simple unlink/link-at-end alg. unless you need */
-	/* to move the first link.   In that case swap the contents of the */
-	/* first link with the contents of the second then proceed as */
-	/* normal.  */
-	name_list *tmp_namelist;
-	
-	if (list_head->ptr == return_name)
-	{
-	    char *tmp_name;
-	    short tmp_type;
-	    char *tmp_ptr;
-	    
-	    tmp_name = list_head->name;
-	    tmp_type = list_head->type;
-	    tmp_ptr = list_head->ptr;
-	    
-	    list_head->name = list_head->next->name;
-	    list_head->type = list_head->next->type;
-	    list_head->ptr = list_head->next->ptr;
-	    
-	    list_head->next->name = tmp_name;
-	    list_head->next->type = tmp_type;
-	    list_head->next->ptr = tmp_ptr;
-	}
-	
-	for (nptr = list_head; nptr->next != NULL; nptr = nptr->next)
-	{
-	    if (nptr->next->ptr == return_name)
-	      break;
-	}
-	
-	if (nptr->next->next != NULL)
-	{
-	    tmp_namelist = nptr->next;
-	    nptr->next = nptr->next->next;
-	    
-	    for (nptr = nptr->next; nptr->next != NULL; nptr = nptr->next);
-	    nptr->next = tmp_namelist;
-	    nptr->next->next = NULL;
-	}
-    }
-#endif
-    
     return (return_name);
 }
 
-#if 0
-static char *
-MultiLookInNameList(list_head, name, continuation)
-name_list *list_head;
-char *name;
-name_list **continuation;
-{
-    return (MultiLookInList(list_head, name, NULL, /*None, */continuation));
-}
-#endif
 
 char *
 LookInNameList(list_head, name)
 name_list *list_head;
 char *name;
 {
-    return (MultiLookInList(list_head, name, NULL, /*None, */&list_head));
+    return (MultiLookInList(list_head, name, NULL, &list_head));
 }
 
 /***********************************************************************
@@ -476,15 +386,14 @@ char *name;
  ***********************************************************************
  */
 
-int GetColorFromList(list_head, name, class, /*win, */ptr)
+int GetColorFromList(list_head, name, class, ptr)
 name_list *list_head;
 char *name;
 XClassHint *class;
-/* Window win; */
 Pixel *ptr;
 {
     int save;
-    char *val = LookInList(list_head, name, class/*, win*/);
+    char *val = LookInList(list_head, name, class);
 
     if (val)
     {
@@ -530,32 +439,7 @@ name_list **list;
     *list = NULL;
 }
 
-/***********************************************************************
- *
- * MSDOS-ish, Unix-ish, VTWM 5.3 wildcard support
- *
- **********************************************************************/
 
-#if 0
-static int is_pattern(p)
-char *p;
-{
-    while (*p)
-    {
-	switch (*p++)
-	{
-	    case '?':
-	    case '*':
-	    case '[':
-		return (TRUE);
-	    case '\\':
-		if (!*p++) return (FALSE);
-	}
-    }
-
-    return (FALSE);
-}
-#endif
 
 #define ABORT 2
 

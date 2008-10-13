@@ -46,8 +46,6 @@ extern void TwmOutput();
 
 /*
  * This is private to VTWM, to indicate no or invalid functions.
- *
- * djhjr - 4/20/98
  */
 #define F_NOFUNCTION		0
 
@@ -138,39 +136,29 @@ extern void TwmOutput();
 #define F_WARPCLASSPREV		113 /* string -- PF */
 #define F_WARPTONEWEST		114	/* string -- PF */
 
-/* djhjr - 4/30/96 */
 #define F_SEPARATOR		115
 
-/* djhjr - 4/20/98 */
 #define F_NAMEDOOR		116
 
-/* djhjr - 7/15/98 */
 #define F_STARTWM		117
 
-/* djhjr - 12/14/98 */
 #define F_STATICICONPOSITIONS	118
 
-/* submitted by Ugen Antsilevitch - 5/28/00 */
 #define F_WARPVISIBLE		119
 
-/* djhjr - 5/30/00 */
 #define F_WARPSNUG		120
 
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
 #define F_SOUNDS		121
 #endif
 
-/* djhjr - 10/2/01 */
 #define F_STRICTICONMGR		122
 
-/* Next four submitted by Seth Robertson - 9/9/02 */
 #define F_BINDBUTTONS		123
 #define F_BINDKEYS		124
 #define F_UNBINDBUTTONS		125
 #define F_UNBINDKEYS		126
 
-/* djhjr - 11/15/02 */
 #define F_PLAYSOUND		127
 
 #ifdef TWM_USE_SLOPPYFOCUS
@@ -182,7 +170,6 @@ extern void TwmOutput();
 #define D_EAST			3
 #define D_WEST			4
 
-/* djhjr - 5/15/96 */
 #define R_NORTH			1
 #define R_NORTHEAST		2
 #define R_EAST			3

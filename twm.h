@@ -43,9 +43,6 @@
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/extensions/shape.h>
-#ifdef NEVER /* stay X11R4 compatable; X11R5,6 doesn't seem to mind! */
-#include <X11/Xfuncs.h>
-#endif
 #ifdef TWM_USE_XFT
 #include <X11/Xft/Xft.h>
 #endif
@@ -159,7 +156,6 @@ typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
 
 #define MWM_TEAROFF_WINDOW      (1L<<0)
 
-/* submitted by Jonathan Paisley - 11/8/02 */
 typedef struct
 {
     long flags;
@@ -217,13 +213,6 @@ typedef struct ColorPair
 typedef struct _TitleButton {
     struct _TitleButton *next;		/* next link in chain */
     char *name;				/* bitmap name in case of deferal */
-
-/* don't need either anymore - djhjr - 10/30/02
-    * might not need 'bitmap anymore... djhjr - 4/19/96 *
-    Image *image;			* image to display in button *
-    *Pixmap bitmap;*			* image to display in button *
-*/
-
     int srcx, srcy;			/* from where to start copying */
     unsigned int width, height;		/* size of pixmap */
     int dstx, dsty;			/* to where to start copying */
@@ -235,11 +224,6 @@ typedef struct _TitleButton {
 
 typedef struct _TBWindow {
     Window window;			/* which window in this frame */
-
-/* djhjr - 4/19/96
-    Image *image;			* image to display in button *
-*/
-
     TitleButton *info;			/* description of this window */
 } TBWindow;
 
@@ -311,7 +295,6 @@ typedef struct TwmWindow
     int frame_height;		/* height of frame */
     int frame_bw;		/* borderwidth of frame */
 
-    /* djhjr - 4/18/96 */
     int frame_bw3D;		/* 3D borderwidth of frame */
 
     int title_x;
@@ -346,9 +329,6 @@ typedef struct TwmWindow
      **********************************************************************/
     Pixel icon_border;		/* border color */
 
-/* djhjr - 4/19/96
-    Pixel border;		* border color *
-*/
     ColorPair border;		/* border color */
 
     ColorPair border_tile;
@@ -362,27 +342,6 @@ typedef struct TwmWindow
     short iconmgr;		/* this is an icon manager window */
     short icon;			/* is the window an icon now ? */
 
-/* 5/17/96 - djhjr */
-#ifdef ORIGINAL_SHORTS
-    short iconified;		/* has the window ever been iconified? */
-    short icon_on;		/* is the icon visible */
-    short auto_raise;		/* should we auto-raise this window ? */
-    short forced;		/* has had an icon forced upon it */
-    short icon_not_ours;	/* icon pixmap or window supplied to us */
-    short icon_moved;		/* user explicitly moved the icon */
-    short stackmode;		/* honor stackmode requests */
-    short iconify_by_unmapping;	/* unmap window to iconify it */
-    short transient;		/* this is a transient window */
-    short titlehighlight;	/* should I highlight the title bar */
-    short wShaped;		/* this window has a bounding shape */
-    short nailed;		/* is this window nailed ? */
-    short showindesktopdisplay; /* should i show this in the desktop display ? */
-
-    /* djhjr - 4/6/98 */
-    short opaque_move;
-    short opaque_resize;
-
-#else
 	struct
 	{
 		unsigned int iconified					: 1;
@@ -422,8 +381,6 @@ typedef struct TwmWindow
 #define opaque_move					twmflags.opaque_move
 #define opaque_resize				twmflags.opaque_resize
 
-#endif
-
     Window transientfor;	/* window contained in XA_XM_TRANSIENT_FOR */
     struct IconMgr *iconmgrp;	/* pointer to it if this is an icon manager */
     int save_frame_x;		/* x position of frame */
@@ -436,10 +393,6 @@ typedef struct TwmWindow
     SqueezeInfo *squeeze_info;	/* should the title be squeezed? */
     struct {
 	struct TwmWindow *next, *prev;
-#ifdef ORIGINAL_WARPRINGCOORDINATES /* djhjr - 5/11/98 */
-	Bool cursor_valid;
-	int curs_x, curs_y;
-#endif
     } ring;
 } TwmWindow;
 
@@ -455,34 +408,26 @@ typedef struct TwmWindow
 #define TBPM_MENU ":menu"	/* name of titlebar pixmap for menus */
 #define TBPM_QUESTION ":question"	/* name of unknown titlebar pixmap */
 
-/* djhjr - 6/4/00 */
 #define TBPM_RARROW ":rarrow"	/* name of right arrow pixmap */
 #define TBPM_DARROW ":darrow"	/* name of down arrow pixmap */
 
-/* djhjr - 4/18/96 */
 #define TBPM_3DDOT ":xpm:dot"		/* name of titlebar pixmap for dot */
 #define TBPM_3DRESIZE ":xpm:resize"	/* name of titlebar pixmap for resize button */
 #define TBPM_3DMENU ":xpm:menu"	/* name of titlebar pixmap for menus */
 #define TBPM_3DZOOM ":xpm:zoom"
 #define TBPM_3DBAR ":xpm:bar"
 
-/* djhjr - 6/4/00 */
 #define TBPM_3DRARROW ":xpm:rarrow"	/* name of right arrow pixmap */
 #define TBPM_3DDARROW ":xpm:darrow"	/* name of down arrow pixmap */
 
-/* djhjr - 10/25/02 */
 #define TBPM_3DRAISEDBOX ":xpm:raisedbox"	/* name of raised box highlight pixmap */
 #define TBPM_3DSUNKENBOX ":xpm:sunkenbox"	/* name of sunken box highlight pixmap */
 #define TBPM_3DRAISEDLINES ":xpm:raisedlines"	/* name of raised lines highlight pixmap */
 #define TBPM_3DSUNKENLINES ":xpm:sunkenlines"	/* name of sunken lines highlight pixmap */
 
-/* djhjr - 10/30/02 */
 #define TBPM_3DBOX ":xpm:box"		/* name of box pixmap */
 #define TBPM_3DLINES ":xpm:lines"	/* name of lines pixmap */
 
-#ifdef NEVER /* stay X11R4 compatable; X11R5,6 doesn't seem to mind! */
-#include <X11/Xosdefs.h>
-#endif
 #ifndef X_NOT_STDC_ENV
 #include <stdlib.h>
 #else
@@ -491,7 +436,6 @@ extern void free();
 #endif
 extern void Reborder();
 
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
 extern SIGNAL_T PlaySoundDone();
 void Done();
@@ -551,7 +495,6 @@ extern Pixmap CreateMenuIcon();
 extern void RestoreWithdrawnLocation();
 extern void CreateFonts();
 
-/* djhjr - 4/18/96 */
 extern Pixmap Create3DMenuIcon();
 extern Pixmap Create3DIconManagerIcon();
 extern void Draw3DBorder();
@@ -578,7 +521,6 @@ extern Atom _XA_WM_TAKE_FOCUS;
 extern Atom _XA_WM_SAVE_YOURSELF;
 extern Atom _XA_WM_DELETE_WINDOW;
 
-/* djhjr - 7/31/98 */
 extern Atom _XA_TWM_RESTART;
 
 #ifdef TWM_USE_OPACITY

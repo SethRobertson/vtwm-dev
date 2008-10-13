@@ -100,27 +100,20 @@ Pixmap GetBitmap (name)
 #ifndef NO_XPM_SUPPORT
 #include <X11/xpm.h>
 
-/*
- * Submitted by Jason Gloudon
- * added color argument - djhjr - 9/28/99
- */
 void LoadXPMImage (path, img, color)
     char *path;
     Pixel color;
 	Image *img;
 {
     XpmAttributes attributes;
-	XpmColorSymbol xpmcolor[1]; /* djhjr - 9/28/99 */
+	XpmColorSymbol xpmcolor[1];
     int ErrorStatus;
-    
-    /* was 'XpmReturnAllocPixels' - Submitted by Takeharu Kato */
+
     attributes.valuemask = XpmReturnPixels;
 
-    /* djhjr - 5/10/99 */
     attributes.valuemask |= XpmCloseness;
     attributes.closeness = 32768;
 
-	/* djhjr - 9/28/99 */
 	if (color)
 	{
 		xpmcolor[0].name = NULL;
@@ -160,9 +153,6 @@ void LoadXPMImage (path, img, color)
 
 /*
  * SetPixmapsBackground - set the background for the Pixmaps resource images
- *
- * djhjr - 5/23/98
- * used to receive (int *)numcolors and return (Image *)image - djhjr - 9/2/98
  */
 #ifndef NO_XPM_SUPPORT
 int SetPixmapsBackground(image, drawable, color)
@@ -175,7 +165,6 @@ Pixel color;
 	XpmColorSymbol xpmcolor[1];
 	unsigned int i;
 
-	/* djhjr - 5/10/99 */
 	xpmattr.valuemask = XpmCloseness;
 	xpmattr.closeness = 32768;
 
@@ -201,7 +190,6 @@ Pixel color;
 
 	if (i < xpmimage.ncolors)
 	{
-		/* djhjr - 9/2/98 */
 		XFreePixmap(dpy, image->pixmap);
 		XFreePixmap(dpy, image->mask);
 
@@ -209,28 +197,9 @@ Pixel color;
 		xpmcolor[0].value = "none";
 		xpmcolor[0].pixel = color;
 
-#ifdef NEVER /* once, at the top, is enough? - djhjr - 2/13/99 */
-		xpmattr.colorsymbols = xpmcolor;
-		xpmattr.numsymbols = 1;
-		xpmattr.valuemask = XpmColorSymbols;
-
-		/* djhjr - 5/10/99 */
-		xpmattr.valuemask |= XpmCloseness;
-		xpmattr.closeness = 32768;
-
-		/*
-		 * By default, the XPM library assumes screen 0, so we have
-		 * to pass in the real values. Submitted by Caveh Frank Jalali
-		 */
-		xpmattr.valuemask |= XpmVisual | XpmColormap | XpmDepth;
-		xpmattr.visual = Scr->d_visual;
-		xpmattr.colormap = XDefaultColormap(dpy, Scr->screen);
-		xpmattr.depth = Scr->d_depth;
-#else
 		xpmattr.colorsymbols = xpmcolor;
 		xpmattr.numsymbols = 1;
 		xpmattr.valuemask |= XpmColorSymbols;
-#endif /* NEVER */
 
 		XpmCreatePixmapFromXpmImage(dpy, drawable, &xpmimage,
 				&image->pixmap, &image->mask, &xpmattr);
@@ -329,36 +298,34 @@ if ( fread( Tempstr, 1, 4, f ) != 4 )
      * going to be used, i.e., all chunks recognized by libpng except for
      * IHDR, PLTE, IDAT, IEND, tRNS, bKGD, gAMA, and sRGB : */
 
-//#if defined(PNG_UNKNOWN_CHUNKS_SUPPORTED)
     {
 #ifndef HANDLE_CHUNK_NEVER
 /* prior to libpng-1.2.5, this macro was internal, so we define it here. */
 # define HANDLE_CHUNK_NEVER 1
 #endif
        /* these byte strings were copied from png.h.
-        * If a future libpng version recognizes more chunks, add them
-        * to this list.  If a future version of readpng2.c recognizes
-        * more chunks, delete them from this list. */
+	* If a future libpng version recognizes more chunks, add them
+	* to this list.  If a future version of readpng2.c recognizes
+	* more chunks, delete them from this list. */
        png_byte png_chunk_types_to_ignore[]=
-          { 99,  72,  82,  77, '\0', /* cHRM */
-           104,  73,  83,  84, '\0', /* hIST */
-           105,  67,  67,  80, '\0', /* iCCP */
-           105,  84,  88, 116, '\0', /* iTXt */
-           111,  70,  70, 115, '\0', /* oFFs */
-           112,  67,  65,  76, '\0', /* pCAL */
-           115,  67,  65,  76, '\0', /* sCAL */
-           112,  72,  89, 115, '\0', /* pHYs */
-           115,  66,  73,  84, '\0', /* sBIT */
-           115,  80,  76,  84, '\0', /* sPLT */
-           116,  69,  88, 116, '\0', /* tEXt */
-           116,  73,  77,  69, '\0', /* tIME */
-           122,  84,  88, 116, '\0'}; /* zTXt */
+	  { 99,  72,  82,  77, '\0', /* cHRM */
+	   104,  73,  83,  84, '\0', /* hIST */
+	   105,  67,  67,  80, '\0', /* iCCP */
+	   105,  84,  88, 116, '\0', /* iTXt */
+	   111,  70,  70, 115, '\0', /* oFFs */
+	   112,  67,  65,  76, '\0', /* pCAL */
+	   115,  67,  65,  76, '\0', /* sCAL */
+	   112,  72,  89, 115, '\0', /* pHYs */
+	   115,  66,  73,  84, '\0', /* sBIT */
+	   115,  80,  76,  84, '\0', /* sPLT */
+	   116,  69,  88, 116, '\0', /* tEXt */
+	   116,  73,  77,  69, '\0', /* tIME */
+	   122,  84,  88, 116, '\0'}; /* zTXt */
 #define NUM_PNG_CHUNK_TYPES_TO_IGNORE 13
 
     png_set_keep_unknown_chunks(png_ptr, HANDLE_CHUNK_NEVER,
-        png_chunk_types_to_ignore, NUM_PNG_CHUNK_TYPES_TO_IGNORE);
+	png_chunk_types_to_ignore, NUM_PNG_CHUNK_TYPES_TO_IGNORE);
     }
-//#endif
 
 
 // set input method
@@ -402,7 +369,7 @@ channels=png_get_channels(png_ptr,info_ptr);
 
 // finish reading the file
    png_read_end(png_ptr, NULL);
-   
+
    png_destroy_read_struct(&png_ptr,&info_ptr,NULL);
 
 fclose(f);
@@ -495,16 +462,7 @@ void
 GetUnknownIcon(name)
 char *name;
 {
-/* djhjr - 8/13/98 */
-#ifdef ORIGINAL_PIXMAPS
-    if ((Scr->UnknownPm = GetBitmap(name)) != None)
-    {
-	XGetGeometry(dpy, Scr->UnknownPm, &JunkRoot, &JunkX, &JunkY,
-	    (unsigned int *)&Scr->UnknownWidth, (unsigned int *)&Scr->UnknownHeight, &JunkBW, &JunkDepth);
-    }
-#else
 	Scr->unknownName = name;
-#endif
 }
 
 
@@ -529,17 +487,13 @@ if (img->type !=IMAGE_TYPE_NONE) return(TRUE);
 return(FALSE);
 }
 
-/*
- * Submitted by Jason Gloudon
- * added color argument - djhjr - 9/28/99
- */
 Image *FindImage (name, color)
     char *name;
     Pixel color;
 {
     char *bigname;
 	Image *newimage;
-    
+
     /*
      * Generate a full pathname if any special prefix characters (such as ~)
      * are used.  If the bigname is different from name, bigname will need to
@@ -554,8 +508,6 @@ Image *FindImage (name, color)
 	/*
 	 * Do for pixmaps what XmuLocateBitmapFile() does for bitmaps,
 	 * because, apparently, XmuLocatePixmapFile() doesn't!
-	 *
-	 * djhjr - 12/26/98
 	 */
 
 	/* This iterates through the bitmap search path */
@@ -619,6 +571,3 @@ Image *FindImage (name, color)
     if (bigname != name) free (bigname);
     return newimage;
 }
-
-
-

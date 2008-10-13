@@ -51,7 +51,6 @@
 #include "parse.h"
 #include <X11/Xatom.h>
 
-/* Submitted by Jason Gloudon */
 #ifndef NO_M4_SUPPORT
 #include <sys/wait.h>
 #include <unistd.h>
@@ -72,7 +71,7 @@ static int overflowlen;
 static char **stringListSource, *currentString;
 void put_pixel_on_root();
 
-int RaiseDelay = 0;           /* msec, for AutoRaise *//*RAISEDELAY*/
+int RaiseDelay = 0;           /* msec, for AutoRaise */
 extern int yylineno;
 extern int mods;
 
@@ -84,7 +83,6 @@ int (*twmInputFunc)();
 
 extern char *defTwmrc[];		/* default bindings */
 
-/* Submitted by Jason Gloudon */
 #ifndef NO_M4_SUPPORT
 #define Resolution(pixels, mm) ((((pixels) * 100000 / (mm)) + 50) / 100)
 #define M4_MAXDIGITS 21 /* greater than the number of digits in a long int */
@@ -92,7 +90,6 @@ extern Bool PrintErrorMessages;
 char *make_m4_cmdline();
 #endif
 
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
 extern void SetSoundHost();
 extern void SetSoundVolume();
@@ -117,7 +114,6 @@ static int doparse (ifunc, srctypename, srcname)
     mods = 0;
     ptr = 0;
     len = 0;
-/* djhjr - 9/18/03 */
 #ifdef NEED_YYLINENO_V
     yylineno = 1;
 #endif
@@ -143,7 +139,7 @@ int ParseTwmrc (filename, display_name, m4_preprocess, m4_option)
     char *filename;
     char *display_name;
     int m4_preprocess;
-    char *m4_option; /* djhjr - 2/20/99 */
+    char *m4_option;
 #else
 int ParseTwmrc (filename)
     char *filename;
@@ -192,11 +188,11 @@ int ParseTwmrc (filename)
 	    }
 	    break;
 
- 	  case 3:			/* system.vtwmrc */
- 	    cp = SYSTEM_VTWMRC;
- 	    break;
- 
- 	  case 4:			/* ~/.twmrc.screennum */
+	  case 3:			/* system.vtwmrc */
+	    cp = SYSTEM_VTWMRC;
+	    break;
+
+	  case 4:			/* ~/.twmrc.screennum */
 	    if (!filename) {
 	      cp = tmpfilename;
 	      (void) sprintf (tmpfilename, "%s/.twmrc.%d",
@@ -217,14 +213,14 @@ int ParseTwmrc (filename)
 	}
 
 #ifndef NO_M4_SUPPORT
-	if (cp) { 
+	if (cp) {
 	    if (m4_preprocess && (access(cp, R_OK) == 0) ) {
 		    if ((m4_cmdline = make_m4_cmdline(display_name, cp, m4_option)) != NULL) {
 			    twmrc = popen(m4_cmdline, "r");
 			    free(m4_cmdline);
 		    }
 		    else {
-			    m4_preprocess = 0; 
+			    m4_preprocess = 0;
 			    twmrc = fopen (cp, "r");
 		    }
 	    }
@@ -255,7 +251,7 @@ int ParseTwmrc (filename)
 		fprintf(stderr,
 			"%s: m4 returned %d\n",
 			ProgramName, WEXITSTATUS(m4_status));
-	   	exit(-1); 
+		exit(-1);
 	    }
 	}
 	else {
@@ -305,7 +301,6 @@ static int twmFileInput()
 	if (fgets(buff, BUF_LEN, twmrc) == NULL)
 	    return 0;
 
-/* djhjr - 9/18/03 */
 #ifdef NEED_YYLINENO_V
 	yylineno++;
 #endif
@@ -417,92 +412,42 @@ typedef struct _TwmKeyword {
 #define kw0_WarpWindows                 27
 #define kw0_SnapRealScreen		28
 #define kw0_NotVirtualGeometries	29
-#define kw0_OldFashionedTwmWindowsMenu 30 /* RFB */
-
-/* djhjr - 2/15/99
-#define kw0_UseRealScreenBorder        31 * RFB *
-*/
-
+#define kw0_OldFashionedTwmWindowsMenu 30
 #define kw0_StayUpMenus                32
-#define kw0_NaturalAutopanBehavior     33 /* DSE */
-#define kw0_EnhancedExecResources      34 /* DSE */
-#define kw0_RightHandSidePulldownMenus 35 /* DSE */
-#define kw0_LessRandomZoomZoom         36 /* DSE */
-#define kw0_PrettyZoom                 37 /* DSE */
+#define kw0_NaturalAutopanBehavior     33
+#define kw0_EnhancedExecResources      34
+#define kw0_RightHandSidePulldownMenus 35
+#define kw0_LessRandomZoomZoom         36
+#define kw0_PrettyZoom                 37
 
-#define kw0_NoDefaultTitleButtons            38 /* DSE */
-#define kw0_NoDefaultMouseOrKeyboardBindings 39 /* DSE */
+#define kw0_NoDefaultTitleButtons            38
+#define kw0_NoDefaultMouseOrKeyboardBindings 39
 
-#define kw0_StickyAbove                      40 /* DSE */
-#define kw0_DontInterpolateTitles            41 /* DSE */
-#define kw0_FixTransientVirtualGeometries    42 /* DSE */
+#define kw0_StickyAbove                      40
+#define kw0_DontInterpolateTitles            41
+#define kw0_FixTransientVirtualGeometries    42
 
-#define kw0_WarpToTransients                 43 /* PF */
-#define kw0_NoIconifyIconManagers            44 /* PF */
-#define kw0_StayUpOptionalMenus              45 /* PF */
+#define kw0_WarpToTransients                 43
+#define kw0_NoIconifyIconManagers            44
+#define kw0_StayUpOptionalMenus              45
 
-#define kw0_WarpSnug                         46 /* DSE */
+#define kw0_WarpSnug                         46
 
-#define kw0_PointerPlacement		47	/* cg */
-/* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
-* djhjr - 4/18/96 *
-#define kw0_Use3DMenus			47
-#define kw0_Use3DTitles			48
-#define kw0_Use3DIconManagers	49
-#define kw0_Use3DBorders		50
-*/
-
-/* obsoleted by the ":xpm:*" built-in pixmaps - djhjr - 10/26/02
-* djhjr - 4/25/96 *
-#define kw0_SunkFocusWindowTitle			51
-*/
-
-/* djhjr - 6/25/96 */
+#define kw0_PointerPlacement		47
 #define kw0_ShallowReliefWindowButton		52
-
-/* djhjr - 9/21/96 */
 #define kw0_ButtonColorIsFrame				53
-
-/* djhjr - 1/6/98 */
 #define kw0_FixManagedVirtualGeometries		54
-
-/* djhjr - 1/19/98 */
 #define kw0_BeNiceToColormap				55
-
-/* djhjr - 4/17/98 */
 #define kw0_VirtualReceivesMotionEvents		56
 #define kw0_VirtualSendsMotionEvents		57
-
-/* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
-* djhjr - 5/5/98 *
-#define kw0_Use3DIcons			58
-*/
-
-/* djhjr - 5/27/98 */
 #define kw0_NoIconManagerFocus			59
-
-/* djhjr - 12/14/98 */
 #define kw0_StaticIconPositions			60
-
-/* for rader - djhjr - 2/9/99 */
 #define kw0_NoPrettyTitles				61
-
-/* djhjr - 6/22/99 */
 #define kw0_DontDeiconifyTransients		62
-
-/* submitted by Ugen Antsilevitch - 5/28/00 */
 #define kw0_WarpVisible			63
-
-/* djhjr - 10/2/01 */
 #define kw0_StrictIconManager		64
-
-/* djhjr - 10/11/01 */
 #define kw0_ZoomZoom			65
-
-/* djhjr - 10/20/02 */
 #define kw0_NoBorderDecorations		66
-
-/* djhjr - 11/3/03 */
 #define kw0_RaiseOnStart		67
 
 #ifdef TWM_USE_XFT
@@ -519,9 +464,6 @@ typedef struct _TwmKeyword {
 #define kw0_RestartOnScreenChangeNotify	71
 #endif
 
-/* djhjr - 9/24/02
-#define kws_UsePPosition		1
-*/
 #define kws_IconFont			2
 #define kws_ResizeFont			3
 #define kws_MenuFont			4
@@ -532,15 +474,12 @@ typedef struct _TwmKeyword {
 #define kws_MaxWindowSize		9
 #define kws_VirtualFont			10
 #define kws_DoorFont			11
-#define kws_MenuTitleFont       12 /* DSE */
+#define kws_MenuTitleFont       12
 
-/* djhjr - 5/10/96 */
 #define kws_InfoFont			13
 
-/* djhjr - 5/15/96 */
 #define kws_ResizeRegion		14
 
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
 #define kws_SoundHost			15
 #endif
@@ -553,50 +492,31 @@ typedef struct _TwmKeyword {
 #define kwn_FramePadding            4
 #define kwn_TitlePadding            5
 #define kwn_ButtonIndent            6
-#define kwn_BorderWidth             7 
+#define kwn_BorderWidth             7
 #define kwn_IconBorderWidth         8
 #define kwn_TitleButtonBorderWidth  9
 #define kwn_PanDistanceX           10
 #define kwn_PanDistanceY           11
 #define kwn_AutoPan                12
-#define kwn_RaiseDelay             13 /* RAISEDELAY */
-#define kwn_AutoPanBorderWidth     14 /* DSE */
-#define kwn_AutoPanExtraWarp       15 /* DSE */
-#define kwn_RealScreenBorderWidth  16 /* DSE */
-#define kwn_AutoPanWarpWithRespectToRealScreen 17 /* DSE */
-
-/* djhjr - 8/11/98
-* djhjr - 4/18/96 *
-#define kwn_ThreeDBorderWidth		18
-*/
-
-/* djhjr - 4/18/96 */
+#define kwn_RaiseDelay             13
+#define kwn_AutoPanBorderWidth     14
+#define kwn_AutoPanExtraWarp       15
+#define kwn_RealScreenBorderWidth  16
+#define kwn_AutoPanWarpWithRespectToRealScreen 17
 #define kwn_ClearBevelContrast		19
 #define kwn_DarkBevelContrast		20
-
-/* djhjr - 5/2/98 */
 #define kwn_BorderBevelWidth		21
 #define kwn_IconManagerBevelWidth	22
 #define kwn_InfoBevelWidth			23
 #define kwn_MenuBevelWidth			24
 #define kwn_TitleBevelWidth		25
-
-/* djhjr - 8/11/98 */
 #define kwn_IconBevelWidth			26
 #define kwn_ButtonBevelWidth		27
-
-/* djhjr - 2/7/99 */
 #define kwn_DoorBevelWidth				28
 #define kwn_VirtualDesktopBevelWidth	29
-
-/* djhjr - 9/8/98 */
 #define kwn_PanResistance		30
-
-/* djhjr - 5/22/00 */
 #define kwn_MenuScrollBorderWidth	31
 #define kwn_MenuScrollJump			32
-
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
 #define kwn_SoundVolume			33
 #endif
@@ -632,12 +552,11 @@ typedef struct _TwmKeyword {
 #define kwc_MenuTitleForeground		5
 #define kwc_MenuTitleBackground		6
 #define kwc_MenuShadowColor		7
-#define kwc_VirtualForeground	8 /*RFB VCOLOR*/
-#define kwc_VirtualBackground	9 /*RFB VCOLOR*/
-#define kwc_RealScreenBackground		10	/* RFB 4/92 */
-#define kwc_RealScreenForeground		11	/* RFB 4/92 */
+#define kwc_VirtualForeground	8
+#define kwc_VirtualBackground	9
+#define kwc_RealScreenBackground		10
+#define kwc_RealScreenForeground		11
 
-/* djhjr - 10/20/01 */
 #define kwm_Name			LTYPE_NAME
 #define kwm_ResName			LTYPE_RES_NAME
 #define kwm_ResClass			LTYPE_RES_CLASS
@@ -654,18 +573,14 @@ static TwmKeyword keytable[] = {
     { "appletregion",	APPLET_REGION, 0 },
 
     { "autopan",		NKEYWORD, kwn_AutoPan },
-    { "autopanborderwidth", NKEYWORD, kwn_AutoPanBorderWidth },       /* DSE */
-    { "autopanextrawarp", NKEYWORD, kwn_AutoPanExtraWarp },           /* DSE */
+    { "autopanborderwidth", NKEYWORD, kwn_AutoPanBorderWidth },
+    { "autopanextrawarp", NKEYWORD, kwn_AutoPanExtraWarp },
     { "autopanwarpwithrespecttorealscreen", NKEYWORD,
-          kwn_AutoPanWarpWithRespectToRealScreen },                   /* DSE */
+	  kwn_AutoPanWarpWithRespectToRealScreen },
     { "autoraise",		AUTO_RAISE, 0 },
-	{ "autoraisedelay",       NKEYWORD, kwn_RaiseDelay },/*RAISEDELAY*/
+	{ "autoraisedelay",       NKEYWORD, kwn_RaiseDelay },
     { "autorelativeresize",	KEYWORD, kw0_AutoRelativeResize },
-
-	/* djhjr - 1/19/98 */
     { "benicetocolormap",	KEYWORD, kw0_BeNiceToColormap },
-
-	/* djhjr - 5/2/98 */
     { "borderbevelwidth",	NKEYWORD, kwn_BorderBevelWidth },
 
     { "bordercolor",		CLKEYWORD, kwcl_BorderColor },
@@ -673,30 +588,19 @@ static TwmKeyword keytable[] = {
     { "bordertileforeground",	CLKEYWORD, kwcl_BorderTileForeground },
     { "borderwidth",		NKEYWORD, kwn_BorderWidth },
     { "button",			BUTTON, 0 },
-
-    /* djhjr - 8/11/98 */
     { "buttonbevelwidth",	NKEYWORD, kwn_ButtonBevelWidth },
-
-	/* djhjr - 9/21/96 */
     { "buttoncolorisframe",	KEYWORD, kw0_ButtonColorIsFrame },
-
     { "buttonindent",		SNKEYWORD, kwn_ButtonIndent },
     { "c",			CONTROL, 0 },
     { "center",			JKEYWORD, J_CENTER },
-
-    /* djhjr - 4/19/96 */
     { "clearbevelcontrast",	NKEYWORD, kwn_ClearBevelContrast },
-
     { "clientborderwidth",	KEYWORD, kw0_ClientBorderWidth },
     { "color",			COLOR, 0 },
     { "constrainedmovetime",	NKEYWORD, kwn_ConstrainedMoveTime },
     { "control",		CONTROL, 0 },
     { "cursors",		CURSORS, 0 },
     { "d",			VIRTUAL_WIN, 0 },
-
-    /* djhjr - 4/19/96 */
     { "darkbevelcontrast",	NKEYWORD, kwn_DarkBevelContrast },
-
     { "decoratetransients",	KEYWORD, kw0_DecorateTransients },
     { "defaultbackground",	CKEYWORD, kwc_DefaultBackground },
     { "defaultfont",		SKEYWORD, kws_DefaultFont },
@@ -712,7 +616,6 @@ static TwmKeyword keytable[] = {
 	  CLKEYWORD, kwcl_VirtualDesktopForeground },
     { "destroy",		KILL, 0 },
 
-	/* djhjr - 6/22/99 */
     { "dontdeiconifytransients", KEYWORD, kw0_DontDeiconifyTransients },
 
     { "donticonifybyunmapping",	DONT_ICONIFY_BY_UNMAPPING, 0 },
@@ -720,16 +623,13 @@ static TwmKeyword keytable[] = {
     { "dontmoveoff",		KEYWORD, kw0_DontMoveOff },
     { "dontshowindisplay",	NO_SHOW_IN_DISPLAY, 0  },
 
-	/* Submitted by Erik Agsjo <erik.agsjo@aktiedirekt.com> */
     { "dontshowintwmwindows",	NO_SHOW_IN_TWMWINDOWS, 0  },
-	/* djhjr - 6/25/98 */
     { "dontshowinvtwmwindows",	NO_SHOW_IN_TWMWINDOWS, 0  },
 
     { "dontsqueezetitle",	DONT_SQUEEZE_TITLE, 0 },
     { "door",			DOOR, 0 },
     { "doorbackground",		CLKEYWORD, kwcl_DoorBackground },
 
-	/* djhjr - 2/7/99 */
     { "doorbevelwidth",		NKEYWORD, kwn_DoorBevelWidth },
 
     { "doorfont",		SKEYWORD, kws_DoorFont },
@@ -739,14 +639,12 @@ static TwmKeyword keytable[] = {
 #ifdef TWM_USE_XFT
     { "enablexftfontrenderer",	KEYWORD, kw0_EnableXftFontRenderer },
 #endif
-    { "enhancedexecresources", KEYWORD, kw0_EnhancedExecResources }, /* DSE */
+    { "enhancedexecresources", KEYWORD, kw0_EnhancedExecResources },
     { "f",			FRAME, 0 },
-    { "f.autopan",		FKEYWORD, F_AUTOPAN },/*RFB F_AUTOPAN*/
+    { "f.autopan",		FKEYWORD, F_AUTOPAN },
     { "f.autoraise",		FKEYWORD, F_AUTORAISE },
     { "f.backiconmgr",		FKEYWORD, F_BACKICONMGR },
     { "f.beep",			FKEYWORD, F_BEEP },
-
-    /* Submitted by Seth Robertson - 9/9/02 */
     { "f.bindbuttons",		FKEYWORD, F_BINDBUTTONS },
     { "f.bindkeys",		FKEYWORD, F_BINDKEYS },
 
@@ -785,9 +683,8 @@ static TwmKeyword keytable[] = {
     { "f.move",			FKEYWORD, F_MOVE },
     { "f.movescreen",		FKEYWORD, F_MOVESCREEN },
     { "f.nail",			FKEYWORD, F_NAIL },
-    { "f.nailedabove", FKEYWORD, F_STICKYABOVE }, /* DSE */
+    { "f.nailedabove", FKEYWORD, F_STICKYABOVE },
 
-    /* djhjr - 4/20/98 */
     { "f.namedoor",		FKEYWORD, F_NAMEDOOR },
 
     { "f.newdoor",		FKEYWORD, F_NEWDOOR },
@@ -798,7 +695,6 @@ static TwmKeyword keytable[] = {
     { "f.panright",		FSKEYWORD, F_PANRIGHT },
     { "f.panup",		FSKEYWORD, F_PANUP },
 
-    /* djhjr - 11/15/02 */
     { "f.playsound",		FSKEYWORD, F_PLAYSOUND },
 
     { "f.previconmgr",		FKEYWORD, F_PREVICONMGR },
@@ -814,7 +710,6 @@ static TwmKeyword keytable[] = {
     { "f.ring",		FKEYWORD, F_RING },
     { "f.saveyourself",		FKEYWORD, F_SAVEYOURSELF },
 
-	/* djhjr - 4/30/96 */
     { "f.separator",		FKEYWORD, F_SEPARATOR },
 
     { "f.setrealscreen",	FSKEYWORD, F_SETREALSCREEN },
@@ -829,33 +724,28 @@ static TwmKeyword keytable[] = {
     { "f.snugwindow",     FKEYWORD, F_SNUGWINDOW },
     { "f.sorticonmgr",		FKEYWORD, F_SORTICONMGR },
 
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
     { "f.sounds",		FKEYWORD, F_SOUNDS },
 #endif
 
     { "f.source",		FSKEYWORD, F_BEEP },  /* XXX - don't work */
-    { "f.squeezecenter",		FKEYWORD, F_SQUEEZECENTER },/*RFB SQUEEZE*/
-    { "f.squeezeleft",		FKEYWORD, F_SQUEEZELEFT },/*RFB SQUEEZE*/
-    { "f.squeezeright",		FKEYWORD, F_SQUEEZERIGHT },/*RFB SQUEEZE*/
+    { "f.squeezecenter",		FKEYWORD, F_SQUEEZECENTER },
+    { "f.squeezeleft",		FKEYWORD, F_SQUEEZELEFT },
+    { "f.squeezeright",		FKEYWORD, F_SQUEEZERIGHT },
 
-	/* djhjr - 7/15/98 */
     { "f.startwm",		FSKEYWORD, F_STARTWM },
 
-	/* djhjr - 12/14/98 */
 	{ "f.staticiconpositions",	FKEYWORD, F_STATICICONPOSITIONS },
 
     { "f.stick",			FKEYWORD, F_NAIL },
-    { "f.stickyabove", FKEYWORD, F_STICKYABOVE }, /* DSE */
+    { "f.stickyabove", FKEYWORD, F_STICKYABOVE },
 
-    /* djhjr - 10/2/01 */
     { "f.stricticonmgr",	FKEYWORD, F_STRICTICONMGR },
 
     { "f.title",		FKEYWORD, F_TITLE },
     { "f.topzoom",		FKEYWORD, F_TOPZOOM },
     { "f.twmrc",		FKEYWORD, F_RESTART },
 
-    /* Submitted by Seth Robertson - 9/9/02 */
     { "f.unbindbuttons",	FKEYWORD, F_UNBINDBUTTONS },
     { "f.unbindkeys",		FKEYWORD, F_UNBINDKEYS },
 
@@ -865,31 +755,28 @@ static TwmKeyword keytable[] = {
     { "f.virtualgeometries",	FKEYWORD, F_VIRTUALGEOMETRIES },
     { "f.vlzoom",		FKEYWORD, F_LEFTZOOM },
     { "f.vrzoom",		FKEYWORD, F_RIGHTZOOM },
-    { "f.warp",			FKEYWORD, F_WARP },               /* PF */
-    { "f.warpclassnext",	FSKEYWORD, F_WARPCLASSNEXT }, /* PF */
-    { "f.warpclassprev",	FSKEYWORD, F_WARPCLASSPREV }, /* PF */
+    { "f.warp",			FKEYWORD, F_WARP },
+    { "f.warpclassnext",	FSKEYWORD, F_WARPCLASSNEXT },
+    { "f.warpclassprev",	FSKEYWORD, F_WARPCLASSPREV },
     { "f.warpring",		FSKEYWORD, F_WARPRING },
 
-    /* djhjr - 5/30/00 */
     { "f.warpsnug",        FKEYWORD, F_WARPSNUG },
 
     { "f.warpto",		FSKEYWORD, F_WARPTO },
     { "f.warptoiconmgr",	FSKEYWORD, F_WARPTOICONMGR },
-    { "f.warptonewest", FKEYWORD, F_WARPTONEWEST }, /* PF */
+    { "f.warptonewest", FKEYWORD, F_WARPTONEWEST },
     { "f.warptoscreen",		FSKEYWORD, F_WARPTOSCREEN },
 
-    /* submitted by Ugen Antsilevitch - 5/28/00 */
     { "f.warpvisible",		FKEYWORD, F_WARPVISIBLE },
 
     { "f.winrefresh",		FKEYWORD, F_WINREFRESH },
     { "f.zoom",			FKEYWORD, F_ZOOM },
     { "f.zoomzoom",			FKEYWORD, F_ZOOMZOOM },
 
-    /* djhjr - 1/6/98 */
     { "fixmanagedvirtualgeometries", KEYWORD, kw0_FixManagedVirtualGeometries },
 
-    { "fixtransientvirtualgeometries", KEYWORD, 
-        kw0_FixTransientVirtualGeometries },                          /* DSE */
+    { "fixtransientvirtualgeometries", KEYWORD,
+	kw0_FixTransientVirtualGeometries },
     { "forceicons",		KEYWORD, kw0_ForceIcons },
     { "frame",			FRAME, 0 },
     { "framepadding",		NKEYWORD, kwn_FramePadding },
@@ -898,7 +785,6 @@ static TwmKeyword keytable[] = {
     { "icon",			ICON, 0 },
     { "iconbackground",		CLKEYWORD, kwcl_IconBackground },
 
-    /* djhjr - 8/11/98 */
     { "iconbevelwidth",	NKEYWORD, kwn_IconBevelWidth },
 
     { "iconbordercolor",	CLKEYWORD, kwcl_IconBorderColor },
@@ -909,7 +795,6 @@ static TwmKeyword keytable[] = {
     { "iconifybyunmapping",	ICONIFY_BY_UNMAPPING, 0 },
     { "iconmanagerbackground",	CLKEYWORD, kwcl_IconManagerBackground },
 
-	/* djhjr - 5/2/98 */
     { "iconmanagerbevelwidth",	NKEYWORD, kwn_IconManagerBevelWidth },
 
     { "iconmanagerdontshow",	ICONMGR_NOSHOW, 0 },
@@ -918,7 +803,6 @@ static TwmKeyword keytable[] = {
     { "iconmanagergeometry",	ICONMGR_GEOMETRY, 0 },
     { "iconmanagerhighlight",	CLKEYWORD, kwcl_IconManagerHighlight },
 
-    /* djhjr - 10/30/02 */
     { "iconmanagerpixmap",	ICONMGRICONMAP, 0 },
 
     { "iconmanagers",		ICONMGRS, 0 },
@@ -930,20 +814,17 @@ static TwmKeyword keytable[] = {
     { "iconregion",		ICON_REGION, 0 },
     { "icons",			ICONS, 0 },
 
-    /* djhjr - 9/10/03 */
     { "ignoremodifiers",	IGNORE_MODS, 0 },
 
-	/* djhjr - 5/2/98 */
     { "infobevelwidth",	NKEYWORD, kwn_InfoBevelWidth },
 
-	/* djhjr - 5/10/96 */
     { "infofont",		SKEYWORD, kws_InfoFont },
 
     { "interpolatemenucolors",	KEYWORD, kw0_InterpolateMenuColors },
     { "l",			LOCK, 0 },
     { "left",			JKEYWORD, J_LEFT },
     { "lefttitlebutton",	LEFT_TITLEBUTTON, 0 },
-    { "lessrandomzoomzoom", KEYWORD, kw0_LessRandomZoomZoom }, /* DSE */
+    { "lessrandomzoomzoom", KEYWORD, kw0_LessRandomZoomZoom },
     { "lock",			LOCK, 0 },
     { "m",			META, 0 },
     { "maketitle",		MAKE_TITLE, 0 },
@@ -951,70 +832,60 @@ static TwmKeyword keytable[] = {
     { "menu",			MENU, 0 },
     { "menubackground",		CKEYWORD, kwc_MenuBackground },
 
-	/* djhjr - 5/2/98 */
     { "menubevelwidth",	NKEYWORD, kwn_MenuBevelWidth },
 
     { "menufont",		SKEYWORD, kws_MenuFont },
     { "menuforeground",		CKEYWORD, kwc_MenuForeground },
 
-    /* djhjr - 10/30/02 */
     { "menuiconpixmap",		MENUICONMAP, 0 },
 
 #ifdef TWM_USE_OPACITY
     { "menuopacity",		NKEYWORD, kwn_MenuOpacity },
 #endif
-	/* djhjr - 5/22/00 */
     { "menuscrollborderwidth",	NKEYWORD, kwn_MenuScrollBorderWidth },
     { "menuscrolljump",		NKEYWORD, kwn_MenuScrollJump },
 
     { "menushadowcolor",	CKEYWORD, kwc_MenuShadowColor },
     { "menutitlebackground",	CKEYWORD, kwc_MenuTitleBackground },
-    { "menutitlefont", SKEYWORD, kws_MenuTitleFont },                /* DSE */
+    { "menutitlefont", SKEYWORD, kws_MenuTitleFont },
     { "menutitleforeground",	CKEYWORD, kwc_MenuTitleForeground },
     { "meta",			META, 0 },
     { "mod",			META, 0 },  /* fake it */
     { "monochrome",		MONOCHROME, 0 },
     { "move",			MOVE, 0 },
     { "movedelta",		NKEYWORD, kwn_MoveDelta },
-    { "nailedabove",    KEYWORD, kw0_StickyAbove },                  /* DSE */
+    { "nailedabove",    KEYWORD, kw0_StickyAbove },
     { "naileddown",		NAILEDDOWN, 0},
 
-    /* djhjr - 10/20/01 */
     { "name",			MKEYWORD, kwm_Name },
 
-    { "naturalautopanbehavior", KEYWORD, 
-    	kw0_NaturalAutopanBehavior },                                /* DSE */
+    { "naturalautopanbehavior", KEYWORD,
+	kw0_NaturalAutopanBehavior },
     { "nobackingstore",		KEYWORD, kw0_NoBackingStore },
 
-    /* submitted by Tim Wiess - 8/23/02 */
     { "noborder",		NO_BORDER, 0 },
 
-    /* djhjr - 10/20/02 */
     { "noborderdecorations",	KEYWORD, kw0_NoBorderDecorations },
 
     { "nocasesensitive",	KEYWORD, kw0_NoCaseSensitive },
     { "nodefaultmouseorkeyboardbindings", KEYWORD,
-    	kw0_NoDefaultMouseOrKeyboardBindings },                      /* DSE */
+	kw0_NoDefaultMouseOrKeyboardBindings },
     { "nodefaults",		KEYWORD, kw0_NoDefaults },
-    { "nodefaulttitlebuttons", KEYWORD, kw0_NoDefaultTitleButtons }, /* DSE */
+    { "nodefaulttitlebuttons", KEYWORD, kw0_NoDefaultTitleButtons },
     { "nograbserver",		KEYWORD, kw0_NoGrabServer },
     { "nohighlight",		NO_HILITE, 0 },
-    { "noiconifyiconmanagers",	KEYWORD, kw0_NoIconifyIconManagers }, /* PF */
+    { "noiconifyiconmanagers",	KEYWORD, kw0_NoIconifyIconManagers },
 
-    /* djhjr - 5/27/98 */
     { "noiconmanagerfocus",		KEYWORD, kw0_NoIconManagerFocus },
 
-    /* djhjr - 1/27/98 */
     { "noiconmanagerhighlight",		NO_ICONMGR_HILITE, 0 },
 
     { "noiconmanagers",		KEYWORD, kw0_NoIconManagers },
     { "nomenushadows",		KEYWORD, kw0_NoMenuShadows },
 
-	/* djhjr - 4/7/98 */
     { "noopaquemove",		NO_OPAQUE_MOVE, 0 },
 	{ "noopaqueresize",		NO_OPAQUE_RESIZE, 0 },
 
-    /* for rader - djhjr - 2/9/99 */
     { "noprettytitles",		KEYWORD, kw0_NoPrettyTitles },
 
     { "noraiseondeiconify",	KEYWORD, kw0_NoRaiseOnDeiconify },
@@ -1030,75 +901,62 @@ static TwmKeyword keytable[] = {
     { "notvirtualgeometries",	KEYWORD, kw0_NotVirtualGeometries },
     { "noversion",		KEYWORD, kw0_NoVersion },
 
-    /* submitted by Jonathan Paisley - 10/27/02 */
     { "nowindowring",		NO_WINDOW_RING, 0 },
 
 	{ "oldfashionedtwmwindowsmenu", KEYWORD,
-			kw0_OldFashionedTwmWindowsMenu },/*RFB*/
+			kw0_OldFashionedTwmWindowsMenu },
 
-	/* djhjr - 6/25/98 */
 	{ "oldfashionedvtwmwindowsmenu", KEYWORD,
-			kw0_OldFashionedTwmWindowsMenu },/*RFB*/
+			kw0_OldFashionedTwmWindowsMenu },
 
-/* djhjr - 4/7/98
-    { "opaquemove",			KEYWORD, kw0_OpaqueMove },
-*/
     { "opaquemove",			OPAQUE_MOVE, 0 },
 
-	/* djhjr - 4/7/98 */
 	{ "opaqueresize",		OPAQUE_RESIZE, 0 },
 
     { "pandistancex",		NKEYWORD, kwn_PanDistanceX },
     { "pandistancey",		NKEYWORD, kwn_PanDistanceY },
 
-	/* djhjr - 4/7/98 */
     { "panresistance",		NKEYWORD, kwn_PanResistance },
 
-	/* djhjr - 6/22/01 */
     { "pauseonexit",		NKEYWORD, kwn_PauseOnExit },
     { "pauseonquit",		NKEYWORD, kwn_PauseOnQuit },
 
 	{ "pixmaps",		PIXMAPS, 0 },
     { "pointerplacement",	KEYWORD, kw0_PointerPlacement },
-	{ "prettyzoom", KEYWORD, kw0_PrettyZoom }, /* DSE */
+	{ "prettyzoom", KEYWORD, kw0_PrettyZoom },
     { "r",			ROOT, 0 },
-	{ "raisedelay",       NKEYWORD, kwn_RaiseDelay },/*RAISEDELAY*/
+	{ "raisedelay",       NKEYWORD, kwn_RaiseDelay },
 
-	/* djhjr - 11/3/03 */
     { "raiseonstart",		KEYWORD, kw0_RaiseOnStart },
 
     { "randomplacement",	KEYWORD, kw0_RandomPlacement },
-    { "realscreenbackground", CKEYWORD, kwc_RealScreenBackground },/*RFB 4/92*/
-    { "realscreenborderwidth", NKEYWORD, kwn_RealScreenBorderWidth }, /* DSE */
-    { "realscreenforeground", CKEYWORD, kwc_RealScreenForeground },/*RFB 4/92*/
-    { "realscreenpixmap",		REALSCREENMAP, 0 },/*RFB PIXMAP*/
+    { "realscreenbackground", CKEYWORD, kwc_RealScreenBackground },
+    { "realscreenborderwidth", NKEYWORD, kwn_RealScreenBorderWidth },
+    { "realscreenforeground", CKEYWORD, kwc_RealScreenForeground },
+    { "realscreenpixmap",		REALSCREENMAP, 0 },
 
-    /* djhjr - 10/20/01 */
     { "resclass",		MKEYWORD, kwm_ResClass },
 
     { "resize",			RESIZE, 0 },
     { "resizefont",		SKEYWORD, kws_ResizeFont },
 
-	/* djhjr - 5/15/96 */
     { "resizeregion",		SKEYWORD, kws_ResizeRegion },
 
-    /* djhjr - 10/20/01 */
     { "resname",		MKEYWORD, kwm_ResName },
 
 #ifdef TWM_USE_XRANDR
     { "restartonscreenchangenotify", KEYWORD, kw0_RestartOnScreenChangeNotify },
 #endif
     { "restartpreviousstate",	KEYWORD, kw0_RestartPreviousState },
-    { "rhspulldownmenus", KEYWORD, kw0_RightHandSidePulldownMenus }, /* DSE */
+    { "rhspulldownmenus", KEYWORD, kw0_RightHandSidePulldownMenus },
     { "right",			JKEYWORD, J_RIGHT },
-    { "righthandsidepulldownmenus", KEYWORD, kw0_RightHandSidePulldownMenus }, /* DSE */
+    { "righthandsidepulldownmenus", KEYWORD, kw0_RightHandSidePulldownMenus },
     { "righttitlebutton",	RIGHT_TITLEBUTTON, 0 },
     { "root",			ROOT, 0 },
     { "s",			SHIFT, 0 },
     { "savecolor",              SAVECOLOR, 0},
     { "select",			SELECT, 0 },
 
-	/* djhjr - 6/25/96 */
     { "shallowreliefwindowbutton",	KEYWORD, kw0_ShallowReliefWindowButton },
 
     { "shift",			SHIFT, 0 },
@@ -1109,7 +967,6 @@ static TwmKeyword keytable[] = {
     { "snaprealscreen",		KEYWORD, kw0_SnapRealScreen },
     { "sorticonmanager",	KEYWORD, kw0_SortIconManager },
 
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
     { "soundhost",		SKEYWORD, kws_SoundHost },
     { "sounds",			SOUNDS, 0 },
@@ -1120,33 +977,20 @@ static TwmKeyword keytable[] = {
     { "squeezetitle",		SQUEEZE_TITLE, 0 },
     { "starticonified",		START_ICONIFIED, 0 },
 
-    /* djhjr - 12/14/98 */
     { "staticiconpositions",	KEYWORD, kw0_StaticIconPositions },
 
     { "stayupmenus",		KEYWORD, kw0_StayUpMenus },
-    { "stayupoptionalmenus",	KEYWORD, kw0_StayUpOptionalMenus }, /* PF */
-    { "sticky",             NAILEDDOWN, 0 },/*RFB*/
-    { "stickyabove",        KEYWORD, kw0_StickyAbove },                /* DSE */
+    { "stayupoptionalmenus",	KEYWORD, kw0_StayUpOptionalMenus },
+    { "sticky",             NAILEDDOWN, 0 },
+    { "stickyabove",        KEYWORD, kw0_StickyAbove },
 
-    /* djhjr - 10/2/01 */
     { "stricticonmanager",	KEYWORD, kw0_StrictIconManager },
 
-/* obsoleted by the ":xpm:*" built-in pixmaps - djhjr - 10/26/02
-	* djhjr - 4/25/96 *
-    { "sunkfocuswindowtitle",	KEYWORD, kw0_SunkFocusWindowTitle },
-*/
-
     { "t",			TITLE, 0 },
-
-/* djhjr - 8/11/98
-    * djhjr - 4/18/96 *
-    { "threedborderwidth",	NKEYWORD, kwn_ThreeDBorderWidth },
-*/
 
     { "title",			TITLE, 0 },
     { "titlebackground",	CLKEYWORD, kwcl_TitleBackground },
 
-	/* djhjr - 5/2/98 */
     { "titlebevelwidth",	NKEYWORD, kwn_TitleBevelWidth },
 
     { "titlebuttonborderwidth",	NKEYWORD, kwn_TitleButtonBorderWidth },
@@ -1155,40 +999,18 @@ static TwmKeyword keytable[] = {
     { "titlehighlight",		TITLE_HILITE, 0 },
     { "titlepadding",		NKEYWORD, kwn_TitlePadding },
     { "unknownicon",		SKEYWORD, kws_UnknownIcon },
-/* djhjr - 9/24/02 
-    { "usepposition",		SKEYWORD, kws_UsePPosition },
-*/
     { "usepposition",		USE_PPOSITION, 0 },
-
-/* djhjr - 2/15/99 - this is dumb - if RealScreenBorderWidth is defined, use it!
-	{ "userealscreenborder", KEYWORD, kw0_UseRealScreenBorder }, *RFB*
-*/
-
-/* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
-	* djhjr - 4/18/96 *
-    { "usethreedborders",	KEYWORD, kw0_Use3DBorders },
-    { "usethreediconmanagers",	KEYWORD, kw0_Use3DIconManagers },
-
-	* djhjr - 5/5/98 *
-    { "usethreedicons",	KEYWORD, kw0_Use3DIcons },
-
-    { "usethreedmenus",		KEYWORD, kw0_Use3DMenus },
-    { "usethreedtitles",	KEYWORD, kw0_Use3DTitles },
-*/
-
     { "v",			VIRTUAL, 0 },
     { "virtual",		VIRTUAL, 0 },
-    { "virtualbackground",	CKEYWORD, kwc_VirtualBackground },/*RFB VCOLOR*/
-    { "virtualbackgroundpixmap",		VIRTUALMAP, 0 },/*RFB PIXMAP*/
+    { "virtualbackground",	CKEYWORD, kwc_VirtualBackground },
+    { "virtualbackgroundpixmap",		VIRTUALMAP, 0 },
     { "virtualdesktop",		VIRTUALDESKTOP, 0 },
 
-	/* djhjr - 2/7/99 */
     { "virtualdesktopbevelwidth",	NKEYWORD, kwn_VirtualDesktopBevelWidth },
 
     { "virtualdesktopfont",	SKEYWORD, kws_VirtualFont },
-    { "virtualforeground",	CKEYWORD, kwc_VirtualForeground },/*RFB VCOLOR*/
+    { "virtualforeground",	CKEYWORD, kwc_VirtualForeground },
 
-	/* djhjr - 4/17/98 */
 	{ "virtualreceivesmotionevents", KEYWORD,
 			kw0_VirtualReceivesMotionEvents },
 	{ "virtualsendsmotionevents", KEYWORD,
@@ -1197,16 +1019,14 @@ static TwmKeyword keytable[] = {
     { "w",			WINDOW, 0 },
     { "wait",			WAIT, 0 },
 
-    /* djhjr - 10/16/02 */
     { "warpcentered",		WARP_CENTERED, 0 },
 
     { "warpcursor",		WARP_CURSOR, 0 },
-    { "warpsnug",		KEYWORD, kw0_WarpSnug }, /* DSE */
+    { "warpsnug",		KEYWORD, kw0_WarpSnug },
     { "warptolocaltransients",	KEYWORD, kw0_WarpToLocalTransients },
-    { "warptotransients",	KEYWORD, kw0_WarpToTransients }, /* PF */
+    { "warptotransients",	KEYWORD, kw0_WarpToTransients },
     { "warpunmapped",		KEYWORD, kw0_WarpUnmapped },
 
-    /* submitted by Ugen Antsilevitch - 5/28/00 */
     { "warpvisible",		KEYWORD, kw0_WarpVisible },
 
     { "warpwindows",		KEYWORD, kw0_WarpWindows },
@@ -1217,7 +1037,6 @@ static TwmKeyword keytable[] = {
     { "xorvalue",		NKEYWORD, kwn_XorValue },
     { "zoom",			ZOOM, 0 },
 
-	/* djhjr - 10/11/01 */
     { "zoomzoom",		KEYWORD, kw0_ZoomZoom },
 };
 
@@ -1231,18 +1050,18 @@ int parse_keyword (s, nump)
 
     XmuCopyISOLatin1Lowered (s, s);
     while (lower <= upper) {
-        int middle = (lower + upper) / 2;
+	int middle = (lower + upper) / 2;
 	TwmKeyword *p = &keytable[middle];
-        int res = strcmp (p->name, s);
+	int res = strcmp (p->name, s);
 
-        if (res < 0) {
-            lower = middle + 1;
-        } else if (res == 0) {
+	if (res < 0) {
+	    lower = middle + 1;
+	} else if (res == 0) {
 	    *nump = p->subnum;
-            return p->value;
-        } else {
-            upper = middle - 1;
-        }
+	    return p->value;
+	} else {
+	    upper = middle - 1;
+	}
     }
     return ERRORTOKEN;
 }
@@ -1262,11 +1081,11 @@ int do_single_keyword (keyword)
 	Scr->NoDefaultTitleButtons = TRUE;
 	return 1;
 
-      case kw0_NoDefaultMouseOrKeyboardBindings: /* DSE */
+      case kw0_NoDefaultMouseOrKeyboardBindings:
 	Scr->NoDefaultMouseOrKeyboardBindings = TRUE;
 	return 1;
 
-      case kw0_NoDefaultTitleButtons: /* DSE */
+      case kw0_NoDefaultTitleButtons:
 	Scr->NoDefaultTitleButtons = TRUE;
 	return 1;
 
@@ -1274,17 +1093,12 @@ int do_single_keyword (keyword)
 		if (Scr->FirstTime) Scr->StayUpMenus = TRUE;
 		return 1;
 
-	case kw0_StayUpOptionalMenus: /* PF */
+	case kw0_StayUpOptionalMenus:
 		if (Scr->FirstTime) Scr->StayUpOptionalMenus = Scr->StayUpMenus = TRUE;
 		return 1;
 
-/* djhjr - 2/15/99 - this is dumb - if RealScreenBorderWidth is defined, use it!
-	case kw0_UseRealScreenBorder: *RFB*
-		Scr->UseRealScreenBorder = TRUE;
-		return 1;
-*/
 
-	case kw0_OldFashionedTwmWindowsMenu:/*RFB*/
+	case kw0_OldFashionedTwmWindowsMenu:
 		Scr->OldFashionedTwmWindowsMenu = TRUE;
 		return 1;
 
@@ -1300,15 +1114,9 @@ int do_single_keyword (keyword)
 	Scr->NoIconManagers = TRUE;
 	return 1;
 
-      case kw0_NoIconifyIconManagers: /* PF */
+      case kw0_NoIconifyIconManagers:
 	Scr->NoIconifyIconManagers = TRUE;
 	return 1;
-
-/* djhjr - 4/7/98
-      case kw0_OpaqueMove:
-	Scr->OpaqueMove = TRUE;
-	return 1;
-*/
 
       case kw0_InterpolateMenuColors:
 	if (Scr->FirstTime) Scr->InterpolateMenuColors = TRUE;
@@ -1378,7 +1186,7 @@ int do_single_keyword (keyword)
 	Scr->DecorateTransients = TRUE;
 	return 1;
 
-      case kw0_WarpToTransients: /* PF */
+      case kw0_WarpToTransients:
 	Scr->WarpToTransients = TRUE;
 	return 1;
 
@@ -1404,11 +1212,11 @@ int do_single_keyword (keyword)
 
       case kw0_DeIconifyToScreen:
 	Scr->DeIconifyToScreen = TRUE;
- 	return 1;
+	return 1;
 
       case kw0_WarpWindows:
- 	Scr->WarpWindows = TRUE;
- 	return 1;
+	Scr->WarpWindows = TRUE;
+	return 1;
 
       case kw0_SnapRealScreen:
 	Scr->snapRealScreen = TRUE;
@@ -1417,85 +1225,52 @@ int do_single_keyword (keyword)
       case kw0_NotVirtualGeometries:
 	Scr->GeometriesAreVirtual = FALSE;
 	return 1;
-	
-	case kw0_NaturalAutopanBehavior: /* DSE */
+
+	case kw0_NaturalAutopanBehavior:
 		Scr->AutoPanWarpWithRespectToRealScreen = 100;
 		return 1;
-	case kw0_EnhancedExecResources: /* DSE */
+	case kw0_EnhancedExecResources:
 		Scr->EnhancedExecResources = TRUE;
 		return 1;
-	case kw0_RightHandSidePulldownMenus: /* DSE */
+	case kw0_RightHandSidePulldownMenus:
 		Scr->RightHandSidePulldownMenus = TRUE;
 		return 1;
-	case kw0_LessRandomZoomZoom: /* DSE */
+	case kw0_LessRandomZoomZoom:
 		Scr->LessRandomZoomZoom = TRUE;
 		return 1;
-	case kw0_PrettyZoom: /* DSE */
+	case kw0_PrettyZoom:
 		Scr->PrettyZoom = TRUE;
 		return 1;
-	case kw0_StickyAbove: /* DSE */
+	case kw0_StickyAbove:
 		Scr->StickyAbove = TRUE;
 		return 1;
-	case kw0_DontInterpolateTitles: /* DSE */
+	case kw0_DontInterpolateTitles:
 		Scr->DontInterpolateTitles = TRUE;
 		return 1;
 
-	/* djhjr - 1/6/98 */
 	case kw0_FixManagedVirtualGeometries:
 		Scr->FixManagedVirtualGeometries = TRUE;
 		return 1;
 
-	case kw0_FixTransientVirtualGeometries: /* DSE */
+	case kw0_FixTransientVirtualGeometries:
 		Scr->FixTransientVirtualGeometries = TRUE;
 		return 1;
-	case kw0_WarpSnug: /* DSE */
+	case kw0_WarpSnug:
 		Scr->WarpSnug = TRUE;
 		return 1;
 
-	/* djhjr - 6/25/96 */
 	case kw0_ShallowReliefWindowButton:
 		Scr->ShallowReliefWindowButton = 1;
 		return 1;
 
-/* obsoleted by the *BevelWidth resources - djhjr - 8/11/98
-	* djhjr - 4/18/96 *
-	case kw0_Use3DBorders:
-		Scr->use3Dborders = TRUE;
-		return 1;
-	case kw0_Use3DIconManagers:
-		Scr->use3Diconmanagers = TRUE;
-		return 1;
-	case kw0_Use3DMenus:
-		Scr->use3Dmenus = TRUE;
-		return 1;
-	case kw0_Use3DTitles:
-		Scr->use3Dtitles = TRUE;
-		return 1;
-
-	* djhjr - 5/5/98 *
-	case kw0_Use3DIcons:
-		Scr->use3Dicons = TRUE;
-		return 1;
-*/
-
-/* obsoleted by the ":xpm:*" built-in pixmaps - djhjr - 10/26/02
-	* djhjr - 4/25/96 *
-	case kw0_SunkFocusWindowTitle:
-		Scr->SunkFocusWindowTitle = TRUE;
-		return 1;
-*/
-
-	/* djhjr - 9/21/96 */
 	case kw0_ButtonColorIsFrame:
 		Scr->ButtonColorIsFrame = TRUE;
 		return 1;
 
-	/* djhjr - 1/19/98 */
 	case kw0_BeNiceToColormap:
 		Scr->BeNiceToColormap = TRUE;
 		return 1;
 
-	/* djhjr - 4/17/98 */
 	case kw0_VirtualReceivesMotionEvents:
 		Scr->VirtualReceivesMotionEvents = TRUE;
 		return 1;
@@ -1503,47 +1278,38 @@ int do_single_keyword (keyword)
 		Scr->VirtualSendsMotionEvents = TRUE;
 		return 1;
 
-	/* djhjr - 5/27/98 */
 	case kw0_NoIconManagerFocus:
 		Scr->IconManagerFocus = FALSE;
 		return 1;
 
-	/* djhjr - 12/14/98 */
 	case kw0_StaticIconPositions:
 		Scr->StaticIconPositions = TRUE;
 		return 1;
 
-	/* for rader - djhjr - 2/9/99 */
 	case kw0_NoPrettyTitles:
 		Scr->NoPrettyTitles = TRUE;
 		return 1;
 
-	/* djhjr - 6/22/99 */
 	case kw0_DontDeiconifyTransients:
 		Scr->DontDeiconifyTransients = TRUE;
 		return 1;
 
-	/* submitted by Ugen Antsilevitch - 5/28/00 */
 	case kw0_WarpVisible:
 		Scr->WarpVisible = TRUE;
 		return 1;
 
-	/* djhjr - 10/2/01 */
 	case kw0_StrictIconManager:
 		Scr->StrictIconManager = TRUE;
 		return 1;
 
-	/* djhjr - 10/11/01 */
-	case kw0_ZoomZoom: /* DSE */
+	case kw0_ZoomZoom:
 		Scr->ZoomZoom = TRUE;
 		return 1;
 
-	/* djhjr - 10/20/02 */
-	case kw0_NoBorderDecorations: /* DSE */
+	case kw0_NoBorderDecorations:
 		Scr->NoBorderDecorations = TRUE;
 		return 1;
 
-	/* djhjr - 11/3/03 */
 	case kw0_RaiseOnStart:
 		Scr->RaiseOnStart = TRUE;
 		return 1;
@@ -1574,25 +1340,10 @@ int do_string_keyword (keyword, s)
     int keyword;
     char *s;
 {
-    /* idea from Seth Robertson - djhjr - 9/17/03 */
     if (s == NULL || s[0] == '\0')
 	return 0;
 
     switch (keyword) {
-/* now in gram.y - djhjr - 9/24/02
-      case kws_UsePPosition:
-	{
-	    int ppos = ParseUsePPosition (s);
-	    if (ppos < 0) {
-		twmrc_error_prefix();
-		fprintf (stderr,
-			 "ignoring invalid UsePPosition argument \"%s\"\n", s);
-	    } else {
-		Scr->UsePPosition = ppos;
-	    }
-	    return 1;
-	}
-*/
 
       case kws_IconFont:
 	if (!Scr->HaveFonts) Scr->IconFont.name = s;
@@ -1614,11 +1365,10 @@ int do_string_keyword (keyword, s)
 	if (!Scr->HaveFonts) Scr->IconManagerFont.name = s;
 	return 1;
 
-      case kws_MenuTitleFont: /* DSE */
+      case kws_MenuTitleFont:
 	if (!Scr->HaveFonts) Scr->MenuTitleFont.name = s;
 	return 1;
 
-	/* djhjr - 5/10/96 */
       case kws_InfoFont:
 	if (!Scr->HaveFonts) Scr->InfoFont.name = s;
 	return 1;
@@ -1661,14 +1411,12 @@ int do_string_keyword (keyword, s)
 	if (!Scr->HaveFonts) Scr->DoorFont.name = s;
 	return 1;
 
-/* djhjr - 6/22/01 */
 #ifndef NO_SOUND_SUPPORT
 	case kws_SoundHost:
 		if (Scr->FirstTime) SetSoundHost(s);
 		return 1;
 #endif
 
-	/* djhjr - 5/15/96 */
 	case kws_ResizeRegion:
 		XmuCopyISOLatin1Lowered (s, s);
 		if (strcmp (s, "northwest") == 0)
@@ -1716,16 +1464,16 @@ int do_number_keyword (keyword, num)
       case kwn_ConstrainedMoveTime:
 	ConstrainedMoveTime = num;
 	return 1;
-	
-	  case kwn_AutoPanBorderWidth: /* DSE */
-  		Scr->AutoPanBorderWidth = (num<1)?1:num;
-	  	return 1;
-	  	
-	  case kwn_AutoPanExtraWarp: /* DSE */
-  		Scr->AutoPanExtraWarp = (num<0)?0:num;
+
+	  case kwn_AutoPanBorderWidth:
+		Scr->AutoPanBorderWidth = (num<1)?1:num;
+		return 1;
+
+	  case kwn_AutoPanExtraWarp:
+		Scr->AutoPanExtraWarp = (num<0)?0:num;
 	    return 1;
-	    
-	  case kwn_RealScreenBorderWidth: /* DSE */
+
+	  case kwn_RealScreenBorderWidth:
 		Scr->RealScreenBorderWidth = (num < 0) ? 0 : num;
 	    return 1;
 
@@ -1765,7 +1513,6 @@ int do_number_keyword (keyword, num)
 	if (Scr->FirstTime)
 	{
 		Scr->VirtualDesktopPanDistanceX = (num * Scr->MyDisplayWidth) / 100;
-		/* added this - djhjr - 1/4/98 */
 		if (Scr->VirtualDesktopPanDistanceX <= 0) Scr->VirtualDesktopPanDistanceX = 1;
 	}
 	return 1;
@@ -1774,19 +1521,17 @@ int do_number_keyword (keyword, num)
 	if (Scr->FirstTime)
 	{
 		Scr->VirtualDesktopPanDistanceY = (num * Scr->MyDisplayHeight) / 100;
-		/* added this - djhjr - 1/4/98 */
 		if (Scr->VirtualDesktopPanDistanceY <= 0) Scr->VirtualDesktopPanDistanceY = 1;
 	}
- 	return 1;
+	return 1;
 
-	/* djhjr - 9/8/98 */
 	case kwn_PanResistance:
 		if (Scr->FirstTime) Scr->VirtualDesktopPanResistance = num;
 		if (Scr->VirtualDesktopPanResistance < 0)
 			Scr->VirtualDesktopPanResistance = 0;
 		return 1;
 
-	case kwn_RaiseDelay: RaiseDelay = num; return 1;/*RAISEDELAY*/
+	case kwn_RaiseDelay: RaiseDelay = num; return 1;
 
       case kwn_AutoPan:
 	if (Scr->FirstTime)
@@ -1798,18 +1543,10 @@ int do_number_keyword (keyword, num)
 	}
 	return 1;
 
-	case kwn_AutoPanWarpWithRespectToRealScreen: /* DSE */
+	case kwn_AutoPanWarpWithRespectToRealScreen:
 		Scr->AutoPanWarpWithRespectToRealScreen = (num<0)?0:(num>100)?100:num;
 		return 1;
 
-/* djhjr - 8/11/98
-	* djhjr - 4/18/96 *
-	case kwn_ThreeDBorderWidth:
-		if (Scr->FirstTime) Scr->ThreeDBorderWidth = num;
-		return 1;
-*/
-
-	/* djhjr - 4/19/96 */
 	case kwn_ClearBevelContrast:
 		if (Scr->FirstTime) Scr->ClearBevelContrast = num;
 		if (Scr->ClearBevelContrast <   0) Scr->ClearBevelContrast =   0;
@@ -1821,7 +1558,6 @@ int do_number_keyword (keyword, num)
 		if (Scr->DarkBevelContrast > 100) Scr->DarkBevelContrast = 100;
 		return 1;
 
-	/* djhjr - 5/2/98 */
 	case kwn_BorderBevelWidth:
 		if (Scr->FirstTime) Scr->BorderBevelWidth = num;
 		if (Scr->BorderBevelWidth < 0) Scr->BorderBevelWidth = 0;
@@ -1848,7 +1584,6 @@ int do_number_keyword (keyword, num)
 		if (Scr->TitleBevelWidth > 9) Scr->TitleBevelWidth = 9;
 		return 1;
 
-	/* djhjr - 8/11/98 */
 	case kwn_ButtonBevelWidth:
 		if (Scr->FirstTime) Scr->ButtonBevelWidth = num;
 		if (Scr->ButtonBevelWidth < 0) Scr->ButtonBevelWidth = 0;
@@ -1860,7 +1595,6 @@ int do_number_keyword (keyword, num)
 		if (Scr->IconBevelWidth > 9) Scr->IconBevelWidth = 9;
 		return 1;
 
-	/* djhjr - 2/7/99 */
 	case kwn_DoorBevelWidth:
 		if (Scr->FirstTime) Scr->DoorBevelWidth = num;
 		if (Scr->DoorBevelWidth < 0) Scr->DoorBevelWidth = 0;
@@ -1872,7 +1606,6 @@ int do_number_keyword (keyword, num)
 		if (Scr->VirtualDesktopBevelWidth > 9) Scr->VirtualDesktopBevelWidth = 9;
 		return 1;
 
-	/* djhjr - 5/22/00 */
 	case kwn_MenuScrollBorderWidth:
 		if (Scr->FirstTime) Scr->MenuScrollBorderWidth = num;
 		return 1;
@@ -1880,14 +1613,12 @@ int do_number_keyword (keyword, num)
 		if (Scr->FirstTime) Scr->MenuScrollJump = num;
 		return 1;
 
-/* djhjr - 8/16/01 */
 #ifndef NO_SOUND_SUPPORT
 	case kwn_SoundVolume:
 		if (Scr->FirstTime) SetSoundVolume(num);
 		return 1;
 #endif
 
-	/* djhjr - 6/22/01 */
 	case kwn_PauseOnExit:
 		if (Scr->FirstTime) Scr->PauseOnExit = num;
 		return 1;
@@ -2016,20 +1747,20 @@ int do_color_keyword (keyword, colormode, s)
 	GetColor (colormode, &Scr->MenuShadowColor, s);
 	return 1;
 
-      case kwc_VirtualBackground:/*RFB VCOLOR*/
-	GetColor (colormode, &Scr->VirtualC.back, s);/*RFB VCOLOR*/
-	return 1;/*RFB VCOLOR*/
+      case kwc_VirtualBackground:
+	GetColor (colormode, &Scr->VirtualC.back, s);
+	return 1;
 
-      case kwc_VirtualForeground:/*RFB VCOLOR*/
-	GetColor (colormode, &Scr->VirtualC.fore, s);/*RFB VCOLOR*/
-	return 1;/*RFB VCOLOR*/
+      case kwc_VirtualForeground:
+	GetColor (colormode, &Scr->VirtualC.fore, s);
+	return 1;
 
       case kwc_RealScreenForeground:
-	GetColor( colormode, &Scr->RealScreenC.fore, s);/*RFB 4/92 */
+	GetColor( colormode, &Scr->RealScreenC.fore, s);
 	return 1;
 
       case kwc_RealScreenBackground:
-	GetColor( colormode, &Scr->RealScreenC.back, s);/*RFB 4/92 */
+	GetColor( colormode, &Scr->RealScreenC.back, s);
 	return 1;
 
     }
@@ -2051,7 +1782,6 @@ void put_pixel_on_root(pixel)
 
   pixelAtom = XInternAtom(dpy, "_MIT_PRIORITY_COLORS", True);
 
-  /* added tests for success - djhjr - 1/10/98 */
   if (XGetWindowProperty(dpy, Scr->Root, pixelAtom, 0, 8192,
 		     False, XA_CARDINAL, &retAtom,
 		     &retFormat, &nPixels, &retAfter,
@@ -2153,7 +1883,6 @@ void assign_var_savecolor()
   }
 }
 
-/* added 'type' argument - djhjr - 10/20/01 */
 void do_squeeze_entry (list, name, type, justify, num, denom)
     name_list **list;			/* squeeze or dont-squeeze list */
     char *name;				/* window name */
@@ -2200,20 +1929,15 @@ void do_squeeze_entry (list, name, type, justify, num, denom)
 	sinfo->justify = justify;
 	sinfo->num = absnum;
 	sinfo->denom = absdenom;
-	/* added 'type' argument - djhjr - 10/20/01 */
 	AddToList (list, name, type, (char *)sinfo);
     }
 }
 
-/* Submitted by Jason Gloudon */
-/* added support for user-defined parameters - djhjr - 2/20/99 */
-/* added support for sound - djhjr - 6/22/01 */
-/* added support for regex - djhjr - 10/20/01 */
 #ifndef NO_M4_SUPPORT
 char *make_m4_cmdline(display_name, cp, m4_option)
 char *display_name;
 char *cp;
-char *m4_option; /* djhjr - 2/20/99 */
+char *m4_option;
 {
   char *m4_lines[6] = {
       "m4 -DHOME='%s' -DWIDTH='%d' -DHEIGHT='%d' -DSOUND='%s' ",
@@ -2229,7 +1953,6 @@ char *m4_option; /* djhjr - 2/20/99 */
   int i, client_len, opt_len = 0, cmd_len = 0, server_is_client = 0;
   struct hostent *hostname_ent;
 
-  /* djhjr - 2/20/99 */
   if (m4_option)
   {
     opt_len = strlen(m4_option);
@@ -2239,19 +1962,18 @@ char *m4_option; /* djhjr - 2/20/99 */
     {
       if (m4_option[opt_len - 1] != '\'' && m4_option[opt_len - 1] != '"')
       {
-        fprintf(stderr,"%s: badly formed user-defined m4 parameter\n", ProgramName);
-        return (NULL);
+	fprintf(stderr,"%s: badly formed user-defined m4 parameter\n", ProgramName);
+	return (NULL);
       }
       else
       {
-        m4_option++;
-        opt_len -= 2;
+	m4_option++;
+	opt_len -= 2;
       }
     }
   }
 
   /* the sourcing of various hostnames is stolen from tvtwm */
-  /* pad for NULL terminator - submitted by Jonathan Paisley - 11/11/02 */
   for(client = NULL, client_len = 256; client_len < 1024; client_len *= 2){
     if((client = malloc(client_len + 1)) == NULL){
       fprintf(stderr,"%s: cannot allocate %d bytes for m4\n", ProgramName, client_len + 1);
@@ -2361,7 +2083,7 @@ char *m4_option; /* djhjr - 2/20/99 */
   sprintf(m4_cmdline + cmd_len, m4_lines[1], Scr->d_depth,
       Scr->d_visual->bits_per_rgb, vc, is_xpm);
   cmd_len = strlen(m4_cmdline);
-  sprintf(m4_cmdline + cmd_len, m4_lines[2], is_color, 
+  sprintf(m4_cmdline + cmd_len, m4_lines[2], is_color,
 	  Resolution(Scr->MyDisplayWidth, DisplayWidthMM(dpy, Scr->screen)),
 	  Resolution(Scr->MyDisplayHeight, DisplayHeightMM(dpy, Scr->screen)));
   cmd_len = strlen(m4_cmdline);
@@ -2373,7 +2095,6 @@ char *m4_option; /* djhjr - 2/20/99 */
   sprintf(m4_cmdline + cmd_len, m4_lines[5], ProtocolRevision(dpy),
       ServerVendor(dpy), VendorRelease(dpy));
 
-  /* djhjr - 2/20/99 */
   cmd_len = strlen(m4_cmdline);
   if (opt_len)
   {
@@ -2392,4 +2113,3 @@ char *m4_option; /* djhjr - 2/20/99 */
   return (m4_cmdline);
 }
 #endif /* NO_M4_SUPPORT */
-

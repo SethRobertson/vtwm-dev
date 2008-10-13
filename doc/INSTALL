@@ -1,8 +1,10 @@
 
-BUILDING VTWM 5.4
+BUILDING VTWM 5.5
 =================
 
   - Unpack the distribution. You've likely done that already, no?
+
+  - Consider running `./configure && make` or alternately:
 
   - Determine if you have the XPM library installed:
       - The library is usually found in /usr/X11R6/lib, /usr/local/lib,
@@ -51,7 +53,7 @@ BUILDING VTWM 5.4
     'sh contrib/support/sysrc_add_apps.sh -h' for a brief help message.
 
 
-INSTALLING VTWM 5.4
+INSTALLING VTWM 5.5
 ===================
 
 1) Installation.
@@ -122,17 +124,9 @@ BUILD HINTS
     with sound support and you don't have the rplay library available.
     Read the comments in Imakefile and/or Makefile.QNX.
 
-  - If, during the build, you get complaints of an unknown data type
-    "Pixel", add "EXTRA_DEFINES=-DNEED_PIXEL_T" to the make command.
-
   - If you expected HTML or Postscript man pages on build completion,
     or VTWM doesn't fall back on system resource files on startup, read
     the comments in Imakefile and/or Makefile.QNX.
-
-  - VNC users: If you regularly use a remote X desktop, you may want to
-    add "EXTRA_DEFINES=-DORIGINAL_DRAWIT" to the make command. It seems
-    that VTWM's diagonal resize/move lines are more expensive than TWM's
-    horizontal and vertical lines. YMMV.
 
   - Windows users: VTWM is known to build and run under Cygwin with DLL
     version 1.3.2. The Makefile may need a line "vtwm: vtwm.exe" added
