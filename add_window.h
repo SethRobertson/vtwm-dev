@@ -25,7 +25,6 @@
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
 
-
 /**********************************************************************
  *
  * $XConsortium: add_window.h,v 1.7 90/04/17 14:04:33 jim Exp $
@@ -42,10 +41,9 @@
 extern char NoName[];
 
 
-extern int AddingX;	
+extern int AddingX;
 extern int AddingY;
 extern int AddingW;
 extern int AddingH;
 
 #endif /* _ADD_WINDOW_ */
-

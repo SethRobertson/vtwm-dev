@@ -19,6 +19,10 @@ IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 
 	    * Remove SCM via comments and #ifdefs
 
+	    * Convert C code to ISO/ANSI prototypes
+
+	    * Pass through indent for sanity's sake
+
          Colum Paget <colum@hovel2.demon.co.uk> submitted patches to:
 	    * Add PNG Icon support
 

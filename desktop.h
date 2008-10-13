@@ -1,3 +1,4 @@
+
 /*
  * $Id: desktop.h,v 3.0 90/11/20 16:13:13 dme Exp Locker: dme $
  *
@@ -17,7 +18,7 @@
  * implied warranty.
  */
 
-extern Window moving_window; /* indicates that we are doing a move in the vd display */
+extern Window moving_window;	/* indicates that we are doing a move in the vd display */
 
 
 /* convert real space to virtual space */
@@ -29,12 +30,12 @@ extern Window moving_window; /* indicates that we are doing a move in the vd dis
 #define V_TO_R_Y(y) (-(Scr->VirtualDesktopY - (y)))
 
 /* scale up and down from desktop display to real sizes */
+
 /* don't pass me something like `x++' - please */
 #define SCALE_D(x) ((((x)/Scr->VirtualDesktopDScale) < 1) ? 1 : (x)/Scr->VirtualDesktopDScale)
 #define SCALE_U(x) ((x)*Scr->VirtualDesktopDScale)
 
 /* how wide/high the autopan windows are */
-#define AP_SIZE (Scr->AutoPanBorderWidth) /* DSE */
+#define AP_SIZE (Scr->AutoPanBorderWidth)	/* DSE */
 
 #define VTWM_DESKTOP_CLASS "VTWM Desktop"
-

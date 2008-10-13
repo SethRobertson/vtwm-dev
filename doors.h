@@ -1,3 +1,4 @@
+
 /*
  * $Id: doors.h,v 3.0 90/11/20 16:13:19 dme Exp Locker: dme $
  *
@@ -28,22 +29,23 @@
 /*
  * the door structure
  */
-typedef struct TwmDoor {
-	struct TwmDoor *next; /* next in the linked list */
-	struct TwmDoor *prev; /* prev in the linked list */
+typedef struct TwmDoor
+{
+  struct TwmDoor *next;		/* next in the linked list */
+  struct TwmDoor *prev;		/* prev in the linked list */
 
-	char *name;           /* name of this door */
-	int x, y;             /* position */
-	int width, height;    /* size */
-	
-	int goto_x, goto_y;   /* destination */
+  char *name;			/* name of this door */
+  int x, y;			/* position */
+  int width, height;		/* size */
 
-	XClassHint *class;     /* name and class of this door */
+  int goto_x, goto_y;		/* destination */
 
-	ColorPair colors;     /* fore and back */
+  XClassHint *class;		/* name and class of this door */
 
-	MyWindow w;           /* the x window for this */
-	TwmWindow *twin;      /* the twmwindow for this */
+  ColorPair colors;		/* fore and back */
+
+  MyWindow w;			/* the x window for this */
+  TwmWindow *twin;		/* the twmwindow for this */
 } TwmDoor;
 
 

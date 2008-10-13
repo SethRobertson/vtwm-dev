@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2001, 2002 David J. Hawkey Jr.
  *
@@ -51,4 +52,4 @@ extern void SetSoundVolume(int volume);
 extern int ToggleSounds(void);
 extern void PlaySoundDone(void);
 
-#endif	/* _SOUND_ */
+#endif /* _SOUND_ */

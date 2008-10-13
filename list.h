@@ -25,7 +25,6 @@
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
 
-
 /**********************************************************************
  *
  * $XConsortium: list.h,v 1.12 90/09/14 14:54:42 converse Exp $
@@ -39,17 +38,17 @@
 #ifndef _LIST_
 #define _LIST_
 
-#define LTYPE_NAME	(1<<0)		/* match against window name */
-#define LTYPE_RES_NAME	(1<<1)		/* match against resource name */
-#define LTYPE_RES_CLASS	(1<<2)		/* match against resource class */
-#define LTYPE_PROPERTY	(1<<3)		/* match against a window property */
-#define LTYPE_HOST	(1<<4)		/* match against a host name */
+#define LTYPE_NAME	(1<<0)	/* match against window name */
+#define LTYPE_RES_NAME	(1<<1)	/* match against resource name */
+#define LTYPE_RES_CLASS	(1<<2)	/* match against resource class */
+#define LTYPE_PROPERTY	(1<<3)	/* match against a window property */
+#define LTYPE_HOST	(1<<4)	/* match against a host name */
 
-#define LTYPE_REGEXP	(1<<8)		/* match as a regular expression */
-#define LTYPE_C_REGEXP	(1<<9)		/* match as a compiled regexp */
-#define LTYPE_STRING	(1<<10)		/* match as an exact string */
-#define LTYPE_ANYTHING	(1<<11)		/* match anything */
-#define LTYPE_NOTHING	(1<<12)		/* match nothing */
+#define LTYPE_REGEXP	(1<<8)	/* match as a regular expression */
+#define LTYPE_C_REGEXP	(1<<9)	/* match as a compiled regexp */
+#define LTYPE_STRING	(1<<10)	/* match as an exact string */
+#define LTYPE_ANYTHING	(1<<11)	/* match anything */
+#define LTYPE_NOTHING	(1<<12)	/* match nothing */
 
 #define LTYPE_ANY_STRING	(LTYPE_NAME | LTYPE_RES_NAME | \
 				 LTYPE_RES_CLASS | LTYPE_STRING)
@@ -61,4 +60,3 @@ typedef struct name_list_struct name_list;
 
 
 #endif /* _LIST_ */
-

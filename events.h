@@ -25,7 +25,6 @@
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
 
-
 /***********************************************************************
  *
  * $XConsortium: events.h,v 1.14 91/05/10 17:53:58 dave Exp $
@@ -39,7 +38,7 @@
 #ifndef _EVENTS_
 #define _EVENTS_
 
-typedef void (*event_proc)(void);
+typedef void (*event_proc) (void);
 
 #define LastTimestamp() lastTimestamp
 

@@ -25,7 +25,6 @@
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
 
-
 /**********************************************************************
  *
  * $XConsortium: parse.h,v 1.14 89/12/14 14:51:25 jim Exp $
@@ -105,17 +104,17 @@
 #define F_NEWDOOR		57
 #define F_SNUGDESKTOP		58
 #define F_SNUGWINDOW		59
-#define F_AUTOPAN		60/*RFB F_AUTOPAN*/
-#define F_RING			61/*RFB F_RING*/
-#define F_SQUEEZELEFT		62/*RFB F_SQUEEZE*/
-#define F_SQUEEZERIGHT		63/*RFB F_SQUEEZE*/
-#define F_SQUEEZECENTER		64/*RFB F_SQUEEZE*/
-#define F_SNAPREALSCREEN	65/*RFB F_SNAPREALSCREEN*/
-#define F_VIRTUALGEOMETRIES	66/*marcel@duteca.et.tudelft.nl*/
-#define F_DELETEDOOR		67/*marcel@duteca.et.tudelft.nl*/
-#define F_ZOOMZOOM		68 /* RFB silly */
-#define F_WARP			69 /* PF */
-#define F_STICKYABOVE		70 /* DSE */
+#define F_AUTOPAN		60	/*RFB F_AUTOPAN */
+#define F_RING			61	/*RFB F_RING */
+#define F_SQUEEZELEFT		62	/*RFB F_SQUEEZE */
+#define F_SQUEEZERIGHT		63	/*RFB F_SQUEEZE */
+#define F_SQUEEZECENTER		64	/*RFB F_SQUEEZE */
+#define F_SNAPREALSCREEN	65	/*RFB F_SNAPREALSCREEN */
+#define F_VIRTUALGEOMETRIES	66	/*marcel@duteca.et.tudelft.nl */
+#define F_DELETEDOOR		67	/*marcel@duteca.et.tudelft.nl */
+#define F_ZOOMZOOM		68	/* RFB silly */
+#define F_WARP			69	/* PF */
+#define F_STICKYABOVE		70	/* DSE */
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */
@@ -127,9 +126,9 @@
 #define F_FUNCTION		108	/* string */
 #define F_WARPTOSCREEN		109	/* string */
 #define F_COLORMAP		110	/* string */
-#define F_SETREALSCREEN		111     /* string */
+#define F_SETREALSCREEN		111	/* string */
 #define F_WARPCLASSNEXT		112	/* string -- PF */
-#define F_WARPCLASSPREV		113 /* string -- PF */
+#define F_WARPCLASSPREV		113	/* string -- PF */
 #define F_WARPTONEWEST		114	/* string -- PF */
 
 #define F_SEPARATOR		115

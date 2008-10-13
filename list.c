@@ -63,16 +63,16 @@
 
 struct name_list_struct
 {
-    name_list *next;		/* pointer to the next name */
-    char *name;			/* the name of the window */
+  name_list *next;		/* pointer to the next name */
+  char *name;			/* the name of the window */
 #ifndef NO_REGEX_SUPPORT
-    regex_t re;			/* compile only once */
+  regex_t re;			/* compile only once */
 #else
-    char re;			/* not used */
+  char re;			/* not used */
 #endif
-    short type;			/* what type of match */
-    Atom property;		/* if (type == property) */
-    char *ptr;			/* list dependent data */
+  short type;			/* what type of match */
+  Atom property;		/* if (type == property) */
+  char *ptr;			/* list dependent data */
 };
 
 #ifndef NO_REGEX_SUPPORT
@@ -88,32 +88,32 @@ static int match(char *p, char *t);
  ***********************************************************************/
 
 name_list *
-next_entry (name_list *list)
+next_entry(name_list * list)
 {
-    return (list->next);
+  return (list->next);
 }
 
 char *
-contents_of_entry (name_list *list)
+contents_of_entry(name_list * list)
 {
-    return (list->ptr);
+  return (list->ptr);
 }
 
 /**********************************************************************/
 
 #ifdef DEBUG
-static void 
-printNameList (char *name, name_list *nptr)
+static void
+printNameList(char *name, name_list * nptr)
 {
-    printf("printNameList(): %s=[", name);
+  printf("printNameList(): %s=[", name);
 
-    while (nptr)
-    {
-	printf(" '%s':%d", nptr->name, nptr->type);
-	nptr = nptr->next;
-    }
+  while (nptr)
+  {
+    printf(" '%s':%d", nptr->name, nptr->type);
+    nptr = nptr->next;
+  }
 
-    printf(" ]\n");
+  printf(" ]\n");
 }
 #endif
 
@@ -138,38 +138,38 @@ printNameList (char *name, name_list *nptr)
  ***********************************************************************
  */
 
-void 
-AddToList (name_list **list_head, char *name, int type, char *ptr)
+void
+AddToList(name_list ** list_head, char *name, int type, char *ptr)
 {
-    Atom property = None;
-    name_list *nptr;
+  Atom property = None;
+  name_list *nptr;
 
-    if (!list_head) return;	/* ignore empty inserts */
+  if (!list_head)
+    return;			/* ignore empty inserts */
 
-    nptr = (name_list *)malloc(sizeof(name_list));
-    if (nptr == NULL)
-    {
-	fprintf (stderr, "%s: unable to allocate %lu bytes for name_list\n",
-		 ProgramName, sizeof(name_list));
-	Done(0);
-    }
+  nptr = (name_list *) malloc(sizeof(name_list));
+  if (nptr == NULL)
+  {
+    fprintf(stderr, "%s: unable to allocate %lu bytes for name_list\n", ProgramName, sizeof(name_list));
+    Done(0);
+  }
 
-    nptr->next = *list_head;
+  nptr->next = *list_head;
 
-    nptr->name = strdup(name);
-    if (type & LTYPE_HOST)
-    {
-	nptr->type = (type & ~LTYPE_HOST) | LTYPE_PROPERTY;
-	nptr->property = XA_WM_CLIENT_MACHINE;
-    }
-    else
-    {
-	nptr->type = type;
-	nptr->property = property;
-    }
-    nptr->ptr = (ptr == NULL) ? (char *)TRUE : ptr;
+  nptr->name = strdup(name);
+  if (type & LTYPE_HOST)
+  {
+    nptr->type = (type & ~LTYPE_HOST) | LTYPE_PROPERTY;
+    nptr->property = XA_WM_CLIENT_MACHINE;
+  }
+  else
+  {
+    nptr->type = type;
+    nptr->property = property;
+  }
+  nptr->ptr = (ptr == NULL) ? (char *)TRUE : ptr;
 
-    *list_head = nptr;
+  *list_head = nptr;
 }
 
  /********************************************************************\
@@ -191,163 +191,153 @@ AddToList (name_list **list_head, char *name, int type, char *ptr)
  \********************************************************************/
 
 int
-MatchName(
-	  char *name,
-	  char *pattern,
+MatchName(char *name, char *pattern,
 #ifndef NO_REGEX_SUPPORT
-	  regex_t *compiled,
+	  regex_t * compiled,
 #else
 	  char *compiled,
 #endif
 	  short type)
 {
 #ifdef DEBUG
-    fprintf(stderr, "MatchName(): compare '%s' with '%s'\n", name, pattern);
+  fprintf(stderr, "MatchName(): compare '%s' with '%s'\n", name, pattern);
 #endif
 
-    if (type & LTYPE_ANYTHING)
-	return (0);
+  if (type & LTYPE_ANYTHING)
+    return (0);
 
-    if (type & LTYPE_REGEXP)
-    {
+  if (type & LTYPE_REGEXP)
+  {
 #ifndef NO_REGEX_SUPPORT
-	regex_t re;
-	int result;
+    regex_t re;
+    int result;
 
-	if ((result = regcomp(&re, pattern, REGCOMP_FLAGS)) != 0)
-	{
-	    regerror(result, &re, buffer, sizeof(buffer));
-	    regfree(&re);
+    if ((result = regcomp(&re, pattern, REGCOMP_FLAGS)) != 0)
+    {
+      regerror(result, &re, buffer, sizeof(buffer));
+      regfree(&re);
 
-	    fprintf(stderr, "%s: (1) regcomp(\"%s\") error: %s\n",
-			ProgramName, pattern, buffer);
-	    return (result);
-	}
-
-	result = regexec(&re, name, 0, NULL, 0);
-	regfree(&re);
-
-	return (result);
-#else
-	fprintf(stderr, "%s: (1) no support for regcomp(\"%s\")\n",
-			ProgramName, pattern);
-	return (1);
-#endif
+      fprintf(stderr, "%s: (1) regcomp(\"%s\") error: %s\n", ProgramName, pattern, buffer);
+      return (result);
     }
 
-    if (type & LTYPE_C_REGEXP)
-    {
-#ifndef NO_REGEX_SUPPORT
-	return (regexec(compiled, name, 0, NULL, 0));
+    result = regexec(&re, name, 0, NULL, 0);
+    regfree(&re);
+
+    return (result);
 #else
-	fprintf(stderr, "%s: no support for regexec(\"%s\")\n",
-		ProgramName, name);
-	return (1);
-#endif
-    }
-
-    if (type & LTYPE_STRING)
-	return (match(pattern, name));
-
-    fprintf(stderr, "%s: bad list type (%d) comparing \"%s\" with \"%s\"\n",
-		ProgramName, type, name, pattern);
+    fprintf(stderr, "%s: (1) no support for regcomp(\"%s\")\n", ProgramName, pattern);
     return (1);
+#endif
+  }
+
+  if (type & LTYPE_C_REGEXP)
+  {
+#ifndef NO_REGEX_SUPPORT
+    return (regexec(compiled, name, 0, NULL, 0));
+#else
+    fprintf(stderr, "%s: no support for regexec(\"%s\")\n", ProgramName, name);
+    return (1);
+#endif
+  }
+
+  if (type & LTYPE_STRING)
+    return (match(pattern, name));
+
+  fprintf(stderr, "%s: bad list type (%d) comparing \"%s\" with \"%s\"\n", ProgramName, type, name, pattern);
+  return (1);
 }
 
 static char *
-MultiLookInList (name_list *list_head, char *name, XClassHint *class, name_list **continuation)
+MultiLookInList(name_list * list_head, char *name, XClassHint * class, name_list ** continuation)
 {
-    name_list *nptr;
+  name_list *nptr;
 
 #ifdef DEBUG
-    fprintf(stderr, "MultiLookInList(): looking for '%s'\n", name);
+  fprintf(stderr, "MultiLookInList(): looking for '%s'\n", name);
 #endif
 
-    for (nptr = list_head ; nptr ; nptr = nptr->next)
+  for (nptr = list_head; nptr; nptr = nptr->next)
+  {
+    /* pre-compile and cache the regex_t */
+    if (nptr->type & LTYPE_REGEXP)
     {
-	/* pre-compile and cache the regex_t */
-	if (nptr->type & LTYPE_REGEXP)
-	{
 #ifndef NO_REGEX_SUPPORT
-	    int result;
+      int result;
 
-	    if ((result = regcomp(&nptr->re, nptr->name, REGCOMP_FLAGS)) != 0)
-	    {
-		regerror(result, &nptr->re, buffer, sizeof(buffer));
-		regfree(&nptr->re);
+      if ((result = regcomp(&nptr->re, nptr->name, REGCOMP_FLAGS)) != 0)
+      {
+	regerror(result, &nptr->re, buffer, sizeof(buffer));
+	regfree(&nptr->re);
 
-		fprintf(stderr, "%s: (2) regcomp(\"%s\") error: %s\n",
-				ProgramName, nptr->name, buffer);
+	fprintf(stderr, "%s: (2) regcomp(\"%s\") error: %s\n", ProgramName, nptr->name, buffer);
 
-		nptr->type |= LTYPE_NOTHING;
-	    }
-	    else
-		nptr->type |= LTYPE_C_REGEXP;
+	nptr->type |= LTYPE_NOTHING;
+      }
+      else
+	nptr->type |= LTYPE_C_REGEXP;
 #else
-	    fprintf(stderr, "%s: (2) no support for regcomp(\"%s\")\n",
-			ProgramName, nptr->name);
+      fprintf(stderr, "%s: (2) no support for regcomp(\"%s\")\n", ProgramName, nptr->name);
 
-	    nptr->type |= LTYPE_NOTHING;
+      nptr->type |= LTYPE_NOTHING;
 #endif
 
-	    nptr->type &= ~LTYPE_REGEXP;
-	}
-
-	if (nptr->type & LTYPE_NOTHING)
-	    continue;				/* skip illegal entry */
-
-	if (nptr->type & LTYPE_ANYTHING)
-	{
-	    *continuation = nptr->next;
-	    return (nptr->ptr);
-	}
-
-	if (nptr->type & LTYPE_NAME)
-	    if (MatchName(name, nptr->name, &nptr->re, nptr->type) == 0)
-	    {
-		*continuation = nptr->next;
-		return (nptr->ptr);
-	    }
-
-	if (class)
-	{
-	    if (nptr->type & LTYPE_RES_NAME)
-		if (MatchName(class->res_name, nptr->name, &nptr->re,
-				nptr->type) == 0)
-		{
-		    *continuation = nptr->next;
-		    return (nptr->ptr);
-		}
-
-	    if (nptr->type & LTYPE_RES_CLASS)
-		if (MatchName(class->res_class, nptr->name, &nptr->re,
-				nptr->type) == 0)
-		{
-		    *continuation = nptr->next;
-		    return (nptr->ptr);
-		}
-	}
-
+      nptr->type &= ~LTYPE_REGEXP;
     }
 
-    *continuation = NULL;
-    return (NULL);
+    if (nptr->type & LTYPE_NOTHING)
+      continue;			/* skip illegal entry */
+
+    if (nptr->type & LTYPE_ANYTHING)
+    {
+      *continuation = nptr->next;
+      return (nptr->ptr);
+    }
+
+    if (nptr->type & LTYPE_NAME)
+      if (MatchName(name, nptr->name, &nptr->re, nptr->type) == 0)
+      {
+	*continuation = nptr->next;
+	return (nptr->ptr);
+      }
+
+    if (class)
+    {
+      if (nptr->type & LTYPE_RES_NAME)
+	if (MatchName(class->res_name, nptr->name, &nptr->re, nptr->type) == 0)
+	{
+	  *continuation = nptr->next;
+	  return (nptr->ptr);
+	}
+
+      if (nptr->type & LTYPE_RES_CLASS)
+	if (MatchName(class->res_class, nptr->name, &nptr->re, nptr->type) == 0)
+	{
+	  *continuation = nptr->next;
+	  return (nptr->ptr);
+	}
+    }
+
+  }
+
+  *continuation = NULL;
+  return (NULL);
 }
 
 char *
-LookInList (name_list *list_head, char *name, XClassHint *class)
+LookInList(name_list * list_head, char *name, XClassHint * class)
 {
-    name_list *rest;
-    char *return_name = MultiLookInList(list_head, name, class, &rest);
+  name_list *rest;
+  char *return_name = MultiLookInList(list_head, name, class, &rest);
 
-    return (return_name);
+  return (return_name);
 }
 
 
 char *
-LookInNameList (name_list *list_head, char *name)
+LookInNameList(name_list * list_head, char *name)
 {
-    return (MultiLookInList(list_head, name, NULL, &list_head));
+  return (MultiLookInList(list_head, name, NULL, &list_head));
 }
 
 /***********************************************************************
@@ -370,23 +360,23 @@ LookInNameList (name_list *list_head, char *name)
  ***********************************************************************
  */
 
-int 
-GetColorFromList (name_list *list_head, char *name, XClassHint *class, Pixel *ptr)
+int
+GetColorFromList(name_list * list_head, char *name, XClassHint * class, Pixel * ptr)
 {
-    int save;
-    char *val = LookInList(list_head, name, class);
+  int save;
+  char *val = LookInList(list_head, name, class);
 
-    if (val)
-    {
-	save = Scr->FirstTime;
-	Scr->FirstTime = TRUE;
-	GetColor(Scr->Monochrome, ptr, val);
-	Scr->FirstTime = save;
+  if (val)
+  {
+    save = Scr->FirstTime;
+    Scr->FirstTime = TRUE;
+    GetColor(Scr->Monochrome, ptr, val);
+    Scr->FirstTime = save;
 
-	return (TRUE);
-    }
+    return (TRUE);
+  }
 
-    return (FALSE);
+  return (FALSE);
 }
 
 /***********************************************************************
@@ -397,170 +387,181 @@ GetColorFromList (name_list *list_head, char *name, XClassHint *class, Pixel *pt
  ***********************************************************************
  */
 
-void 
-FreeList (name_list **list)
+void
+FreeList(name_list ** list)
 {
-    name_list *nptr;
-    name_list *tmp;
+  name_list *nptr;
+  name_list *tmp;
 
-    for (nptr = *list; nptr != NULL; )
-    {
-	tmp = nptr->next;
+  for (nptr = *list; nptr != NULL;)
+  {
+    tmp = nptr->next;
 
 #ifndef NO_REGEX_SUPPORT
-	if (nptr->type & LTYPE_C_REGEXP)
-	    regfree(&nptr->re);
+    if (nptr->type & LTYPE_C_REGEXP)
+      regfree(&nptr->re);
 #endif
-	free(nptr->name);
-	free((char *) nptr);
+    free(nptr->name);
+    free((char *)nptr);
 
-	nptr = tmp;
-    }
+    nptr = tmp;
+  }
 
-    *list = NULL;
+  *list = NULL;
 }
 
 
 
 #define ABORT 2
 
-static int regex_match (char *p, char *t);
+static int regex_match(char *p, char *t);
 
-static int 
-regex_match_after_star (char *p, char *t)
+static int
+regex_match_after_star(char *p, char *t)
 {
-    register int match;
-    register int nextp;
+  register int match;
+  register int nextp;
 
-    while ((*p == '?') || (*p == '*'))
+  while ((*p == '?') || (*p == '*'))
+  {
+    if (*p == '?')
+      if (!*t++)
+	return (ABORT);
+
+    p++;
+  }
+  if (!*p)
+    return (TRUE);
+
+  nextp = *p;
+  if (nextp == '\\')
+    nextp = p[1];
+
+  match = FALSE;
+  while (match == FALSE)
+  {
+    if (nextp == *t || nextp == '[')
+      match = regex_match(p, t);
+
+    if (!*t++)
+      match = ABORT;
+  }
+
+  return (match);
+}
+
+static int
+regex_match(char *p, char *t)
+{
+  register char range_start, range_end;
+  int invert;
+  int member_match;
+  int loop;
+
+  for (; *p; p++, t++)
+  {
+    if (!*t)
+      return ((*p == '*' && *++p == '\0') ? TRUE : ABORT);
+
+    switch (*p)
     {
-	if (*p == '?')
-	    if (!*t++) return (ABORT);
-
+    case '?':
+      break;
+    case '*':
+      return (regex_match_after_star(p, t));
+    case '[':
+      {
 	p++;
-    }
-    if (!*p) return (TRUE);
-
-    nextp = *p;
-    if (nextp == '\\') nextp = p[1];
-
-    match = FALSE;
-    while (match == FALSE)
-    {
-	if (nextp == *t || nextp == '[')
-	    match = regex_match(p, t);
-
-	if (!*t++) match = ABORT;
-    }
-
-    return (match);
-}
-
-static int 
-regex_match (char *p, char *t)
-{
-    register char range_start, range_end;
-    int invert;
-    int member_match;
-    int loop;
-
-    for (; *p; p++, t++)
-    {
-	if (!*t) return ((*p == '*' && *++p == '\0') ? TRUE : ABORT);
-
-	switch (*p)
+	invert = FALSE;
+	if (*p == '!' || *p == '^')
 	{
-	    case '?':
-		break;
-	    case '*':
-		return (regex_match_after_star(p, t));
-	    case '[':
-	    {
-		p++;
-		invert = FALSE;
-		if (*p == '!' || *p == '^')
-		{
-		    invert = TRUE;
-		    p++;
-		}
-
-		if (*p == ']') return (ABORT);
-
-		member_match = FALSE;
-		loop = TRUE;
-		while (loop)
-		{
-		    if (*p == ']')
-		    {
-			loop = FALSE;
-			continue;
-		    }
-
-		    if (*p == '\\')
-			range_start = range_end = *++p;
-		    else
-			range_start = range_end = *p;
-		    if (!range_start) return (ABORT);
-
-		    if (*++p == '-')
-		    {
-			range_end = *++p;
-			if (range_end == '\0' || range_end == ']')
-			    return (ABORT);
-
-			if (range_end == '\\')
-			    range_end = *++p;
-			p++;
-		    }
-
-		    if (range_start < range_end)
-		    {
-			if (*t >= range_start && *t <= range_end)
-			{
-			    member_match = TRUE;
-			    loop = FALSE;
-			}
-		    }
-		    else
-		    {
-			if (*t >= range_end && *t <= range_start)
-			{
-			    member_match = TRUE;
-			    loop = FALSE;
-			}
-		    }
-		}
-
-		if ((invert && member_match) || !(invert || member_match))
-		    return (FALSE);
-
-		if (member_match)
-		{
-		    while (*p != ']')
-		    {
-			if (!*p) return (ABORT);
-
-			if (*p == '\\') p++;
-			p++;
-		    }
-		}
-		break;
-	    }
-	    case '\\':
-		p++;
-
-	    default:
-		if (*p != *t) return (FALSE);
+	  invert = TRUE;
+	  p++;
 	}
-    }
 
-    return (!*t);
+	if (*p == ']')
+	  return (ABORT);
+
+	member_match = FALSE;
+	loop = TRUE;
+	while (loop)
+	{
+	  if (*p == ']')
+	  {
+	    loop = FALSE;
+	    continue;
+	  }
+
+	  if (*p == '\\')
+	    range_start = range_end = *++p;
+	  else
+	    range_start = range_end = *p;
+	  if (!range_start)
+	    return (ABORT);
+
+	  if (*++p == '-')
+	  {
+	    range_end = *++p;
+	    if (range_end == '\0' || range_end == ']')
+	      return (ABORT);
+
+	    if (range_end == '\\')
+	      range_end = *++p;
+	    p++;
+	  }
+
+	  if (range_start < range_end)
+	  {
+	    if (*t >= range_start && *t <= range_end)
+	    {
+	      member_match = TRUE;
+	      loop = FALSE;
+	    }
+	  }
+	  else
+	  {
+	    if (*t >= range_end && *t <= range_start)
+	    {
+	      member_match = TRUE;
+	      loop = FALSE;
+	    }
+	  }
+	}
+
+	if ((invert && member_match) || !(invert || member_match))
+	  return (FALSE);
+
+	if (member_match)
+	{
+	  while (*p != ']')
+	  {
+	    if (!*p)
+	      return (ABORT);
+
+	    if (*p == '\\')
+	      p++;
+	    p++;
+	  }
+	}
+	break;
+      }
+    case '\\':
+      p++;
+
+    default:
+      if (*p != *t)
+	return (FALSE);
+    }
+  }
+
+  return (!*t);
 }
 
-static int 
-match (char *p, char *t)
+static int
+match(char *p, char *t)
 {
-    if ((p == NULL) || (t == NULL)) return (TRUE);
+  if ((p == NULL) || (t == NULL))
+    return (TRUE);
 
-    return ((regex_match(p, t) == TRUE) ? FALSE : TRUE);
+  return ((regex_match(p, t) == TRUE) ? FALSE : TRUE);
 }

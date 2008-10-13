@@ -1,3 +1,4 @@
+
 /*
  * Copyright 1989 Massachusetts Institute of Technology
  *
@@ -42,33 +43,33 @@
 
 typedef struct RootRegion
 {
-    struct RootRegion	*next;
-    int			x, y, w, h;
-    int			grav1, grav2;
-    int			stepx, stepy;
-    struct RegionEntry	*entries;
+  struct RootRegion *next;
+  int x, y, w, h;
+  int grav1, grav2;
+  int stepx, stepy;
+  struct RegionEntry *entries;
 } RootRegion;
 
 typedef struct RegionEntry
 {
-    struct RegionEntry	*next;
-    int			x, y, w, h;
+  struct RegionEntry *next;
+  int x, y, w, h;
 
-    /* icons use twm_win, applets use both - djhjr - 4/26/99 */
-    union
-    {
-        TwmWindow	*twm_win;
-        char		*name;
-    } u;
+  /* icons use twm_win, applets use both - djhjr - 4/26/99 */
+  union
+  {
+    TwmWindow *twm_win;
+    char *name;
+  } u;
 
 #ifndef NO_REGEX_SUPPORT
-    regex_t		re;
+  regex_t re;
 #else
-    char		re;
+  char re;
 #endif
-    short 		type;
+  short type;
 
-    short 		usedby;
+  short usedby;
 } RegionEntry;
 
 #endif /* REGIONS_H */

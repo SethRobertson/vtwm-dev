@@ -6,14 +6,15 @@
 #define IMAGE_TYPE_PNG 2
 
 
-typedef struct _Image {
-	int type;
-    Pixmap pixmap;
-    Pixmap mask;
-	char *data;
-    int    width;
-    int    height;
-    struct _Image *next;
+typedef struct _Image
+{
+  int type;
+  Pixmap pixmap;
+  Pixmap mask;
+  char *data;
+  int width;
+  int height;
+  struct _Image *next;
 } Image;
 
 

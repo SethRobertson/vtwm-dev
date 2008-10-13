@@ -1,3 +1,4 @@
+
 /*
  * Copyright 1989 Massachusetts Institute of Technology
  *
@@ -40,148 +41,151 @@
 #include "util.h"
 #include "prototypes.h"
 
-extern void splitRegionEntry(RegionEntry *re, int grav1, int grav2, int w, int h);
+extern void splitRegionEntry(RegionEntry * re, int grav1, int grav2, int w, int h);
 extern int roundEntryUp(int v, int multiple);
-extern RegionEntry *prevRegionEntry(RegionEntry *re, RootRegion *rr);
-extern void mergeRegionEntries(RegionEntry *old, RegionEntry *re);
-extern void downRegionEntry(RootRegion *rr, RegionEntry *re);
+extern RegionEntry *prevRegionEntry(RegionEntry * re, RootRegion * rr);
+extern void mergeRegionEntries(RegionEntry * old, RegionEntry * re);
+extern void downRegionEntry(RootRegion * rr, RegionEntry * re);
 extern RootRegion *AddRegion(char *geom, int grav1, int grav2, int stepx, int stepy);
-static int appletWidth (TwmWindow *tmp_win);
-static int appletHeight (TwmWindow *tmp_win);
+static int appletWidth(TwmWindow * tmp_win);
+static int appletHeight(TwmWindow * tmp_win);
 
 
-static int 
-appletWidth (TwmWindow *tmp_win)
+static int
+appletWidth(TwmWindow * tmp_win)
 {
-	if (Scr->NoBorders || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
-		return tmp_win->attr.width;
-	else
-		return Scr->BorderWidth * 2 + tmp_win->attr.width;
+  if (Scr->NoBorders || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
+    return tmp_win->attr.width;
+  else
+    return Scr->BorderWidth * 2 + tmp_win->attr.width;
 }
 
-static int 
-appletHeight (TwmWindow *tmp_win)
+static int
+appletHeight(TwmWindow * tmp_win)
 {
-	if (Scr->NoBorders || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
-		return tmp_win->title_height + tmp_win->attr.height;
-	else
-		return Scr->BorderWidth * 2 + tmp_win->title_height + tmp_win->attr.height;
+  if (Scr->NoBorders || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
+    return tmp_win->title_height + tmp_win->attr.height;
+  else
+    return Scr->BorderWidth * 2 + tmp_win->title_height + tmp_win->attr.height;
 }
 
-int 
-PlaceApplet (TwmWindow *tmp_win, int def_x, int def_y, int *final_x, int *final_y)
+int
+PlaceApplet(TwmWindow * tmp_win, int def_x, int def_y, int *final_x, int *final_y)
 {
-    RootRegion	*rr;
-    RegionEntry	*re;
-    int			matched, w, h;
+  RootRegion *rr;
+  RegionEntry *re;
+  int matched, w, h;
 
-	for (rr = Scr->FirstAppletRegion; rr; rr = rr->next)
-	{
-		matched = 0;
-		w = roundEntryUp (appletWidth (tmp_win), rr->stepx);
-		h = roundEntryUp (appletHeight (tmp_win), rr->stepy);
+  for (rr = Scr->FirstAppletRegion; rr; rr = rr->next)
+  {
+    matched = 0;
+    w = roundEntryUp(appletWidth(tmp_win), rr->stepx);
+    h = roundEntryUp(appletHeight(tmp_win), rr->stepy);
 
-		for (re = rr->entries; re; re = re->next)
-		{
-			if (!matched)
-			{
-				if (MatchName(tmp_win->full_name, re->u.name, &re->re, re->type))
-					if (MatchName(tmp_win->class.res_name, re->u.name, &re->re, re->type))
-						if (MatchName(tmp_win->class.res_class, re->u.name, &re->re, re->type))
-							continue;
+    for (re = rr->entries; re; re = re->next)
+    {
+      if (!matched)
+      {
+	if (MatchName(tmp_win->full_name, re->u.name, &re->re, re->type))
+	  if (MatchName(tmp_win->class.res_name, re->u.name, &re->re, re->type))
+	    if (MatchName(tmp_win->class.res_class, re->u.name, &re->re, re->type))
+	      continue;
 
-				matched = 1;
-			}
+	matched = 1;
+      }
 
-			if (re->usedby) continue;
-			if (re->w < appletWidth(tmp_win) || re->h < appletHeight(tmp_win))
-				continue;
+      if (re->usedby)
+	continue;
+      if (re->w < appletWidth(tmp_win) || re->h < appletHeight(tmp_win))
+	continue;
 
-			splitRegionEntry (re, rr->grav1, rr->grav2, w, h);
-			re->usedby = USEDBY_TWIN;
-			re->u.twm_win = tmp_win;
+      splitRegionEntry(re, rr->grav1, rr->grav2, w, h);
+      re->usedby = USEDBY_TWIN;
+      re->u.twm_win = tmp_win;
 
-			*final_x = re->x;
-			*final_y = re->y;
+      *final_x = re->x;
+      *final_y = re->y;
 
-			if (rr->grav2 == D_EAST)
-				*final_x += re->w - appletWidth(tmp_win);
-			if (rr->grav1 == D_SOUTH)
-				*final_y += re->h - appletHeight(tmp_win);
+      if (rr->grav2 == D_EAST)
+	*final_x += re->w - appletWidth(tmp_win);
+      if (rr->grav1 == D_SOUTH)
+	*final_y += re->h - appletHeight(tmp_win);
 
-			return 1;
-		}
-	}
+      return 1;
+    }
+  }
 
-	*final_x = def_x;
-	*final_y = def_y;
+  *final_x = def_x;
+  *final_y = def_y;
 
-	return 0;
+  return 0;
 }
 
 static RegionEntry *
-FindAppletEntry (TwmWindow *tmp_win, RootRegion **rrp)
+FindAppletEntry(TwmWindow * tmp_win, RootRegion ** rrp)
 {
-    RootRegion	*rr;
-    RegionEntry	*re;
+  RootRegion *rr;
+  RegionEntry *re;
 
-    for (rr = Scr->FirstAppletRegion; rr; rr = rr->next) {
-	for (re = rr->entries; re; re=re->next)
-	    if (re->u.twm_win == tmp_win) {
-		if (rrp)
-		    *rrp = rr;
-		return re;
-	    }
-    }
-    return 0;
+  for (rr = Scr->FirstAppletRegion; rr; rr = rr->next)
+  {
+    for (re = rr->entries; re; re = re->next)
+      if (re->u.twm_win == tmp_win)
+      {
+	if (rrp)
+	  *rrp = rr;
+	return re;
+      }
+  }
+  return 0;
 }
 
-void 
-AppletDown (TwmWindow *tmp_win)
+void
+AppletDown(TwmWindow * tmp_win)
 {
-    RegionEntry	*re;
-    RootRegion	*rr;
+  RegionEntry *re;
+  RootRegion *rr;
 
-    re = FindAppletEntry (tmp_win, &rr);
-    if (re)
-	downRegionEntry(rr, re);
+  re = FindAppletEntry(tmp_win, &rr);
+  if (re)
+    downRegionEntry(rr, re);
 }
 
 RootRegion *
-AddAppletRegion (char *geom, int grav1, int grav2, int stepx, int stepy)
+AddAppletRegion(char *geom, int grav1, int grav2, int stepx, int stepy)
 {
-    RootRegion *rr;
+  RootRegion *rr;
 
-    rr = AddRegion(geom, grav1, grav2, stepx, stepy);
+  rr = AddRegion(geom, grav1, grav2, stepx, stepy);
 
-    if (Scr->LastAppletRegion)
-	Scr->LastAppletRegion->next = rr;
-    Scr->LastAppletRegion = rr;
-    if (!Scr->FirstAppletRegion)
-	Scr->FirstAppletRegion = rr;
+  if (Scr->LastAppletRegion)
+    Scr->LastAppletRegion->next = rr;
+  Scr->LastAppletRegion = rr;
+  if (!Scr->FirstAppletRegion)
+    Scr->FirstAppletRegion = rr;
 
-	return rr;
+  return rr;
 }
 
-void 
-AddToAppletList (RootRegion *list_head, char *name, int type)
+void
+AddToAppletList(RootRegion * list_head, char *name, int type)
 {
-    RegionEntry *nptr;
+  RegionEntry *nptr;
 
-    if (!list_head) return;	/* ignore empty inserts */
+  if (!list_head)
+    return;			/* ignore empty inserts */
 
-    nptr = (RegionEntry *)malloc(sizeof(RegionEntry));
-    if (nptr == NULL)
-    {
-	twmrc_error_prefix();
-	fprintf (stderr, "unable to allocate %lu bytes for RegionEntry\n",
-		 sizeof(RegionEntry));
-	Done(0);
-    }
+  nptr = (RegionEntry *) malloc(sizeof(RegionEntry));
+  if (nptr == NULL)
+  {
+    twmrc_error_prefix();
+    fprintf(stderr, "unable to allocate %lu bytes for RegionEntry\n", sizeof(RegionEntry));
+    Done(0);
+  }
 
-    nptr->next = list_head->entries;
-    nptr->type = type;
-    nptr->usedby = USEDBY_NAME;
-    nptr->u.name = (char*)strdup(name);
-    list_head->entries = nptr;
+  nptr->next = list_head->entries;
+  nptr->type = type;
+  nptr->usedby = USEDBY_NAME;
+  nptr->u.name = (char *)strdup(name);
+  list_head->entries = nptr;
 }

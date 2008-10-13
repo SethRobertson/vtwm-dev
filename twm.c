@@ -25,7 +25,6 @@
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
 
-
 /***********************************************************************
  *
  * $XConsortium: twm.c,v 1.124 91/05/08 11:01:54 dave Exp $
@@ -76,6 +75,7 @@ int NumScreens;			/* number of screens in ScreenList */
 int NumButtons;			/* number of mouse buttons */
 int HasShape;			/* server supports shape extension? */
 int ShapeEventBase, ShapeErrorBase;
+
 #ifdef TWM_USE_XRANDR
 int HasXrandr;			/* server supports XRANDR extension? */
 int XrandrEventBase, XrandrErrorBase;
@@ -87,14 +87,14 @@ int FirstScreen;		/* TRUE ==> first screen of display */
 Bool PrintPID = False;		/* controls PID file - djhjr - 12/2/01 */
 Bool PrintErrorMessages = False;	/* controls error messages */
 static int RedirectError;	/* TRUE ==> another window manager running */
-static int CatchRedirectError(Display *dpy, XErrorEvent *event);	/* for settting RedirectError */
-static int TwmErrorHandler(Display *dpy, XErrorEvent *event);	/* for everything else */
+static int CatchRedirectError(Display * dpy, XErrorEvent * event);	/* for settting RedirectError */
+static int TwmErrorHandler(Display * dpy, XErrorEvent * event);	/* for everything else */
 static void InitVariables(void);
 static void InternUsefulAtoms(void);
 static SIGNAL_T QueueRestartVtwm(int);
 
 
-char Info[INFO_LINES][INFO_SIZE];		/* info strings to print */
+char Info[INFO_LINES][INFO_SIZE];	/* info strings to print */
 int InfoLines;
 
 char *InitFile = NULL;
@@ -161,102 +161,101 @@ int SloppyFocus;		/* TRUE if sloppy focus policy globally on all screens activat
 int
 main(int argc, char **argv, char **environ)
 {
-    Window root, parent, *children;
-    unsigned int nchildren;
-    int i, j;
-    char *def, *display_name = NULL;
-    unsigned long valuemask;	/* mask for create windows */
-    XSetWindowAttributes attributes;	/* attributes for create windows */
-    int numManaged, firstscrn, lastscrn, scrnum;
+  Window root, parent, *children;
+  unsigned int nchildren;
+  int i, j;
+  char *def, *display_name = NULL;
+  unsigned long valuemask;	/* mask for create windows */
+  XSetWindowAttributes attributes;	/* attributes for create windows */
+  int numManaged, firstscrn, lastscrn, scrnum;
+
 #ifndef NO_M4_SUPPORT
-    int m4_preprocess = False;	/* filter the *twmrc file through m4 */
-    char *m4_option = NULL; /* pass these options to m4 - djhjr - 2/20/98 */
+  int m4_preprocess = False;	/* filter the *twmrc file through m4 */
+  char *m4_option = NULL;	/* pass these options to m4 - djhjr - 2/20/98 */
 #endif
 #ifndef NO_SOUND_SUPPORT
-    int sound_state = 0;
+  int sound_state = 0;
 #endif
-    extern char *defTwmrc[];
-    char *loc;
+  extern char *defTwmrc[];
+  char *loc;
 
 #ifdef TWM_USE_XFT
-    int xft_available;
+  int xft_available;
 #endif
 
 #ifdef TWM_USE_XINERAMA
-    short xinerama_available;
+  short xinerama_available;
 #endif
 
 
 #ifdef TWM_USE_SLOPPYFOCUS
-    SloppyFocus = FALSE;
+  SloppyFocus = FALSE;
 #endif
 
-	if ((ProgramName = strrchr(argv[0], '/')))
-		ProgramName++;
+  if ((ProgramName = strrchr(argv[0], '/')))
+    ProgramName++;
+  else
+    ProgramName = argv[0];
+  Argc = argc;
+  Argv = argv;
+  Environ = environ;
+
+  for (i = 1; i < argc; i++)
+  {
+    if (argv[i][0] == '-')
+    {
+      switch (argv[i][1])
+      {
+      case 'd':		/* -display display */
+	if (++i >= argc)
+	  goto usage;
+	display_name = argv[i];
+	continue;
+      case 'f':		/* -file [initfile] */
+	/* this isn't really right, but hey... - djhjr - 10/7/02 */
+	if (i + 1 < argc && (argv[i + 1][0] != '-' || (argv[i + 1][0] == '-' && !strchr("dfmpsv", argv[i + 1][1]))))
+	  InitFile = argv[++i];
 	else
-		ProgramName = argv[0];
-    Argc = argc;
-    Argv = argv;
-    Environ = environ;
-
-    for (i = 1; i < argc; i++) {
-	if (argv[i][0] == '-') {
-	    switch (argv[i][1]) {
-	      case 'd':				/* -display display */
-		if (++i >= argc) goto usage;
-		display_name = argv[i];
-		continue;
-	      case 'f':				/* -file [initfile] */
-		/* this isn't really right, but hey... - djhjr - 10/7/02 */
-		if (i + 1 < argc &&
-				(argv[i + 1][0] != '-' ||
-				(argv[i + 1][0] == '-' && !strchr("dfmpsv", argv[i + 1][1]))))
-			InitFile = argv[++i];
-		else
-			parseInitFile = FALSE;
-		continue;
+	  parseInitFile = FALSE;
+	continue;
 #ifndef NO_M4_SUPPORT
-	      case 'm':				/* -m4 [options] */
-		m4_preprocess = True;
-		/* this isn't really right, but hey... - djhjr - 2/20/98 */
-		if (i + 1 < argc &&
-				(argv[i + 1][0] != '-' ||
-				(argv[i + 1][0] == '-' && !strchr("dfmpsv", argv[i + 1][1]))))
-			m4_option = argv[++i];
-		continue;
+      case 'm':		/* -m4 [options] */
+	m4_preprocess = True;
+	/* this isn't really right, but hey... - djhjr - 2/20/98 */
+	if (i + 1 < argc && (argv[i + 1][0] != '-' || (argv[i + 1][0] == '-' && !strchr("dfmpsv", argv[i + 1][1]))))
+	  m4_option = argv[++i];
+	continue;
 #endif
-	      case 'p':				/* -pidfile - djhjr - 12/2/01 */
-		PrintPID = True;
-		continue;
-	      case 's':				/* -single */
-		MultiScreen = FALSE;
-		continue;
-	      case 'v':				/* -verbose */
-		PrintErrorMessages = True;
-		continue;
-	    }
-	}
-      usage:
-	fprintf (stderr,
-#ifndef NO_M4_SUPPORT
-		 "usage:  %s [-d display] [-f [initfile]] [-m [options]] [-p] [-s] [-v]\n",
-#else
-		 "usage:  %s [-d display] [-f [initfile]] [-p] [-s] [-v]\n",
-#endif
-		 ProgramName);
-	exit (1);
+      case 'p':		/* -pidfile - djhjr - 12/2/01 */
+	PrintPID = True;
+	continue;
+      case 's':		/* -single */
+	MultiScreen = FALSE;
+	continue;
+      case 'v':		/* -verbose */
+	PrintErrorMessages = True;
+	continue;
+      }
     }
+  usage:
+    fprintf(stderr,
+#ifndef NO_M4_SUPPORT
+	    "usage:  %s [-d display] [-f [initfile]] [-m [options]] [-p] [-s] [-v]\n",
+#else
+	    "usage:  %s [-d display] [-f [initfile]] [-p] [-s] [-v]\n",
+#endif
+	    ProgramName);
+    exit(1);
+  }
 
-    loc = setlocale(LC_ALL, "");
-    if (!loc || !strcmp(loc, "C") || !strcmp(loc, "POSIX") ||
-		!XSupportsLocale())
-	use_fontset = False;
-    else
-	use_fontset = True;
+  loc = setlocale(LC_ALL, "");
+  if (!loc || !strcmp(loc, "C") || !strcmp(loc, "POSIX") || !XSupportsLocale())
+    use_fontset = False;
+  else
+    use_fontset = True;
 
-    if (PrintErrorMessages)
-	fprintf(stderr, "%s: L10N %sabled.\n",
-		ProgramName, (use_fontset) ? "en" : "dis");
+  if (PrintErrorMessages)
+    fprintf(stderr, "%s: L10N %sabled.\n", ProgramName, (use_fontset) ? "en" : "dis");
 
 #ifndef NO_SOUND_SUPPORT
 #define sounddonehandler(sig) \
@@ -268,727 +267,740 @@ main(int argc, char **argv, char **environ)
 #define donehandler(sig) \
     if (signal (sig, SIG_IGN) != SIG_IGN) (void) signal (sig, Done)
 
-    sounddonehandler (SIGINT);
-    sounddonehandler (SIGHUP);
-    sounddonehandler (SIGQUIT);
-    sounddonehandler (SIGTERM);
+  sounddonehandler(SIGINT);
+  sounddonehandler(SIGHUP);
+  sounddonehandler(SIGQUIT);
+  sounddonehandler(SIGTERM);
 
-    donehandler (SIGABRT);
-    donehandler (SIGFPE);
-    donehandler (SIGSEGV);
-    donehandler (SIGILL);
-    donehandler (SIGTSTP);
-    donehandler (SIGPIPE);
+  donehandler(SIGABRT);
+  donehandler(SIGFPE);
+  donehandler(SIGSEGV);
+  donehandler(SIGILL);
+  donehandler(SIGTSTP);
+  donehandler(SIGPIPE);
 #undef sounddonehandler
 #undef donehandler
 
-    signal (SIGUSR1, QueueRestartVtwm);
+  signal(SIGUSR1, QueueRestartVtwm);
 
-    Home = getenv("HOME");
-    if (Home == NULL)
-	Home = "./";
+  Home = getenv("HOME");
+  if (Home == NULL)
+    Home = "./";
 
-    HomeLen = strlen(Home);
+  HomeLen = strlen(Home);
 
-    NoClass.res_name = NoName;
-    NoClass.res_class = NoName;
+  NoClass.res_name = NoName;
+  NoClass.res_class = NoName;
 
-    if (!(dpy = XOpenDisplay(display_name))) {
-	fprintf (stderr, "%s:  unable to open display \"%s\"\n",
-		 ProgramName, XDisplayName(display_name));
-	exit (1);
-    }
+  if (!(dpy = XOpenDisplay(display_name)))
+  {
+    fprintf(stderr, "%s:  unable to open display \"%s\"\n", ProgramName, XDisplayName(display_name));
+    exit(1);
+  }
 
-    if (fcntl(ConnectionNumber(dpy), F_SETFD, 1) == -1) {
-	fprintf (stderr,
-		 "%s:  unable to mark display connection as close-on-exec\n",
-		 ProgramName);
-	exit (1);
-    }
+  if (fcntl(ConnectionNumber(dpy), F_SETFD, 1) == -1)
+  {
+    fprintf(stderr, "%s:  unable to mark display connection as close-on-exec\n", ProgramName);
+    exit(1);
+  }
 
 #ifdef TWM_USE_XFT
-    if (FcTrue == XftInit(0) && FcTrue == XftInitFtLibrary()) {
-	xft_available = TRUE;
-	if (PrintErrorMessages) {
-	    i = XftGetVersion();
-	    fprintf (stderr, "%s: Xft subsystem (runtime version %d.%d.%d) initialised.\n",
-			ProgramName, i / 10000, (i / 100) % 100, i % 100);
-	}
-    } else {
-	xft_available = FALSE;
-	if (PrintErrorMessages) {
-	    i = XftVersion;
-	    fprintf (stderr,
-		"%s: FreeType/Xft(%d.%d.%d)/Xrender not available (using X11 core fonts).\n",
-		ProgramName, i / 10000, (i / 100) % 100, i % 100);
-	}
+  if (FcTrue == XftInit(0) && FcTrue == XftInitFtLibrary())
+  {
+    xft_available = TRUE;
+    if (PrintErrorMessages)
+    {
+      i = XftGetVersion();
+      fprintf(stderr, "%s: Xft subsystem (runtime version %d.%d.%d) initialised.\n",
+	      ProgramName, i / 10000, (i / 100) % 100, i % 100);
     }
+  }
+  else
+  {
+    xft_available = FALSE;
+    if (PrintErrorMessages)
+    {
+      i = XftVersion;
+      fprintf(stderr,
+	      "%s: FreeType/Xft(%d.%d.%d)/Xrender not available (using X11 core fonts).\n",
+	      ProgramName, i / 10000, (i / 100) % 100, i % 100);
+    }
+  }
 #endif
 
 #ifdef TWM_USE_XINERAMA
-    xinerama_available = FALSE;
-    if (XineramaQueryExtension(dpy, &JunkX, &JunkY) == True)
-	if (XineramaQueryVersion(dpy, &JunkX, &JunkY))
-	    if (XineramaIsActive(dpy) == True)
-		xinerama_available = TRUE;
-    if (PrintErrorMessages) {
-	if (xinerama_available == TRUE)
-	    fprintf (stderr, "%s: Xinerama extension (version %d.%d) is available.\n",
-			ProgramName, JunkX, JunkY);
-	else
-	    fprintf (stderr, "%s: Xinerama extension is not available.\n",
-			ProgramName);
-    }
+  xinerama_available = FALSE;
+  if (XineramaQueryExtension(dpy, &JunkX, &JunkY) == True)
+    if (XineramaQueryVersion(dpy, &JunkX, &JunkY))
+      if (XineramaIsActive(dpy) == True)
+	xinerama_available = TRUE;
+  if (PrintErrorMessages)
+  {
+    if (xinerama_available == TRUE)
+      fprintf(stderr, "%s: Xinerama extension (version %d.%d) is available.\n", ProgramName, JunkX, JunkY);
+    else
+      fprintf(stderr, "%s: Xinerama extension is not available.\n", ProgramName);
+  }
 #endif
 
 #ifdef TWM_USE_XRANDR
-    HasXrandr = XRRQueryExtension (dpy, &XrandrEventBase, &XrandrErrorBase);
-    if (PrintErrorMessages) {
-	if (HasXrandr == True) {
-	    if (!XRRQueryVersion(dpy, &JunkX, &JunkY))
-		JunkX = JunkY = -1;
-	    fprintf (stderr, "%s: Xrandr extension (version %d.%d) is available.\n",
-		    ProgramName, JunkX, JunkY);
-	} else
-	    fprintf (stderr, "%s: Xrandr extension is not available.\n",
-		    ProgramName);
-    }
-#endif
-
-    HasShape = XShapeQueryExtension (dpy, &ShapeEventBase, &ShapeErrorBase);
-    TwmContext = XUniqueContext();
-    MenuContext = XUniqueContext();
-    IconManagerContext = XUniqueContext();
-    VirtualContext = XUniqueContext();
-    ScreenContext = XUniqueContext();
-    ColormapContext = XUniqueContext();
-    DoorContext = XUniqueContext();
-
-    InternUsefulAtoms ();
-
-
-    /* Set up the per-screen global information. */
-
-    NumScreens = ScreenCount(dpy);
+  HasXrandr = XRRQueryExtension(dpy, &XrandrEventBase, &XrandrErrorBase);
+  if (PrintErrorMessages)
+  {
+    if (HasXrandr == True)
     {
-      unsigned char pmap[256];		/* there are 8 bits of buttons */
-      NumButtons = XGetPointerMapping(dpy, pmap, 256);
-    }
-
-    if (MultiScreen)
-    {
-	firstscrn = 0;
-	lastscrn = NumScreens - 1;
+      if (!XRRQueryVersion(dpy, &JunkX, &JunkY))
+	JunkX = JunkY = -1;
+      fprintf(stderr, "%s: Xrandr extension (version %d.%d) is available.\n", ProgramName, JunkX, JunkY);
     }
     else
+      fprintf(stderr, "%s: Xrandr extension is not available.\n", ProgramName);
+  }
+#endif
+
+  HasShape = XShapeQueryExtension(dpy, &ShapeEventBase, &ShapeErrorBase);
+  TwmContext = XUniqueContext();
+  MenuContext = XUniqueContext();
+  IconManagerContext = XUniqueContext();
+  VirtualContext = XUniqueContext();
+  ScreenContext = XUniqueContext();
+  ColormapContext = XUniqueContext();
+  DoorContext = XUniqueContext();
+
+  InternUsefulAtoms();
+
+
+  /* Set up the per-screen global information. */
+
+  NumScreens = ScreenCount(dpy);
+  {
+    unsigned char pmap[256];	/* there are 8 bits of buttons */
+
+    NumButtons = XGetPointerMapping(dpy, pmap, 256);
+  }
+
+  if (MultiScreen)
+  {
+    firstscrn = 0;
+    lastscrn = NumScreens - 1;
+  }
+  else
+  {
+    firstscrn = lastscrn = DefaultScreen(dpy);
+  }
+
+  InfoLines = 0;
+
+  /* for simplicity, always allocate NumScreens ScreenInfo struct pointers */
+  ScreenList = (ScreenInfo **) calloc(NumScreens, sizeof(ScreenInfo *));
+  if (ScreenList == NULL)
+  {
+    fprintf(stderr, "%s: Unable to allocate memory for screen list, exiting.\n", ProgramName);
+    exit(1);
+  }
+  numManaged = 0;
+  PreviousScreen = DefaultScreen(dpy);
+  FirstScreen = TRUE;
+  for (scrnum = firstscrn; scrnum <= lastscrn; scrnum++)
+  {
+    /* Make sure property priority colors is empty */
+    XChangeProperty(dpy, RootWindow(dpy, scrnum), _XA_MIT_PRIORITY_COLORS, XA_CARDINAL, 32, PropModeReplace, NULL, 0);
+    RedirectError = FALSE;
+    XSetErrorHandler(CatchRedirectError);
+    XSelectInput(dpy, RootWindow(dpy, scrnum),
+		 ColormapChangeMask | EnterWindowMask | PropertyChangeMask |
+		 SubstructureRedirectMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask);
+    XSync(dpy, 0);
+    XSetErrorHandler(TwmErrorHandler);
+
+    if (RedirectError)
     {
-	firstscrn = lastscrn = DefaultScreen(dpy);
+      fprintf(stderr, "%s:  another window manager is already running", ProgramName);
+      if (MultiScreen && NumScreens > 0)
+	fprintf(stderr, " on screen %d?\n", scrnum);
+      else
+	fprintf(stderr, "?\n");
+      continue;
     }
 
-    InfoLines = 0;
+    numManaged++;
 
-    /* for simplicity, always allocate NumScreens ScreenInfo struct pointers */
-    ScreenList = (ScreenInfo **) calloc (NumScreens, sizeof (ScreenInfo *));
-    if (ScreenList == NULL)
+    /* Note:  ScreenInfo struct is calloc'ed to initialize to zero. */
+    Scr = ScreenList[scrnum] = (ScreenInfo *) calloc(1, sizeof(ScreenInfo));
+    if (Scr == NULL)
     {
-	fprintf (stderr, "%s: Unable to allocate memory for screen list, exiting.\n",
-		 ProgramName);
-	exit (1);
+      fprintf(stderr, "%s: unable to allocate memory for ScreenInfo structure for screen %d.\n", ProgramName, scrnum);
+      continue;
     }
-    numManaged = 0;
-    PreviousScreen = DefaultScreen(dpy);
-    FirstScreen = TRUE;
-    for (scrnum = firstscrn ; scrnum <= lastscrn; scrnum++)
+    Scr->Mouse = calloc((NumButtons + 1) * NUM_CONTEXTS * MOD_SIZE, sizeof(MouseButton));
+    if (!Scr->Mouse)
     {
-	/* Make sure property priority colors is empty */
-	XChangeProperty (dpy, RootWindow(dpy, scrnum), _XA_MIT_PRIORITY_COLORS,
-			 XA_CARDINAL, 32, PropModeReplace, NULL, 0);
-	RedirectError = FALSE;
-	XSetErrorHandler(CatchRedirectError);
-	XSelectInput(dpy, RootWindow (dpy, scrnum),
-	    ColormapChangeMask | EnterWindowMask | PropertyChangeMask |
-	    SubstructureRedirectMask | KeyPressMask |
-	    ButtonPressMask | ButtonReleaseMask);
-	XSync(dpy, 0);
-	XSetErrorHandler(TwmErrorHandler);
-
-	if (RedirectError)
-	{
-	    fprintf (stderr, "%s:  another window manager is already running",
-		     ProgramName);
-	    if (MultiScreen && NumScreens > 0)
-		fprintf(stderr, " on screen %d?\n", scrnum);
-	    else
-		fprintf(stderr, "?\n");
-	    continue;
-	}
-
-	numManaged ++;
-
-	/* Note:  ScreenInfo struct is calloc'ed to initialize to zero. */
-	Scr = ScreenList[scrnum] =
-	    (ScreenInfo *) calloc(1, sizeof(ScreenInfo));
-	if (Scr == NULL)
-	{
-	    fprintf (stderr, "%s: unable to allocate memory for ScreenInfo structure for screen %d.\n",
-		     ProgramName, scrnum);
-	    continue;
-	}
-	Scr->Mouse = calloc((NumButtons+1)*NUM_CONTEXTS*MOD_SIZE,sizeof(MouseButton));
-	if (!Scr->Mouse)
-	{
-	  fprintf (stderr, "%s: Unable to allocate memory for mouse buttons, exiting.\n",
-		   ProgramName);
-	  exit (1);
-	}
+      fprintf(stderr, "%s: Unable to allocate memory for mouse buttons, exiting.\n", ProgramName);
+      exit(1);
+    }
 
 
-	/* initialize list pointers, remember to put an initialization
-	 * in InitVariables also
-	 */
-	Scr->BorderColorL = NULL;
-	Scr->IconBorderColorL = NULL;
-	Scr->BorderTileForegroundL = NULL;
-	Scr->BorderTileBackgroundL = NULL;
-	Scr->TitleForegroundL = NULL;
-	Scr->TitleBackgroundL = NULL;
-	Scr->IconForegroundL = NULL;
-	Scr->IconBackgroundL = NULL;
-	Scr->NoTitle = NULL;
-	Scr->MakeTitle = NULL;
-	Scr->AutoRaise = NULL;
-	Scr->IconNames = NULL;
-	Scr->NoHighlight = NULL;
-	Scr->NoStackModeL = NULL;
-	Scr->NoTitleHighlight = NULL;
-	Scr->DontIconify = NULL;
-	Scr->IconMgrNoShow = NULL;
-	Scr->IconMgrShow = NULL;
-	Scr->IconifyByUn = NULL;
-	Scr->IconManagerFL = NULL;
-	Scr->IconManagerBL = NULL;
-	Scr->IconMgrs = NULL;
-	Scr->StartIconified = NULL;
-	Scr->SqueezeTitleL = NULL;
-	Scr->DontSqueezeTitleL = NULL;
-	Scr->WindowRingL = NULL;
+    /* initialize list pointers, remember to put an initialization
+     * in InitVariables also
+     */
+    Scr->BorderColorL = NULL;
+    Scr->IconBorderColorL = NULL;
+    Scr->BorderTileForegroundL = NULL;
+    Scr->BorderTileBackgroundL = NULL;
+    Scr->TitleForegroundL = NULL;
+    Scr->TitleBackgroundL = NULL;
+    Scr->IconForegroundL = NULL;
+    Scr->IconBackgroundL = NULL;
+    Scr->NoTitle = NULL;
+    Scr->MakeTitle = NULL;
+    Scr->AutoRaise = NULL;
+    Scr->IconNames = NULL;
+    Scr->NoHighlight = NULL;
+    Scr->NoStackModeL = NULL;
+    Scr->NoTitleHighlight = NULL;
+    Scr->DontIconify = NULL;
+    Scr->IconMgrNoShow = NULL;
+    Scr->IconMgrShow = NULL;
+    Scr->IconifyByUn = NULL;
+    Scr->IconManagerFL = NULL;
+    Scr->IconManagerBL = NULL;
+    Scr->IconMgrs = NULL;
+    Scr->StartIconified = NULL;
+    Scr->SqueezeTitleL = NULL;
+    Scr->DontSqueezeTitleL = NULL;
+    Scr->WindowRingL = NULL;
 
-	Scr->NoWindowRingL = NULL;
+    Scr->NoWindowRingL = NULL;
 
-	Scr->WarpCursorL = NULL;
+    Scr->WarpCursorL = NULL;
 
-	Scr->ImageCache = NULL;
+    Scr->ImageCache = NULL;
 
-	Scr->OpaqueMoveL = NULL;
-	Scr->NoOpaqueMoveL = NULL;
-	Scr->OpaqueResizeL = NULL;
-	Scr->NoOpaqueResizeL = NULL;
+    Scr->OpaqueMoveL = NULL;
+    Scr->NoOpaqueMoveL = NULL;
+    Scr->OpaqueResizeL = NULL;
+    Scr->NoOpaqueResizeL = NULL;
 
-	Scr->NoBorder = NULL;
+    Scr->NoBorder = NULL;
 
-	Scr->UsePPositionL = NULL;
+    Scr->UsePPositionL = NULL;
 
-	/* remember to put an initialization in InitVariables also
-	 */
+    /* remember to put an initialization in InitVariables also
+     */
 
-	Scr->screen = scrnum;
-	Scr->d_depth = DefaultDepth(dpy, scrnum);
-	Scr->d_visual = DefaultVisual(dpy, scrnum);
-	Scr->Root = RootWindow(dpy, scrnum);
-	XSaveContext (dpy, Scr->Root, ScreenContext, (caddr_t) Scr);
+    Scr->screen = scrnum;
+    Scr->d_depth = DefaultDepth(dpy, scrnum);
+    Scr->d_visual = DefaultVisual(dpy, scrnum);
+    Scr->Root = RootWindow(dpy, scrnum);
+    XSaveContext(dpy, Scr->Root, ScreenContext, (caddr_t) Scr);
 
-	if ((def = XGetDefault(dpy, "*", "bitmapFilePath")))
-		Scr->BitmapFilePath = strdup(def);
-	else
-		Scr->BitmapFilePath = NULL;
+    if ((def = XGetDefault(dpy, "*", "bitmapFilePath")))
+      Scr->BitmapFilePath = strdup(def);
+    else
+      Scr->BitmapFilePath = NULL;
 
-	Scr->TwmRoot.cmaps.number_cwins = 1;
-	Scr->TwmRoot.cmaps.cwins =
-		(ColormapWindow **) malloc(sizeof(ColormapWindow *));
-	Scr->TwmRoot.cmaps.cwins[0] =
-		CreateColormapWindow(Scr->Root, True, False);
-	Scr->TwmRoot.cmaps.cwins[0]->visibility = VisibilityPartiallyObscured;
+    Scr->TwmRoot.cmaps.number_cwins = 1;
+    Scr->TwmRoot.cmaps.cwins = (ColormapWindow **) malloc(sizeof(ColormapWindow *));
+    Scr->TwmRoot.cmaps.cwins[0] = CreateColormapWindow(Scr->Root, True, False);
+    Scr->TwmRoot.cmaps.cwins[0]->visibility = VisibilityPartiallyObscured;
 
-	Scr->cmapInfo.cmaps = NULL;
-	Scr->cmapInfo.maxCmaps =
-		MaxCmapsOfScreen(ScreenOfDisplay(dpy, Scr->screen));
-	Scr->cmapInfo.root_pushes = 0;
-	InstallWindowColormaps(0, &Scr->TwmRoot);
+    Scr->cmapInfo.cmaps = NULL;
+    Scr->cmapInfo.maxCmaps = MaxCmapsOfScreen(ScreenOfDisplay(dpy, Scr->screen));
+    Scr->cmapInfo.root_pushes = 0;
+    InstallWindowColormaps(0, &Scr->TwmRoot);
 
-	Scr->StdCmapInfo.head = Scr->StdCmapInfo.tail =
-	  Scr->StdCmapInfo.mru = NULL;
-	Scr->StdCmapInfo.mruindex = 0;
-	LocateStandardColormaps();
+    Scr->StdCmapInfo.head = Scr->StdCmapInfo.tail = Scr->StdCmapInfo.mru = NULL;
+    Scr->StdCmapInfo.mruindex = 0;
+    LocateStandardColormaps();
 
-	Scr->TBInfo.nleft = Scr->TBInfo.nright = 0;
-	Scr->TBInfo.head = NULL;
+    Scr->TBInfo.nleft = Scr->TBInfo.nright = 0;
+    Scr->TBInfo.head = NULL;
 
-	Scr->TBInfo.border = -100;
+    Scr->TBInfo.border = -100;
 
-	Scr->TBInfo.width = 0;
-	Scr->TBInfo.leftx = 0;
-	Scr->TBInfo.titlex = 0;
+    Scr->TBInfo.width = 0;
+    Scr->TBInfo.leftx = 0;
+    Scr->TBInfo.titlex = 0;
 
-	Scr->MyDisplayWidth = DisplayWidth(dpy, scrnum);
-	Scr->MyDisplayHeight = DisplayHeight(dpy, scrnum);
-	Scr->MaxWindowWidth = 32767 - Scr->MyDisplayWidth;
-	Scr->MaxWindowHeight = 32767 - Scr->MyDisplayHeight;
+    Scr->MyDisplayWidth = DisplayWidth(dpy, scrnum);
+    Scr->MyDisplayHeight = DisplayHeight(dpy, scrnum);
+    Scr->MaxWindowWidth = 32767 - Scr->MyDisplayWidth;
+    Scr->MaxWindowHeight = 32767 - Scr->MyDisplayHeight;
 
-	Scr->XORvalue = (((unsigned long) 1) << Scr->d_depth) - 1;
+    Scr->XORvalue = (((unsigned long)1) << Scr->d_depth) - 1;
 
-	if (DisplayCells(dpy, scrnum) < 3)
-	    Scr->Monochrome = MONOCHROME;
-	else
-	    Scr->Monochrome = COLOR;
+    if (DisplayCells(dpy, scrnum) < 3)
+      Scr->Monochrome = MONOCHROME;
+    else
+      Scr->Monochrome = COLOR;
 
-	/* setup default colors */
-	Scr->FirstTime = TRUE;
-	GetColor(Scr->Monochrome, &black, "black");
-	Scr->Black = black;
-	GetColor(Scr->Monochrome, &white, "white");
-	Scr->White = white;
+    /* setup default colors */
+    Scr->FirstTime = TRUE;
+    GetColor(Scr->Monochrome, &black, "black");
+    Scr->Black = black;
+    GetColor(Scr->Monochrome, &white, "white");
+    Scr->White = white;
 
-	if (FirstScreen)
-	{
-	    FocusRoot = TRUE;
-	    Focus = NULL;
-	    SetFocus ((TwmWindow *)NULL, CurrentTime);
+    if (FirstScreen)
+    {
+      FocusRoot = TRUE;
+      Focus = NULL;
+      SetFocus((TwmWindow *) NULL, CurrentTime);
 
-	    /* define cursors */
+      /* define cursors */
 
-	    NewFontCursor(&UpperLeftCursor, "top_left_corner");
-	    NewFontCursor(&RightButt, "rightbutton");
-	    NewFontCursor(&LeftButt, "leftbutton");
-	    NewFontCursor(&MiddleButt, "middlebutton");
-	}
+      NewFontCursor(&UpperLeftCursor, "top_left_corner");
+      NewFontCursor(&RightButt, "rightbutton");
+      NewFontCursor(&LeftButt, "leftbutton");
+      NewFontCursor(&MiddleButt, "middlebutton");
+    }
 
-	Scr->iconmgr.x = 0;
-	Scr->iconmgr.y = 0;
-	Scr->iconmgr.width = 150;
-	Scr->iconmgr.height = 5;
-	Scr->iconmgr.next = NULL;
-	Scr->iconmgr.prev = NULL;
-	Scr->iconmgr.lasti = &(Scr->iconmgr);
-	Scr->iconmgr.first = NULL;
-	Scr->iconmgr.last = NULL;
-	Scr->iconmgr.active = NULL;
-	Scr->iconmgr.scr = Scr;
-	Scr->iconmgr.columns = 1;
-	Scr->iconmgr.count = 0;
-	Scr->iconmgr.name = "VTWM";
-	Scr->iconmgr.icon_name = "Icons";
+    Scr->iconmgr.x = 0;
+    Scr->iconmgr.y = 0;
+    Scr->iconmgr.width = 150;
+    Scr->iconmgr.height = 5;
+    Scr->iconmgr.next = NULL;
+    Scr->iconmgr.prev = NULL;
+    Scr->iconmgr.lasti = &(Scr->iconmgr);
+    Scr->iconmgr.first = NULL;
+    Scr->iconmgr.last = NULL;
+    Scr->iconmgr.active = NULL;
+    Scr->iconmgr.scr = Scr;
+    Scr->iconmgr.columns = 1;
+    Scr->iconmgr.count = 0;
+    Scr->iconmgr.name = "VTWM";
+    Scr->iconmgr.icon_name = "Icons";
 
-	Scr->IconDirectory = NULL;
+    Scr->IconDirectory = NULL;
 
-	Scr->hiliteName = NULL;
-	Scr->menuIconName = TBPM_MENU;
-	Scr->iconMgrIconName = TBPM_XLOGO;
+    Scr->hiliteName = NULL;
+    Scr->menuIconName = TBPM_MENU;
+    Scr->iconMgrIconName = TBPM_XLOGO;
 
-	Scr->hiliteName = NULL;
+    Scr->hiliteName = NULL;
 
-	Scr->hilitePm = NULL;
-	Scr->virtualPm = NULL;
-	Scr->realscreenPm = NULL;
+    Scr->hilitePm = NULL;
+    Scr->virtualPm = NULL;
+    Scr->realscreenPm = NULL;
 
-	if ( Scr->FirstTime )
-	{	/* retain max size on restart. */
-		Scr->VirtualDesktopMaxWidth = 0;
-		Scr->VirtualDesktopMaxHeight = 0;
-	}
+    if (Scr->FirstTime)
+    {				/* retain max size on restart. */
+      Scr->VirtualDesktopMaxWidth = 0;
+      Scr->VirtualDesktopMaxHeight = 0;
+    }
 
 #ifdef TWM_USE_XFT
-	if (xft_available == TRUE)
-	    Scr->use_xft = 0;  /* evtl. .vtwmrc sets this to '+1' */
-	else
-	    Scr->use_xft = -1; /* remains '-1' */
+    if (xft_available == TRUE)
+      Scr->use_xft = 0;		/* evtl. .vtwmrc sets this to '+1' */
+    else
+      Scr->use_xft = -1;	/* remains '-1' */
 #endif
 
 #ifdef TILED_SCREEN
-	Scr->use_tiles = FALSE;
-	Scr->tiles = NULL;
+    Scr->use_tiles = FALSE;
+    Scr->tiles = NULL;
 #endif
 
 #ifdef TWM_USE_XINERAMA
-	if (xinerama_available == TRUE)
+    if (xinerama_available == TRUE)
+    {
+      XineramaScreenInfo *si = XineramaQueryScreens(dpy, &Scr->ntiles);
+
+      if (si != (XineramaScreenInfo *) (0))
+      {
+	/* allocate memory which is automatically free()'d by exit(): */
+	Scr->tiles = (int (*)[4])malloc(Scr->ntiles * sizeof(Scr->tiles[0]));
+	if (Scr->tiles != (int (*)[4])(0))
 	{
-	    XineramaScreenInfo * si = XineramaQueryScreens (dpy, &Scr->ntiles);
-	    if (si != (XineramaScreenInfo*)(0)) {
-		/* allocate memory which is automatically free()'d by exit(): */
-		Scr->tiles = (int(*)[4]) malloc (Scr->ntiles*sizeof(Scr->tiles[0]));
-		if (Scr->tiles != (int(*)[4])(0)) {
-		    for (i = 0; i < Scr->ntiles; ++i) { /* unused: si[i].screen_number */
-			Lft(Scr->tiles[i]) = si[i].x_org; /* x0 */
-			Bot(Scr->tiles[i]) = si[i].y_org; /* y0 */
-			Rht(Scr->tiles[i]) = si[i].x_org + si[i].width  - 1; /* x1 */
-			Top(Scr->tiles[i]) = si[i].y_org + si[i].height - 1; /* y1 */
-			if (PrintErrorMessages)
-			    fprintf (stderr,
-				"%s: Xinerama tile %d at x = %d, y = %d, width = %d, height = %d detected.\n",
-				ProgramName, si[i].screen_number,
-				si[i].x_org, si[i].y_org, si[i].width, si[i].height);
-		    }
-		    /* bypass Xinerama if the only tile exactly covers the X11-screen: */
-		    if (Scr->ntiles > 1
-			    || Lft(Scr->tiles[0]) != 0 || Bot(Scr->tiles[0]) != 0
-			    || AreaWidth(Scr->tiles[0]) != Scr->MyDisplayWidth
-			    || AreaHeight(Scr->tiles[0]) != Scr->MyDisplayHeight)
-			Scr->use_tiles = TRUE;
-		}
-		XFree (si);
-	    }
+	  for (i = 0; i < Scr->ntiles; ++i)
+	  {			/* unused: si[i].screen_number */
+	    Lft(Scr->tiles[i]) = si[i].x_org;	/* x0 */
+	    Bot(Scr->tiles[i]) = si[i].y_org;	/* y0 */
+	    Rht(Scr->tiles[i]) = si[i].x_org + si[i].width - 1;	/* x1 */
+	    Top(Scr->tiles[i]) = si[i].y_org + si[i].height - 1;	/* y1 */
+	    if (PrintErrorMessages)
+	      fprintf(stderr,
+		      "%s: Xinerama tile %d at x = %d, y = %d, width = %d, height = %d detected.\n",
+		      ProgramName, si[i].screen_number, si[i].x_org, si[i].y_org, si[i].width, si[i].height);
+	  }
+	  /* bypass Xinerama if the only tile exactly covers the X11-screen: */
+	  if (Scr->ntiles > 1
+	      || Lft(Scr->tiles[0]) != 0 || Bot(Scr->tiles[0]) != 0
+	      || AreaWidth(Scr->tiles[0]) != Scr->MyDisplayWidth || AreaHeight(Scr->tiles[0]) != Scr->MyDisplayHeight)
+	    Scr->use_tiles = TRUE;
 	}
+	XFree(si);
+      }
+    }
 #endif
 
 #ifdef TWM_USE_XRANDR
 #if RANDR_MAJOR > 1 || (RANDR_MAJOR == 1 && RANDR_MINOR >= 2)
-	if (HasXrandr == True && Scr->tiles == NULL)
+    if (HasXrandr == True && Scr->tiles == NULL)
+    {
+      XRRScreenResources *res = XRRGetScreenResources(dpy, Scr->Root);
+
+      if (res != (XRRScreenResources *) (0))
+      {
+	/* allocate memory which is automatically free()'d by exit(): */
+	Scr->tiles = (int (*)[4])malloc(res->ncrtc * sizeof(Scr->tiles[0]));
+	if (Scr->tiles != (int (*)[4])(0))
 	{
-	    XRRScreenResources * res = XRRGetScreenResources (dpy, Scr->Root);
-	    if (res != (XRRScreenResources*)(0)) {
-		/* allocate memory which is automatically free()'d by exit(): */
-		Scr->tiles = (int(*)[4]) malloc (res->ncrtc*sizeof(Scr->tiles[0]));
-		if (Scr->tiles != (int(*)[4])(0)) {
-		    Scr->ntiles = 0;
-		    for (i = 0; i < res->ncrtc; ++i) {
-			XRRCrtcInfo * crt = XRRGetCrtcInfo (dpy, res, res->crtcs[i]);
-			if (crt != (XRRCrtcInfo*)(0)) {
-			    if (crt->mode != None) {
-				Lft(Scr->tiles[Scr->ntiles]) = crt->x; /* x0 */
-				Bot(Scr->tiles[Scr->ntiles]) = crt->y; /* y0 */
-				Rht(Scr->tiles[Scr->ntiles]) = crt->x + crt->width  - 1; /* x1 */
-				Top(Scr->tiles[Scr->ntiles]) = crt->y + crt->height - 1; /* y1 */
-				if (PrintErrorMessages)
-				    fprintf (stderr,
-					"%s: Xrandr tile %d on screen %d at x = %d, y = %d, width = %d, height = %d detected.\n",
-					ProgramName, Scr->ntiles, Scr->screen,
-					crt->x, crt->y, crt->width, crt->height);
-				++Scr->ntiles;
-			    }
-			    XRRFreeCrtcInfo (crt);
-			}
-		    }
-		    if (Scr->ntiles > 0) {
-			/* bypass "tile management" if the only tile exactly covers the X11-screen: */
-			if (Scr->ntiles > 1
-				|| Lft(Scr->tiles[0]) != 0 || Bot(Scr->tiles[0]) != 0
-				|| AreaWidth(Scr->tiles[0]) != Scr->MyDisplayWidth
-				|| AreaHeight(Scr->tiles[0]) != Scr->MyDisplayHeight)
-			    Scr->use_tiles = TRUE;
-		    }
-		}
-		XRRFreeScreenResources (res);
+	  Scr->ntiles = 0;
+	  for (i = 0; i < res->ncrtc; ++i)
+	  {
+	    XRRCrtcInfo *crt = XRRGetCrtcInfo(dpy, res, res->crtcs[i]);
+
+	    if (crt != (XRRCrtcInfo *) (0))
+	    {
+	      if (crt->mode != None)
+	      {
+		Lft(Scr->tiles[Scr->ntiles]) = crt->x;	/* x0 */
+		Bot(Scr->tiles[Scr->ntiles]) = crt->y;	/* y0 */
+		Rht(Scr->tiles[Scr->ntiles]) = crt->x + crt->width - 1;	/* x1 */
+		Top(Scr->tiles[Scr->ntiles]) = crt->y + crt->height - 1;	/* y1 */
+		if (PrintErrorMessages)
+		  fprintf(stderr,
+			  "%s: Xrandr tile %d on screen %d at x = %d, y = %d, width = %d, height = %d detected.\n",
+			  ProgramName, Scr->ntiles, Scr->screen, crt->x, crt->y, crt->width, crt->height);
+		++Scr->ntiles;
+	      }
+	      XRRFreeCrtcInfo(crt);
 	    }
+	  }
+	  if (Scr->ntiles > 0)
+	  {
+	    /* bypass "tile management" if the only tile exactly covers the X11-screen: */
+	    if (Scr->ntiles > 1
+		|| Lft(Scr->tiles[0]) != 0 || Bot(Scr->tiles[0]) != 0
+		|| AreaWidth(Scr->tiles[0]) != Scr->MyDisplayWidth || AreaHeight(Scr->tiles[0]) != Scr->MyDisplayHeight)
+	      Scr->use_tiles = TRUE;
+	  }
 	}
+	XRRFreeScreenResources(res);
+      }
+    }
 #endif
 #endif
 
 #ifdef TILED_SCREEN
-	if (Scr->use_tiles == TRUE)
-	{
-	    Lft(Scr->tiles_bb) = Lft(Scr->tiles[0]);
-	    Bot(Scr->tiles_bb) = Bot(Scr->tiles[0]);
-	    Rht(Scr->tiles_bb) = Rht(Scr->tiles[0]);
-	    Top(Scr->tiles_bb) = Top(Scr->tiles[0]);
+    if (Scr->use_tiles == TRUE)
+    {
+      Lft(Scr->tiles_bb) = Lft(Scr->tiles[0]);
+      Bot(Scr->tiles_bb) = Bot(Scr->tiles[0]);
+      Rht(Scr->tiles_bb) = Rht(Scr->tiles[0]);
+      Top(Scr->tiles_bb) = Top(Scr->tiles[0]);
 
-	    for (i = 1; i < Scr->ntiles; ++i) {
-		/* (x0,y0), (x1,y1) of tiled area bounding-box: */
-		if (Lft(Scr->tiles_bb) > Lft(Scr->tiles[i]))
-		    Lft(Scr->tiles_bb) = Lft(Scr->tiles[i]);
-		if (Bot(Scr->tiles_bb) > Bot(Scr->tiles[i]))
-		    Bot(Scr->tiles_bb) = Bot(Scr->tiles[i]);
-		if (Rht(Scr->tiles_bb) < Rht(Scr->tiles[i]))
-		    Rht(Scr->tiles_bb) = Rht(Scr->tiles[i]);
-		if (Top(Scr->tiles_bb) < Top(Scr->tiles[i]))
-		    Top(Scr->tiles_bb) = Top(Scr->tiles[i]);
-	    }
-	}
+      for (i = 1; i < Scr->ntiles; ++i)
+      {
+	/* (x0,y0), (x1,y1) of tiled area bounding-box: */
+	if (Lft(Scr->tiles_bb) > Lft(Scr->tiles[i]))
+	  Lft(Scr->tiles_bb) = Lft(Scr->tiles[i]);
+	if (Bot(Scr->tiles_bb) > Bot(Scr->tiles[i]))
+	  Bot(Scr->tiles_bb) = Bot(Scr->tiles[i]);
+	if (Rht(Scr->tiles_bb) < Rht(Scr->tiles[i]))
+	  Rht(Scr->tiles_bb) = Rht(Scr->tiles[i]);
+	if (Top(Scr->tiles_bb) < Top(Scr->tiles[i]))
+	  Top(Scr->tiles_bb) = Top(Scr->tiles[i]);
+      }
+    }
 #endif
 
-	InitVariables();
-	InitMenus();
+    InitVariables();
+    InitMenus();
 
-	if (!parseInitFile)
-		ParseStringList(defTwmrc);
-	else
-	{
-		/* Parse it once for each screen. */
+    if (!parseInitFile)
+      ParseStringList(defTwmrc);
+    else
+    {
+      /* Parse it once for each screen. */
 #ifndef NO_M4_SUPPORT
-		ParseTwmrc(InitFile, display_name, m4_preprocess, m4_option);
+      ParseTwmrc(InitFile, display_name, m4_preprocess, m4_option);
 #else
-		ParseTwmrc(InitFile);
+      ParseTwmrc(InitFile);
 #endif
-	}
+    }
 
 #ifndef NO_SOUND_SUPPORT
-	OpenSound();
+    OpenSound();
 
-	if (PlaySound(S_START))
-	{
-		/*
-		 * Save setting from resource file, and turn sound off
-		 */
-		sound_state = ToggleSounds();
-		sound_state ^= 1;
-		if (sound_state == 0) ToggleSounds();
-	}
+    if (PlaySound(S_START))
+    {
+      /*
+       * Save setting from resource file, and turn sound off
+       */
+      sound_state = ToggleSounds();
+      sound_state ^= 1;
+      if (sound_state == 0)
+	ToggleSounds();
+    }
 #endif
 
-	assign_var_savecolor(); /* storeing pixels for twmrc "entities" */
+    assign_var_savecolor();	/* storeing pixels for twmrc "entities" */
 
-	if (Scr->FramePadding  == -100) Scr->FramePadding  = 2; /* values that look */
-	if (Scr->TitlePadding  == -100) Scr->TitlePadding  = 8; /* "nice" on */
-	if (Scr->ButtonIndent  == -100) Scr->ButtonIndent  = 1; /* 75 and 100dpi displays */
-	if (Scr->TBInfo.border == -100) Scr->TBInfo.border = 1;
+    if (Scr->FramePadding == -100)
+      Scr->FramePadding = 2;	/* values that look */
+    if (Scr->TitlePadding == -100)
+      Scr->TitlePadding = 8;	/* "nice" on */
+    if (Scr->ButtonIndent == -100)
+      Scr->ButtonIndent = 1;	/* 75 and 100dpi displays */
+    if (Scr->TBInfo.border == -100)
+      Scr->TBInfo.border = 1;
 
-	if (!Scr->BeNiceToColormap) GetShadeColors (&Scr->TitleC);
-	if (!Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuC);
-	if (Scr->MenuBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->MenuTitleC);
-	if (Scr->BorderBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->BorderColorC);
+    if (!Scr->BeNiceToColormap)
+      GetShadeColors(&Scr->TitleC);
+    if (!Scr->BeNiceToColormap)
+      GetShadeColors(&Scr->MenuC);
+    if (Scr->MenuBevelWidth > 0 && !Scr->BeNiceToColormap)
+      GetShadeColors(&Scr->MenuTitleC);
+    if (Scr->BorderBevelWidth > 0 && !Scr->BeNiceToColormap)
+      GetShadeColors(&Scr->BorderColorC);
 
-	if (Scr->DoorBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->DoorC);
-	if (Scr->VirtualDesktopBevelWidth > 0 && !Scr->BeNiceToColormap) GetShadeColors (&Scr->VirtualC);
+    if (Scr->DoorBevelWidth > 0 && !Scr->BeNiceToColormap)
+      GetShadeColors(&Scr->DoorC);
+    if (Scr->VirtualDesktopBevelWidth > 0 && !Scr->BeNiceToColormap)
+      GetShadeColors(&Scr->VirtualC);
 
+    {
+      if (2 * Scr->BorderBevelWidth > Scr->BorderWidth)
+	Scr->BorderWidth = 2 * Scr->BorderBevelWidth;
+
+      if (!Scr->BeNiceToColormap)
+	GetShadeColors(&Scr->DefaultC);
+    }
+
+    if (Scr->IconBevelWidth > 0)
+      Scr->IconBorderWidth = 0;
+
+    if (Scr->SqueezeTitle == -1)
+      Scr->SqueezeTitle = FALSE;
+    if (!Scr->HaveFonts)
+      CreateFonts();
+    CreateGCs();
+    MakeMenus();
+
+    /* set titlebar height to font height plus frame padding */
+    Scr->TitleHeight = Scr->TitleBarFont.height + Scr->FramePadding * 2;
+    if (!(Scr->TitleHeight & 1))
+      Scr->TitleHeight++;
+
+    i = InitTitlebarButtons();	/* returns the button height */
+
+    /* adjust titlebar height to button height */
+    if (i > Scr->TitleHeight)
+      Scr->TitleHeight = i + Scr->FramePadding * 2;
+    if (!(Scr->TitleHeight & 1))
+      Scr->TitleHeight++;
+
+    /* adjust font baseline */
+    Scr->TitleBarFont.y += ((Scr->TitleHeight - Scr->TitleBarFont.height) / 2);
+
+    XGrabServer(dpy);
+    XSync(dpy, 0);
+
+    JunkX = 0;
+    JunkY = 0;
+
+    XQueryTree(dpy, Scr->Root, &root, &parent, &children, &nchildren);
+    CreateIconManagers();
+    if (!Scr->NoIconManagers)
+      Scr->iconmgr.twm_win->icon = TRUE;
+
+    if (Scr->VirtualDesktopWidth > 0)
+      CreateDesktopDisplay();
+
+    /* create all of the door windows */
+    door_open_all();
+
+    /*
+     * weed out icon windows
+     */
+    for (i = 0; i < nchildren; i++)
+    {
+      if (children[i])
+      {
+	XWMHints *wmhintsp = XGetWMHints(dpy, children[i]);
+
+	if (wmhintsp)
 	{
-		if (2 * Scr->BorderBevelWidth > Scr->BorderWidth)
-			Scr->BorderWidth = 2 * Scr->BorderBevelWidth;
-
-	if (!Scr->BeNiceToColormap)
-			GetShadeColors(&Scr->DefaultC);
-	}
-
-	if (Scr->IconBevelWidth > 0)
-		Scr->IconBorderWidth = 0;
-
-	if (Scr->SqueezeTitle == -1) Scr->SqueezeTitle = FALSE;
-	if (!Scr->HaveFonts) CreateFonts();
-	CreateGCs();
-	MakeMenus();
-
-	/* set titlebar height to font height plus frame padding */
-	Scr->TitleHeight = Scr->TitleBarFont.height + Scr->FramePadding * 2;
-	if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
-
-	i = InitTitlebarButtons();	/* returns the button height */
-
-	/* adjust titlebar height to button height */
-	if (i > Scr->TitleHeight) Scr->TitleHeight = i + Scr->FramePadding * 2;
-	if (!(Scr->TitleHeight & 1)) Scr->TitleHeight++;
-
-	/* adjust font baseline */
-	Scr->TitleBarFont.y += ((Scr->TitleHeight - Scr->TitleBarFont.height) / 2);
-
-	XGrabServer(dpy);
-	XSync(dpy, 0);
-
-	JunkX = 0;
-	JunkY = 0;
-
-	XQueryTree(dpy, Scr->Root, &root, &parent, &children, &nchildren);
-	CreateIconManagers();
-	if (!Scr->NoIconManagers)
-	    Scr->iconmgr.twm_win->icon = TRUE;
-
-	if (Scr->VirtualDesktopWidth > 0)
-		CreateDesktopDisplay();
-
-	/* create all of the door windows */
-	door_open_all();
-
-	/*
-	 * weed out icon windows
-	 */
-	for (i = 0; i < nchildren; i++) {
-	    if (children[i]) {
-		XWMHints *wmhintsp = XGetWMHints (dpy, children[i]);
-
-		if (wmhintsp) {
-		    if (wmhintsp->flags & IconWindowHint) {
-			for (j = 0; j < nchildren; j++) {
-			    if (children[j] == wmhintsp->icon_window) {
-				children[j] = None;
-				break;
-			    }
-			}
-		    }
-		    XFree ((char *) wmhintsp);
-		}
-	    }
-	}
-
-	/*
-	 * map all of the non-override windows
-	 */
-	for (i = 0; i < nchildren; i++)
-	{
-	    if (children[i] && MappedNotOverride(children[i]))
+	  if (wmhintsp->flags & IconWindowHint)
+	  {
+	    for (j = 0; j < nchildren; j++)
 	    {
-		XUnmapWindow(dpy, children[i]);
-		SimulateMapRequest(children[i]);
+	      if (children[j] == wmhintsp->icon_window)
+	      {
+		children[j] = None;
+		break;
+	      }
 	    }
+	  }
+	  XFree((char *)wmhintsp);
 	}
+      }
+    }
 
-	if (Scr->ShowIconManager && !Scr->NoIconManagers)
-	{
-	    Scr->iconmgr.twm_win->icon = FALSE;
-	    if (Scr->iconmgr.count)
-	    {
-		SetMapStateProp (Scr->iconmgr.twm_win, NormalState);
-		XMapWindow(dpy, Scr->iconmgr.w);
-		XMapWindow(dpy, Scr->iconmgr.twm_win->frame);
-	    }
-	}
+    /*
+     * map all of the non-override windows
+     */
+    for (i = 0; i < nchildren; i++)
+    {
+      if (children[i] && MappedNotOverride(children[i]))
+      {
+	XUnmapWindow(dpy, children[i]);
+	SimulateMapRequest(children[i]);
+      }
+    }
 
-	if (!Scr->BorderBevelWidth > 0)
-		attributes.border_pixel = Scr->DefaultC.fore;
+    if (Scr->ShowIconManager && !Scr->NoIconManagers)
+    {
+      Scr->iconmgr.twm_win->icon = FALSE;
+      if (Scr->iconmgr.count)
+      {
+	SetMapStateProp(Scr->iconmgr.twm_win, NormalState);
+	XMapWindow(dpy, Scr->iconmgr.w);
+	XMapWindow(dpy, Scr->iconmgr.twm_win->frame);
+      }
+    }
 
-	attributes.background_pixel = Scr->DefaultC.back;
-	attributes.event_mask = (ExposureMask | ButtonPressMask |
-				 KeyPressMask | ButtonReleaseMask);
-	attributes.backing_store = NotUseful;
+    if (!Scr->BorderBevelWidth > 0)
+      attributes.border_pixel = Scr->DefaultC.fore;
 
-	if (!Scr->BorderBevelWidth > 0)
-		valuemask = (CWBorderPixel | CWBackPixel | CWEventMask |
-			     CWBackingStore);
-	else
-		valuemask = (CWBackPixel | CWEventMask | CWBackingStore);
+    attributes.background_pixel = Scr->DefaultC.back;
+    attributes.event_mask = (ExposureMask | ButtonPressMask | KeyPressMask | ButtonReleaseMask);
+    attributes.backing_store = NotUseful;
 
-	Scr->InfoWindow.win = XCreateWindow (dpy, Scr->Root, 0, 0,
-					 (unsigned int) 5, (unsigned int) 5,
+    if (!Scr->BorderBevelWidth > 0)
+      valuemask = (CWBorderPixel | CWBackPixel | CWEventMask | CWBackingStore);
+    else
+      valuemask = (CWBackPixel | CWEventMask | CWBackingStore);
 
-					 (unsigned int) (Scr->InfoBevelWidth > 0 ? 0 : Scr->BorderWidth), 0,
+    Scr->InfoWindow.win = XCreateWindow(dpy, Scr->Root, 0, 0,
+					(unsigned int)5, (unsigned int)5,
+					(unsigned int)(Scr->InfoBevelWidth > 0 ? 0 : Scr->BorderWidth), 0,
+					(unsigned int)CopyFromParent, (Visual *) CopyFromParent, valuemask, &attributes);
 
-					 (unsigned int) CopyFromParent,
-					 (Visual *) CopyFromParent,
-					 valuemask, &attributes);
+    Scr->SizeStringWidth = MyFont_TextWidth(&Scr->SizeFont,
+					    "nnnnnnnnnnnnn", 13) + ((Scr->InfoBevelWidth > 0) ? 2 * Scr->InfoBevelWidth : 0);
 
-	Scr->SizeStringWidth = MyFont_TextWidth (&Scr->SizeFont,
-					   "nnnnnnnnnnnnn", 13) + ((Scr->InfoBevelWidth > 0) ? 2 * Scr->InfoBevelWidth : 0);
+    if (!Scr->InfoBevelWidth > 0)
+      valuemask = (CWBorderPixel | CWBackPixel | CWBitGravity);
+    else
+      valuemask = (CWBackPixel | CWBitGravity);
 
-	if (!Scr->InfoBevelWidth > 0)
-		valuemask = (CWBorderPixel | CWBackPixel | CWBitGravity);
-	else
-		valuemask = (CWBackPixel | CWBitGravity);
+    switch (Scr->ResizeX)
+    {
+    case R_NORTHWEST:
+      Scr->ResizeX = 20;
+      Scr->ResizeY = 20;
+      break;
+    case R_NORTHEAST:
+      Scr->ResizeX = (Scr->MyDisplayWidth - Scr->SizeStringWidth) - 20;
+      Scr->ResizeY = 20;
+      break;
+    case R_SOUTHWEST:
+      Scr->ResizeX = 20;
+      Scr->ResizeY = (Scr->MyDisplayHeight - (Scr->SizeFont.height + SIZE_VINDENT * 2)) - 20;
+      break;
+    case R_SOUTHEAST:
+      Scr->ResizeX = (Scr->MyDisplayWidth - Scr->SizeStringWidth) - 20;
+      Scr->ResizeY = (Scr->MyDisplayHeight - (Scr->SizeFont.height + SIZE_VINDENT * 2)) - 20;
+      break;
+    case R_CENTERED:
+      Scr->ResizeX = (Scr->MyDisplayWidth - Scr->SizeStringWidth) / 2;
+      Scr->ResizeY = (Scr->MyDisplayHeight - (Scr->SizeFont.height + SIZE_VINDENT * 2)) / 2;
+      break;
+    }
 
-	switch (Scr->ResizeX)
-	{
-		case R_NORTHWEST:
-			Scr->ResizeX = 20;
-			Scr->ResizeY = 20;
-			break;
-		case R_NORTHEAST:
-			Scr->ResizeX = (Scr->MyDisplayWidth - Scr->SizeStringWidth) - 20;
-			Scr->ResizeY = 20;
-			break;
-		case R_SOUTHWEST:
-			Scr->ResizeX = 20;
-			Scr->ResizeY = (Scr->MyDisplayHeight - (Scr->SizeFont.height + SIZE_VINDENT*2)) - 20;
-			break;
-		case R_SOUTHEAST:
-			Scr->ResizeX = (Scr->MyDisplayWidth - Scr->SizeStringWidth) - 20;
-			Scr->ResizeY = (Scr->MyDisplayHeight - (Scr->SizeFont.height + SIZE_VINDENT*2)) - 20;
-			break;
-		case R_CENTERED:
-			Scr->ResizeX = (Scr->MyDisplayWidth - Scr->SizeStringWidth) / 2;
-			Scr->ResizeY = (Scr->MyDisplayHeight - (Scr->SizeFont.height + SIZE_VINDENT*2)) / 2;
-			break;
-	}
-
-	attributes.bit_gravity = NorthWestGravity;
-	Scr->SizeWindow.win = XCreateWindow (dpy, Scr->Root,
-
-					 Scr->ResizeX, Scr->ResizeY,
-
-					 (unsigned int) Scr->SizeStringWidth,
-
-					 (unsigned int) (Scr->SizeFont.height + SIZE_VINDENT*2) +
-						((Scr->InfoBevelWidth > 0) ? 2 * Scr->InfoBevelWidth : 0),
-
-					 (unsigned int) (Scr->InfoBevelWidth > 0 ? 0 : Scr->BorderWidth), 0,
-
-					 (unsigned int) CopyFromParent,
-					 (Visual *) CopyFromParent,
-					 valuemask, &attributes);
+    attributes.bit_gravity = NorthWestGravity;
+    Scr->SizeWindow.win = XCreateWindow(dpy, Scr->Root,
+					Scr->ResizeX, Scr->ResizeY,
+					(unsigned int)Scr->SizeStringWidth,
+					(unsigned int)(Scr->SizeFont.height + SIZE_VINDENT * 2) +
+					((Scr->InfoBevelWidth > 0) ? 2 * Scr->InfoBevelWidth : 0),
+					(unsigned int)(Scr->InfoBevelWidth > 0 ? 0 : Scr->BorderWidth), 0,
+					(unsigned int)CopyFromParent, (Visual *) CopyFromParent, valuemask, &attributes);
 
 #ifdef TWM_USE_XFT
-	if (Scr->use_xft > 0) {
-	    Scr->InfoWindow.xft = MyXftDrawCreate (Scr->InfoWindow.win);
-	    Scr->SizeWindow.xft = MyXftDrawCreate (Scr->SizeWindow.win);
-	    CopyPixelToXftColor (Scr->DefaultC.fore, &Scr->DefaultC.xft);
-	}
+    if (Scr->use_xft > 0)
+    {
+      Scr->InfoWindow.xft = MyXftDrawCreate(Scr->InfoWindow.win);
+      Scr->SizeWindow.xft = MyXftDrawCreate(Scr->SizeWindow.win);
+      CopyPixelToXftColor(Scr->DefaultC.fore, &Scr->DefaultC.xft);
+    }
 #endif
 #if defined TWM_USE_OPACITY
-	SetWindowOpacity (Scr->InfoWindow.win, Scr->MenuOpacity);
+    SetWindowOpacity(Scr->InfoWindow.win, Scr->MenuOpacity);
 #endif
 
 #ifdef TWM_USE_XRANDR
-	if (HasXrandr == True)
-	    XRRSelectInput (dpy, Scr->Root, RRScreenChangeNotifyMask);
+    if (HasXrandr == True)
+      XRRSelectInput(dpy, Scr->Root, RRScreenChangeNotifyMask);
 #endif
 
-	XUngrabServer(dpy);
+    XUngrabServer(dpy);
 
-	FirstScreen = FALSE;
-	Scr->FirstTime = FALSE;
-    } /* for */
+    FirstScreen = FALSE;
+    Scr->FirstTime = FALSE;
+  }				/* for */
 
-    if (numManaged == 0) {
-	if (MultiScreen && NumScreens > 0)
-	  fprintf (stderr, "%s:  unable to find any unmanaged screens\n",
-		   ProgramName);
-	exit (1);
+  if (numManaged == 0)
+  {
+    if (MultiScreen && NumScreens > 0)
+      fprintf(stderr, "%s:  unable to find any unmanaged screens\n", ProgramName);
+    exit(1);
 
-    }
+  }
 
-    RestartPreviousState = False;
-    HandlingEvents = TRUE;
+  RestartPreviousState = False;
+  HandlingEvents = TRUE;
 
-	RaiseStickyAbove();
-    RaiseAutoPan(); /* autopan windows should have been raised
-		       after [re]starting vtwm -- DSE */
+  RaiseStickyAbove();
+  RaiseAutoPan();		/* autopan windows should have been raised
+				 * after [re]starting vtwm -- DSE */
 
-    InitEvents();
+  InitEvents();
 
-	/* profile function stuff by DSE */
+  /* profile function stuff by DSE */
 #define VTWM_PROFILE "VTWM Profile"
-	if (FindMenuRoot (VTWM_PROFILE)) {
-		ExecuteFunction (F_FUNCTION, VTWM_PROFILE, Event.xany.window,
-			&Scr->TwmRoot, &Event, C_NO_CONTEXT, FALSE);
-	}
+  if (FindMenuRoot(VTWM_PROFILE))
+  {
+    ExecuteFunction(F_FUNCTION, VTWM_PROFILE, Event.xany.window, &Scr->TwmRoot, &Event, C_NO_CONTEXT, FALSE);
+  }
 
 #ifndef NO_SOUND_SUPPORT
-	/* restore setting from resource file */
-	if (sound_state == 1) ToggleSounds();
+  /* restore setting from resource file */
+  if (sound_state == 1)
+    ToggleSounds();
 #endif
 
 
-    /* write out a PID file - djhjr - 12/2/01 */
-    if (PrintPID)
+  /* write out a PID file - djhjr - 12/2/01 */
+  if (PrintPID)
+  {
+    int fd, err = 0;
+    char buf[10], *fn = malloc(HomeLen + strlen(PidName) + 2);
+
+    /* removed group and other permissions - djhjr - 10/20/02 */
+    sprintf(fn, "%s/%s", Home, PidName);
+    if ((fd = open(fn, O_WRONLY | O_EXCL | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) != -1)
     {
-	int fd, err = 0;
-	char buf[10], *fn = malloc(HomeLen + strlen(PidName) + 2);
-
-	/* removed group and other permissions - djhjr - 10/20/02 */
-	sprintf(fn, "%s/%s", Home, PidName);
-	if ((fd = open(fn,
-		O_WRONLY|O_EXCL|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)) != -1)
-	{
-	    sprintf(buf, "%d\n", getpid());
-	    err = write(fd, buf, strlen(buf));
-	    close(fd);
-	}
-
-	if (fd == -1 || err == -1)
-	{
-	    fprintf(stderr, "%s: cannot write to %s\n", ProgramName, fn);
-	    DoAudible();
-	}
-
-	free(fn);
+      sprintf(buf, "%d\n", getpid());
+      err = write(fd, buf, strlen(buf));
+      close(fd);
     }
 
-    HandleEvents();
+    if (fd == -1 || err == -1)
+    {
+      fprintf(stderr, "%s: cannot write to %s\n", ProgramName, fn);
+      DoAudible();
+    }
 
-	return (0);
+    free(fn);
+  }
+
+  HandleEvents();
+
+  return (0);
 }
 
 /***********************************************************************
@@ -999,455 +1011,463 @@ main(int argc, char **argv, char **environ)
  ***********************************************************************
  */
 
-void 
-InitVariables (void)
+void
+InitVariables(void)
 {
-    FreeList(&Scr->BorderColorL);
-    FreeList(&Scr->IconBorderColorL);
-    FreeList(&Scr->BorderTileForegroundL);
-    FreeList(&Scr->BorderTileBackgroundL);
-    FreeList(&Scr->TitleForegroundL);
-    FreeList(&Scr->TitleBackgroundL);
-    FreeList(&Scr->IconForegroundL);
-    FreeList(&Scr->IconBackgroundL);
-    FreeList(&Scr->IconManagerFL);
-    FreeList(&Scr->IconManagerBL);
-    FreeList(&Scr->IconMgrs);
-    FreeList(&Scr->NoTitle);
-    FreeList(&Scr->MakeTitle);
-    FreeList(&Scr->AutoRaise);
-    FreeList(&Scr->IconNames);
-    FreeList(&Scr->NoHighlight);
-    FreeList(&Scr->NoStackModeL);
-    FreeList(&Scr->NoTitleHighlight);
-    FreeList(&Scr->DontIconify);
-    FreeList(&Scr->IconMgrNoShow);
-    FreeList(&Scr->IconMgrShow);
-    FreeList(&Scr->IconifyByUn);
-    FreeList(&Scr->StartIconified);
-    FreeList(&Scr->IconManagerHighlightL);
-    FreeList(&Scr->SqueezeTitleL);
-    FreeList(&Scr->DontSqueezeTitleL);
-    FreeList(&Scr->WindowRingL);
+  FreeList(&Scr->BorderColorL);
+  FreeList(&Scr->IconBorderColorL);
+  FreeList(&Scr->BorderTileForegroundL);
+  FreeList(&Scr->BorderTileBackgroundL);
+  FreeList(&Scr->TitleForegroundL);
+  FreeList(&Scr->TitleBackgroundL);
+  FreeList(&Scr->IconForegroundL);
+  FreeList(&Scr->IconBackgroundL);
+  FreeList(&Scr->IconManagerFL);
+  FreeList(&Scr->IconManagerBL);
+  FreeList(&Scr->IconMgrs);
+  FreeList(&Scr->NoTitle);
+  FreeList(&Scr->MakeTitle);
+  FreeList(&Scr->AutoRaise);
+  FreeList(&Scr->IconNames);
+  FreeList(&Scr->NoHighlight);
+  FreeList(&Scr->NoStackModeL);
+  FreeList(&Scr->NoTitleHighlight);
+  FreeList(&Scr->DontIconify);
+  FreeList(&Scr->IconMgrNoShow);
+  FreeList(&Scr->IconMgrShow);
+  FreeList(&Scr->IconifyByUn);
+  FreeList(&Scr->StartIconified);
+  FreeList(&Scr->IconManagerHighlightL);
+  FreeList(&Scr->SqueezeTitleL);
+  FreeList(&Scr->DontSqueezeTitleL);
+  FreeList(&Scr->WindowRingL);
 
-    FreeList(&Scr->NoWindowRingL);
+  FreeList(&Scr->NoWindowRingL);
 
-    FreeList(&Scr->WarpCursorL);
-    FreeList(&Scr->NailedDown);
-    FreeList(&Scr->VirtualDesktopColorFL);
-    FreeList(&Scr->VirtualDesktopColorBL);
-    FreeList(&Scr->VirtualDesktopColorBoL);
-    FreeList(&Scr->DontShowInDisplay);
+  FreeList(&Scr->WarpCursorL);
+  FreeList(&Scr->NailedDown);
+  FreeList(&Scr->VirtualDesktopColorFL);
+  FreeList(&Scr->VirtualDesktopColorBL);
+  FreeList(&Scr->VirtualDesktopColorBoL);
+  FreeList(&Scr->DontShowInDisplay);
 
-    FreeList(&Scr->DontShowInTWMWindows);
+  FreeList(&Scr->DontShowInTWMWindows);
 
-    FreeList(&Scr->DoorForegroundL);
-    FreeList(&Scr->DoorBackgroundL);
+  FreeList(&Scr->DoorForegroundL);
+  FreeList(&Scr->DoorBackgroundL);
 
-	FreeList(&Scr->ImageCache);
+  FreeList(&Scr->ImageCache);
 
-	FreeList(&Scr->OpaqueMoveL);
-	FreeList(&Scr->NoOpaqueMoveL);
-	FreeList(&Scr->OpaqueResizeL);
-	FreeList(&Scr->NoOpaqueResizeL);
+  FreeList(&Scr->OpaqueMoveL);
+  FreeList(&Scr->NoOpaqueMoveL);
+  FreeList(&Scr->OpaqueResizeL);
+  FreeList(&Scr->NoOpaqueResizeL);
 
-	FreeList(&Scr->NoBorder);
+  FreeList(&Scr->NoBorder);
 
-	FreeList(&Scr->UsePPositionL);
+  FreeList(&Scr->UsePPositionL);
 
-    NewFontCursor(&Scr->FrameCursor, "top_left_arrow");
-    NewFontCursor(&Scr->TitleCursor, "top_left_arrow");
-    NewFontCursor(&Scr->IconCursor, "top_left_arrow");
-    NewFontCursor(&Scr->IconMgrCursor, "top_left_arrow");
-    NewFontCursor(&Scr->MoveCursor, "fleur");
-    NewFontCursor(&Scr->ResizeCursor, "fleur");
-    NewFontCursor(&Scr->MenuCursor, "sb_left_arrow");
-    NewFontCursor(&Scr->ButtonCursor, "hand2");
-    NewFontCursor(&Scr->WaitCursor, "watch");
-    NewFontCursor(&Scr->SelectCursor, "dot");
-    NewFontCursor(&Scr->DestroyCursor, "pirate");
-    NewFontCursor(&Scr->DoorCursor, "exchange");
-    NewFontCursor(&Scr->VirtualCursor, "rtl_logo");
-    NewFontCursor(&Scr->DesktopCursor, "dotbox");
-    Scr->NoCursor = NoCursor();
+  NewFontCursor(&Scr->FrameCursor, "top_left_arrow");
+  NewFontCursor(&Scr->TitleCursor, "top_left_arrow");
+  NewFontCursor(&Scr->IconCursor, "top_left_arrow");
+  NewFontCursor(&Scr->IconMgrCursor, "top_left_arrow");
+  NewFontCursor(&Scr->MoveCursor, "fleur");
+  NewFontCursor(&Scr->ResizeCursor, "fleur");
+  NewFontCursor(&Scr->MenuCursor, "sb_left_arrow");
+  NewFontCursor(&Scr->ButtonCursor, "hand2");
+  NewFontCursor(&Scr->WaitCursor, "watch");
+  NewFontCursor(&Scr->SelectCursor, "dot");
+  NewFontCursor(&Scr->DestroyCursor, "pirate");
+  NewFontCursor(&Scr->DoorCursor, "exchange");
+  NewFontCursor(&Scr->VirtualCursor, "rtl_logo");
+  NewFontCursor(&Scr->DesktopCursor, "dotbox");
+  Scr->NoCursor = NoCursor();
 
-    Scr->Ring = NULL;
-    Scr->RingLeader = NULL;
+  Scr->Ring = NULL;
+  Scr->RingLeader = NULL;
 
-    Scr->DefaultC.fore = black;
-    Scr->DefaultC.back = white;
-    Scr->BorderColor = black;
-    Scr->BorderTileC.fore = black;
-    Scr->BorderTileC.back = white;
-    Scr->TitleC.fore = black;
-    Scr->TitleC.back = white;
-    Scr->MenuC.fore = black;
-    Scr->MenuC.back = white;
-    Scr->MenuTitleC.fore = black;
-    Scr->MenuTitleC.back = white;
-    Scr->MenuShadowColor = black;
-    Scr->IconC.fore = black;
-    Scr->IconC.back = white;
-    Scr->IconBorderColor = black;
-    Scr->IconManagerC.fore = black;
-    Scr->IconManagerC.back = white;
-    Scr->IconManagerHighlight = black;
+  Scr->DefaultC.fore = black;
+  Scr->DefaultC.back = white;
+  Scr->BorderColor = black;
+  Scr->BorderTileC.fore = black;
+  Scr->BorderTileC.back = white;
+  Scr->TitleC.fore = black;
+  Scr->TitleC.back = white;
+  Scr->MenuC.fore = black;
+  Scr->MenuC.back = white;
+  Scr->MenuTitleC.fore = black;
+  Scr->MenuTitleC.back = white;
+  Scr->MenuShadowColor = black;
+  Scr->IconC.fore = black;
+  Scr->IconC.back = white;
+  Scr->IconBorderColor = black;
+  Scr->IconManagerC.fore = black;
+  Scr->IconManagerC.back = white;
+  Scr->IconManagerHighlight = black;
 
-    Scr->FramePadding = -100;
-    Scr->TitlePadding = -100;
-    Scr->ButtonIndent = -100;
+  Scr->FramePadding = -100;
+  Scr->TitlePadding = -100;
+  Scr->ButtonIndent = -100;
 
-	Scr->ResizeX = Scr->ResizeY = 0;
+  Scr->ResizeX = Scr->ResizeY = 0;
 
-    Scr->VirtualC.fore = black;
-    Scr->VirtualC.back = white;
-	Scr->RealScreenC.back = black;
-	Scr->RealScreenC.fore = white;
-    Scr->VirtualDesktopDisplayC.fore = black;
-    Scr->VirtualDesktopDisplayC.back = white;
-    Scr->VirtualDesktopDisplayBorder = black;
-    Scr->DoorC.fore = black;
-    Scr->DoorC.back = white;
+  Scr->VirtualC.fore = black;
+  Scr->VirtualC.back = white;
+  Scr->RealScreenC.back = black;
+  Scr->RealScreenC.fore = white;
+  Scr->VirtualDesktopDisplayC.fore = black;
+  Scr->VirtualDesktopDisplayC.back = white;
+  Scr->VirtualDesktopDisplayBorder = black;
+  Scr->DoorC.fore = black;
+  Scr->DoorC.back = white;
 
-	Scr->AutoRaiseDefault = FALSE;
-    Scr->FramePadding = 2;		/* values that look "nice" on */
-    Scr->TitlePadding = 8;		/* 75 and 100dpi displays */
-    Scr->ButtonIndent = 1;
-    Scr->SizeStringOffset = 0;
-    Scr->BorderWidth = BW;
-    Scr->IconBorderWidth = BW;
+  Scr->AutoRaiseDefault = FALSE;
+  Scr->FramePadding = 2;	/* values that look "nice" on */
+  Scr->TitlePadding = 8;	/* 75 and 100dpi displays */
+  Scr->ButtonIndent = 1;
+  Scr->SizeStringOffset = 0;
+  Scr->BorderWidth = BW;
+  Scr->IconBorderWidth = BW;
 
-    Scr->unknownName = NULL;
+  Scr->unknownName = NULL;
 
 #ifdef TWM_USE_OPACITY
-    Scr->MenuOpacity = 255;		/* 0 = transparent ... 255 = opaque */
-    Scr->IconOpacity = 255;
+  Scr->MenuOpacity = 255;	/* 0 = transparent ... 255 = opaque */
+  Scr->IconOpacity = 255;
 #endif
 
-    Scr->NumAutoRaises = 0;
-	Scr->NoDefaultMouseOrKeyboardBindings = FALSE;
-	Scr->NoDefaultTitleButtons = FALSE;
-    Scr->UsePPosition = PPOS_OFF;
-    Scr->Newest = NULL;
+  Scr->NumAutoRaises = 0;
+  Scr->NoDefaultMouseOrKeyboardBindings = FALSE;
+  Scr->NoDefaultTitleButtons = FALSE;
+  Scr->UsePPosition = PPOS_OFF;
+  Scr->Newest = NULL;
 
-    Scr->IgnoreModifiers = 0;
+  Scr->IgnoreModifiers = 0;
 
-    Scr->WarpCentered = WARPC_OFF;
+  Scr->WarpCentered = WARPC_OFF;
 
-    Scr->WarpCursor = FALSE;
-    Scr->ForceIcon = FALSE;
-    Scr->NoGrabServer = FALSE;
-    Scr->NoRaiseMove = FALSE;
-    Scr->NoRaiseResize = FALSE;
-    Scr->NoRaiseDeicon = FALSE;
-    Scr->NoRaiseWarp = FALSE;
-    Scr->DontMoveOff = FALSE;
-    Scr->DoZoom = FALSE;
-    Scr->TitleFocus = TRUE;
+  Scr->WarpCursor = FALSE;
+  Scr->ForceIcon = FALSE;
+  Scr->NoGrabServer = FALSE;
+  Scr->NoRaiseMove = FALSE;
+  Scr->NoRaiseResize = FALSE;
+  Scr->NoRaiseDeicon = FALSE;
+  Scr->NoRaiseWarp = FALSE;
+  Scr->DontMoveOff = FALSE;
+  Scr->DoZoom = FALSE;
+  Scr->TitleFocus = TRUE;
 
-    Scr->IconManagerFocus = TRUE;
+  Scr->IconManagerFocus = TRUE;
 
-    Scr->StaticIconPositions = FALSE;
+  Scr->StaticIconPositions = FALSE;
 
-    Scr->StrictIconManager = FALSE;
+  Scr->StrictIconManager = FALSE;
 
-    Scr->NoBorders = FALSE;
+  Scr->NoBorders = FALSE;
 
-    Scr->NoTitlebar = FALSE;
-    Scr->DecorateTransients = FALSE;
-    Scr->IconifyByUnmapping = FALSE;
-    Scr->ShowIconManager = FALSE;
-    Scr->IconManagerDontShow =FALSE;
-    Scr->BackingStore = TRUE;
-    Scr->SaveUnder = TRUE;
-    Scr->RandomPlacement = FALSE;
-    Scr->PointerPlacement = FALSE;
-    Scr->OpaqueMove = FALSE;
+  Scr->NoTitlebar = FALSE;
+  Scr->DecorateTransients = FALSE;
+  Scr->IconifyByUnmapping = FALSE;
+  Scr->ShowIconManager = FALSE;
+  Scr->IconManagerDontShow = FALSE;
+  Scr->BackingStore = TRUE;
+  Scr->SaveUnder = TRUE;
+  Scr->RandomPlacement = FALSE;
+  Scr->PointerPlacement = FALSE;
+  Scr->OpaqueMove = FALSE;
 
-	Scr->OpaqueResize = FALSE;
+  Scr->OpaqueResize = FALSE;
 
-    Scr->Highlight = TRUE;
+  Scr->Highlight = TRUE;
 
-    Scr->IconMgrHighlight = TRUE;
+  Scr->IconMgrHighlight = TRUE;
 
-    Scr->StackMode = TRUE;
-    Scr->TitleHighlight = TRUE;
-    Scr->MoveDelta = 1;		/* so that f.deltastop will work */
-    Scr->ZoomCount = 8;
-    Scr->SortIconMgr = FALSE;
-    Scr->Shadow = TRUE;
-    Scr->InterpolateMenuColors = FALSE;
-    Scr->NoIconManagers = FALSE;
-    Scr->NoIconifyIconManagers = FALSE;
-    Scr->ClientBorderWidth = FALSE;
-    Scr->SqueezeTitle = -1;
+  Scr->StackMode = TRUE;
+  Scr->TitleHighlight = TRUE;
+  Scr->MoveDelta = 1;		/* so that f.deltastop will work */
+  Scr->ZoomCount = 8;
+  Scr->SortIconMgr = FALSE;
+  Scr->Shadow = TRUE;
+  Scr->InterpolateMenuColors = FALSE;
+  Scr->NoIconManagers = FALSE;
+  Scr->NoIconifyIconManagers = FALSE;
+  Scr->ClientBorderWidth = FALSE;
+  Scr->SqueezeTitle = -1;
 
-    FreeRegions(Scr->FirstIconRegion, Scr->LastIconRegion);
+  FreeRegions(Scr->FirstIconRegion, Scr->LastIconRegion);
 
-    FreeRegions(Scr->FirstAppletRegion, Scr->LastAppletRegion);
+  FreeRegions(Scr->FirstAppletRegion, Scr->LastAppletRegion);
 
-    Scr->FirstTime = TRUE;
-    Scr->HaveFonts = FALSE;		/* i.e. not loaded yet */
-    Scr->CaseSensitive = TRUE;
-    Scr->WarpUnmapped = FALSE;
-    Scr->DeIconifyToScreen = FALSE;
-    Scr->WarpWindows = FALSE;
-    Scr->WarpToTransients = FALSE;
-    Scr->WarpToLocalTransients = FALSE;
+  Scr->FirstTime = TRUE;
+  Scr->HaveFonts = FALSE;	/* i.e. not loaded yet */
+  Scr->CaseSensitive = TRUE;
+  Scr->WarpUnmapped = FALSE;
+  Scr->DeIconifyToScreen = FALSE;
+  Scr->WarpWindows = FALSE;
+  Scr->WarpToTransients = FALSE;
+  Scr->WarpToLocalTransients = FALSE;
 
-    Scr->ShallowReliefWindowButton = 2;
+  Scr->ShallowReliefWindowButton = 2;
 
-    Scr->ClearBevelContrast = 50;
-    Scr->DarkBevelContrast  = 40;
-    Scr->BeNiceToColormap = FALSE;
-	Scr->NoPrettyTitles = FALSE;
+  Scr->ClearBevelContrast = 50;
+  Scr->DarkBevelContrast = 40;
+  Scr->BeNiceToColormap = FALSE;
+  Scr->NoPrettyTitles = FALSE;
 
-    Scr->ButtonColorIsFrame = FALSE;
+  Scr->ButtonColorIsFrame = FALSE;
 
-    Scr->snapRealScreen = FALSE;
-	Scr->OldFashionedTwmWindowsMenu = FALSE;
-    Scr->GeometriesAreVirtual = TRUE;
-	Scr->UseWindowRing = FALSE;
+  Scr->snapRealScreen = FALSE;
+  Scr->OldFashionedTwmWindowsMenu = FALSE;
+  Scr->GeometriesAreVirtual = TRUE;
+  Scr->UseWindowRing = FALSE;
 
-    /* setup default fonts; overridden by defaults from system.twmrc */
+  /* setup default fonts; overridden by defaults from system.twmrc */
 #define DEFAULT_NICE_FONT "variable"
 #define DEFAULT_FAST_FONT "fixed"
 #define DEFAULT_SMALL_FONT "5x8"
 
-    Scr->TitleBarFont.font = NULL;
-    Scr->TitleBarFont.name = DEFAULT_NICE_FONT;
-    Scr->MenuFont.font = NULL;
-    Scr->MenuFont.name = DEFAULT_NICE_FONT;
-    Scr->MenuTitleFont.font = NULL;
-    Scr->MenuTitleFont.name = NULL; /* uses MenuFont unless set -- DSE */
-    Scr->IconFont.font = NULL;
-    Scr->IconFont.name = DEFAULT_NICE_FONT;
-    Scr->SizeFont.font = NULL;
-    Scr->SizeFont.name = DEFAULT_FAST_FONT;
+  Scr->TitleBarFont.font = NULL;
+  Scr->TitleBarFont.name = DEFAULT_NICE_FONT;
+  Scr->MenuFont.font = NULL;
+  Scr->MenuFont.name = DEFAULT_NICE_FONT;
+  Scr->MenuTitleFont.font = NULL;
+  Scr->MenuTitleFont.name = NULL;	/* uses MenuFont unless set -- DSE */
+  Scr->IconFont.font = NULL;
+  Scr->IconFont.name = DEFAULT_NICE_FONT;
+  Scr->SizeFont.font = NULL;
+  Scr->SizeFont.name = DEFAULT_FAST_FONT;
 
-    Scr->InfoFont.font = NULL;
-    Scr->InfoFont.name = DEFAULT_FAST_FONT;
+  Scr->InfoFont.font = NULL;
+  Scr->InfoFont.name = DEFAULT_FAST_FONT;
 
-    Scr->IconManagerFont.font = NULL;
-    Scr->IconManagerFont.name = DEFAULT_NICE_FONT;
-    Scr->VirtualFont.font = NULL;
-    Scr->VirtualFont.name = DEFAULT_SMALL_FONT;
-    Scr->DoorFont.font = NULL;
-    Scr->DoorFont.name = DEFAULT_NICE_FONT;
-    Scr->DefaultFont.font = NULL;
-    Scr->DefaultFont.name = DEFAULT_FAST_FONT;
+  Scr->IconManagerFont.font = NULL;
+  Scr->IconManagerFont.name = DEFAULT_NICE_FONT;
+  Scr->VirtualFont.font = NULL;
+  Scr->VirtualFont.name = DEFAULT_SMALL_FONT;
+  Scr->DoorFont.font = NULL;
+  Scr->DoorFont.name = DEFAULT_NICE_FONT;
+  Scr->DefaultFont.font = NULL;
+  Scr->DefaultFont.name = DEFAULT_FAST_FONT;
 
 #ifdef TWM_USE_XFT
-    Scr->TitleBarFont.xft = NULL;
-    Scr->MenuFont.xft = NULL;
-    Scr->MenuTitleFont.xft = NULL;
-    Scr->IconFont.xft = NULL;
-    Scr->SizeFont.xft = NULL;
-    Scr->InfoFont.xft = NULL;
-    Scr->IconManagerFont.xft = NULL;
-    Scr->VirtualFont.xft = NULL;
-    Scr->DoorFont.xft = NULL;
-    Scr->DefaultFont.xft = NULL;
+  Scr->TitleBarFont.xft = NULL;
+  Scr->MenuFont.xft = NULL;
+  Scr->MenuTitleFont.xft = NULL;
+  Scr->IconFont.xft = NULL;
+  Scr->SizeFont.xft = NULL;
+  Scr->InfoFont.xft = NULL;
+  Scr->IconManagerFont.xft = NULL;
+  Scr->VirtualFont.xft = NULL;
+  Scr->DoorFont.xft = NULL;
+  Scr->DefaultFont.xft = NULL;
 #endif
 
 #ifdef TWM_USE_XRANDR
-    Scr->RRScreenChangeRestart = FALSE;
+  Scr->RRScreenChangeRestart = FALSE;
 #endif
 
-    /* no names unless they say so */
-    Scr->NamesInVirtualDesktop = FALSE;
+  /* no names unless they say so */
+  Scr->NamesInVirtualDesktop = FALSE;
 
-    /* by default we emulate the old twm - ie. no virtual desktop */
-    Scr->Virtual = FALSE;
+  /* by default we emulate the old twm - ie. no virtual desktop */
+  Scr->Virtual = FALSE;
 
-    /* this makes some of the algorithms for checking if windows
-     * are on the screen simpler */
-    Scr->VirtualDesktopWidth = Scr->MyDisplayWidth;
-    Scr->VirtualDesktopHeight = Scr->MyDisplayHeight;
+  /* this makes some of the algorithms for checking if windows
+   * are on the screen simpler */
+  Scr->VirtualDesktopWidth = Scr->MyDisplayWidth;
+  Scr->VirtualDesktopHeight = Scr->MyDisplayHeight;
 
-    /* start at the top left of the virtual desktop */
-    Scr->VirtualDesktopX = 0;
-    Scr->VirtualDesktopY = 0;
+  /* start at the top left of the virtual desktop */
+  Scr->VirtualDesktopX = 0;
+  Scr->VirtualDesktopY = 0;
 
-    /* pan defaults to half screen size */
-    Scr->VirtualDesktopPanDistanceX = 50;
-    Scr->VirtualDesktopPanDistanceY = 50;
+  /* pan defaults to half screen size */
+  Scr->VirtualDesktopPanDistanceX = 50;
+  Scr->VirtualDesktopPanDistanceY = 50;
 
-	Scr->VirtualDesktopPanResistance = 0;
+  Scr->VirtualDesktopPanResistance = 0;
 
-    /* default scale is 1:25 */
-    Scr->VirtualDesktopDScale = 25;
+  /* default scale is 1:25 */
+  Scr->VirtualDesktopDScale = 25;
 
-    /* and the display should appear at 0, 0 */
-    Scr->VirtualDesktopDX = 0;
-    Scr->VirtualDesktopDY = 0;
+  /* and the display should appear at 0, 0 */
+  Scr->VirtualDesktopDX = 0;
+  Scr->VirtualDesktopDY = 0;
 
-    /* by default no autopan */
-    Scr->AutoPanX = 0;
-    Scr->StayUpMenus = FALSE;
-    Scr->StayUpOptionalMenus = FALSE;
+  /* by default no autopan */
+  Scr->AutoPanX = 0;
+  Scr->StayUpMenus = FALSE;
+  Scr->StayUpOptionalMenus = FALSE;
 
-	Scr->AutoPanWarpWithRespectToRealScreen = 0;
-	Scr->AutoPanBorderWidth = 5;
-	Scr->AutoPanExtraWarp = 2;
-	Scr->EnhancedExecResources = FALSE;
-	Scr->RightHandSidePulldownMenus = FALSE;
+  Scr->AutoPanWarpWithRespectToRealScreen = 0;
+  Scr->AutoPanBorderWidth = 5;
+  Scr->AutoPanExtraWarp = 2;
+  Scr->EnhancedExecResources = FALSE;
+  Scr->RightHandSidePulldownMenus = FALSE;
 
-	/* was '2' for when UseRealScreenBorderWidth existed - djhjr - 2/15/99 */
-	Scr->RealScreenBorderWidth = 0;
+  /* was '2' for when UseRealScreenBorderWidth existed - djhjr - 2/15/99 */
+  Scr->RealScreenBorderWidth = 0;
 
-	Scr->ZoomZoom = FALSE;
+  Scr->ZoomZoom = FALSE;
 
-	Scr->LessRandomZoomZoom = FALSE;
-	Scr->PrettyZoom = FALSE;
-	Scr->StickyAbove = FALSE;
-	Scr->DontInterpolateTitles = FALSE;
+  Scr->LessRandomZoomZoom = FALSE;
+  Scr->PrettyZoom = FALSE;
+  Scr->StickyAbove = FALSE;
+  Scr->DontInterpolateTitles = FALSE;
 
-	Scr->FixManagedVirtualGeometries = FALSE;
+  Scr->FixManagedVirtualGeometries = FALSE;
 
-	Scr->FixTransientVirtualGeometries = FALSE;
-	Scr->WarpSnug = FALSE;
+  Scr->FixTransientVirtualGeometries = FALSE;
+  Scr->WarpSnug = FALSE;
 
-	Scr->VirtualReceivesMotionEvents = FALSE;
-	Scr->VirtualSendsMotionEvents = FALSE;
+  Scr->VirtualReceivesMotionEvents = FALSE;
+  Scr->VirtualSendsMotionEvents = FALSE;
 
-	Scr->BorderBevelWidth = 0;
-	Scr->TitleBevelWidth = 0;
-	Scr->MenuBevelWidth = 0;
-	Scr->IconMgrBevelWidth = 0;
-	Scr->InfoBevelWidth = 0;
+  Scr->BorderBevelWidth = 0;
+  Scr->TitleBevelWidth = 0;
+  Scr->MenuBevelWidth = 0;
+  Scr->IconMgrBevelWidth = 0;
+  Scr->InfoBevelWidth = 0;
 
-	Scr->IconBevelWidth = 0;
-	Scr->ButtonBevelWidth = 0;
+  Scr->IconBevelWidth = 0;
+  Scr->ButtonBevelWidth = 0;
 
-	Scr->DoorBevelWidth = 0;
-	Scr->VirtualDesktopBevelWidth = 0;
+  Scr->DoorBevelWidth = 0;
+  Scr->VirtualDesktopBevelWidth = 0;
 
-	Scr->MenuScrollBorderWidth = 2;
-	Scr->MenuScrollJump = 3;
+  Scr->MenuScrollBorderWidth = 2;
+  Scr->MenuScrollJump = 3;
 
-	Scr->DontDeiconifyTransients = FALSE;
+  Scr->DontDeiconifyTransients = FALSE;
 
-	Scr->WarpVisible = FALSE;
+  Scr->WarpVisible = FALSE;
 
-	Scr->PauseOnExit = 0;
-	Scr->PauseOnQuit = 0;
+  Scr->PauseOnExit = 0;
+  Scr->PauseOnQuit = 0;
 
-	Scr->RaiseOnStart = FALSE;
+  Scr->RaiseOnStart = FALSE;
 }
 
 
-void 
-CreateFonts (void)
+void
+CreateFonts(void)
 {
-    GetFont(&Scr->TitleBarFont);
-    GetFont(&Scr->MenuFont);
-    GetFont(&Scr->IconFont);
-    GetFont(&Scr->SizeFont);
+  GetFont(&Scr->TitleBarFont);
+  GetFont(&Scr->MenuFont);
+  GetFont(&Scr->IconFont);
+  GetFont(&Scr->SizeFont);
 
-    GetFont(&Scr->InfoFont);
+  GetFont(&Scr->InfoFont);
 
-    GetFont(&Scr->IconManagerFont);
-    GetFont(&Scr->VirtualFont);
-    GetFont(&Scr->DoorFont);
-    GetFont(&Scr->DefaultFont);
-    if (Scr->MenuTitleFont.name == NULL)
-	Scr->MenuTitleFont.name = Scr->MenuFont.name;
-    GetFont(&Scr->MenuTitleFont);
-    Scr->HaveFonts = TRUE;
+  GetFont(&Scr->IconManagerFont);
+  GetFont(&Scr->VirtualFont);
+  GetFont(&Scr->DoorFont);
+  GetFont(&Scr->DefaultFont);
+  if (Scr->MenuTitleFont.name == NULL)
+    Scr->MenuTitleFont.name = Scr->MenuFont.name;
+  GetFont(&Scr->MenuTitleFont);
+  Scr->HaveFonts = TRUE;
 }
 
 
-void 
-RestoreWithdrawnLocation (TwmWindow *tmp)
+void
+RestoreWithdrawnLocation(TwmWindow * tmp)
 {
-    int gravx, gravy;
-    unsigned int bw, mask;
-    XWindowChanges xwc;
+  int gravx, gravy;
+  unsigned int bw, mask;
+  XWindowChanges xwc;
 
-    if (XGetGeometry (dpy, tmp->w, &JunkRoot, &xwc.x, &xwc.y,
-		      &JunkWidth, &JunkHeight, &bw, &JunkDepth)) {
+  if (XGetGeometry(dpy, tmp->w, &JunkRoot, &xwc.x, &xwc.y, &JunkWidth, &JunkHeight, &bw, &JunkDepth))
+  {
 
-	GetGravityOffsets (tmp, &gravx, &gravy);
-	if (gravy < 0) xwc.y -= tmp->title_height;
+    GetGravityOffsets(tmp, &gravx, &gravy);
+    if (gravy < 0)
+      xwc.y -= tmp->title_height;
 
-	xwc.x += gravx * tmp->frame_bw3D;
-	xwc.y += gravy * tmp->frame_bw3D;
+    xwc.x += gravx * tmp->frame_bw3D;
+    xwc.y += gravy * tmp->frame_bw3D;
 
-	if (bw != tmp->old_bw) {
-	    int xoff, yoff;
-
-	    if (!Scr->ClientBorderWidth) {
-		xoff = gravx;
-		yoff = gravy;
-	    } else {
-		xoff = 0;
-		yoff = 0;
-	    }
-
-	    xwc.x -= (xoff + 1) * tmp->old_bw;
-	    xwc.y -= (yoff + 1) * tmp->old_bw;
-	}
-	if (!Scr->ClientBorderWidth) {
-	    xwc.x += gravx * tmp->frame_bw;
-	    xwc.y += gravy * tmp->frame_bw;
-	}
-
-	mask = (CWX | CWY);
-	if (bw != tmp->old_bw) {
-	    xwc.border_width = tmp->old_bw;
-	    mask |= CWBorderWidth;
-	}
-
-	XConfigureWindow (dpy, tmp->w, mask, &xwc);
-
-	if (tmp->wmhints && (tmp->wmhints->flags & IconWindowHint)) {
-	    XUnmapWindow (dpy, tmp->wmhints->icon_window);
-	}
-
-    }
-}
-
-
-void 
-Reborder (Time time)
-{
-    TwmWindow *tmp;			/* temp twm window structure */
-    int scrnum;
-
-    /* put a border back around all windows */
-
-    XGrabServer (dpy);
-    for (scrnum = 0; scrnum < NumScreens; scrnum++)
+    if (bw != tmp->old_bw)
     {
-	if ((Scr = ScreenList[scrnum]) == NULL)
-	    continue;
+      int xoff, yoff;
 
-	InstallWindowColormaps (0, &Scr->TwmRoot);	/* force reinstall */
-	for (tmp = Scr->TwmRoot.next; tmp != NULL; tmp = tmp->next)
-	{
-	    RestoreWithdrawnLocation (tmp);
-	    XMapWindow (dpy, tmp->w);
-	}
+      if (!Scr->ClientBorderWidth)
+      {
+	xoff = gravx;
+	yoff = gravy;
+      }
+      else
+      {
+	xoff = 0;
+	yoff = 0;
+      }
+
+      xwc.x -= (xoff + 1) * tmp->old_bw;
+      xwc.y -= (yoff + 1) * tmp->old_bw;
+    }
+    if (!Scr->ClientBorderWidth)
+    {
+      xwc.x += gravx * tmp->frame_bw;
+      xwc.y += gravy * tmp->frame_bw;
     }
 
-    XUngrabServer (dpy);
-    SetFocus ((TwmWindow*)NULL, time);
+    mask = (CWX | CWY);
+    if (bw != tmp->old_bw)
+    {
+      xwc.border_width = tmp->old_bw;
+      mask |= CWBorderWidth;
+    }
+
+    XConfigureWindow(dpy, tmp->w, mask, &xwc);
+
+    if (tmp->wmhints && (tmp->wmhints->flags & IconWindowHint))
+    {
+      XUnmapWindow(dpy, tmp->wmhints->icon_window);
+    }
+
+  }
+}
+
+
+void
+Reborder(Time time)
+{
+  TwmWindow *tmp;		/* temp twm window structure */
+  int scrnum;
+
+  /* put a border back around all windows */
+
+  XGrabServer(dpy);
+  for (scrnum = 0; scrnum < NumScreens; scrnum++)
+  {
+    if ((Scr = ScreenList[scrnum]) == NULL)
+      continue;
+
+    InstallWindowColormaps(0, &Scr->TwmRoot);	/* force reinstall */
+    for (tmp = Scr->TwmRoot.next; tmp != NULL; tmp = tmp->next)
+    {
+      RestoreWithdrawnLocation(tmp);
+      XMapWindow(dpy, tmp->w);
+    }
+  }
+
+  XUngrabServer(dpy);
+  SetFocus((TwmWindow *) NULL, time);
 }
 
 /* delete the PID file - djhjr - 12/2/01 */
-void 
-delete_pidfile (void)
+void
+delete_pidfile(void)
 {
-    char *fn;
+  char *fn;
 
-    if (PrintPID)
-    {
-	fn = malloc(HomeLen + strlen(PidName) + 2);
-	sprintf(fn, "%s/%s", Home, PidName);
-	unlink(fn);
-	free(fn);
-    }
+  if (PrintPID)
+  {
+    fn = malloc(HomeLen + strlen(PidName) + 2);
+    sprintf(fn, "%s/%s", Home, PidName);
+    unlink(fn);
+    free(fn);
+  }
 }
 
 
@@ -1460,63 +1480,64 @@ delete_pidfile (void)
  */
 
 #ifndef NO_SOUND_SUPPORT
-SIGNAL_T 
-PlaySoundDone (int)
+SIGNAL_T
+PlaySoundDone(int)
 {
-    if (PlaySound(S_STOP))
-    {
-	/* allow time to emit */
-	if (Scr->PauseOnExit) sleep(Scr->PauseOnExit);
-    }
+  if (PlaySound(S_STOP))
+  {
+    /* allow time to emit */
+    if (Scr->PauseOnExit)
+      sleep(Scr->PauseOnExit);
+  }
 
-    Done(0);
-    SIGNAL_RETURN;
+  Done(0);
+  SIGNAL_RETURN;
 }
 
-void 
-Done (int signum)
+void
+Done(int signum)
 {
-    CloseSound();
+  CloseSound();
 
-    SetRealScreen(0,0);
-    Reborder (CurrentTime);
-    XCloseDisplay(dpy);
+  SetRealScreen(0, 0);
+  Reborder(CurrentTime);
+  XCloseDisplay(dpy);
 
-    delete_pidfile();
+  delete_pidfile();
 
-    exit(0);
+  exit(0);
 }
 #else
-SIGNAL_T 
-Done (int signum)
+SIGNAL_T
+Done(int signum)
 {
-    SetRealScreen(0,0);
-    Reborder (CurrentTime);
-    XCloseDisplay(dpy);
+  SetRealScreen(0, 0);
+  Reborder(CurrentTime);
+  XCloseDisplay(dpy);
 
-    delete_pidfile();
+  delete_pidfile();
 
-    exit(0);
-    SIGNAL_RETURN;
+  exit(0);
+  SIGNAL_RETURN;
 }
 #endif
 
-SIGNAL_T 
-QueueRestartVtwm (int signum)
+SIGNAL_T
+QueueRestartVtwm(int signum)
 {
-    XClientMessageEvent ev;
+  XClientMessageEvent ev;
 
-    delete_pidfile();
+  delete_pidfile();
 
-    ev.type = ClientMessage;
-    ev.window = Scr->Root;
-    ev.message_type = _XA_TWM_RESTART;
-    ev.format = 32;
-    ev.data.b[0] = (char)0;
+  ev.type = ClientMessage;
+  ev.window = Scr->Root;
+  ev.message_type = _XA_TWM_RESTART;
+  ev.format = 32;
+  ev.data.b[0] = (char)0;
 
-    XSendEvent (dpy, Scr->VirtualDesktopDisplay, False, 0L, (XEvent *) &ev);
-    XFlush(dpy);
-    SIGNAL_RETURN;
+  XSendEvent(dpy, Scr->VirtualDesktopDisplay, False, 0L, (XEvent *) & ev);
+  XFlush(dpy);
+  SIGNAL_RETURN;
 }
 
 
@@ -1529,28 +1550,28 @@ QueueRestartVtwm (int signum)
 Bool ErrorOccurred = False;
 XErrorEvent LastErrorEvent;
 
-static int 
-TwmErrorHandler (Display *dpy, XErrorEvent *event)
+static int
+TwmErrorHandler(Display * dpy, XErrorEvent * event)
 {
-    LastErrorEvent = *event;
-    ErrorOccurred = True;
+  LastErrorEvent = *event;
+  ErrorOccurred = True;
 
-    if (PrintErrorMessages &&			/* don't be too obnoxious */
-	event->error_code != BadWindow &&	/* watch for dead puppies */
-	(event->request_code != X_GetGeometry &&	 /* of all styles */
-	 event->error_code != BadDrawable))
-      XmuPrintDefaultErrorMessage (dpy, event, stderr);
-    return 0;
+  if (PrintErrorMessages &&	/* don't be too obnoxious */
+      event->error_code != BadWindow &&	/* watch for dead puppies */
+      (event->request_code != X_GetGeometry &&	/* of all styles */
+       event->error_code != BadDrawable))
+    XmuPrintDefaultErrorMessage(dpy, event, stderr);
+  return 0;
 }
 
 
-static int 
-CatchRedirectError (Display *dpy, XErrorEvent *event)
+static int
+CatchRedirectError(Display * dpy, XErrorEvent * event)
 {
-    RedirectError = TRUE;
-    LastErrorEvent = *event;
-    ErrorOccurred = True;
-    return 0;
+  RedirectError = TRUE;
+  LastErrorEvent = *event;
+  ErrorOccurred = True;
+  return 0;
 }
 
 Atom _XA_MIT_PRIORITY_COLORS;
@@ -1568,24 +1589,24 @@ Atom _XA_TWM_RESTART;
 Atom _XA_NET_WM_WINDOW_OPACITY;
 #endif
 
-void 
-InternUsefulAtoms (void)
+void
+InternUsefulAtoms(void)
 {
-    /*
-     * Create priority colors if necessary.
-     */
-    _XA_MIT_PRIORITY_COLORS = XInternAtom(dpy, "_MIT_PRIORITY_COLORS", False);
-    _XA_WM_CHANGE_STATE = XInternAtom (dpy, "WM_CHANGE_STATE", False);
-    _XA_WM_STATE = XInternAtom (dpy, "WM_STATE", False);
-    _XA_WM_COLORMAP_WINDOWS = XInternAtom (dpy, "WM_COLORMAP_WINDOWS", False);
-    _XA_WM_PROTOCOLS = XInternAtom (dpy, "WM_PROTOCOLS", False);
-    _XA_WM_TAKE_FOCUS = XInternAtom (dpy, "WM_TAKE_FOCUS", False);
-    _XA_WM_SAVE_YOURSELF = XInternAtom (dpy, "WM_SAVE_YOURSELF", False);
-    _XA_WM_DELETE_WINDOW = XInternAtom (dpy, "WM_DELETE_WINDOW", False);
+  /*
+   * Create priority colors if necessary.
+   */
+  _XA_MIT_PRIORITY_COLORS = XInternAtom(dpy, "_MIT_PRIORITY_COLORS", False);
+  _XA_WM_CHANGE_STATE = XInternAtom(dpy, "WM_CHANGE_STATE", False);
+  _XA_WM_STATE = XInternAtom(dpy, "WM_STATE", False);
+  _XA_WM_COLORMAP_WINDOWS = XInternAtom(dpy, "WM_COLORMAP_WINDOWS", False);
+  _XA_WM_PROTOCOLS = XInternAtom(dpy, "WM_PROTOCOLS", False);
+  _XA_WM_TAKE_FOCUS = XInternAtom(dpy, "WM_TAKE_FOCUS", False);
+  _XA_WM_SAVE_YOURSELF = XInternAtom(dpy, "WM_SAVE_YOURSELF", False);
+  _XA_WM_DELETE_WINDOW = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
 
-    _XA_TWM_RESTART = XInternAtom (dpy, "_TWM_RESTART", False);
+  _XA_TWM_RESTART = XInternAtom(dpy, "_TWM_RESTART", False);
 
 #ifdef TWM_USE_OPACITY
-    _XA_NET_WM_WINDOW_OPACITY = XInternAtom (dpy, "_NET_WM_WINDOW_OPACITY", False);
+  _XA_NET_WM_WINDOW_OPACITY = XInternAtom(dpy, "_NET_WM_WINDOW_OPACITY", False);
 #endif
 }
