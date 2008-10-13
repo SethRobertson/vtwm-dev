@@ -41,8 +41,14 @@
 #define S_APAN		907
 #define S_BELL		908
 
-extern int OpenSound(), SetSound(), ToggleSounds();
-extern int PlaySound(), PlaySoundAdhoc();
-extern void CloseSound(), SetSoundHost(), SetSoundVolume();
+extern int OpenSound(void);
+extern void CloseSound(void);
+extern int SetSound(char *function, char *filename, int volume);
+extern int PlaySound(int function);
+extern int PlaySoundAdhoc(char *filename);
+extern void SetSoundHost(char *host);
+extern void SetSoundVolume(int volume);
+extern int ToggleSounds(void);
+extern void PlaySoundDone(void);
 
 #endif	/* _SOUND_ */

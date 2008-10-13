@@ -58,6 +58,7 @@
 #ifndef NO_SOUND_SUPPORT
 #include "sound.h"
 #endif
+#include "prototypes.h"
 #include <X11/Xresource.h>
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
@@ -86,10 +87,12 @@ int FirstScreen;		/* TRUE ==> first screen of display */
 Bool PrintPID = False;		/* controls PID file - djhjr - 12/2/01 */
 Bool PrintErrorMessages = False;	/* controls error messages */
 static int RedirectError;	/* TRUE ==> another window manager running */
-static int CatchRedirectError();	/* for settting RedirectError */
-static int TwmErrorHandler();	/* for everything else */
-void InitVariables();
-void InternUsefulAtoms();
+static int CatchRedirectError(Display *dpy, XErrorEvent *event);	/* for settting RedirectError */
+static int TwmErrorHandler(Display *dpy, XErrorEvent *event);	/* for everything else */
+static void InitVariables(void);
+static void InternUsefulAtoms(void);
+static SIGNAL_T QueueRestartVtwm(int);
+
 
 char Info[INFO_LINES][INFO_SIZE];		/* info strings to print */
 int InfoLines;
@@ -144,9 +147,7 @@ short FocusRoot;		/* is the input focus on the root ? */
 int SloppyFocus;		/* TRUE if sloppy focus policy globally on all screens activated */
 #endif
 
-extern void assign_var_savecolor();
 
-extern void FreeRegions();
 
 /***********************************************************************
  *
@@ -158,10 +159,7 @@ extern void FreeRegions();
 
 /* Changes for m4 pre-processing submitted by Jason Gloudon */
 int
-main(argc, argv, environ)
-    int argc;
-    char **argv;
-    char **environ;
+main(int argc, char **argv, char **environ)
 {
     Window root, parent, *children;
     unsigned int nchildren;
@@ -170,7 +168,6 @@ main(argc, argv, environ)
     unsigned long valuemask;	/* mask for create windows */
     XSetWindowAttributes attributes;	/* attributes for create windows */
     int numManaged, firstscrn, lastscrn, scrnum;
-    extern ColormapWindow *CreateColormapWindow();
 #ifndef NO_M4_SUPPORT
     int m4_preprocess = False;	/* filter the *twmrc file through m4 */
     char *m4_option = NULL; /* pass these options to m4 - djhjr - 2/20/98 */
@@ -193,8 +190,6 @@ main(argc, argv, environ)
 #ifdef TWM_USE_SLOPPYFOCUS
     SloppyFocus = FALSE;
 #endif
-
-    SIGNAL_T QueueRestartVtwm();
 
 	if ((ProgramName = strrchr(argv[0], '/')))
 		ProgramName++;
@@ -1004,7 +999,8 @@ main(argc, argv, environ)
  ***********************************************************************
  */
 
-void InitVariables()
+void 
+InitVariables (void)
 {
     FreeList(&Scr->BorderColorL);
     FreeList(&Scr->IconBorderColorL);
@@ -1341,7 +1337,8 @@ void InitVariables()
 }
 
 
-void CreateFonts ()
+void 
+CreateFonts (void)
 {
     GetFont(&Scr->TitleBarFont);
     GetFont(&Scr->MenuFont);
@@ -1361,8 +1358,8 @@ void CreateFonts ()
 }
 
 
-void RestoreWithdrawnLocation (tmp)
-    TwmWindow *tmp;
+void 
+RestoreWithdrawnLocation (TwmWindow *tmp)
 {
     int gravx, gravy;
     unsigned int bw, mask;
@@ -1412,8 +1409,8 @@ void RestoreWithdrawnLocation (tmp)
 }
 
 
-void Reborder (time)
-Time time;
+void 
+Reborder (Time time)
 {
     TwmWindow *tmp;			/* temp twm window structure */
     int scrnum;
@@ -1439,7 +1436,8 @@ Time time;
 }
 
 /* delete the PID file - djhjr - 12/2/01 */
-void delete_pidfile()
+void 
+delete_pidfile (void)
 {
     char *fn;
 
@@ -1462,7 +1460,8 @@ void delete_pidfile()
  */
 
 #ifndef NO_SOUND_SUPPORT
-SIGNAL_T PlaySoundDone()
+SIGNAL_T 
+PlaySoundDone (int)
 {
     if (PlaySound(S_STOP))
     {
@@ -1470,11 +1469,12 @@ SIGNAL_T PlaySoundDone()
 	if (Scr->PauseOnExit) sleep(Scr->PauseOnExit);
     }
 
-    Done();
+    Done(0);
     SIGNAL_RETURN;
 }
 
-void Done()
+void 
+Done (int signum)
 {
     CloseSound();
 
@@ -1487,7 +1487,8 @@ void Done()
     exit(0);
 }
 #else
-SIGNAL_T Done()
+SIGNAL_T 
+Done (int signum)
 {
     SetRealScreen(0,0);
     Reborder (CurrentTime);
@@ -1500,8 +1501,8 @@ SIGNAL_T Done()
 }
 #endif
 
-SIGNAL_T
-QueueRestartVtwm()
+SIGNAL_T 
+QueueRestartVtwm (int signum)
 {
     XClientMessageEvent ev;
 
@@ -1528,9 +1529,8 @@ QueueRestartVtwm()
 Bool ErrorOccurred = False;
 XErrorEvent LastErrorEvent;
 
-static int TwmErrorHandler(dpy, event)
-    Display *dpy;
-    XErrorEvent *event;
+static int 
+TwmErrorHandler (Display *dpy, XErrorEvent *event)
 {
     LastErrorEvent = *event;
     ErrorOccurred = True;
@@ -1544,9 +1544,8 @@ static int TwmErrorHandler(dpy, event)
 }
 
 
-static int CatchRedirectError(dpy, event)
-    Display *dpy;
-    XErrorEvent *event;
+static int 
+CatchRedirectError (Display *dpy, XErrorEvent *event)
 {
     RedirectError = TRUE;
     LastErrorEvent = *event;
@@ -1569,7 +1568,8 @@ Atom _XA_TWM_RESTART;
 Atom _XA_NET_WM_WINDOW_OPACITY;
 #endif
 
-void InternUsefulAtoms ()
+void 
+InternUsefulAtoms (void)
 {
     /*
      * Create priority colors if necessary.

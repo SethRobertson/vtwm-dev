@@ -41,21 +41,4 @@
 
 extern int resizing_window;
 
-extern void StartResize();
-extern void AddStartResize();
-extern void DoResize();
-extern void DisplaySize();
-extern void EndResize();
-extern void AddEndResize();
-extern void SetupWindow();
-extern void SetupFrame();
-extern void SetFrameShape();
-extern void ConstrainSize();
-extern void MenuStartResize();
-extern void MenuEndResize();
-
-void PaintBorderAndTitlebar();
-
-extern void fullzoom();
-
 #endif /* _RESIZE_ */

@@ -47,6 +47,7 @@
 #include "image_formats.h"
 #include "util.h"
 #include "screen.h"
+#include "prototypes.h"
 
 /***********************************************************************
  *
@@ -57,8 +58,8 @@
  ***********************************************************************
  */
 
-void
-CreateGCs()
+void 
+CreateGCs (void)
 {
     static ScreenInfo *prevScr = NULL;
     XGCValues	    gcv;

@@ -14,11 +14,23 @@
 #include "image_formats.h"
 #include "util.h"
 #include "screen.h"
+#include "prototypes.h"
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xmu/Drawing.h>
 #include <stdio.h>
 #include <string.h>
+
+
+#ifndef NO_XPM_SUPPORT
+static void LoadXPMImage (char *path, Image *img, Pixel color);
+#endif
+#ifndef NO_PNG_SUPPORT
+static void Read3ByteRow(png_structp png_ptr, unsigned char *tmpRow, unsigned char *ImgData, int row_num, int width);
+static int ReadPNG(char *Path, unsigned char **ImgData, int *width, int *length);
+static void LoadPNGImage(char *path, Image *img);
+static int LoadImage(char *path, Image *img, Pixel color);
+#endif
 
 
 /***********************************************************************
@@ -37,9 +49,7 @@
  ***********************************************************************
  */
 
-Pixmap FindBitmap (name, widthp, heightp)
-    char *name;
-    unsigned int *widthp, *heightp;
+Pixmap FindBitmap (char *name, unsigned int *widthp, unsigned int *heightp)
 {
     char *bigname;
     Pixmap pm;
@@ -90,8 +100,7 @@ Pixmap FindBitmap (name, widthp, heightp)
     return pm;
 }
 
-Pixmap GetBitmap (name)
-    char *name;
+Pixmap GetBitmap (char *name)
 {
     return FindBitmap (name, &JunkWidth, &JunkHeight);
 }
@@ -100,10 +109,7 @@ Pixmap GetBitmap (name)
 #ifndef NO_XPM_SUPPORT
 #include <X11/xpm.h>
 
-void LoadXPMImage (path, img, color)
-    char *path;
-    Pixel color;
-	Image *img;
+static void LoadXPMImage (char *path, Image *img, Pixel color)
 {
     XpmAttributes attributes;
 	XpmColorSymbol xpmcolor[1];
@@ -155,10 +161,7 @@ void LoadXPMImage (path, img, color)
  * SetPixmapsBackground - set the background for the Pixmaps resource images
  */
 #ifndef NO_XPM_SUPPORT
-int SetPixmapsBackground(image, drawable, color)
-Image *image;
-Drawable drawable;
-Pixel color;
+int SetPixmapsBackground(Image *image, Drawable drawable, Pixel color)
 {
 	XpmImage xpmimage;
 	XpmAttributes xpmattr;
@@ -216,7 +219,7 @@ Pixel color;
 
 #ifndef NO_PNG_SUPPORT
 
-void Read3ByteRow(png_structp png_ptr, unsigned char *tmpRow, unsigned char *ImgData, int row_num, int width)
+static void Read3ByteRow(png_structp png_ptr, unsigned char *tmpRow, unsigned char *ImgData, int row_num, int width)
 {
 int pos;
 unsigned char *img_ptr, *tmp_ptr;
@@ -233,12 +236,12 @@ img_ptr++; tmp_ptr++;
 *img_ptr=*tmp_ptr;
 img_ptr++; tmp_ptr++;
 
-*img_ptr=255; //Alpha channel
+ *img_ptr=255; /* Alpha channel */
 img_ptr++;
 }
 }
 
-int ReadPNG(char *Path, unsigned char **ImgData, int *width, int *length)
+static int ReadPNG(char *Path, unsigned char **ImgData, int *width, int *length)
 {
 FILE *f;
 unsigned char *tmpRow=NULL;
@@ -262,9 +265,9 @@ if ( fread( Tempstr, 1, 4, f ) != 4 )
  return(FALSE);
 }
 
-// check if valid png
+/* check if valid png */
    if (png_sig_cmp(Tempstr, (png_size_t)0, 4 ) ) printf("%s not a png?\n",Path);
-// create the png reading structure, errors go to stderr
+   /* create the png reading structure, errors go to stderr */
    png_ptr = png_create_read_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
    if (png_ptr == NULL)
    {
@@ -274,7 +277,7 @@ if ( fread( Tempstr, 1, 4, f ) != 4 )
    }
 
 
-// allocate info struct
+   /* allocate info struct */
    info_ptr = png_create_info_struct(png_ptr);
    if (info_ptr == NULL)
    {
@@ -284,7 +287,7 @@ if ( fread( Tempstr, 1, 4, f ) != 4 )
       return(FALSE);
    }
 
-// set error handling
+   /* set error handling */
    if (setjmp(png_ptr->jmpbuf))
    {
       png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
@@ -328,35 +331,35 @@ if ( fread( Tempstr, 1, 4, f ) != 4 )
     }
 
 
-// set input method
+    /* set input method */
    png_init_io(png_ptr, f);
 
-// tell libpng we have already read some bytes
+   /* tell libpng we have already read some bytes */
    png_set_sig_bytes(png_ptr, 4 );
-// read all info
+   /* read all info */
    png_read_info(png_ptr, info_ptr);
-// get some characteristics of the file
+   /* get some characteristics of the file */
    png_get_IHDR(png_ptr, info_ptr, &png_width, &png_height, &bit_depth, &color_type,
        &interlace_type, NULL, NULL);
 
 	*width=(int) png_width;
 	*length=(int) png_height;
 
-//expand bit depth
+	/*expand bit depth */
    png_set_expand(png_ptr);
    png_set_interlace_handling(png_ptr);
    png_read_update_info(png_ptr,info_ptr);
 
-// get size of scanline
+   /* get size of scanline */
    scanline_width = png_get_rowbytes( png_ptr, info_ptr );
 
 channels=png_get_channels(png_ptr,info_ptr);
 
-// allocate texture memory
+/* allocate texture memory */
    *ImgData = (unsigned char *) malloc(png_width * png_height *4);
    if (channels ==3) tmpRow = (unsigned char *) malloc(scanline_width * sizeof(unsigned char));
 
-// read the image line by line into the user's buffer
+   /* read the image line by line into the user's buffer */
    for (row = 0; row < png_height; row++)
    {
 	if (channels==3)
@@ -367,7 +370,7 @@ channels=png_get_channels(png_ptr,info_ptr);
    }
 
 
-// finish reading the file
+   /* finish reading the file */
    png_read_end(png_ptr, NULL);
 
    png_destroy_read_struct(&png_ptr,&info_ptr,NULL);
@@ -382,9 +385,7 @@ return(TRUE);
 
 
 
-void LoadPNGImage(path, img)
-char *path;
-Image *img;
+static void LoadPNGImage(char *path, Image *img)
 {
 XImage *ximg;
 unsigned char *PngData=NULL, *ptr;
@@ -459,17 +460,13 @@ if (ReadPNG(path, &PngData, &img->width, &img->height))
  */
 
 void
-GetUnknownIcon(name)
-char *name;
+GetUnknownIcon(char *name)
 {
 	Scr->unknownName = name;
 }
 
 
-int LoadImage(path, img, color)
-char *path;
-Image *img;
-Pixel color;
+static int LoadImage(char *path, Image *img, Pixel color)
 {
 char *extn;
 
@@ -487,9 +484,7 @@ if (img->type !=IMAGE_TYPE_NONE) return(TRUE);
 return(FALSE);
 }
 
-Image *FindImage (name, color)
-    char *name;
-    Pixel color;
+Image *FindImage (char *name, Pixel color)
 {
     char *bigname;
 	Image *newimage;

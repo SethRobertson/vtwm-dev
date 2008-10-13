@@ -17,13 +17,4 @@ typedef struct _Image {
 } Image;
 
 
-extern Pixmap   GetBitmap(), FindBitmap();
-#ifndef NO_XPM_SUPPORT
-extern Image *FindImage();
-#endif
-
-#ifndef NO_PNG_SUPPORT
-extern Pixmap *FindPNGImage();
-#endif
-
 #endif

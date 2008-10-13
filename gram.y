@@ -52,6 +52,7 @@
 #include "doors.h"
 #include "iconmgr.h"
 #include "regions.h"
+#include "prototypes.h"
 #include <X11/Xos.h>
 #include <X11/Xmu/CharSet.h>
 
@@ -64,19 +65,22 @@ static char *Action = "";
 static char *Name = "";
 static MenuRoot	*root, *pull = NULL;
 
-static MenuRoot *GetRoot();
-static char *RemoveDQuote();
-static char *RemoveRESlash();
-static int ParseWarpCentered();
-static int ParseUsePPosition();
-void twmrc_error_prefix();
+static MenuRoot *GetRoot(char *name, char *fore, char *back);
+static char *RemoveDQuote(char *str);
+static char *RemoveRESlash(char *str);
+static int ParseUsePPosition(char *s);
+static int ParseWarpCentered(char *s);
 
 static MenuItem *lastmenuitem = (MenuItem*) 0;
 
-static Bool CheckWarpScreenArg(), CheckWarpRingArg();
-static Bool CheckColormapArg();
-static void GotButton(), GotKey(), GotTitleButton();
-static void yyerror();
+static Bool CheckWarpScreenArg (char *s);
+static Bool CheckWarpRingArg (char *s);
+static Bool CheckColormapArg (char *s);
+
+static void GotButton(int butt, int func);
+static void GotKey(char *key, int func);
+static void GotTitleButton (char *bitmapname, int func, Bool rightside);
+static void yyerror(char *s);
 static name_list **list;
 static RootRegion *ARlist;
 static int cont = 0;
@@ -86,17 +90,6 @@ unsigned int mods_used = (ShiftMask | ControlMask | Mod1Mask);
 static int ppos;
 static int warpc;
 
-extern void SetHighlightPixmap();
-extern void SetVirtualPixmap(), SetVirtualDesktop(), SetRealScreenPixmap();
-extern void NewBitmapCursor();
-extern void AddIconRegion();
-extern RootRegion *AddAppletRegion();
-extern int AddToAppletList();
-extern int do_single_keyword(), do_string_keyword(), do_number_keyword();
-extern name_list **do_colorlist_keyword();
-extern int do_color_keyword();
-extern void do_string_savecolor(), do_var_savecolor(), do_squeeze_entry();
-extern int SetSound();
 
 /*
  * this used to be the definition - now making the assumption it's
@@ -235,7 +228,7 @@ stmt		: error
 					      root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
 					      Scr->Mouse[MOUSELOC($1,C_ROOT,0)].item =
 						  AddToMenu(root,"x",Action,
-							    NULLSTR,$2,NULLSTR,NULLSTR);
+							    NULL,$2,NULLSTR,NULLSTR);
 					    }
 					    Action = "";
 					    pull = NULL;
@@ -330,7 +323,7 @@ stmt		: error
 					    root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
 					    Scr->DefaultFunction.item =
 						AddToMenu(root,"x",Action,
-							  NULLSTR,$2, NULLSTR, NULLSTR);
+							  NULL,$2, NULLSTR, NULLSTR);
 					  }
 					  Action = "";
 					  pull = NULL;
@@ -339,7 +332,7 @@ stmt		: error
 					   root = GetRoot(TWM_ROOT,NULLSTR,NULLSTR);
 					   Scr->WindowFunction.item =
 						AddToMenu(root,"x",Action,
-							  NULLSTR,$2, NULLSTR, NULLSTR);
+							  NULL,$2, NULLSTR, NULLSTR);
 					   Action = "";
 					   pull = NULL;
 					}
@@ -738,7 +731,7 @@ function_entries: /* Empty */
 		| function_entries function_entry
 		;
 
-function_entry	: action		{ AddToMenu(root, "", Action, NULLSTR, $1,
+function_entry	: action		{ AddToMenu(root, "", Action, NULL, $1,
 						NULLSTR, NULLSTR);
 					  Action = "";
 					}
@@ -857,15 +850,14 @@ number		: NUMBER		{ $$ = $1; }
 
 %%
 static void
-yyerror(s) char *s;
+yyerror(char *s)
 {
     twmrc_error_prefix();
     fprintf (stderr, "error in input file:  %s\n", s ? s : "");
     ParseError = 1;
 }
 
-static char *RemoveDQuote(str)
-char *str;
+static char *RemoveDQuote(char *str)
 {
     register char *i, *o;
     register int n, count;
@@ -971,8 +963,7 @@ char *str;
     return (ptr);
 }
 
-static char *RemoveRESlash(str)
-char *str;
+static char *RemoveRESlash(char *str)
 {
     char *ptr = "";
 #ifndef NO_REGEX_SUPPORT
@@ -997,8 +988,7 @@ char *str;
     return (ptr);
 }
 
-static int ParseUsePPosition(s)
-char *s;
+static int ParseUsePPosition(char *s)
 {
     XmuCopyISOLatin1Lowered (s, s);
 
@@ -1016,8 +1006,7 @@ char *s;
     return -1;
 }
 
-static int ParseWarpCentered(s)
-char *s;
+static int ParseWarpCentered(char *s)
 {
     XmuCopyISOLatin1Lowered (s, s);
 
@@ -1035,9 +1024,7 @@ char *s;
     return -1;
 }
 
-static MenuRoot *GetRoot(name, fore, back)
-char *name;
-char *fore, *back;
+static MenuRoot *GetRoot(char *name, char *fore, char *back)
 {
     MenuRoot *tmp;
 
@@ -1061,8 +1048,7 @@ char *fore, *back;
     return tmp;
 }
 
-static void GotButton(butt, func)
-int butt, func;
+static void GotButton(int butt, int func)
 {
     int i;
 
@@ -1087,7 +1073,7 @@ int butt, func;
 	    root = GetRoot(TWM_ROOT, NULLSTR, NULLSTR);
 
 	    Scr->Mouse[MOUSELOC(butt,i,mods)].item = AddToMenu(root,"x",Action,
-		    NULLSTR, func, NULLSTR, NULLSTR);
+		    NULL, func, NULLSTR, NULLSTR);
 
 	}
     }
@@ -1098,9 +1084,7 @@ int butt, func;
     mods = 0;
 }
 
-static void GotKey(key, func)
-char *key;
-int func;
+static void GotKey(char *key, int func)
 {
     int i;
 
@@ -1120,10 +1104,7 @@ int func;
 }
 
 
-static void GotTitleButton (bitmapname, func, rightside)
-    char *bitmapname;
-    int func;
-    Bool rightside;
+static void GotTitleButton (char *bitmapname, int func, Bool rightside)
 {
     if (!CreateTitleButton (bitmapname, func, Action, pull, rightside, True)) {
 	twmrc_error_prefix();
@@ -1135,8 +1116,7 @@ static void GotTitleButton (bitmapname, func, rightside)
     pull = NULL;
 }
 
-static Bool CheckWarpScreenArg (s)
-    register char *s;
+static Bool CheckWarpScreenArg (char *s)
 {
     XmuCopyISOLatin1Lowered (s, s);
 
@@ -1150,8 +1130,7 @@ static Bool CheckWarpScreenArg (s)
 }
 
 
-static Bool CheckWarpRingArg (s)
-    register char *s;
+static Bool CheckWarpRingArg (char *s)
 {
     XmuCopyISOLatin1Lowered (s, s);
 
@@ -1163,8 +1142,7 @@ static Bool CheckWarpRingArg (s)
 }
 
 
-static Bool CheckColormapArg (s)
-    register char *s;
+static Bool CheckColormapArg (char *s)
 {
     XmuCopyISOLatin1Lowered (s, s);
 
@@ -1177,7 +1155,7 @@ static Bool CheckColormapArg (s)
 }
 
 
-void twmrc_error_prefix ()
+void twmrc_error_prefix (void)
 {
     fprintf (stderr, "%s:  line %d:  ", ProgramName, yylineno);
 }

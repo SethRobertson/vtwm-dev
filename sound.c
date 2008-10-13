@@ -26,14 +26,15 @@
  *
  * D. J. Hawkey Jr. - 6/22/01 8/16/01 11/15/02
  */
+#include "twm.h"
+#include "screen.h"
+#include "prototypes.h"
 
 #ifdef NO_SOUND_SUPPORT
 
 /* stub function for gram.y */
-int
-SetSound(function, filename, volume)
-char *function, *filename;
-int volume;
+int 
+SetSound (char *function, char *filename, int volume)
 {
     return (1);
 }
@@ -48,6 +49,7 @@ int volume;
 #include "parse.h"
 #include "twm.h"
 #include "sound.h"
+#include "prototypes.h"
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	256
@@ -93,18 +95,16 @@ static int sound_state = 0;
 static char sound_host[MAXHOSTNAMELEN + 1] = "";
 
 /* for qsort() */
-static int
-compare(p, q)
-void *p, *q;
+static int 
+compare (void *p, void *q)
 {
     sound_entry *pp = (sound_entry *) p, *qq = (sound_entry *) q;
 
     return (pp->func - qq->func);
 }
 
-static int
-adjustVolume(volume)
-int volume;
+static int 
+adjustVolume (int volume)
 {
     float vol;
 
@@ -118,8 +118,8 @@ int volume;
     return (volume);
 }
 
-int
-OpenSound()
+int 
+OpenSound (void)
 {
     if (sound_fd < 0)
     {
@@ -141,8 +141,8 @@ OpenSound()
     return (sound_fd);
 }
 
-void
-CloseSound()
+void 
+CloseSound (void)
 {
     int i;
 
@@ -165,10 +165,8 @@ CloseSound()
     sound_host[0] = '\0';
 }
 
-int
-SetSound(function, filename, volume)
-char *function, *filename;
-int volume;
+int 
+SetSound (char *function, char *filename, int volume)
 {
     sound_entry *sptr;
     int i, func, subfunc;
@@ -241,9 +239,8 @@ int volume;
     return (0);
 }
 
-int
-PlaySound(function)
-int function;
+int 
+PlaySound (int function)
 {
     register int i, low, mid, high;
 
@@ -270,9 +267,8 @@ int function;
     return (0);
 }
 
-int
-PlaySoundAdhoc(filename)
-char *filename;
+int 
+PlaySoundAdhoc (char *filename)
 {
     RPLAY *rp;
     int i;
@@ -303,17 +299,15 @@ char *filename;
     return (1);
 }
 
-void
-SetSoundHost(host)
-char *host;
+void 
+SetSoundHost (char *host)
 {
     strncpy(sound_host, host, MAXHOSTNAMELEN);
     sound_host[MAXHOSTNAMELEN] = '\0';
 }
 
-void
-SetSoundVolume(volume)
-int volume;
+void 
+SetSoundVolume (int volume)
 {
     if (volume < 0)
 	volume = 0;
@@ -321,8 +315,8 @@ int volume;
     sound_vol = adjustVolume(volume);
 }
 
-int
-ToggleSounds()
+int 
+ToggleSounds (void)
 {
     return ((sound_state ^= 1));
 }

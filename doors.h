@@ -46,13 +46,5 @@ typedef struct TwmDoor {
 	TwmWindow *twin;      /* the twmwindow for this */
 } TwmDoor;
 
-extern TwmDoor *door_add();
-extern void door_open();
-extern void door_open_all();
-extern void door_enter();
-extern void door_new();
-extern void door_delete();
-
-extern void door_paste_name();
 
 #endif /* DOORS_H_INCLUDED */

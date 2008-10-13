@@ -76,7 +76,7 @@ typedef unsigned long Pixel;
 #define SIGNAL_RETURN return
 #endif
 
-typedef SIGNAL_T (*SigProc)();	/* type of function returned by signal() */
+typedef  SIGNAL_T (*SigProc)(int);	/* type of function returned by signal() */
 
 #define BW 2			/* border width */
 #define BW2 4			/* border width  * 2 */
@@ -434,17 +434,14 @@ typedef struct TwmWindow
 extern char *malloc(), *calloc(), *realloc(), *getenv();
 extern void free();
 #endif
-extern void Reborder();
 
 #ifndef NO_SOUND_SUPPORT
-extern SIGNAL_T PlaySoundDone();
-void Done();
+extern SIGNAL_T PlaySoundDone(void);
+void Done(int);
 #else
-extern SIGNAL_T Done();
+extern SIGNAL_T Done(int);
 #endif
 
-void ComputeCommonTitleOffsets();
-void ComputeWindowTitleOffsets(), ComputeTitleLocation();
 
 extern char *ProgramName;
 extern Display *dpy;
@@ -490,14 +487,6 @@ extern int Argc;
 extern char **Argv;
 extern char **Environ;
 
-extern void NewFontCursor();
-extern Pixmap CreateMenuIcon();
-extern void RestoreWithdrawnLocation();
-extern void CreateFonts();
-
-extern Pixmap Create3DMenuIcon();
-extern Pixmap Create3DIconManagerIcon();
-extern void Draw3DBorder();
 
 extern Bool ErrorOccurred;
 extern XErrorEvent LastErrorEvent;
@@ -505,7 +494,6 @@ extern XErrorEvent LastErrorEvent;
 #define ResetError() (ErrorOccurred = False)
 
 extern Bool RestartPreviousState;
-extern Bool GetWMState();
 
 extern Bool use_fontset;
 

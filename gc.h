@@ -39,6 +39,4 @@
 #ifndef _GC_
 #define _GC_
 
-extern void CreateGCs();
-
 #endif /* _GC_ */

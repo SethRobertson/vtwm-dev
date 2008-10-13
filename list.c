@@ -57,6 +57,7 @@
 #include "screen.h"
 #include "list.h"
 #include "gram.h"
+#include "prototypes.h"
 
 #define REGCOMP_FLAGS		(REG_EXTENDED | REG_NOSUB)
 
@@ -78,7 +79,7 @@ struct name_list_struct
 static char buffer[256];
 #endif
 
-int match();
+static int match(char *p, char *t);
 
 /***********************************************************************
  *
@@ -87,15 +88,13 @@ int match();
  ***********************************************************************/
 
 name_list *
-next_entry(list)
-name_list *list;
+next_entry (name_list *list)
 {
     return (list->next);
 }
 
 char *
-contents_of_entry(list)
-name_list *list;
+contents_of_entry (name_list *list)
 {
     return (list->ptr);
 }
@@ -103,10 +102,8 @@ name_list *list;
 /**********************************************************************/
 
 #ifdef DEBUG
-static void
-printNameList(name, nptr)
-char *name;
-name_list *nptr;
+static void 
+printNameList (char *name, name_list *nptr)
 {
     printf("printNameList(): %s=[", name);
 
@@ -141,12 +138,8 @@ name_list *nptr;
  ***********************************************************************
  */
 
-void
-AddToList(list_head, name, type, ptr)
-name_list **list_head;
-char *name;
-short type;
-char *ptr;
+void 
+AddToList (name_list **list_head, char *name, int type, char *ptr)
 {
     Atom property = None;
     name_list *nptr;
@@ -158,7 +151,7 @@ char *ptr;
     {
 	fprintf (stderr, "%s: unable to allocate %lu bytes for name_list\n",
 		 ProgramName, sizeof(name_list));
-	Done();
+	Done(0);
     }
 
     nptr->next = *list_head;
@@ -198,15 +191,15 @@ char *ptr;
  \********************************************************************/
 
 int
-MatchName(name, pattern, compiled, type)
-char *name;
-char *pattern;
+MatchName(
+	  char *name,
+	  char *pattern,
 #ifndef NO_REGEX_SUPPORT
-regex_t *compiled;
+	  regex_t *compiled,
 #else
-char *compiled;
+	  char *compiled,
 #endif
-short type;
+	  short type)
 {
 #ifdef DEBUG
     fprintf(stderr, "MatchName(): compare '%s' with '%s'\n", name, pattern);
@@ -262,11 +255,7 @@ short type;
 }
 
 static char *
-MultiLookInList(list_head, name, class, continuation)
-name_list *list_head;
-char *name;
-XClassHint *class;
-name_list **continuation;
+MultiLookInList (name_list *list_head, char *name, XClassHint *class, name_list **continuation)
 {
     name_list *nptr;
 
@@ -346,10 +335,7 @@ name_list **continuation;
 }
 
 char *
-LookInList(list_head, name, class)
-name_list *list_head;
-char *name;
-XClassHint *class;
+LookInList (name_list *list_head, char *name, XClassHint *class)
 {
     name_list *rest;
     char *return_name = MultiLookInList(list_head, name, class, &rest);
@@ -359,9 +345,7 @@ XClassHint *class;
 
 
 char *
-LookInNameList(list_head, name)
-name_list *list_head;
-char *name;
+LookInNameList (name_list *list_head, char *name)
 {
     return (MultiLookInList(list_head, name, NULL, &list_head));
 }
@@ -386,11 +370,8 @@ char *name;
  ***********************************************************************
  */
 
-int GetColorFromList(list_head, name, class, ptr)
-name_list *list_head;
-char *name;
-XClassHint *class;
-Pixel *ptr;
+int 
+GetColorFromList (name_list *list_head, char *name, XClassHint *class, Pixel *ptr)
 {
     int save;
     char *val = LookInList(list_head, name, class);
@@ -416,8 +397,8 @@ Pixel *ptr;
  ***********************************************************************
  */
 
-void FreeList(list)
-name_list **list;
+void 
+FreeList (name_list **list)
 {
     name_list *nptr;
     name_list *tmp;
@@ -443,10 +424,10 @@ name_list **list;
 
 #define ABORT 2
 
-static int regex_match();
+static int regex_match (char *p, char *t);
 
-static int regex_match_after_star(p, t)
-char *p, *t;
+static int 
+regex_match_after_star (char *p, char *t)
 {
     register int match;
     register int nextp;
@@ -475,8 +456,8 @@ char *p, *t;
     return (match);
 }
 
-static int regex_match(p, t)
-char *p, *t;
+static int 
+regex_match (char *p, char *t)
 {
     register char range_start, range_end;
     int invert;
@@ -576,8 +557,8 @@ char *p, *t;
     return (!*t);
 }
 
-int match(p, t)
-char *p, *t;
+static int 
+match (char *p, char *t)
 {
     if ((p == NULL) || (t == NULL)) return (TRUE);
 

@@ -41,17 +41,6 @@
 
 extern char NoName[];
 
-extern TwmWindow *AddWindow();
-extern int MappedNotOverride();
-extern void GrabButtons();
-extern void GrabKeys();
-extern void GrabModKeys();
-extern void UngrabModKeys();
-extern void GetWindowSizeHints();
-extern void FetchWmProtocols();
-extern void FetchWmColormapWindows();
-extern void GetGravityOffsets();
-extern void AddDefaultBindings();
 
 extern int AddingX;	
 extern int AddingY;

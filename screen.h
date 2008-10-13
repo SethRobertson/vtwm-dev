@@ -133,7 +133,7 @@ typedef struct ScreenInfo
     TwmWindow *Ring;		/* one of the windows in window ring */
     TwmWindow *RingLeader;	/* current winodw in ring */
 
-    MouseButton *Mouse;         // [MAX_BUTTONS+1][NUM_CONTEXTS][MOD_SIZE];
+    MouseButton *Mouse;         /* [MAX_BUTTONS+1][NUM_CONTEXTS][MOD_SIZE]; */
 #define MOUSELOC(but,con,siz) (but*NUM_CONTEXTS*MOD_SIZE+con*MOD_SIZE+siz)
     MouseButton DefaultFunction;
     MouseButton WindowFunction;
@@ -587,11 +587,6 @@ extern int FirstScreen;
  */
 #define ClientIsOnScreen(win,scr)   ((win)->attr.root == (scr)->Root)
 
-extern ScreenInfo * FindPointerScreenInfo (void);
-extern ScreenInfo * FindDrawableScreenInfo (Drawable d);
-extern ScreenInfo * FindWindowScreenInfo (XWindowAttributes *attr);
-extern ScreenInfo * FindScreenInfo (Window w);
-
 #ifdef TILED_SCREEN
 
 #define AreaHeight(a)	    (Top(a) - Bot(a) + 1)
@@ -611,14 +606,6 @@ extern ScreenInfo * FindScreenInfo (Window w);
 /* if overlapping return area; else return (larger) gapsize as negative value: */
 #define Distance2D(dx,dy)   ((dx)>=0?((dy)>=0?((dx)+1)*((dy)+1):(dy)):((dy)>=0?(dx):((dx)>(dy)?(dy):(dx))))
 
-extern int  FindNearestTileToArea (int x0y0x1y1[4]);
-extern int  FindNearestTileToPoint (int x, int y);
-extern int  FindNearestTileToClient (TwmWindow *tmp);
-extern int  FindNearestTileToMouse (void);
-
-extern void EnsureRectangleOnTile (int tile, int *x0, int *y0, int w, int h);
-extern void EnsureGeometryVisibility (int mask, int *x0, int *y0, int w, int h);
-extern void TilesFullZoom (int x0y0x1y1[4]);
 
 #endif /*TILED_SCREEN*/
 

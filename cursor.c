@@ -35,8 +35,7 @@
 #include "screen.h"
 #include "image_formats.h"
 #include "util.h"
-
-void NewBitmapCursor();
+#include "prototypes.h"
 
 static struct _CursorName {
     char		*name;
@@ -123,9 +122,8 @@ static struct _CursorName {
 {"xterm",		XC_xterm,		None},
 };
 
-void NewFontCursor (cp, str)
-    Cursor *cp;
-    char *str;
+void 
+NewFontCursor (Cursor *cp, char *str)
 {
     int i;
 
@@ -144,9 +142,8 @@ void NewFontCursor (cp, str)
 	     ProgramName, str);
 }
 
-void NewBitmapCursor(cp, source, mask)
-Cursor *cp;
-char *source, *mask;
+void 
+NewBitmapCursor (Cursor *cp, char *source, char *mask)
 {
     XColor fore, back;
     int hotx, hoty;

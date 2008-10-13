@@ -19,24 +19,6 @@
 
 extern Window moving_window; /* indicates that we are doing a move in the vd display */
 
-extern void CreateDesktopDisplay();
-extern void UpdateDesktop();
-extern void MoveResizeDesktop();
-extern void NailDesktop();
-
-extern void DisplayScreenOnDesktop();
-extern void StartMoveWindowInDesktop();
-extern void StartMoveWindowOnDesktop();
-extern void EndMoveWindowOnDesktop();
-extern void DoMoveWindowOnDesktop();
-extern void ResizeDesktopDisplay();
-extern void VirtualMoveWindow();
-extern void SnapRealScreen();
-extern void SetRealScreen();
-extern void PanRealScreen();
-extern void RaiseStickyAbove();
-extern void LowerSticky();
-extern void RaiseAutoPan();
 
 /* convert real space to virtual space */
 #define R_TO_V_X(x) ((x) + Scr->VirtualDesktopX)

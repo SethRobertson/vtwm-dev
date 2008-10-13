@@ -38,19 +38,20 @@
 #include "parse.h"
 #include "image_formats.h"
 #include "util.h"
+#include "prototypes.h"
 
-extern void twmrc_error_prefix();
-extern int MatchName();
+extern void splitRegionEntry(RegionEntry *re, int grav1, int grav2, int w, int h);
+extern int roundEntryUp(int v, int multiple);
+extern RegionEntry *prevRegionEntry(RegionEntry *re, RootRegion *rr);
+extern void mergeRegionEntries(RegionEntry *old, RegionEntry *re);
+extern void downRegionEntry(RootRegion *rr, RegionEntry *re);
+extern RootRegion *AddRegion(char *geom, int grav1, int grav2, int stepx, int stepy);
+static int appletWidth (TwmWindow *tmp_win);
+static int appletHeight (TwmWindow *tmp_win);
 
-extern void splitRegionEntry();
-extern int roundEntryUp();
-extern RegionEntry *prevRegionEntry();
-extern void mergeRegionEntries();
-extern void downRegionEntry();
-extern RootRegion *AddRegion();
 
-int appletWidth(tmp_win)
-TwmWindow *tmp_win;
+static int 
+appletWidth (TwmWindow *tmp_win)
 {
 	if (Scr->NoBorders || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
 		return tmp_win->attr.width;
@@ -58,8 +59,8 @@ TwmWindow *tmp_win;
 		return Scr->BorderWidth * 2 + tmp_win->attr.width;
 }
 
-int appletHeight(tmp_win)
-TwmWindow *tmp_win;
+static int 
+appletHeight (TwmWindow *tmp_win)
 {
 	if (Scr->NoBorders || LookInList(Scr->NoBorder, tmp_win->full_name, &tmp_win->class))
 		return tmp_win->title_height + tmp_win->attr.height;
@@ -67,10 +68,8 @@ TwmWindow *tmp_win;
 		return Scr->BorderWidth * 2 + tmp_win->title_height + tmp_win->attr.height;
 }
 
-int PlaceApplet(tmp_win, def_x, def_y, final_x, final_y)
-TwmWindow *tmp_win;
-int def_x, def_y;
-int *final_x, *final_y;
+int 
+PlaceApplet (TwmWindow *tmp_win, int def_x, int def_y, int *final_x, int *final_y)
 {
     RootRegion	*rr;
     RegionEntry	*re;
@@ -121,9 +120,7 @@ int *final_x, *final_y;
 }
 
 static RegionEntry *
-FindAppletEntry (tmp_win, rrp)
-    TwmWindow   *tmp_win;
-    RootRegion	**rrp;
+FindAppletEntry (TwmWindow *tmp_win, RootRegion **rrp)
 {
     RootRegion	*rr;
     RegionEntry	*re;
@@ -139,9 +136,8 @@ FindAppletEntry (tmp_win, rrp)
     return 0;
 }
 
-void
-AppletDown (tmp_win)
-    TwmWindow   *tmp_win;
+void 
+AppletDown (TwmWindow *tmp_win)
 {
     RegionEntry	*re;
     RootRegion	*rr;
@@ -152,9 +148,7 @@ AppletDown (tmp_win)
 }
 
 RootRegion *
-AddAppletRegion(geom, grav1, grav2, stepx, stepy)
-char *geom;
-int grav1, grav2, stepx, stepy;
+AddAppletRegion (char *geom, int grav1, int grav2, int stepx, int stepy)
 {
     RootRegion *rr;
 
@@ -169,11 +163,8 @@ int grav1, grav2, stepx, stepy;
 	return rr;
 }
 
-void
-AddToAppletList(list_head, name, type)
-RootRegion *list_head;
-char *name;
-short type;
+void 
+AddToAppletList (RootRegion *list_head, char *name, int type)
 {
     RegionEntry *nptr;
 
@@ -185,7 +176,7 @@ short type;
 	twmrc_error_prefix();
 	fprintf (stderr, "unable to allocate %lu bytes for RegionEntry\n",
 		 sizeof(RegionEntry));
-	Done();
+	Done(0);
     }
 
     nptr->next = list_head->entries;

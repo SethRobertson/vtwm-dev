@@ -39,12 +39,25 @@
 /* #include <stdio.h> */		/* lex already includes stdio.h */
 #include "gram.h"
 #include "parse.h"
-
-extern int parse_keyword();
-extern void twmrc_error_prefix();
+#include "twm.h"
+#include "screen.h"
+#include "prototypes.h"
 
 extern char *ProgramName;
 extern int ParseError;
+
+static int yyget_lineno  (void);
+static FILE *yyget_in  (void);
+static FILE *yyget_out  (void);
+static int yyget_leng  (void);
+static char *yyget_text  (void);
+static void yyset_lineno (int  line_number );
+static void yyset_in (FILE *  in_str );
+static void yyset_out (FILE *  out_str );
+static int yyget_debug  (void);
+static void yyset_debug (int  bdebug );
+static int yylex_destroy  (void);
+
 
 #ifdef FLEX_SCANNER
 #undef	YY_INPUT
@@ -98,7 +111,7 @@ number				[0-9]+
 				}
 %%
 #ifndef yywrap
-yywrap() { return(1);}
+int yywrap(void) { return(1);}
 #endif
 
 #undef input

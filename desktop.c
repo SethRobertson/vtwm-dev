@@ -25,15 +25,13 @@
 #include "parse.h"
 #include "events.h"
 #include "desktop.h"
+#include "prototypes.h"
 
-extern void SetRealScreenInternal();
-extern void SetRealScreen();
-extern void SnapRealScreen();
-extern void SetMapStateProp();
-extern void twmrc_error_prefix();
-
-void SetVirtualPixmap();
-void SetRealScreenPixmap();
+extern void SetRealScreen(int x, int y);
+extern void SetRealScreenInternal(int x, int y, int dosnap, int *dx, int *dy);
+extern void SnapRealScreen(void);
+extern void SetMapStateProp(TwmWindow *tmp_win, int state);
+extern void SetVirtualPixmap(char *filename);
 
 
 static int starting_x, starting_y;
@@ -41,9 +39,8 @@ static int starting_x, starting_y;
 
 static int original_x, original_y;
 
-static void GetDesktopWindowCoordinates(tmp_win, x, y, w, h)
-TwmWindow *tmp_win;
-int *x, *y, *w, *h;
+static void 
+GetDesktopWindowCoordinates (TwmWindow *tmp_win, int *x, int *y, int *w, int *h)
 {
 
 	int border = tmp_win->frame_bw + tmp_win->frame_bw3D;
@@ -83,7 +80,8 @@ int *x, *y, *w, *h;
 /*
  * create the virtual desktop display and store the window in the screen structure
  */
-void CreateDesktopDisplay()
+void 
+CreateDesktopDisplay (void)
 {
 	int width, height;
 	int border;
@@ -373,14 +371,14 @@ void CreateDesktopDisplay()
 	} /* end if Scr->AutoPan */
 }
 
-void SetVirtualPixmap (filename)
-char *filename;
+void 
+SetVirtualPixmap (char *filename)
 {
 	if (!Scr->virtualPm) Scr->virtualPm = SetPixmapsPixmap(filename);
 }
 
-void SetRealScreenPixmap (filename)
-char *filename;
+void 
+SetRealScreenPixmap (char *filename)
 {
 	if (!Scr->realscreenPm) Scr->realscreenPm = SetPixmapsPixmap(filename);
 }
@@ -388,8 +386,8 @@ char *filename;
 /*
  * add this window to the virtual desktop - aka nail it
  */
-void UpdateDesktop(tmp_win)
-TwmWindow *tmp_win;
+void 
+UpdateDesktop (TwmWindow *tmp_win)
 {
 	int x, y, width, height;
 	Window dwindow;
@@ -462,8 +460,8 @@ TwmWindow *tmp_win;
 /*
  * Nail/unnail a window on the desktop display.
  */
-void NailDesktop(tmp_win)
-TwmWindow *tmp_win;
+void 
+NailDesktop (TwmWindow *tmp_win)
 {
 	int x, y;
 
@@ -506,7 +504,8 @@ TwmWindow *moving_twindow;
 /*
  * correctly position the real screen representation on the virtual desktop display
  */
-void DisplayScreenOnDesktop()
+void 
+DisplayScreenOnDesktop (void)
 {
 	int border;
 
@@ -523,8 +522,8 @@ void DisplayScreenOnDesktop()
 			);
 }
 
-void ResizeDesktopDisplay(w, h)
-int w, h;
+void 
+ResizeDesktopDisplay (int w, int h)
 {
 	int bw, x, y, np;
 
@@ -579,8 +578,8 @@ int w, h;
  * F_MOVESCREEN function
  * move a window in the desktop display - possible including the `real' screen
  */
-void StartMoveWindowInDesktop(ev)
-XMotionEvent ev;
+void 
+StartMoveWindowInDesktop (XMotionEvent ev)
 {
 	int xoff, yoff;
 
@@ -671,8 +670,8 @@ XMotionEvent ev;
 	DoMoveWindowOnDesktop(ev.x, ev.y);
 }
 
-void DoMoveWindowOnDesktop(x, y)
-int x, y;
+void 
+DoMoveWindowOnDesktop (int x, int y)
 {
 	if (!Scr->Virtual)
 		return;
@@ -739,7 +738,8 @@ int x, y;
 		}
 }
 
-void EndMoveWindowOnDesktop()
+void 
+EndMoveWindowOnDesktop (void)
 {
 	if (!Scr->Virtual)
 		return;
@@ -821,9 +821,8 @@ void EndMoveWindowOnDesktop()
 /*
  * move and resize a window on the desktop.
  */
-void MoveResizeDesktop(tmp_win, noraise)
-TwmWindow *tmp_win;
-int noraise;
+void 
+MoveResizeDesktop (TwmWindow *tmp_win, int noraise)
 {
 	int x, y, w, h;
 
@@ -840,9 +839,8 @@ int noraise;
 		XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
 }
 
-void SetVirtualDesktop(geom, scale)
-char *geom;
-int scale;
+void 
+SetVirtualDesktop (char *geom, int scale)
 {
 
 	if (Scr->Virtual) {
@@ -941,9 +939,8 @@ int scale;
 	Scr->Virtual = TRUE;
 }
 
-void VirtualMoveWindow(t, x, y)
-TwmWindow *t;
-int x, y;
+void 
+VirtualMoveWindow (TwmWindow *t, int x, int y)
 {
 	if (!Scr->Virtual)
 		return;
@@ -975,7 +972,8 @@ int x, y;
  * for Kevin Twidle <kpt@doc.ic.ac.uk>
  * this snaps the real screen to a grid defined by the pandistance values.
  */
-void SnapRealScreen()
+void 
+SnapRealScreen (void)
 {
 	int newx, newy;
 	int mod, div;
@@ -1000,8 +998,8 @@ void SnapRealScreen()
 }
 
 
-void SetRealScreen(x, y)
-int x, y;
+void 
+SetRealScreen (int x, int y)
 {
 	if (Scr->snapRealScreen)
 		SetRealScreenInternal(x, y, TRUE, NULL, NULL);
@@ -1018,10 +1016,8 @@ int x, y;
  * to store how much the pointer should actually be warped, in case
  * AutoPanWarpWithRespectToRealScreen is nonzero.
  */
-void SetRealScreenInternal(x, y, dosnap, dx, dy)
-int x, y;
-int *dx, *dy;
-short dosnap;
+void 
+SetRealScreenInternal (int x, int y, int dosnap, int *dx, int *dy)
 {
 	int xdiff, ydiff;
 	TwmWindow *Tmp_win;
@@ -1125,9 +1121,8 @@ short dosnap;
 /*
  * pan the real screen on the virtual desktop by (xoff, yoff)
  */
-void PanRealScreen(xoff, yoff, dx, dy)
-int xoff, yoff;
-int *dx, *dy;
+void 
+PanRealScreen (int xoff, int yoff, int *dx, int *dy)
 {
 	/* panning the screen can never mean that you need to snap */
 	SetRealScreenInternal(Scr->VirtualDesktopX + xoff, Scr->VirtualDesktopY + yoff,
@@ -1138,7 +1133,8 @@ int *dx, *dy;
  * raise the auto-pan windows if needed
  */
 
-void RaiseAutoPan()
+void 
+RaiseAutoPan (void)
 {
 	int i;
 	if (Scr->AutoPanX > 0)
@@ -1150,7 +1146,8 @@ void RaiseAutoPan()
  *	Raise sticky windows if StickyAbove is set. -- DSE
  */
 
-void RaiseStickyAbove () {
+void 
+RaiseStickyAbove (void) {
 	if (Scr->StickyAbove) {
 		TwmWindow *Tmp_win;
 		for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
@@ -1167,7 +1164,8 @@ void RaiseStickyAbove () {
  *	Lower sticky windows. -- DSE
  */
 
-void LowerSticky () {
+void 
+LowerSticky (void) {
 	TwmWindow *Tmp_win;
 	for (Tmp_win = Scr->TwmRoot.next; Tmp_win != NULL;
 	Tmp_win = Tmp_win->next)

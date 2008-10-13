@@ -23,18 +23,15 @@
 #include "screen.h"
 #include "desktop.h"
 #include "add_window.h"
+#include "prototypes.h"
 
-extern void SetMapStateProp();
-extern TwmDoor *door_add_internal();
-extern void twmrc_error_prefix();
+extern void SetMapStateProp(TwmWindow *tmp_win, int state);
+extern TwmDoor *door_add_internal(char *name, int px, int py, int pw, int ph, int dx, int dy);
+extern void HandleExpose(void);
+extern void SetupWindow(TwmWindow *tmp_win, int x, int y, int w, int h, int bw);
 
-extern void HandleExpose();
-extern void SetupWindow();
-
-extern void AppletDown();
-
-TwmDoor *door_add(name, position, destination)
-char *name, *position, *destination;
+TwmDoor *
+door_add (char *name, char *position, char *destination)
 {
 	int px, py, pw, ph, dx, dy;
 
@@ -108,9 +105,8 @@ char *name, *position, *destination;
 	return (door_add_internal(name, px, py, pw, ph, dx, dy));
 }
 
-TwmDoor *door_add_internal(name, px, py, pw, ph, dx, dy)
-char *name;
-int px, py, pw, ph, dx, dy;
+TwmDoor *
+door_add_internal (char *name, int px, int py, int pw, int ph, int dx, int dy)
 {
 	TwmDoor *new;
 
@@ -139,8 +135,8 @@ int px, py, pw, ph, dx, dy;
 	return (new);
 }
 
-void door_open(tmp_door)
-TwmDoor *tmp_door;
+void 
+door_open (TwmDoor *tmp_door)
 {
 	Window w;
 
@@ -257,7 +253,8 @@ TwmDoor *tmp_door;
 	XMapWindow(dpy, w);
 }
 
-void door_open_all()
+void 
+door_open_all (void)
 {
 	TwmDoor *tmp_door;
 
@@ -268,9 +265,8 @@ void door_open_all()
 /*
  * go into a door
  */
-void door_enter(w, d)
-Window w;
-TwmDoor *d;
+void 
+door_enter (Window w, TwmDoor *d)
 {
 	int snapon; /* doors override real screen snapping - djhjr - 2/5/99 */
 
@@ -291,9 +287,8 @@ TwmDoor *d;
 /*
  * delete a door
  */
-void door_delete(w, d)
-Window w;
-TwmDoor *d;
+void 
+door_delete (Window w, TwmDoor *d)
 {
 	if (!d)
 		/* find the door */
@@ -339,7 +334,8 @@ TwmDoor *d;
 /*
  * create a new door on the fly
  */
-void door_new()
+void 
+door_new (void)
 {
 	TwmDoor *d;
 	char name[256];
@@ -357,10 +353,8 @@ void door_new()
  *
  * adapted from VTWM-5.2b - djhjr - 4/20/98
  */
-void
-door_paste_name(w, d)
-Window w;
-TwmDoor* d;
+void 
+door_paste_name (Window w, TwmDoor *d)
 {
 	int width, height, count;
 	char *ptr;

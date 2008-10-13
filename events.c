@@ -55,6 +55,7 @@
 #ifndef NO_SOUND_SUPPORT
 #include "sound.h"
 #endif
+#include "prototypes.h"
 #ifdef NEED_SELECT_H
 #include <sys/select.h>	/* RAISEDELAY */
 #else
@@ -63,11 +64,12 @@
 #include <unistd.h>
 #endif
 
-extern void IconDown();
-extern void AppletDown();
-
-static void do_menu ();
-void RedoIconName();
+extern void IconDown(TwmWindow *tmp_win);
+extern void RedoIconName(void);
+#ifdef TWM_USE_XRANDR
+static void HandleXrandrScreenChangeNotify (void);
+#endif /* TWM_USE_XRANDR */
+static Window WindowOfEvent (XEvent *e);
 
 extern int iconifybox_width, iconifybox_height;
 extern unsigned int mods_used;
@@ -114,19 +116,18 @@ int Cancel = FALSE;
 int GlobalFirstTime = True;
 int GlobalMenuButton = False;
 
-void HandleCreateNotify();
+extern void HandleCreateNotify(void);
+extern void HandleShapeNotify(void);
 
-void HandleShapeNotify ();
 extern int ShapeEventBase, ShapeErrorBase;
 
 #ifdef TWM_USE_XRANDR
-void HandleXrandrScreenChangeNotify ();
 extern int XrandrEventBase;
 extern int XrandrErrorBase;
 #endif
 
-void AutoRaiseWindow (tmp)
-	TwmWindow *tmp;
+void 
+AutoRaiseWindow (TwmWindow *tmp)
 {
 	XRaiseWindow (dpy, tmp->frame);
 	XRaiseWindow (dpy, tmp->VirtualDesktopDisplayWindow.win);
@@ -140,8 +141,8 @@ void AutoRaiseWindow (tmp)
 	raise_win = tmp;
 }
 
-void SetRaiseWindow (tmp)
-	TwmWindow *tmp;
+void 
+SetRaiseWindow (TwmWindow *tmp)
 {
 	enter_flag = TRUE;
 	enter_win = NULL;
@@ -159,8 +160,8 @@ void SetRaiseWindow (tmp)
  ***********************************************************************
  */
 
-void
-InitEvents()
+void 
+InitEvents (void)
 {
 	int i;
 
@@ -202,8 +203,8 @@ InitEvents()
 
 Time lastTimestamp = CurrentTime;	/* until Xlib does this for us */
 
-Bool StashEventTime (ev)
-	register XEvent *ev;
+Bool 
+StashEventTime (register XEvent *ev)
 {
 	switch (ev->type) {
 	  case KeyPress:
@@ -244,8 +245,8 @@ Bool StashEventTime (ev)
  * window may not be the same as XEvent.xany.window (the first window listed
  * in the structure).
  */
-Window WindowOfEvent (e)
-	XEvent *e;
+static Window 
+WindowOfEvent (XEvent *e)
 {
 	/*
 	 * Each window subfield is marked with whether or not it is the same as
@@ -300,7 +301,8 @@ Window WindowOfEvent (e)
  *
  ***********************************************************************
  */
-Bool DispatchEvent ()
+Bool 
+DispatchEvent (void)
 {
 	Window w = Event.xany.window;
 	StashEventTime (&Event);
@@ -334,8 +336,8 @@ Bool DispatchEvent ()
  ***********************************************************************
  */
 
-void
-HandleEvents()
+void 
+HandleEvents (void)
 {
 	while (TRUE)
 	{
@@ -369,14 +371,13 @@ HandleEvents()
  ***********************************************************************
  */
 
-void
-HandleColormapNotify()
+void 
+HandleColormapNotify (void)
 {
 	XColormapEvent *cevent = (XColormapEvent *) &Event;
 	ColormapWindow *cwin, **cwins;
 	TwmColormap *cmap;
 	int lost, won, n, number_cwins;
-	extern TwmColormap *CreateTwmColormap();
 
 	if (XFindContext(dpy, cevent->window, ColormapContext, (caddr_t *)&cwin) == XCNOENT)
 	return;
@@ -526,8 +527,8 @@ HandleColormapNotify()
  ***********************************************************************
  */
 
-void
-HandleVisibilityNotify()
+void 
+HandleVisibilityNotify (void)
 {
 	XVisibilityEvent *vevent = (XVisibilityEvent *) &Event;
 	ColormapWindow *cwin;
@@ -564,8 +565,8 @@ HandleVisibilityNotify()
 
 int MovedFromKeyPress = False;
 
-void
-HandleKeyPress()
+void 
+HandleKeyPress (void)
 {
 	FuncKey *key;
 	int len;
@@ -773,9 +774,8 @@ HandleKeyPress()
 
 
 
-static void free_window_names (tmp, nukefull, nukename, nukeicon)
-	TwmWindow *tmp;
-	Bool nukefull, nukename, nukeicon;
+static void 
+free_window_names (TwmWindow *tmp, Bool nukefull, Bool nukename, Bool nukeicon)
 {
 	if (tmp->name == tmp->full_name) nukefull = False;
 
@@ -792,8 +792,8 @@ static void free_window_names (tmp, nukefull, nukename, nukeicon)
 }
 
 
-void free_cwins (tmp)
-	TwmWindow *tmp;
+void 
+free_cwins (TwmWindow *tmp)
 {
 	int i;
 	TwmColormap *cmap;
@@ -829,8 +829,8 @@ void free_cwins (tmp)
  ***********************************************************************
  */
 
-void
-HandlePropertyNotify()
+void 
+HandlePropertyNotify (void)
 {
 	char *prop = NULL;
 	unsigned long valuemask;		/* mask for create windows */
@@ -1087,7 +1087,8 @@ HandlePropertyNotify()
  ***********************************************************************
  */
 
-void RedoIconName()
+void 
+RedoIconName (void)
 {
 	int x, y;
 
@@ -1177,10 +1178,8 @@ void RedoIconName()
 /*
  * RedoDoorName - Redraw the contents of a door's window
  */
-void
-RedoDoorName(twin, door)
-TwmWindow *twin;
-TwmDoor *door;
+void 
+RedoDoorName (TwmWindow *twin, TwmDoor *door)
 {
 	TwmWindow *tmp_win;
 
@@ -1237,9 +1236,8 @@ TwmDoor *door;
 /*
  * RedoListWindow - Redraw the contents of an icon manager's entry
  */
-void
-RedoListWindow(twin)
-TwmWindow *twin;
+void 
+RedoListWindow (TwmWindow *twin)
 {
 	static int en = 0, dots = 0;
 
@@ -1312,11 +1310,9 @@ TwmWindow *twin;
  ***********************************************************************
  */
 
-void
-HandleClientMessage()
+void 
+HandleClientMessage (void)
 {
-	extern void RestartVtwm();
-
 	if (Event.xclient.message_type == _XA_WM_CHANGE_STATE)
 	{
 		if (Tmp_win != NULL)
@@ -1350,10 +1346,10 @@ HandleClientMessage()
  ***********************************************************************
  */
 
-static void flush_expose();
+static void flush_expose(Window w);
 
-void
-HandleExpose()
+void 
+HandleExpose (void)
 {
 	MenuRoot *tmp;
 	TwmDoor *door = NULL;
@@ -1535,8 +1531,8 @@ HandleExpose()
  ***********************************************************************
  */
 
-void
-HandleDestroyNotify()
+void 
+HandleDestroyNotify (void)
 {
 	int i;
 
@@ -1667,8 +1663,8 @@ HandleDestroyNotify()
 
 
 
-void
-HandleCreateNotify()
+void 
+HandleCreateNotify (void)
 {
 #ifdef DEBUG_EVENTS
 	fprintf(stderr, "CreateNotify w = 0x%x\n", Event.xcreatewindow.window);
@@ -1688,8 +1684,8 @@ HandleCreateNotify()
  ***********************************************************************
  */
 
-void
-HandleMapRequest()
+void 
+HandleMapRequest (void)
 {
 
 	int stat;
@@ -1797,8 +1793,8 @@ HandleMapRequest()
 
 
 
-void SimulateMapRequest (w)
-	Window w;
+void 
+SimulateMapRequest (Window w)
 {
 	Event.xmaprequest.window = w;
 	HandleMapRequest ();
@@ -1814,8 +1810,8 @@ void SimulateMapRequest (w)
  ***********************************************************************
  */
 
-void
-HandleMapNotify()
+void 
+HandleMapNotify (void)
 {
 	if (Tmp_win == NULL)
 	return;
@@ -1859,8 +1855,8 @@ HandleMapNotify()
  ***********************************************************************
  */
 
-void
-HandleUnmapNotify()
+void 
+HandleUnmapNotify (void)
 {
 	int dstx, dsty;
 	Window dumwin;
@@ -1929,8 +1925,8 @@ HandleUnmapNotify()
  *
  ***********************************************************************
  */
-void
-HandleButtonRelease()
+void 
+HandleButtonRelease (void)
 {
 	unsigned mask;
 
@@ -2023,9 +2019,11 @@ HandleButtonRelease()
 
 
 
-static void do_menu (menu, wnd)
-	MenuRoot *menu;			/* menu to pop up */
-	Window wnd;				/* invoking window or None */
+static void 
+do_menu (
+    MenuRoot *menu,			/* menu to pop up */
+    Window wnd				/* invoking window or None */
+)
 {
 	int x = Event.xbutton.x_root;
 	int y = Event.xbutton.y_root;
@@ -2063,8 +2061,8 @@ static void do_menu (menu, wnd)
  *
  ***********************************************************************
  */
-void
-HandleButtonPress()
+void 
+HandleButtonPress (void)
 {
 	unsigned int modifier;
 	Cursor cur;
@@ -2404,11 +2402,8 @@ typedef struct HENScanArgs {
 } HENScanArgs;
 
 /* ARGSUSED*/
-static Bool
-HENQueueScanner(dpy, ev, args)
-	Display *dpy;
-	XEvent *ev;
-	char *args;
+static Bool 
+HENQueueScanner (Display *dpy, XEvent *ev, char *args)
 {
 	if (ev->type == LeaveNotify) {
 	if (ev->xcrossing.window == ((HENScanArgs *) args)->w &&
@@ -2438,8 +2433,8 @@ HENQueueScanner(dpy, ev, args)
  ***********************************************************************
  */
 
-void
-HandleEnterNotify()
+void 
+HandleEnterNotify (void)
 {
 	MenuRoot *mr;
 	XEnterWindowEvent *ewp = &Event.xcrossing;
@@ -2869,11 +2864,8 @@ typedef struct HLNScanArgs {
 } HLNScanArgs;
 
 /* ARGSUSED*/
-static Bool
-HLNQueueScanner(dpy, ev, args)
-	Display *dpy;
-	XEvent *ev;
-	char *args;
+static Bool 
+HLNQueueScanner (Display *dpy, XEvent *ev, char *args)
 {
 	if (ev->type == EnterNotify && ev->xcrossing.mode != NotifyGrab) {
 	((HLNScanArgs *) args)->enters = True;
@@ -2894,8 +2886,8 @@ HLNQueueScanner(dpy, ev, args)
  ***********************************************************************
  */
 
-void
-HandleLeaveNotify()
+void 
+HandleLeaveNotify (void)
 {
 	HLNScanArgs scanArgs;
 	XEvent dummy;
@@ -2960,8 +2952,8 @@ HandleLeaveNotify()
  ***********************************************************************
  */
 
-void
-HandleConfigureRequest()
+void 
+HandleConfigureRequest (void)
 {
 	XWindowChanges xwc;
 	unsigned long xwcm;
@@ -3114,8 +3106,8 @@ HandleConfigureRequest()
  *
  ***********************************************************************
  */
-void
-HandleShapeNotify ()
+void 
+HandleShapeNotify (void)
 {
 	XShapeEvent	    *sev = (XShapeEvent *) &Event;
 
@@ -3141,8 +3133,8 @@ HandleShapeNotify ()
  *
  ***********************************************************************
  */
-void
-HandleXrandrScreenChangeNotify ()
+static void 
+HandleXrandrScreenChangeNotify (void)
 {
     if (Scr->RRScreenChangeRestart == TRUE)
     {
@@ -3177,8 +3169,8 @@ HandleXrandrScreenChangeNotify ()
  ***********************************************************************
  */
 
-void
-HandleUnknown()
+void 
+HandleUnknown (void)
 {
 #ifdef DEBUG_EVENTS
 	fprintf(stderr, "type = %d\n", Event.type);
@@ -3202,9 +3194,8 @@ HandleUnknown()
  ***********************************************************************
  */
 
-int
-Transient(w, propw)
-	Window w, *propw;
+int 
+Transient (Window w, Window *propw)
 {
 	return (XGetTransientForHint(dpy, w, propw));
 }
@@ -3276,8 +3267,8 @@ FindScreenInfo (Window w)
 
 
 
-static void flush_expose (w)
-	Window w;
+static void 
+flush_expose (Window w)
 {
 	XEvent dummy;
 
@@ -3300,9 +3291,8 @@ static void flush_expose (w)
  ***********************************************************************
  */
 
-void InstallWindowColormaps (type, tmp)
-	int type;
-	TwmWindow *tmp;
+void 
+InstallWindowColormaps (int type, TwmWindow *tmp)
 {
 	int i, j, n, number_cwins, state;
 	ColormapWindow **cwins, *cwin, **maxcwin = NULL;
@@ -3410,7 +3400,8 @@ void InstallWindowColormaps (type, tmp)
  ***********************************************************************
  */
 
-void InstallRootColormap()
+void 
+InstallRootColormap (void)
 {
 	TwmWindow *tmp;
 	if (Scr->cmapInfo.root_pushes == 0) {
@@ -3429,11 +3420,8 @@ void InstallRootColormap()
 
 
 /* ARGSUSED*/
-static Bool
-UninstallRootColormapQScanner(dpy, ev, args)
-	Display *dpy;
-	XEvent *ev;
-	char *args;
+static Bool 
+UninstallRootColormapQScanner (Display *dpy, XEvent *ev, char *args)
 {
 	if (!*args)
 	{
@@ -3451,7 +3439,8 @@ UninstallRootColormapQScanner(dpy, ev, args)
 
 
 
-void UninstallRootColormap()
+void 
+UninstallRootColormap (void)
 {
 	char args;
 	XEvent dummy;
@@ -3473,9 +3462,8 @@ void UninstallRootColormap()
 	}
 }
 
-void SendConfigureNotify(tmp_win, x, y)
-TwmWindow *tmp_win;
-int x, y;
+void 
+SendConfigureNotify (TwmWindow *tmp_win, int x, int y)
 {
 	XEvent client_event;
 
@@ -3502,8 +3490,8 @@ int x, y;
 }
 
 #ifdef TRACE
-dumpevent (e)
-	XEvent *e;
+int 
+dumpevent (XEvent *e)
 {
 	char *name = NULL;
 

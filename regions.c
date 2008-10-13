@@ -39,12 +39,10 @@
 #include "parse.h"
 #include "image_formats.h"
 #include "util.h"
+#include "prototypes.h"
 
-void
-splitRegionEntry (re, grav1, grav2, w, h)
-    RegionEntry	*re;
-    int		grav1, grav2;
-    int		w, h;
+void 
+splitRegionEntry (RegionEntry *re, int grav1, int grav2, int w, int h)
 {
     RegionEntry	*new;
 
@@ -96,16 +94,14 @@ splitRegionEntry (re, grav1, grav2, w, h)
     }
 }
 
-int
-roundEntryUp (v, multiple)
+int 
+roundEntryUp (int v, int multiple)
 {
     return ((v + multiple - 1) / multiple) * multiple;
 }
 
 RegionEntry *
-prevRegionEntry (re, rr)
-    RegionEntry	*re;
-    RootRegion	*rr;
+prevRegionEntry (RegionEntry *re, RootRegion *rr)
 {
     RegionEntry	*ep;
 
@@ -119,9 +115,8 @@ prevRegionEntry (re, rr)
 /*
  * old is being freed; and is adjacent to re.  Merge regions together.
  */
-void
-mergeRegionEntries (old, re)
-    RegionEntry	*old, *re;
+void 
+mergeRegionEntries (RegionEntry *old, RegionEntry *re)
 {
     if (old->y == re->y) {
 	re->w = old->w + re->w;
@@ -134,10 +129,8 @@ mergeRegionEntries (old, re)
     }
 }
 
-void
-downRegionEntry(rr, re)
-RootRegion	*rr;
-RegionEntry	*re;
+void 
+downRegionEntry (RootRegion *rr, RegionEntry *re)
 {
 	RegionEntry	*ep, *en;
 
@@ -181,9 +174,7 @@ RegionEntry	*re;
 }
 
 RootRegion *
-AddRegion(geom, grav1, grav2, stepx, stepy)
-char *geom;
-int grav1, grav2, stepx, stepy;
+AddRegion (char *geom, int grav1, int grav2, int stepx, int stepy)
 {
     RootRegion *rr;
     int mask;
@@ -223,9 +214,8 @@ int grav1, grav2, stepx, stepy;
     return rr;
 }
 
-void
-FreeRegionEntries (rr)
-    RootRegion	*rr;
+void 
+FreeRegionEntries (RootRegion *rr)
 {
     RegionEntry	*re, *tmp;
 
@@ -242,9 +232,8 @@ FreeRegionEntries (rr)
     }
 }
 
-void
-FreeRegions (first, last)
-    RootRegion	*first, *last;
+void 
+FreeRegions (RootRegion *first, RootRegion *last)
 {
     RootRegion *rr, *tmp;
 

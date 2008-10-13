@@ -72,22 +72,6 @@ typedef struct IconMgr
     int count;
 } IconMgr;
 
-extern int iconmgr_textx;
-extern WList *DownIconManager;
-extern void SetIconMgrPixmap();
-extern void CreateIconManagers();
-extern IconMgr *AllocateIconManager();
-extern void MoveIconManager();
-extern void JumpIconManager();
-extern WList *AddIconManager();
-extern void InsertInIconManager();
-extern void RemoveFromIconManager();
-extern void RemoveIconManager();
-extern void ActiveIconManager();
-extern void NotActiveIconManager();
-extern void DrawIconManagerBorder();
-extern void SortIconManager();
-extern void PackIconManager();
 
 #define VTWM_ICONMGR_CLASS "VTWM Icon Manager"
 

@@ -39,40 +39,9 @@
 #ifndef _EVENTS_
 #define _EVENTS_
 
-typedef void (*event_proc)();
+typedef void (*event_proc)(void);
 
-extern void InitEvents();
-extern Bool StashEventTime();
-extern Time lastTimestamp;
-extern void SimulateMapRequest();
-extern void AutoRaiseWindow();
 #define LastTimestamp() lastTimestamp
-extern Bool DispatchEvent();
-extern void HandleEvents();
-extern void HandleExpose();
-extern void HandleDestroyNotify();
-extern void HandleMapRequest();
-extern void HandleMapNotify();
-extern void HandleUnmapNotify();
-extern void HandleMotionNotify();
-extern void HandleButtonRelease();
-extern void HandleButtonPress();
-extern void HandleEnterNotify();
-extern void HandleLeaveNotify();
-extern void HandleConfigureRequest();
-extern void HandleClientMessage();
-extern void HandlePropertyNotify();
-extern void HandleKeyPress();
-extern void HandleColormapNotify();
-extern void HandleVisibilityNotify();
-extern void HandleUnknown();
-extern void SendConfigureNotify();
-extern void InstallRootColormap();
-extern int Transient();
-extern void UninstallRootColormap();
-extern void InstallWindowColormaps();
-extern void RedoDoorName();
-extern void RedoListWindow();
 
 extern event_proc EventHandler[];
 extern Window DragWindow;

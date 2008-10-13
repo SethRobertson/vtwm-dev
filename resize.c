@@ -47,6 +47,7 @@
 #include "desktop.h"
 #include "events.h"
 #include "menus.h"
+#include "prototypes.h"
 
 #define MINHEIGHT 0     /* had been 32 */
 #define MINWIDTH 0      /* had been 60 */
@@ -76,18 +77,12 @@ static int resize_context;
 /* set in menus.c:ExecuteFunction(), cleared in *EndResize() - djhjr - 9/5/98 */
 int resizing_window = 0;
 
-void PaintBorderAndTitlebar();
+static void DoVirtualMoveResize (TwmWindow *tmp_win, int x, int y, int w, int h);
+static void SetVirtualDesktopIncrs(TwmWindow *tmp_win);
+static void EndResizeAdjPointer(TwmWindow *tmp_win);
 
-static void DoVirtualMoveResize();
-
-void ResizeTwmWindowContents();
-
-static void SetVirtualDesktopIncrs();
-static void EndResizeAdjPointer();
-
-static void do_auto_clamp (tmp_win, evp)
-    TwmWindow *tmp_win;
-    XEvent *evp;
+static void 
+do_auto_clamp (TwmWindow *tmp_win, XEvent *evp)
 {
     Window junkRoot;
     int x, y, h, v, junkbw;
@@ -143,12 +138,8 @@ static void do_auto_clamp (tmp_win, evp)
  ***********************************************************************
  */
 
-void
-StartResize(evp, tmp_win, fromtitlebar, context)
-XEvent *evp;
-TwmWindow *tmp_win;
-Bool fromtitlebar;
-int context;
+void 
+StartResize (XEvent *evp, TwmWindow *tmp_win, Bool fromtitlebar, int context)
 {
     Window      junkRoot;
     unsigned int junkbw, junkDepth;
@@ -229,11 +220,8 @@ int context;
 }
 
 
-void
-MenuStartResize(tmp_win, x, y, w, h, context)
-TwmWindow *tmp_win;
-int x, y, w, h;
-int context;
+void 
+MenuStartResize (TwmWindow *tmp_win, int x, int y, int w, int h, int context)
 {
 	resize_context = context;
 
@@ -293,10 +281,8 @@ int context;
  ***********************************************************************
  */
 
-void
-AddStartResize(tmp_win, x, y, w, h)
-TwmWindow *tmp_win;
-int x, y, w, h;
+void 
+AddStartResize (TwmWindow *tmp_win, int x, int y, int w, int h)
 {
 	resize_context = C_WINDOW;
 
@@ -338,11 +324,8 @@ int x, y, w, h;
  ***********************************************************************
  */
 
-void
-DoResize(x_root, y_root, tmp_win)
-int x_root;
-int y_root;
-TwmWindow *tmp_win;
+void 
+DoResize (int x_root, int y_root, TwmWindow *tmp_win)
 {
     int action;
 
@@ -500,9 +483,8 @@ TwmWindow *tmp_win;
     DisplaySize(tmp_win, dragWidth, dragHeight);
 }
 
-static void
-SetVirtualDesktopIncrs(tmp_win)
-TwmWindow *tmp_win;
+static void 
+SetVirtualDesktopIncrs (TwmWindow *tmp_win)
 {
     if (strcmp(tmp_win->class.res_class, VTWM_DESKTOP_CLASS) == 0)
     {
@@ -535,11 +517,8 @@ TwmWindow *tmp_win;
  ***********************************************************************
  */
 
-void
-DisplaySize(tmp_win, width, height)
-TwmWindow *tmp_win;
-int width;
-int height;
+void 
+DisplaySize (TwmWindow *tmp_win, int width, int height)
 {
     char str[100];
     int i, dwidth, dheight;
@@ -623,8 +602,8 @@ int height;
  ***********************************************************************
  */
 
-void
-EndResize()
+void 
+EndResize (void)
 {
     TwmWindow *tmp_win;
 
@@ -670,10 +649,8 @@ EndResize()
 	resizing_window = 0;
 }
 
-void
-MenuEndResize(tmp_win, context)
-TwmWindow *tmp_win;
-int context;
+void 
+MenuEndResize (TwmWindow *tmp_win, int context)
 {
     if (resize_context == C_VIRTUAL_WIN)
 	    MoveOutline(Scr->VirtualDesktopDisplay, 0, 0, 0, 0, 0, 0);
@@ -709,9 +686,8 @@ int context;
  ***********************************************************************
  */
 
-void
-AddEndResize(tmp_win)
-TwmWindow *tmp_win;
+void 
+AddEndResize (TwmWindow *tmp_win)
 {
 
 #ifdef DEBUG
@@ -735,9 +711,8 @@ TwmWindow *tmp_win;
 	resizing_window = 0;
 }
 
-static void
-EndResizeAdjPointer(tmp_win)
-TwmWindow *tmp_win;
+static void 
+EndResizeAdjPointer (TwmWindow *tmp_win)
 {
     int x, y, bw = tmp_win->frame_bw + tmp_win->frame_bw3D;
     int pointer_x, pointer_y; /* pointer coordinates relative to root origin */
@@ -800,9 +775,8 @@ TwmWindow *tmp_win;
  *
  ***********************************************************************/
 
-void ConstrainSize (tmp_win, widthp, heightp)
-    TwmWindow *tmp_win;
-    int *widthp, *heightp;
+void 
+ConstrainSize (TwmWindow *tmp_win, int *widthp, int *heightp)
 {
 #define makemult(a,b) ((b==1) ? (a) : (((int)((a)/(b))) * (b)) )
 #define _min(a,b) (((a) < (b)) ? (a) : (b))
@@ -972,17 +946,22 @@ void ConstrainSize (tmp_win, widthp, heightp)
  ***********************************************************************
  */
 
-void SetupWindow (tmp_win, x, y, w, h, bw)
-    TwmWindow *tmp_win;
-    int x, y, w, h, bw;
+void 
+SetupWindow (TwmWindow *tmp_win, int x, int y, int w, int h, int bw)
 {
     SetupFrame (tmp_win, x, y, w, h, bw, False);
 }
 
-void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
-    TwmWindow *tmp_win;
-    int x, y, w, h, bw;
-    Bool sendEvent;			/* whether or not to force a send */
+void 
+SetupFrame (
+    TwmWindow *tmp_win,
+    int x,
+    int y,
+    int w,
+    int h,
+    int bw,
+    Bool sendEvent			/* whether or not to force a send */
+)
 {
     XWindowChanges frame_wc, xwc;
     unsigned long frame_mask, xwcm;
@@ -1118,9 +1097,8 @@ void SetupFrame (tmp_win, x, y, w, h, bw, sendEvent)
     }
 }
 
-void
-PaintBorderAndTitlebar(tmp_win)
-TwmWindow *tmp_win;
+void 
+PaintBorderAndTitlebar (TwmWindow *tmp_win)
 {
 	if (tmp_win->highlight)
 		SetBorder(tmp_win, True);
@@ -1143,10 +1121,8 @@ TwmWindow *tmp_win;
 }
 
 
-static void
-DoVirtualMoveResize(tmp_win, x, y, w, h)
-TwmWindow *tmp_win;
-int x, y, w, h;
+static void 
+DoVirtualMoveResize (TwmWindow *tmp_win, int x, int y, int w, int h)
 {
 	int fw = tmp_win->frame_width, fh = tmp_win->frame_height;
 
@@ -1950,9 +1926,8 @@ fullzoom (TwmWindow *tmp_win, int flag)
 /*
  * adjust contents of iconmgrs, doors and the desktop - djhjr - 9/10/99
  */
-void ResizeTwmWindowContents(tmp_win, width, height)
-    TwmWindow *tmp_win;
-	int width, height;
+void 
+ResizeTwmWindowContents (TwmWindow *tmp_win, int width, int height)
 {
 	TwmDoor *door;
 	int ncols;
@@ -1974,8 +1949,8 @@ void ResizeTwmWindowContents(tmp_win, width, height)
 		RedoDoorName(tmp_win, door);
 }
 
-void SetFrameShape (tmp)
-    TwmWindow *tmp;
+void 
+SetFrameShape (TwmWindow *tmp)
 {
     /*
      * see if the titlebar needs to move

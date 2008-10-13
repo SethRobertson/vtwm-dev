@@ -39,10 +39,6 @@
 #ifndef _PARSE_
 #define _PARSE_
 
-extern int ParseTwmrc(), ParseStringList();
-extern int (*twmInputFunc)();
-extern void twmUnput();
-extern void TwmOutput();
 
 /*
  * This is private to VTWM, to indicate no or invalid functions.
@@ -180,7 +176,5 @@ extern void TwmOutput();
 #define R_NORTHWEST		8
 #define R_CENTERED		9
 
-int yyparse(void);
-int yywrap(void);
 
 #endif /* _PARSE_ */

@@ -153,43 +153,5 @@ extern int MenuDepth;
 #define COLORMAP_PREV "prev"
 #define COLORMAP_DEFAULT "default"
 
-extern int InitTitlebarButtons();
-extern void InitMenus();
-extern MenuRoot *NewMenuRoot();
-extern void SetMenuIconPixmap();
-extern MenuItem *AddToMenu();
-extern Bool PopUpMenu();
-extern MenuRoot *FindMenuRoot();
-extern Bool AddFuncKey();
-extern int ExecuteFunction();
-extern int DeferExecution();
-extern void Execute();
-extern void FocusOnRoot (void);
-extern void FocusOnClient (TwmWindow *tmp_win);
-extern void SetBorder();
-extern void ReGrab();
-extern void WarpToWindow();
-extern void PaintEntry();
-extern void DeIconify();
-extern void SetMapStateProp();
-extern void Iconify();
-extern void PopDownMenu();
-extern void UpdateMenu();
-extern void SendTakeFocusMessage();
-extern void PaintEntry();
-extern void SetBorder();
-extern int CreateTitleButton();
-extern void MakeMenus();
-extern void PaintMenu();
- 
-extern void DisplayPosition ();
-
-extern void WarpWindowOrScreen();
-extern void WarpInIconMgr();
-
-extern void AddWindowToRing();
-extern void RemoveWindowFromRing();
-
-extern void DoAudible();
 
 #endif /* _MENUS_ */

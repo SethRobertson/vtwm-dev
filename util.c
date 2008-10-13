@@ -68,6 +68,7 @@ in this Software without prior written authorization from The Open Group.
 #include "gram.h"
 #include "screen.h"
 #include "list.h"
+#include "prototypes.h"
 #include <X11/Xos.h>
 #include <X11/Xatom.h>
 #include <X11/Xmu/Drawing.h>
@@ -95,19 +96,19 @@ in this Software without prior written authorization from The Open Group.
  * were a hard value of 2 - djhjr - 4/29/98
  */
 
-static void Draw3DMenuImage();
-static void Draw3DDotImage();
-static void Draw3DResizeImage();
-static void Draw3DZoomImage();
-static void Draw3DBarImage();
-
-static void Draw3DRArrowImage();
-static void Draw3DDArrowImage();
-
-void setBorderGC();
-GC setBevelGC();
-void Draw3DBevel();
-void Draw3DNoBevel();
+static void Draw3DMenuImage(Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state);
+static void Draw3DDotImage(Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state);
+static void Draw3DResizeImage(Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state);
+static void Draw3DZoomImage(Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state);
+static void Draw3DBarImage(Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state);
+static void Draw3DRArrowImage(Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state);
+static void Draw3DDArrowImage(Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state);
+static void setBorderGC(int type, GC gc, ColorPair cp, int state, int forcebw);
+static GC setBevelGC(int type, int state, ColorPair cp);
+static void Draw3DBevel(Drawable w, int x, int y, int bw, ColorPair cp, int state, int type);
+static void Draw3DNoBevel(Drawable w, int x, int y, int bw, ColorPair cp, int state, int forcebw);
+static void draw_rect(Display *display, Drawable drawable, GC gc, int x, int y, unsigned int width, unsigned int height);
+static void draw_scaled_rect(Display *display, Drawable drawable, GC gc, int x, int y, unsigned int width, unsigned int height, unsigned int scale, unsigned int over);
 
 /* for trying to clean up BeNiceToColormap - djhjr - 10/20/02 */
 static int borderdashoffset;
@@ -136,9 +137,8 @@ static char questionmark_bits[] = {
  ***********************************************************************
  */
 
-void MoveOutline(root, x, y, width, height, bw, th)
-    Window root;
-    int x, y, width, height, bw, th;
+void 
+MoveOutline (Window root, int x, int y, int width, int height, int bw, int th)
 {
     static int	lastx = 0;
     static int	lasty = 0;
@@ -260,10 +260,8 @@ void MoveOutline(root, x, y, width, height, bw, th)
  ***********************************************************************
  */
 
-void
-Zoom(wf, ipf, wt, ipt)
-    Window wf, wt;
-    IconMgr *ipf, *ipt;
+void 
+Zoom (Window wf, IconMgr *ipf, Window wt, IconMgr *ipt)
 {
     int fx, fy, tx, ty;			/* from, to */
     unsigned int fw, fh, tw, th;	/* from, to */
@@ -273,8 +271,6 @@ Zoom(wf, ipf, wt, ipt)
 
     static struct timeval timeoutval = {0, ZOOMSLEEP};
     struct timeval timeout;
-
-    void draw_rect();
 
     if (!Scr->DoZoom || Scr->ZoomCount < 1) return;
 
@@ -389,14 +385,9 @@ Zoom(wf, ipf, wt, ipt)
 /*
  *	Use any routine to draw your own rectangles here. -- DSE
  */
-void draw_rect (display,drawable,gc,x,y,width,height)
-		Display *display;
-		Drawable drawable;
-		GC gc;
-		int x,y;
-		unsigned int width,height;
+void 
+draw_rect (Display *display, Drawable drawable, GC gc, int x, int y, unsigned int width, unsigned int height)
 	{
-	void draw_scaled_rect();
 	draw_scaled_rect (display,drawable,gc,x,y,width,height, 20,20);
 	if (Scr->PrettyZoom)
 		{
@@ -404,14 +395,8 @@ void draw_rect (display,drawable,gc,x,y,width,height)
 		draw_scaled_rect (display,drawable,gc,x,y,width,height, 16,20);
 		}
 	}
-void draw_scaled_rect (display,drawable,gc,x,y,
-		       width,height,scale,over)
-		Display *display;
-		Drawable drawable;
-		GC gc;
-		int x,y;
-		unsigned int width,height;
-		unsigned int scale,over;
+void 
+draw_scaled_rect (Display *display, Drawable drawable, GC gc, int x, int y, unsigned int width, unsigned int height, unsigned int scale, unsigned int over)
 	{
 	XDrawRectangle(dpy,drawable,gc,
 		x + ( over + width * (over - scale) ) / (2 * over),
@@ -437,8 +422,7 @@ void draw_scaled_rect (display,drawable,gc,x,y,
  */
 
 char *
-ExpandFilename(name)
-char *name;
+ExpandFilename (char *name)
 {
     char *newname;
 
@@ -457,11 +441,8 @@ char *name;
 }
 
 
-void InsertRGBColormap (a, maps, nmaps, replace)
-    Atom a;
-    XStandardColormap *maps;
-    int nmaps;
-    Bool replace;
+void 
+InsertRGBColormap (Atom a, XStandardColormap *maps, int nmaps, Bool replace)
 {
     StdCmap *sc = NULL;
 
@@ -502,8 +483,8 @@ void InsertRGBColormap (a, maps, nmaps, replace)
 /*
  * SetPixmapsPixmap - load the Image structure for the Pixmaps resource images
  */
-Image *SetPixmapsPixmap(filename)
-char *filename;
+Image *
+SetPixmapsPixmap (char *filename)
 {
 	Pixmap bm;
 	Image *image = NULL;
@@ -528,8 +509,8 @@ char *filename;
 }
 
 
-void RemoveRGBColormap (a)
-    Atom a;
+void 
+RemoveRGBColormap (Atom a)
 {
     StdCmap *sc, *prev;
 
@@ -548,7 +529,8 @@ void RemoveRGBColormap (a)
     return;
 }
 
-void LocateStandardColormaps()
+void 
+LocateStandardColormaps (void)
 {
     Atom *atoms;
     int natoms;
@@ -568,10 +550,8 @@ void LocateStandardColormaps()
     return;
 }
 
-void GetColor(kind, what, name)
-int kind;
-Pixel *what;
-char *name;
+void 
+GetColor (int kind, Pixel *what, char *name)
 {
     XColor color, junkcolor;
     Status stat = 0;
@@ -651,8 +631,8 @@ char *name;
     *what = color.pixel;
 }
 
-void GetShadeColors (cp)
-ColorPair *cp;
+void 
+GetShadeColors (ColorPair *cp)
 {
     XColor	xcol;
     Colormap	cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
@@ -1040,9 +1020,8 @@ I18N_GetIconName (Display *dpy, Window w, char **iconname)
  * SetFocus - separate routine to set focus to make things more understandable
  * and easier to debug
  */
-void SetFocus (tmp_win, time)
-    TwmWindow *tmp_win;
-    Time	time;
+void 
+SetFocus (TwmWindow *tmp_win, Time time)
 {
     Window w = (tmp_win ? tmp_win->w : PointerRoot);
 
@@ -1126,7 +1105,8 @@ const char *s;
 
 
 /* Returns a blank cursor */
-Cursor NoCursor()
+Cursor 
+NoCursor (void)
 {
 	static Cursor blank = (Cursor) NULL;
 	Pixmap nopixmap;
@@ -1140,11 +1120,8 @@ Cursor NoCursor()
 	return(blank);
 }
 
-static void DrawDotImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+DrawDotImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
     XPoint points[5];
     int wb, hb, ws, hs, lw;
@@ -1166,11 +1143,8 @@ int state;
     XDrawLines(dpy, d, Scr->RootGC, points, 5, CoordModeOrigin);
 }
 
-static void DrawResizeImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+DrawResizeImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
     XPoint points[3];
     int wb, hb, ws, hs, lw;
@@ -1199,11 +1173,8 @@ int state;
     XDrawLines(dpy, d, Scr->RootGC, points, 3, CoordModeOrigin);
 }
 
-static void DrawMenuImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+DrawMenuImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
     int ih, iw;
     int	ix, iy;
@@ -1251,11 +1222,8 @@ int state;
     }
 }
 
-static void DrawXLogoImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+DrawXLogoImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
     GC gcBack;
     XGCValues gcvalues;
@@ -1306,11 +1274,8 @@ static unsigned char siconify_bits[] = {
     XFreeGC(dpy, gcBack);
 }
 
-static void DrawQuestionImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+DrawQuestionImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
     Pixmap p;
 
@@ -1327,11 +1292,8 @@ int state;
     XFreePixmap(dpy, p);
 }
 
-static void DrawRArrowImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+DrawRArrowImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
     XPoint points[4];
     int lw, mw, mh;
@@ -1356,11 +1318,8 @@ int state;
     XDrawLines(dpy, d, Scr->RootGC, points, 4, CoordModeOrigin);
 }
 
-static void DrawDArrowImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+DrawDArrowImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
     XPoint points[4];
     int lw, mw, mh;
@@ -1385,32 +1344,23 @@ int state;
     XDrawLines(dpy, d, Scr->RootGC, points, 4, CoordModeOrigin);
 }
 
-static void Draw3DDotImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+Draw3DDotImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
     Draw3DBorder(d, x + (w / 2) - 2, y + (h / 2) - 2, 5, 5,
 		 Scr->ShallowReliefWindowButton, cp, state, True, False);
 }
 
-static void Draw3DBarImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+Draw3DBarImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
 	Draw3DBorder (d, x + pad + 1, y + (h - 5) / 2,
 		w - pad * 2 - 2, 5,
 		Scr->ShallowReliefWindowButton, cp, state, True, False);
 }
 
-static void Draw3DMenuImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+Draw3DMenuImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
 	int i, lines, width, height;
 
@@ -1431,11 +1381,8 @@ int state;
 			     cp, state, True, False);
 }
 
-static void Draw3DResizeImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+Draw3DResizeImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
     int	  i, j;
 
@@ -1461,11 +1408,8 @@ int state;
 		Scr->ShallowReliefWindowButton, cp, state, True, False);
 }
 
-static void Draw3DZoomImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+Draw3DZoomImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
 	Draw3DBorder (d,
 		x + pad + 1, y + pad + 1,
@@ -1474,11 +1418,8 @@ int state;
 		Scr->ShallowReliefWindowButton, cp, state, True, False);
 }
 
-static void Draw3DRArrowImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+Draw3DRArrowImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
     int i, mw, mh;
 
@@ -1563,11 +1504,8 @@ int state;
 	}
 }
 
-static void Draw3DDArrowImage(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+Draw3DDArrowImage (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
     int i, mw, mh;
 
@@ -1650,22 +1588,16 @@ int state;
 	}
 }
 
-static void Draw3DBoxHighlight(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+Draw3DBoxHighlight (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
 	Draw3DBorder(d, x, y, w, h,
 		     Scr->ShallowReliefWindowButton, cp,
 		     state, True, False);
 }
 
-static void Draw3DLinesHighlight(d, x, y, w, h, pad, cp, state)
-Drawable d;
-int x, y, w, h, pad;
-ColorPair cp;
-int state;
+static void 
+Draw3DLinesHighlight (Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state)
 {
 	int p;
 
@@ -1692,11 +1624,8 @@ int state;
 		     state, False, False);
 }
 
-static void DrawBackground(d, x, y, w, h, cp, use_rootGC)
-Drawable d;
-int x, y, w, h;
-ColorPair cp;
-int use_rootGC;
+static void 
+DrawBackground (Drawable d, int x, int y, int w, int h, ColorPair cp, int use_rootGC)
 {
     XGCValues gcvalues;
 
@@ -1719,13 +1648,12 @@ int use_rootGC;
     }
 }
 
-static void DrawTitleHighlight(t, state)
-TwmWindow *t;
-int state;
+static void 
+DrawTitleHighlight (TwmWindow *t, int state)
 {
 	static const struct {
 		char *name;
-		void (*proc)();
+	  void (*proc)(Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state);
 		Bool use_rootGC;
 		int state;
 	} pmtab[] = {
@@ -1800,10 +1728,8 @@ int state;
 	}
 }
 
-void setBorderGC(type, gc, cp, state, forcebw)
-int			type, state, forcebw;
-GC			gc;
-ColorPair	cp;
+void 
+setBorderGC (int type, GC gc, ColorPair cp, int state, int forcebw)
 {
 	XGCValues		gcv;
 	unsigned long	gcm;
@@ -1954,9 +1880,8 @@ void Draw3DBorder (Drawable w, int x, int y, int width, int height, int bw,
 	}
 }
 
-GC setBevelGC(type, state, cp)
-int			type, state;
-ColorPair	cp;
+GC 
+setBevelGC (int type, int state, ColorPair cp)
 {
 	GC		gc;
 
@@ -1986,11 +1911,8 @@ ColorPair	cp;
 	return (gc);
 }
 
-void Draw3DBevel (w, x, y, bw, cp, state, type)
-Drawable		w;
-int			x, y, bw;
-ColorPair	cp;
-int			state, type;
+void 
+Draw3DBevel (Drawable w, int x, int y, int bw, ColorPair cp, int state, int type)
 {
 	int		i;
 	GC		gc;
@@ -2085,11 +2007,8 @@ int			state, type;
 	}
 }
 
-void Draw3DNoBevel(w, x, y, bw, cp, state, forcebw)
-Drawable	w;
-int		x, y, bw;
-ColorPair	cp;
-int		state, forcebw;
+void 
+Draw3DNoBevel (Drawable w, int x, int y, int bw, ColorPair cp, int state, int forcebw)
 {
 	int		i, upr, lwr;
 
@@ -2185,9 +2104,8 @@ int		state, forcebw;
 			x + i, upr, x + i, lwr);
 }
 
-static Image *LoadBitmapImage (name, cp)
-char  *name;
-ColorPair cp;
+static Image *
+LoadBitmapImage (char *name, ColorPair cp)
 {
     Image	*image;
     Pixmap	bm;
@@ -2212,9 +2130,8 @@ ColorPair cp;
     return (image);
 }
 
-static Image *CreateImagePixmap(name, w, h, depth)
-char *name;
-int w, h, depth;
+static Image *
+CreateImagePixmap (char *name, int w, int h, int depth)
 {
     Image *image;
 
@@ -2238,14 +2155,12 @@ int w, h, depth;
     return (image);
 }
 
-static Image *ReallyGetImage(name, w, h, pad, cp)
-char      *name;
-int       w, h, pad;
-ColorPair cp;
+static Image *
+ReallyGetImage (char *name, int w, int h, int pad, ColorPair cp)
 {
     static const struct {
 	char *name;
-	void (*proc)();
+      void (*proc)(Drawable d, int x, int y, int w, int h, int pad, ColorPair cp, int state);
 	Bool use_rootGC;
 	int state;
     } pmtab[] = {
@@ -2349,10 +2264,8 @@ ColorPair cp;
 /*
  * Wrapper to guarantee something is returned - djhjr - 10/30/02
  */
-Image *GetImage(name, w, h, pad, cp)
-char *name;
-int w, h, pad;
-ColorPair cp;
+Image *
+GetImage (char *name, int w, int h, int pad, ColorPair cp)
 {
     Image *image = NULL;
 
@@ -2362,9 +2275,8 @@ ColorPair cp;
     return (image);
 }
 
-void PaintBorders (tmp_win, focus)
-TwmWindow	*tmp_win;
-Bool		focus;
+void 
+PaintBorders (TwmWindow *tmp_win, Bool focus)
 {
 	GC			gc;
 	ColorPair	cp;
@@ -2566,8 +2478,8 @@ Bool		focus;
 	}
 }
 
-void PaintIcon (tmp_win)
-TwmWindow *tmp_win;
+void 
+PaintIcon (TwmWindow *tmp_win)
 {
     if (!ClientIsOnScreen(tmp_win, Scr))
 	return;
@@ -2584,8 +2496,8 @@ TwmWindow *tmp_win;
 		tmp_win->icon_name, strlen(tmp_win->icon_name));
 }
 
-void PaintTitle (tmp_win)
-TwmWindow *tmp_win;
+void 
+PaintTitle (TwmWindow *tmp_win)
 {
 	int en, dots;
 
@@ -2669,10 +2581,12 @@ TwmWindow *tmp_win;
 	}
 }
 
-void PaintTitleButton(tmp_win, tbw, onoroff)
-TwmWindow *tmp_win;
-TBWindow  *tbw;
-int onoroff; /* 0 = no hilite    1 = hilite off    2 = hilite on */
+void 
+PaintTitleButton (
+    TwmWindow *tmp_win,
+    TBWindow *tbw,
+    int onoroff /* 0 = no hilite    1 = hilite off    2 = hilite on */
+)
 {
     Image *image;
     TitleButton *tb;
@@ -2702,9 +2616,8 @@ int onoroff; /* 0 = no hilite    1 = hilite off    2 = hilite on */
 		     Scr->ButtonBevelWidth, cp, off, False, False);
 }
 
-void PaintTitleHighlight(tmp_win, onoroff)
-TwmWindow *tmp_win;
-Bool onoroff;
+void 
+PaintTitleHighlight (TwmWindow *tmp_win, Bool onoroff)
 {
 	if (!tmp_win->titlehighlight) return;
 
@@ -2719,8 +2632,8 @@ Bool onoroff;
 		DrawTitleHighlight(tmp_win, onoroff);
 }
 
-int ComputeHighlightWindowWidth(tmp_win)
-TwmWindow *tmp_win;
+int 
+ComputeHighlightWindowWidth (TwmWindow *tmp_win)
 {
 	int en = MyFont_TextWidth(&Scr->TitleBarFont, "n", 1);
 

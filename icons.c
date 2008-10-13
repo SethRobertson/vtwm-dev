@@ -39,21 +39,23 @@
 #include "parse.h"
 #include "image_formats.h"
 #include "util.h"
+#include "prototypes.h"
 
-extern void splitRegionEntry();
-extern int roundEntryUp();
-extern RegionEntry *prevRegionEntry();
-extern void mergeRegionEntries();
-extern void downRegionEntry();
-extern RootRegion *AddRegion();
+extern void splitRegionEntry(RegionEntry *re, int grav1, int grav2, int w, int h);
+extern int roundEntryUp(int v, int multiple);
+extern RegionEntry *prevRegionEntry(RegionEntry *re, RootRegion *rr);
+extern void mergeRegionEntries(RegionEntry *old, RegionEntry *re);
+extern void downRegionEntry(RootRegion *rr, RegionEntry *re);
+extern RootRegion *AddRegion(char *geom, int grav1, int grav2, int stepx, int stepy);
+static void PlaceIcon (TwmWindow *tmp_win, int def_x, int def_y, int *final_x, int *final_y);
+static Image *GetIconImage (char *name, Pixel background, unsigned int *numcolors);
+
 
 #define iconWidth(w)	(Scr->IconBorderWidth * 2 + w->icon_w_width)
 #define iconHeight(w)	(Scr->IconBorderWidth * 2 + w->icon_w_height)
 
-void PlaceIcon(tmp_win, def_x, def_y, final_x, final_y)
-TwmWindow *tmp_win;
-int def_x, def_y;
-int *final_x, *final_y;
+static void 
+PlaceIcon (TwmWindow *tmp_win, int def_x, int def_y, int *final_x, int *final_y)
 {
     RootRegion	*rr;
     RegionEntry	*re;
@@ -94,9 +96,7 @@ int *final_x, *final_y;
 }
 
 static RegionEntry *
-FindIconEntry (tmp_win, rrp)
-    TwmWindow   *tmp_win;
-    RootRegion	**rrp;
+FindIconEntry (TwmWindow *tmp_win, RootRegion **rrp)
 {
     RootRegion	*rr;
     RegionEntry	*re;
@@ -112,8 +112,8 @@ FindIconEntry (tmp_win, rrp)
     return 0;
 }
 
-void IconUp (tmp_win)
-    TwmWindow   *tmp_win;
+void 
+IconUp (TwmWindow *tmp_win)
 {
     int		x, y;
     int		defx, defy;
@@ -152,9 +152,8 @@ void IconUp (tmp_win)
     }
 }
 
-void
-IconDown (tmp_win)
-    TwmWindow   *tmp_win;
+void 
+IconDown (TwmWindow *tmp_win)
 {
     RegionEntry	*re;
     RootRegion	*rr;
@@ -164,10 +163,8 @@ IconDown (tmp_win)
 	downRegionEntry(rr, re);
 }
 
-void
-AddIconRegion(geom, grav1, grav2, stepx, stepy)
-char *geom;
-int grav1, grav2, stepx, stepy;
+void 
+AddIconRegion (char *geom, int grav1, int grav2, int stepx, int stepy)
 {
     RootRegion *rr;
 
@@ -180,16 +177,13 @@ int grav1, grav2, stepx, stepy;
 	Scr->FirstIconRegion = rr;
 }
 
-Image *
-GetIconImage(name, background, numcolors)
-char *name;
-Pixel background;
-unsigned int *numcolors;
+static Image *
+GetIconImage (char *name, Pixel background, unsigned int *numcolors)
 {
     Image *iconimage;
 	GC gc;
     Pixmap bm;
-    int bitmap_height, bitmap_width;
+    unsigned int bitmap_height, bitmap_width;
 
 	iconimage = (Image *)LookInNameList(Scr->Icons, name);
 	if (iconimage == NULL)
@@ -255,10 +249,8 @@ unsigned int *numcolors;
 	return (iconimage);
 }
 
-void
-CreateIconWindow(tmp_win, def_x, def_y)
-TwmWindow *tmp_win;
-int def_x, def_y;
+void 
+CreateIconWindow (TwmWindow *tmp_win, int def_x, int def_y)
 {
     unsigned long event_mask;
     unsigned long valuemask;		/* mask for create windows */

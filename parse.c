@@ -49,6 +49,7 @@
 #include "util.h"
 #include "gram.h"
 #include "parse.h"
+#include "prototypes.h"
 #include <X11/Xatom.h>
 
 #ifndef NO_M4_SUPPORT
@@ -58,7 +59,6 @@
 #include <X11/Xmu/SysUtil.h>
 #endif
 
-extern void twmrc_error_prefix();
 
 #define BUF_LEN 300
 
@@ -69,17 +69,15 @@ static char buff[BUF_LEN+1];
 static char overflowbuff[20];		/* really only need one */
 static int overflowlen;
 static char **stringListSource, *currentString;
-void put_pixel_on_root();
+static void put_pixel_on_root(Pixel pixel);
 
 int RaiseDelay = 0;           /* msec, for AutoRaise */
-extern int yylineno;
 extern int mods;
+int (*twmInputFunc)(void);
 
 int ConstrainedMoveTime = 400;		/* milliseconds, event times */
 
-static int twmFileInput(), twmStringListInput();
-void twmUnput();
-int (*twmInputFunc)();
+static int twmFileInput(void), twmStringListInput(void);
 
 extern char *defTwmrc[];		/* default bindings */
 
@@ -87,7 +85,7 @@ extern char *defTwmrc[];		/* default bindings */
 #define Resolution(pixels, mm) ((((pixels) * 100000 / (mm)) + 50) / 100)
 #define M4_MAXDIGITS 21 /* greater than the number of digits in a long int */
 extern Bool PrintErrorMessages;
-char *make_m4_cmdline();
+static char *make_m4_cmdline(char *display_name, char *cp, char *m4_option);
 #endif
 
 #ifndef NO_SOUND_SUPPORT
@@ -106,10 +104,8 @@ extern void SetSoundVolume();
  ***********************************************************************
  */
 
-static int doparse (ifunc, srctypename, srcname)
-    int (*ifunc)();
-    char *srctypename;
-    char *srcname;
+static int 
+doparse (int (*ifunc)(void), char *srctypename, char *srcname)
 {
     mods = 0;
     ptr = 0;
@@ -135,14 +131,9 @@ static int doparse (ifunc, srctypename, srcname)
 /* Changes for m4 pre-processing submitted by Jason Gloudon */
 /* added support for user-defined parameters - djhjr - 2/20/99 */
 #ifndef NO_M4_SUPPORT
-int ParseTwmrc (filename, display_name, m4_preprocess, m4_option)
-    char *filename;
-    char *display_name;
-    int m4_preprocess;
-    char *m4_option;
+int ParseTwmrc (char *filename, char *display_name, int m4_preprocess, char *m4_option)
 #else
-int ParseTwmrc (filename)
-    char *filename;
+int ParseTwmrc (char *filename)
 #endif
 {
     int i;
@@ -272,8 +263,8 @@ int ParseTwmrc (filename)
     }
 }
 
-int ParseStringList (sl)
-    char **sl;
+int 
+ParseStringList (char **sl)
 {
     stringListSource = sl;
     currentString = *sl;
@@ -292,7 +283,8 @@ int ParseStringList (sl)
  ***********************************************************************
  */
 
-static int twmFileInput()
+static int 
+twmFileInput (void)
 {
     if (overflowlen) return (int) overflowbuff[--overflowlen];
 
@@ -311,7 +303,8 @@ static int twmFileInput()
     return ((int)buff[ptr++]);
 }
 
-static int twmStringListInput()
+static int 
+twmStringListInput (void)
 {
     if (overflowlen) return (int) overflowbuff[--overflowlen];
 
@@ -340,8 +333,8 @@ static int twmStringListInput()
  ***********************************************************************
  */
 
-void twmUnput (c)
-    int c;
+void 
+twmUnput (int c)
 {
     if (overflowlen < sizeof overflowbuff) {
 	overflowbuff[overflowlen++] = (char) c;
@@ -364,8 +357,8 @@ void twmUnput (c)
  ***********************************************************************
  */
 
-void
-TwmOutput(c)
+void 
+TwmOutput (int c)
 {
     putchar(c);
 }
@@ -1042,9 +1035,8 @@ static TwmKeyword keytable[] = {
 
 static int numkeywords = (sizeof(keytable)/sizeof(keytable[0]));
 
-int parse_keyword (s, nump)
-    char *s;
-    int *nump;
+int 
+parse_keyword (char *s, int *nump)
 {
     register int lower = 0, upper = numkeywords - 1;
 
@@ -1072,8 +1064,8 @@ int parse_keyword (s, nump)
  * action routines called by grammar
  */
 
-int do_single_keyword (keyword)
-    int keyword;
+int 
+do_single_keyword (int keyword)
 {
     switch (keyword) {
       case kw0_NoDefaults:
@@ -1336,9 +1328,8 @@ int do_single_keyword (keyword)
 }
 
 
-int do_string_keyword (keyword, s)
-    int keyword;
-    char *s;
+int 
+do_string_keyword (int keyword, char *s)
 {
     if (s == NULL || s[0] == '\0')
 	return 0;
@@ -1456,9 +1447,8 @@ int do_string_keyword (keyword, s)
 }
 
 
-int do_number_keyword (keyword, num)
-    int keyword;
-    int num;
+int 
+do_number_keyword (int keyword, int num)
 {
     switch (keyword) {
       case kwn_ConstrainedMoveTime:
@@ -1639,10 +1629,8 @@ int do_number_keyword (keyword, num)
     return 0;
 }
 
-name_list **do_colorlist_keyword (keyword, colormode, s)
-    int keyword;
-    int colormode;
-    char *s;
+name_list **
+do_colorlist_keyword (int keyword, int colormode, char *s)
 {
     switch (keyword) {
       case kwcl_BorderColor:
@@ -1713,10 +1701,8 @@ name_list **do_colorlist_keyword (keyword, colormode, s)
     return NULL;
 }
 
-int do_color_keyword (keyword, colormode, s)
-    int keyword;
-    int colormode;
-    char *s;
+int 
+do_color_keyword (int keyword, int colormode, char *s)
 {
     switch (keyword) {
       case kwc_DefaultForeground:
@@ -1771,8 +1757,8 @@ int do_color_keyword (keyword, colormode, s)
 /*
  * put_pixel_on_root() Save a pixel value in twm root window color property.
  */
-void put_pixel_on_root(pixel)
-    Pixel pixel;
+void 
+put_pixel_on_root (Pixel pixel)
 {
   int           i, addPixel = 1;
   Atom          pixelAtom, retAtom;
@@ -1800,9 +1786,8 @@ void put_pixel_on_root(pixel)
 /*
  * do_string_savecolor() save a color from a string in the twmrc file.
  */
-void do_string_savecolor(colormode, s)
-     int colormode;
-     char *s;
+void 
+do_string_savecolor (int colormode, char *s)
 {
   Pixel p = ULONG_MAX;
   GetColor(colormode, &p, s);
@@ -1816,8 +1801,8 @@ void do_string_savecolor(colormode, s)
 typedef struct _cnode {int i; struct _cnode *next;} Cnode, *Cptr;
 Cptr chead = NULL;
 
-void do_var_savecolor(key)
-int key;
+void 
+do_var_savecolor (int key)
 {
   Cptr cptrav, cpnew;
   if (!chead) {
@@ -1836,7 +1821,8 @@ int key;
  * assign_var_savecolor() traverse the var save color list placeing the pixels
  *                        in the root window property.
  */
-void assign_var_savecolor()
+void 
+assign_var_savecolor (void)
 {
   Cptr cp = chead;
   while (cp != NULL) {
@@ -1883,13 +1869,15 @@ void assign_var_savecolor()
   }
 }
 
-void do_squeeze_entry (list, name, type, justify, num, denom)
-    name_list **list;			/* squeeze or dont-squeeze list */
-    char *name;				/* window name */
-    short type;				/* match type */
-    int justify;			/* left, center, right */
-    int num;				/* signed pixel count or fraction num */
-    int denom;				/* signed 0 or indicates fraction denom */
+void 
+do_squeeze_entry (
+    name_list **list,			/* squeeze or dont-squeeze list */
+    char *name,				/* window name */
+    int type,				/* match type */
+    int justify,			/* left, center, right */
+    int num,				/* signed pixel count or fraction num */
+    int denom				/* signed 0 or indicates fraction denom */
+)
 {
     int absnum = (num < 0 ? -num : num);
     int absdenom = (denom < 0 ? -denom : denom);
@@ -1934,10 +1922,8 @@ void do_squeeze_entry (list, name, type, justify, num, denom)
 }
 
 #ifndef NO_M4_SUPPORT
-char *make_m4_cmdline(display_name, cp, m4_option)
-char *display_name;
-char *cp;
-char *m4_option;
+static char *
+make_m4_cmdline (char *display_name, char *cp, char *m4_option)
 {
   char *m4_lines[6] = {
       "m4 -DHOME='%s' -DWIDTH='%d' -DHEIGHT='%d' -DSOUND='%s' ",

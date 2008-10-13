@@ -40,68 +40,6 @@
 #define _UTIL_
 
 
-extern void	Zoom();
-extern void	MoveOutline();
-extern void	GetUnknownIcon();
-extern char 	*ExpandFilename();
-extern void		GetColor();
-extern Cursor	NoCursor();
-
-extern Image *GetImage ();
-extern void Draw3DBorder (Drawable w, int x, int y, int width, int height,
-			int bw, ColorPair cp, int state, int fill, int forcebw);
-extern void GetShadeColors();
-extern void PaintBorders();
-extern void PaintIcon();
-extern void PaintTitle();
-extern void PaintTitleButton();
-extern void InsertRGBColormap();
-extern void RemoveRGBColormap();
-extern void SetFocus();
-extern void LocateStandardColormaps();
-
-extern void GetFont (MyFont *font);
-
-extern int  MyFont_TextWidth (MyFont *font, char *string, int len);
-
-extern void MyFont_DrawImageString (Display *dpy, MyWindow *win, MyFont *font,
-					ColorPair *col,
-					int x, int y, char * string, int len);
-
-extern void MyFont_DrawString (Display *dpy, MyWindow *win, MyFont *font,
-					ColorPair *col,
-					int x, int y, char * string, int len);
-
-extern Status I18N_FetchName (Display *dpy, Window w, char **winname);
-extern Status I18N_GetIconName (Display *dpy, Window w, char **iconname);
-
-
-void setBorderGC();
-#ifdef USE_ORIGINAL_CORNERS
-void Draw3DCorner();
-#else
-GC setBevelGC();
-void Draw3DBevel();
-#endif
-
-void PaintTitleHighlight();
-int ComputeHighlightWindowWidth();
-extern Image *SetPixmapsPixmap();
-
-#ifndef NO_XPM_SUPPORT
-extern int SetPixmapsBackground();
-#endif
-
-#ifdef TWM_USE_XFT
-extern XftDraw * MyXftDrawCreate (Window win);
-extern void MyXftDrawDestroy (XftDraw *draw);
-extern void CopyPixelToXftColor (unsigned long pixel, XftColor *col);
-#endif
-#ifdef TWM_USE_OPACITY	 /*opacity: 0 = transparent ... 255 = opaque*/
-extern void SetWindowOpacity (Window win, unsigned int opacity);
-extern void PropagateWindowOpacity (TwmWindow *tmp);
-#endif
-
 extern int HotX, HotY;
 
 #endif /* _UTIL_ */

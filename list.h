@@ -59,14 +59,6 @@
 
 typedef struct name_list_struct name_list;
 
-extern void AddToList();
-extern char *LookInList();
-extern char *LookInNameList();
-extern int GetColorFromList();
-extern void FreeList();
-
-extern name_list *next_entry();
-extern char *contents_of_entry();
 
 #endif /* _LIST_ */
 
