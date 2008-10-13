@@ -270,5 +270,6 @@ extern RootRegion *AddAppletRegion (char *geom, int grav1, int grav2, int stepx,
 extern void AddToAppletList (RootRegion *list_head, char *name, int type);
 extern int PlaceApplet(TwmWindow *tmp_win, int def_x, int def_y, int *final_x, int *final_y);
 extern int yylex (void);
+extern Image *FindImage (char *name, Pixel color);
 
 #endif /* _PROTOTYPES_H */

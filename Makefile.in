@@ -35,7 +35,7 @@ build_triplet = @build@
 host_triplet = @host@
 @ENABLE_NEXPM_FALSE@bin_PROGRAMS = vtwm$(EXEEXT)
 @ENABLE_NEXPM_TRUE@bin_PROGRAMS = vtwm$(EXEEXT) nexpm$(EXEEXT)
-@MAINTAINER_MODE_TRUE@am__append_1 = -Wall -Werror
+@MAINTAINER_MODE_TRUE@am__append_1 = -Wall -Werror -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(dist_rc_DATA) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \

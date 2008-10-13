@@ -20,7 +20,7 @@ vtwm_CFLAGS += @SOUND_SUPPORT@ @xpm_CFLAGS@ @regex_CFLAGS@ @xft_CFLAGS@ @xft_AUX
 vtwm_CFLAGS += @TWM_USE_SPACING@ @TWM_USE_OPACITY@ @TWM_USE_SLOPPYFOCUS@ @xinerama_CFLAGS@ @xinerama_AUX_CFLAGS@
 vtwm_CFLAGS += @NO_BUILD_INFO@ @NEED_SELECT_H@ @NEED_PROCESS_H@ @NEED_PUTENV_F@ @NO_M4_SUPPORT@ @png_CFLAGS@
 if MAINTAINER_MODE
-vtwm_CFLAGS += -Wall -Werror
+vtwm_CFLAGS += -Wall -Werror -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes
 endif
 
 vtwm_LDADD = $(VTWM_LIBS) $(xpm_LIBS) $(png_LIBS) $(regex_LIBS) $(xft_LIBS) $(xrandr_LIBS) $(xinerama_LIBS)
