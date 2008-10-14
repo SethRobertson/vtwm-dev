@@ -21,6 +21,9 @@ IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 
 	    * Convert C code to ISO/ANSI prototypes
 
+	    * Make NoIconManagerFocus more strict--previously some
+	    apps continued to get focus
+
 	    * Pass through indent for sanity's sake
 
          Colum Paget <colum@hovel2.demon.co.uk> submitted patches to:

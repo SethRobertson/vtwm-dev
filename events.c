@@ -2762,7 +2762,6 @@ HandleEnterNotify(void)
 	   */
 	  if (ewp->window == Tmp_win->frame || (Tmp_win->list && ewp->window == Tmp_win->list->w.win))
 	  {
-
 	    if (!scanArgs.leaves && !scanArgs.enters)	/* 1 */
 	      InstallWindowColormaps(EnterNotify, &Scr->TwmRoot);
 
@@ -2782,11 +2781,11 @@ HandleEnterNotify(void)
 	      if ((((Tmp_win->title_w.win || Scr->NoTitlebar) &&	/* 4, 4a */
 		    Scr->TitleFocus) || Tmp_win->transient) && Tmp_win->wmhints && Tmp_win->wmhints->input)
 		SetFocus(Tmp_win, ewp->time);
-	    }
 
-	    if (Tmp_win->protocols & DoesWmTakeFocus)	/* 5 */
-	      SendTakeFocusMessage(Tmp_win, ewp->time);
-	    Focus = Tmp_win;
+	      if (Tmp_win->protocols & DoesWmTakeFocus)	/* 5 */
+		SendTakeFocusMessage(Tmp_win, ewp->time);
+	      Focus = Tmp_win;
+	    }
 	  }
 	  else if (ewp->window == Tmp_win->w)
 	  {
