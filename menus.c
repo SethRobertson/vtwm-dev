@@ -2696,7 +2696,6 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
 	      if (!Scr->NoRaiseMove && !Scr->RaiseOnStart)
 	      {
 		XRaiseWindow(dpy, tmp_win->icon_w.win);
-		/* XXXSJR - this used to be SetRaiseWindow(tmp_win->icon_w.win); */
 		SetRaiseWindow(tmp_win);
 	      }
 	    }
@@ -2748,7 +2747,6 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
 	  if (moving_icon)
 	  {
 	    XRaiseWindow(dpy, tmp_win->icon_w.win);
-	    /* XXXSJR - this used to be SetRaiseWindow(tmp_win->icon_w.win); */
 	    SetRaiseWindow(tmp_win);
 	  }
 	  else
