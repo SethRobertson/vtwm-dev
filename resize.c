@@ -1177,7 +1177,7 @@ FindNearestTileToArea(int w[4])
    */
   int k, dx, dy, a, m, i;
 
-  m = -xmax(Scr->MyDisplayWidth, Scr->MyDisplayHeight);	/*some large value */
+  m = -xmax(Scr->VirtualDesktopMaxWidth, Scr->VirtualDesktopMaxHeight);	/*some large value */
   i = 0;
   for (k = 0; k < Scr->ntiles; ++k)
   {
@@ -1817,7 +1817,7 @@ fullzoom(TwmWindow * tmp_win, int flag)
   else
   {
     int basex, basey;
-    int frame_bw_times_2;
+    int frame_bw_times_2 = 2 * tmp_win->frame_bw;
 
 #ifdef TILED_SCREEN
 
@@ -1826,9 +1826,9 @@ fullzoom(TwmWindow * tmp_win, int flag)
     if (Scr->use_tiles == TRUE)
     {
       Lft(Area) = tmp_win->frame_x;
-      Rht(Area) = tmp_win->frame_x + tmp_win->frame_width - 1;
+      Rht(Area) = tmp_win->frame_x + frame_bw_times_2 + tmp_win->frame_width - 1;
       Bot(Area) = tmp_win->frame_y;
-      Top(Area) = tmp_win->frame_y + tmp_win->frame_height - 1;
+      Top(Area) = tmp_win->frame_y + frame_bw_times_2 + tmp_win->frame_height - 1;
 
       TilesFullZoom(Area);
 
@@ -1852,8 +1852,6 @@ fullzoom(TwmWindow * tmp_win, int flag)
     }
 
     tmp_win->zoomed = flag;
-
-    frame_bw_times_2 = 2 * tmp_win->frame_bw;
 
     switch (flag)
     {
@@ -1882,19 +1880,32 @@ fullzoom(TwmWindow * tmp_win, int flag)
       dragHeight = tmp_win->save_frame_height;
       break;
     case F_FULLZOOM:
+    case F_MAXIMIZE:
       dragx = basex;
       dragy = basey;
 #ifdef TILED_SCREEN
       if (Scr->use_tiles == TRUE)
       {
-	dragWidth = AreaWidth(Area) - frame_bw_times_2;
-	dragHeight = AreaHeight(Area) - frame_bw_times_2;
+	dragWidth = AreaWidth(Area);
+	dragHeight = AreaHeight(Area);
       }
       else
 #endif
       {
-	dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
-	dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
+	dragWidth = Scr->MyDisplayWidth;
+	dragHeight = Scr->MyDisplayHeight;
+      }
+      if (flag == F_FULLZOOM)
+      {
+	dragHeight -= frame_bw_times_2;
+	dragWidth  -= frame_bw_times_2;
+      }
+      else
+      {
+	dragx -= (tmp_win->frame_bw + tmp_win->frame_bw3D);
+	dragy -= (tmp_win->frame_bw + tmp_win->frame_bw3D) + tmp_win->title_height;
+	dragHeight += 2*tmp_win->frame_bw3D + tmp_win->title_height;
+	dragWidth  += 2*tmp_win->frame_bw3D;
       }
       break;
     case F_LEFTZOOM:
