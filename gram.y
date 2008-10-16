@@ -852,310 +852,310 @@ number		: NUMBER		{ $$ = $1; }
 static void
 yyerror(char *s)
 {
-    twmrc_error_prefix();
-    fprintf (stderr, "error in input file:  %s\n", s ? s : "");
-    ParseError = 1;
+  twmrc_error_prefix();
+  fprintf (stderr, "error in input file:  %s\n", s ? s : "");
+  ParseError = 1;
 }
 
 static char *RemoveDQuote(char *str)
 {
-    register char *i, *o;
-    register int n, count;
-    int length = 0;
-    char *ptr = "";
+  register char *i, *o;
+  register int n, count;
+  int length = 0;
+  char *ptr = "";
 
-    for (i = str + 1, o = str; *i && *i != '\"'; o++)
+  for (i = str + 1, o = str; *i && *i != '\"'; o++)
+  {
+    if (*i == '\\')
     {
-	if (*i == '\\')
-	{
-	    switch (*++i)
-	    {
-	    case 'n':
-		*o = '\n';
-		i++;
-		break;
-	    case 'b':
-		*o = '\b';
-		i++;
-		break;
-	    case 'r':
-		*o = '\r';
-		i++;
-		break;
-	    case 't':
-		*o = '\t';
-		i++;
-		break;
-	    case 'f':
-		*o = '\f';
-		i++;
-		break;
-	    case '0':
-		if (*++i == 'x')
-		    goto hex;
-		else
-		    --i;
-	    case '1': case '2': case '3':
-	    case '4': case '5': case '6': case '7':
-		n = 0;
-		count = 0;
-		while (*i >= '0' && *i <= '7' && count < 3)
-		{
-		    n = (n << 3) + (*i++ - '0');
-		    count++;
-		}
-		*o = n;
-		break;
-	    hex:
-	    case 'x':
-		n = 0;
-		count = 0;
-		while (i++, count++ < 2)
-		{
-		    if (*i >= '0' && *i <= '9')
-			n = (n << 4) + (*i - '0');
-		    else if (*i >= 'a' && *i <= 'f')
-			n = (n << 4) + (*i - 'a') + 10;
-		    else if (*i >= 'A' && *i <= 'F')
-			n = (n << 4) + (*i - 'A') + 10;
-		    else
-		    {
-			length--; /* account for length++ at loop end */
-			break;
-		    }
-		}
-		*o = n;
-		break;
-	    case '\n':
-		i++;	/* punt */
-		o--;	/* to account for o++ at end of loop */
-		length--; /* account for length++ at loop end */
-		break;
-	    case '\"':
-	    case '\'':
-	    case '\\':
-	    default:
-		*o = *i++;
-		break;
-	    }
-	}
+      switch (*++i)
+      {
+      case 'n':
+	*o = '\n';
+	i++;
+	break;
+      case 'b':
+	*o = '\b';
+	i++;
+	break;
+      case 'r':
+	*o = '\r';
+	i++;
+	break;
+      case 't':
+	*o = '\t';
+	i++;
+	break;
+      case 'f':
+	*o = '\f';
+	i++;
+	break;
+      case '0':
+	if (*++i == 'x')
+	  goto hex;
 	else
-	    *o = *i++;
-
-	length++;
+	  --i;
+      case '1': case '2': case '3':
+      case '4': case '5': case '6': case '7':
+	n = 0;
+	count = 0;
+	while (*i >= '0' && *i <= '7' && count < 3)
+	{
+	  n = (n << 3) + (*i++ - '0');
+	  count++;
+	}
+	*o = n;
+	break;
+      hex:
+      case 'x':
+	n = 0;
+	count = 0;
+	while (i++, count++ < 2)
+	{
+	  if (*i >= '0' && *i <= '9')
+	    n = (n << 4) + (*i - '0');
+	  else if (*i >= 'a' && *i <= 'f')
+	    n = (n << 4) + (*i - 'a') + 10;
+	  else if (*i >= 'A' && *i <= 'F')
+	    n = (n << 4) + (*i - 'A') + 10;
+	  else
+	  {
+	    length--; /* account for length++ at loop end */
+	    break;
+	  }
+	}
+	*o = n;
+	break;
+      case '\n':
+	i++;	/* punt */
+	o--;	/* to account for o++ at end of loop */
+	length--; /* account for length++ at loop end */
+	break;
+      case '\"':
+      case '\'':
+      case '\\':
+      default:
+	*o = *i++;
+	break;
+      }
     }
-    *o = '\0';
+    else
+      *o = *i++;
 
-    if (length > 0)
-    {
-	ptr = (char *)malloc(length + 1);
-	memcpy(ptr, str, length);
-	ptr[length] = '\0';
+    length++;
+  }
+  *o = '\0';
+
+  if (length > 0)
+  {
+    ptr = (char *)malloc(length + 1);
+    memcpy(ptr, str, length);
+    ptr[length] = '\0';
 
 #ifdef DEBUG
-	fprintf(stderr, "RemoveDQuote(): '");
-	for (n = 0; n < length; n++)
-	    fprintf(stderr, "%c", ptr[n]);
-	fprintf(stderr, "'\n", ptr);
+    fprintf(stderr, "RemoveDQuote(): '");
+    for (n = 0; n < length; n++)
+      fprintf(stderr, "%c", ptr[n]);
+    fprintf(stderr, "'\n", ptr);
 #endif
-    }
+  }
 
-    return (ptr);
+  return (ptr);
 }
 
 static char *RemoveRESlash(char *str)
 {
-    char *ptr = "";
+  char *ptr = "";
 #ifndef NO_REGEX_SUPPORT
-    int length = strlen(str);
+  int length = strlen(str);
 
-    if (length > 2)
-    {
-	ptr = (char *)malloc(length - 1);
-	memcpy(ptr, str + 1, length - 2);
-	ptr[length - 2] = '\0';
+  if (length > 2)
+  {
+    ptr = (char *)malloc(length - 1);
+    memcpy(ptr, str + 1, length - 2);
+    ptr[length - 2] = '\0';
 
 #ifdef DEBUG
-	fprintf(stderr, "RemoveRESlash(): '%s'\n", ptr);
+    fprintf(stderr, "RemoveRESlash(): '%s'\n", ptr);
 #endif
-    }
+  }
 #else
-    twmrc_error_prefix();
-    fprintf(stderr, "no regex support for %s\n", str);
-    ParseError = 1;
+  twmrc_error_prefix();
+  fprintf(stderr, "no regex support for %s\n", str);
+  ParseError = 1;
 #endif
 
-    return (ptr);
+  return (ptr);
 }
 
 static int ParseUsePPosition(char *s)
 {
-    XmuCopyISOLatin1Lowered (s, s);
+  XmuCopyISOLatin1Lowered (s, s);
 
-    if (strcmp(s, "off") == 0)
-	return PPOS_OFF;
-    else if (strcmp(s, "on") == 0)
-	return PPOS_ON;
-    else if (strcmp(s, "non-zero") == 0 || strcmp(s, "nonzero") == 0)
-	return PPOS_NON_ZERO;
-    else if (strcmp(s, "on-screen") == 0 || strcmp(s, "onscreen") == 0)
-	return PPOS_ON_SCREEN;
+  if (strcmp(s, "off") == 0)
+    return PPOS_OFF;
+  else if (strcmp(s, "on") == 0)
+    return PPOS_ON;
+  else if (strcmp(s, "non-zero") == 0 || strcmp(s, "nonzero") == 0)
+    return PPOS_NON_ZERO;
+  else if (strcmp(s, "on-screen") == 0 || strcmp(s, "onscreen") == 0)
+    return PPOS_ON_SCREEN;
 
-    twmrc_error_prefix();
-    fprintf(stderr, "ignoring invalid UsePPosition argument \"%s\"\n", s);
-    return -1;
+  twmrc_error_prefix();
+  fprintf(stderr, "ignoring invalid UsePPosition argument \"%s\"\n", s);
+  return -1;
 }
 
 static int ParseWarpCentered(char *s)
 {
-    XmuCopyISOLatin1Lowered (s, s);
+  XmuCopyISOLatin1Lowered (s, s);
 
-    if (strcmp(s, "off") == 0)
-	return WARPC_OFF;
-    else if (strcmp(s, "on") == 0)
-	return WARPC_ON;
-    else if (strcmp(s, "titled") == 0)
-	return WARPC_TITLED;
-    else if (strcmp(s, "untitled") == 0)
-	return WARPC_UNTITLED;
+  if (strcmp(s, "off") == 0)
+    return WARPC_OFF;
+  else if (strcmp(s, "on") == 0)
+    return WARPC_ON;
+  else if (strcmp(s, "titled") == 0)
+    return WARPC_TITLED;
+  else if (strcmp(s, "untitled") == 0)
+    return WARPC_UNTITLED;
 
-    twmrc_error_prefix();
-    fprintf(stderr, "ignoring invalid WarpCentered argument \"%s\"\n", s);
-    return -1;
+  twmrc_error_prefix();
+  fprintf(stderr, "ignoring invalid WarpCentered argument \"%s\"\n", s);
+  return -1;
 }
 
 static MenuRoot *GetRoot(char *name, char *fore, char *back)
 {
-    MenuRoot *tmp;
+  MenuRoot *tmp;
 
-    tmp = FindMenuRoot(name);
-    if (tmp == NULL)
-	tmp = NewMenuRoot(name);
+  tmp = FindMenuRoot(name);
+  if (tmp == NULL)
+    tmp = NewMenuRoot(name);
 
-    if (fore)
-    {
-	int save;
+  if (fore)
+  {
+    int save;
 
-	save = Scr->FirstTime;
-	Scr->FirstTime = TRUE;
+    save = Scr->FirstTime;
+    Scr->FirstTime = TRUE;
 
-	GetColor(COLOR, &tmp->highlight.fore, fore);
-	GetColor(COLOR, &tmp->highlight.back, back);
+    GetColor(COLOR, &tmp->highlight.fore, fore);
+    GetColor(COLOR, &tmp->highlight.back, back);
 
-	Scr->FirstTime = save;
-    }
+    Scr->FirstTime = save;
+  }
 
-    return tmp;
+  return tmp;
 }
 
 static void GotButton(int butt, int func)
 {
-    int i;
+  int i;
 
-    if (butt > NumButtons)
-      return;
+  if (butt > NumButtons)
+    return;
 
-    for (i = 0; i < NUM_CONTEXTS; i++)
+  for (i = 0; i < NUM_CONTEXTS; i++)
+  {
+    if ((cont & (1 << i)) == 0)
+      continue;
+
+    Scr->Mouse[MOUSELOC(butt,i,mods)].func = func;
+
+    if (func == F_MENU)
     {
-	if ((cont & (1 << i)) == 0)
-	    continue;
+      pull->prev = NULL;
 
-	Scr->Mouse[MOUSELOC(butt,i,mods)].func = func;
-
-	if (func == F_MENU)
-	{
-	    pull->prev = NULL;
-
-	    Scr->Mouse[MOUSELOC(butt,i,mods)].menu = pull;
-	}
-	else
-	{
-	    root = GetRoot(TWM_ROOT, NULLSTR, NULLSTR);
-
-	    Scr->Mouse[MOUSELOC(butt,i,mods)].item = AddToMenu(root,"x",Action,
-		    NULL, func, NULLSTR, NULLSTR);
-
-	}
+      Scr->Mouse[MOUSELOC(butt,i,mods)].menu = pull;
     }
-    Action = "";
-    pull = NULL;
-    cont = 0;
-    mods_used |= mods;
-    mods = 0;
+    else
+    {
+      root = GetRoot(TWM_ROOT, NULLSTR, NULLSTR);
+
+      Scr->Mouse[MOUSELOC(butt,i,mods)].item = AddToMenu(root,"x",Action,
+							 NULL, func, NULLSTR, NULLSTR);
+
+    }
+  }
+  Action = "";
+  pull = NULL;
+  cont = 0;
+  mods_used |= mods;
+  mods = 0;
 }
 
 static void GotKey(char *key, int func)
 {
-    int i;
+  int i;
 
-    for (i = 0; i < NUM_CONTEXTS; i++)
-    {
-	if ((cont & (1 << i)) == 0)
-	  continue;
-	if (!AddFuncKey(key, i, mods, func, Name, Action))
-	  break;
-    }
+  for (i = 0; i < NUM_CONTEXTS; i++)
+  {
+    if ((cont & (1 << i)) == 0)
+      continue;
+    if (!AddFuncKey(key, i, mods, func, Name, Action))
+      break;
+  }
 
-    Action = "";
-    pull = NULL;
-    cont = 0;
-    mods_used |= mods;
-    mods = 0;
+  Action = "";
+  pull = NULL;
+  cont = 0;
+  mods_used |= mods;
+  mods = 0;
 }
 
 
 static void GotTitleButton (char *bitmapname, int func, Bool rightside)
 {
-    if (!CreateTitleButton (bitmapname, func, Action, pull, rightside, True)) {
-	twmrc_error_prefix();
-	fprintf (stderr,
-		 "unable to create %s titlebutton \"%s\"\n",
-		 rightside ? "right" : "left", bitmapname);
-    }
-    Action = "";
-    pull = NULL;
+  if (!CreateTitleButton (bitmapname, func, Action, pull, rightside, True)) {
+    twmrc_error_prefix();
+    fprintf (stderr,
+	     "unable to create %s titlebutton \"%s\"\n",
+	     rightside ? "right" : "left", bitmapname);
+  }
+  Action = "";
+  pull = NULL;
 }
 
 static Bool CheckWarpScreenArg (char *s)
 {
-    XmuCopyISOLatin1Lowered (s, s);
+  XmuCopyISOLatin1Lowered (s, s);
 
-    if (strcmp (s,  WARPSCREEN_NEXT) == 0 ||
-	strcmp (s,  WARPSCREEN_PREV) == 0 ||
-	strcmp (s,  WARPSCREEN_BACK) == 0)
-      return True;
+  if (strcmp (s,  WARPSCREEN_NEXT) == 0 ||
+      strcmp (s,  WARPSCREEN_PREV) == 0 ||
+      strcmp (s,  WARPSCREEN_BACK) == 0)
+    return True;
 
-    for (; *s && isascii(*s) && isdigit(*s); s++) ; /* SUPPRESS 530 */
-    return (*s ? False : True);
+  for (; *s && isascii(*s) && isdigit(*s); s++) ; /* SUPPRESS 530 */
+  return (*s ? False : True);
 }
 
 
 static Bool CheckWarpRingArg (char *s)
 {
-    XmuCopyISOLatin1Lowered (s, s);
+  XmuCopyISOLatin1Lowered (s, s);
 
-    if (strcmp (s,  WARPSCREEN_NEXT) == 0 ||
-	strcmp (s,  WARPSCREEN_PREV) == 0)
-      return True;
+  if (strcmp (s,  WARPSCREEN_NEXT) == 0 ||
+      strcmp (s,  WARPSCREEN_PREV) == 0)
+    return True;
 
-    return False;
+  return False;
 }
 
 
 static Bool CheckColormapArg (char *s)
 {
-    XmuCopyISOLatin1Lowered (s, s);
+  XmuCopyISOLatin1Lowered (s, s);
 
-    if (strcmp (s, COLORMAP_NEXT) == 0 ||
-	strcmp (s, COLORMAP_PREV) == 0 ||
-	strcmp (s, COLORMAP_DEFAULT) == 0)
-      return True;
+  if (strcmp (s, COLORMAP_NEXT) == 0 ||
+      strcmp (s, COLORMAP_PREV) == 0 ||
+      strcmp (s, COLORMAP_DEFAULT) == 0)
+    return True;
 
-    return False;
+  return False;
 }
 
 
 void twmrc_error_prefix (void)
 {
-    fprintf (stderr, "%s:  line %d:  ", ProgramName, yylineno);
+  fprintf (stderr, "%s:  line %d:  ", ProgramName, yylineno);
 }
