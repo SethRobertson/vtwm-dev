@@ -315,3 +315,13 @@ ToggleSounds(void)
 }
 
 #endif /* NO_SOUND_SUPPORT */
+
+
+/*
+  Local Variables:
+  mode:c
+  c-file-style:"GNU"
+  c-file-offsets:((substatement-open 0)(brace-list-open 0)(c-hanging-comment-ender-p . nil)(c-hanging-comment-beginner-p . nil)(comment-start . "// ")(comment-end . "")(comment-column . 48))
+  End:
+*/
+/* vim: shiftwidth=2 */

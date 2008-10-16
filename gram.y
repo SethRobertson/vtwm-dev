@@ -1159,3 +1159,13 @@ void twmrc_error_prefix (void)
 {
   fprintf (stderr, "%s:  line %d:  ", ProgramName, yylineno);
 }
+
+
+/*
+  Local Variables:
+  mode:c
+  c-file-style:"GNU"
+  c-file-offsets:((substatement-open 0)(brace-list-open 0)(c-hanging-comment-ender-p . nil)(c-hanging-comment-beginner-p . nil)(comment-start . "// ")(comment-end . "")(comment-column . 48))
+  End:
+*/
+/* vim: shiftwidth=2 */

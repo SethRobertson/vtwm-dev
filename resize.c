@@ -2181,3 +2181,13 @@ SetFrameShape(TwmWindow * tmp)
  * are really deltax and deltay to lower right handle corner, so they need
  * to have -1 subtracted from would normally be the actual extents.
  */
+
+
+/*
+  Local Variables:
+  mode:c
+  c-file-style:"GNU"
+  c-file-offsets:((substatement-open 0)(brace-list-open 0)(c-hanging-comment-ender-p . nil)(c-hanging-comment-beginner-p . nil)(comment-start . "// ")(comment-end . "")(comment-column . 48))
+  End:
+*/
+/* vim: shiftwidth=2 */
