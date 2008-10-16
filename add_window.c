@@ -1438,40 +1438,14 @@ AddMoveAndResize(TwmWindow * tmp_win, int ask_user)
     if (tmp_win->transient)
     {
       /* some toolkits put transients beyond screen: */
-#ifdef TILED_SCREEN
-      if (Scr->use_tiles == TRUE)
-      {
-	TwmWindow *tmp;
-	int k = FindNearestTileToMouse();
-
-	/* look for 'parent' tile: */
-	for (tmp = Scr->TwmRoot.next; tmp != NULL; tmp = tmp->next)
-	  if (tmp != tmp_win && tmp->w == tmp_win->transientfor)
-	    break;
-
-	if (tmp != NULL)
-	{
-	  if ((Distance1D(tmp_win->attr.x, tmp_win->attr.x + tmp_win->attr.width - 1,
-			  Lft(Scr->tiles[k]), Rht(Scr->tiles[k])) < 0)
-	      || (Distance1D(tmp_win->attr.y, tmp_win->attr.y + tmp_win->attr.height - 1,
-			     Bot(Scr->tiles[k]), Top(Scr->tiles[k])) < 0))
-	    k = FindNearestTileToClient(tmp);
-	}
-
-	EnsureRectangleOnTile(k, &tmp_win->attr.x, &tmp_win->attr.y, tmp_win->attr.width, tmp_win->attr.height);
-      }
-      else
-#endif
-      {
-	if (tmp_win->attr.x + tmp_win->attr.width > Scr->MyDisplayWidth)
-	  tmp_win->attr.x = Scr->MyDisplayWidth - tmp_win->attr.width;
-	if (tmp_win->attr.x < 0)
-	  tmp_win->attr.x = 0;
-	if (tmp_win->attr.y + tmp_win->attr.height > Scr->MyDisplayHeight)
-	  tmp_win->attr.y = Scr->MyDisplayHeight - tmp_win->attr.height;
-	if (tmp_win->attr.y < 0)
-	  tmp_win->attr.y = 0;
-      }
+      if (tmp_win->attr.x + tmp_win->attr.width > Scr->VirtualDesktopWidth)
+	tmp_win->attr.x = Scr->VirtualDesktopWidth - tmp_win->attr.width;
+      if (tmp_win->attr.x < 0)
+	tmp_win->attr.x = 0;
+      if (tmp_win->attr.y + tmp_win->attr.height > Scr->VirtualDesktopHeight)
+	tmp_win->attr.y = Scr->VirtualDesktopHeight - tmp_win->attr.height;
+      if (tmp_win->attr.y < 0)
+	tmp_win->attr.y = 0;
     }
 
     /* interpret the position specified as a virtual one if asked */
