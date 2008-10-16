@@ -19,10 +19,10 @@ XCOMM and comment these
 XCOMM (version 3.4h of the XPM library is the earliest supported I know of)
 
 XCOMM To omit PNG image support, uncomment this
-   NO_PNG_SUPPORT = -DNO_PNG_SUPPORT
+XCOMM   NO_PNG_SUPPORT = -DNO_PNG_SUPPORT
 XCOMM and comment these
-XCOMM           PNGLIB = -lpng
-XCOMM           PNGINC =
+           PNGLIB = -lpng
+           PNGINC = -I/usr/include/libpng12 -I/usr/include/libpng
 
 XCOMM To omit regular expressions ("RE"s) support, uncomment this
 XCOMM NO_REGEX_SUPPORT = -DNO_REGEX_SUPPORT

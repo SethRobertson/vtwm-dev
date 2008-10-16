@@ -8,7 +8,7 @@
  ***********************************************************************/
 
 #ifndef NO_PNG_SUPPORT
-#include <libpng12/png.h>
+#include <png.h>
 #endif /*NO_PNG_SUPPORT */
 
 #include "twm.h"
