@@ -695,6 +695,7 @@ static TwmKeyword keytable[] = {
   {"f.lefticonmgr", FKEYWORD, F_LEFTICONMGR},
   {"f.leftzoom", FKEYWORD, F_LEFTZOOM},
   {"f.lower", FKEYWORD, F_LOWER},
+  {"f.maximize", FKEYWORD, F_MAXIMIZE},
   {"f.menu", FSKEYWORD, F_MENU},
   {"f.move", FKEYWORD, F_MOVE},
   {"f.movescreen", FKEYWORD, F_MOVESCREEN},

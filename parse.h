@@ -115,6 +115,7 @@
 #define F_ZOOMZOOM		68	/* RFB silly */
 #define F_WARP			69	/* PF */
 #define F_STICKYABOVE		70	/* DSE */
+#define F_MAXIMIZE		71
 
 #define F_MENU			101	/* string */
 #define F_WARPTO		102	/* string */

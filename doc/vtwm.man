@@ -2115,6 +2115,11 @@ This variable is similar to the \fBf.bottomzoom\fP function but causes
 the selected window is only resized to the left half of the display.
 .IP "\fBf.lower\fP" 8
 This function lowers the selected window.
+.IP "\fBf.maximize\fP" 8
+This function maximizes the selected window. In contrast to \fBf.fullzoom\fP
+the top-left pixel of the client window is placed to the top-left of the
+screen, possibly leaving the titlebar and the frame window borders out of
+the visible screen area.
 .IP "\fBf.menu\fP \fIstring\fP" 8
 This function invokes the menu specified by the argument \fIstring\fP.
 Cascaded menus may be built by nesting calls to \fBf.menu\fP.

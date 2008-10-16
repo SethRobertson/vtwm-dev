@@ -1907,6 +1907,7 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
   case F_RIGHTZOOM:
   case F_TOPZOOM:
   case F_ZOOM:
+  case F_MAXIMIZE:
   case F_BACKICONMGR:
   case F_DOWNICONMGR:
   case F_FORWICONMGR:
@@ -2438,6 +2439,7 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
   case F_RIGHTZOOM:
   case F_TOPZOOM:
   case F_BOTTOMZOOM:
+  case F_MAXIMIZE:
     if (DeferExecution(context, func, Scr->SelectCursor))
       return TRUE;
 
@@ -4177,6 +4179,7 @@ NeedToDefer(MenuRoot * root)
     case F_LOWER:
     case F_FOCUS:
     case F_WINREFRESH:
+    case F_MAXIMIZE:
     case F_ZOOM:
     case F_FULLZOOM:
     case F_HORIZOOM:
