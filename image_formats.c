@@ -406,6 +406,7 @@ LoadPNGImage(char *path, Image * img)
   unsigned char *PngData = NULL, *ptr;
   char *ClipData = NULL, *clip_ptr;
   int x, y, clipcellmask = 1;
+  int depth;
   XColor Color;
   Colormap cmap;
 
@@ -413,7 +414,20 @@ LoadPNGImage(char *path, Image * img)
   {
     Scr->screen = DefaultScreen(dpy);
     cmap = Scr->TwmRoot.cmaps.cwins[0]->colormap->c;
-    ximg = XCreateImage(dpy, Scr->d_visual, Scr->d_depth, ZPixmap, 0, NULL, img->width, img->height, Scr->d_depth, 0);
+    depth = Scr->d_depth;
+    /* XCreateImage only allows 8, 16, 32 as bitmap width */
+    if (depth != 8 && depth != 16 && depth != 32)
+    {
+      if (depth < 8)
+	depth = 8;
+      else if (depth < 16)
+	depth = 16;
+      else if (depth < 32)
+	depth = 32;
+    }
+    ximg = XCreateImage(dpy, Scr->d_visual, Scr->d_depth, ZPixmap, 0, NULL, img->width, img->height, depth, 0);
+    if (!ximg)
+      return;
     ximg->data = malloc(ximg->bytes_per_line * ximg->height);
 
     ClipData = calloc(img->width * img->height, 1);
