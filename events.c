@@ -1250,7 +1250,7 @@ RedoDoorName(TwmWindow * twin, TwmDoor * door)
 ** over to the right, it just looks wrong!
 ** For example grog-9 from ISC's X11R3 distribution.
 */
-    MyFont_DrawString(dpy, &door->w, &Scr->DoorFont,
+    MyFont_DrawImageString(dpy, &door->w, &Scr->DoorFont,
 		      &door->colors,
 		      (tmp_win->frame_width - tw - 2 * bw) / 2,
 		      (tmp_win->frame_height - tmp_win->title_height -
@@ -1262,7 +1262,7 @@ RedoDoorName(TwmWindow * twin, TwmDoor * door)
   }
   else
   {
-    MyFont_DrawString(dpy, &door->w, &Scr->DoorFont, &door->colors, SIZE_HINDENT / 2, 0, door->name, strlen(door->name));
+    MyFont_DrawImageString(dpy, &door->w, &Scr->DoorFont, &door->colors, SIZE_HINDENT / 2, 0, door->name, strlen(door->name));
   }
 }
 

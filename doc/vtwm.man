@@ -810,7 +810,7 @@ defined in \fIlocation\fP (for extended geometry specification see
 .IP "\fBEnableXftFontRenderer\fP" 8
 This variable indicates that instead of the X11 core font renderer
 the Xft truetype font engine is to be used if available.
-For details see the \fBNOTES\fP section below.
+For details see the \fBXft NOTES\fP section below.
 .IP "\fBEnhancedExecResources\fP" 8
 By default, \fBf.exec\fP variables behaved as they always did in \fBvtwm\fP.  You
 would have to append " &" to all of your variables in order to execute them
@@ -2669,8 +2669,8 @@ debugging of \fBvtwm\fP resource files.  To do this, send a SIGUSR1 to the
 \&\fBvtwm\fP process ID (written to \fI$HOME/vtwm.pid\fP).
 See \fBkill\fP(1) or \fBslay\fP(1).
 .\"=====================================================================
-.SH NOTES
-Vtwm 5.4.8 and later versions support antialiased font rendering
+.SH Xft NOTES
+Vtwm 5.5.0 and later versions support antialiased font rendering
 based on the X server Xrender extension, Xft and FreeType2 technologies.
 From user's view this should not affect core font appearance
 (given the \fIttf\fP-equivalents of X11 core fonts are installed)
