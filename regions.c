@@ -189,6 +189,16 @@ AddRegion(char *geom, int grav1, int grav2, int stepx, int stepy)
   RootRegion *rr;
   int mask;
 
+  /*
+   * panel name is encoded into geometry string as "1200x20+10-10@1"
+   * where "@1" is panel "1"
+   */
+  int tile;
+  char *tile_name = strchr (geom, '@');
+  if (tile_name != NULL)
+    *tile_name++ = '\0';
+  tile = ParsePanelIndex (tile_name);
+
   rr = (RootRegion *) malloc(sizeof(RootRegion));
   rr->next = NULL;
   rr->grav1 = grav1;
@@ -201,7 +211,7 @@ AddRegion(char *geom, int grav1, int grav2, int stepx, int stepy)
 
 #ifdef TILED_SCREEN
   if (Scr->use_tiles == TRUE)
-    EnsureGeometryVisibility(mask, &rr->x, &rr->y, rr->w, rr->h);
+    EnsureGeometryVisibility(tile, mask, &rr->x, &rr->y, rr->w, rr->h);
   else
 #endif
   {

@@ -105,6 +105,16 @@ CreateIconManagers(void)
 
   for (p = &Scr->iconmgr; p != NULL; p = p->next)
   {
+    /*
+     * panel name is encoded into geometry string, e.g. "1200x20+10-10@1"
+     * where "@1" is panel "1"
+     */
+    int tile;
+    char *tile_name = strchr (p->geometry, '@');
+    if (tile_name != NULL)
+      *tile_name++ = '\0';
+    tile = ParsePanelIndex (tile_name);
+
     mask = XParseGeometry(p->geometry, &JunkX, &JunkY, (unsigned int *)&p->width, (unsigned int *)&p->height);
 
     if (p->width > Scr->MyDisplayWidth)
@@ -117,7 +127,7 @@ CreateIconManagers(void)
 
 #ifdef TILED_SCREEN
     if (Scr->use_tiles == TRUE)
-      EnsureGeometryVisibility(mask, &JunkX, &JunkY, p->width + 2 * Scr->BorderWidth, p->height + 2 * Scr->BorderWidth);
+      EnsureGeometryVisibility(tile, mask, &JunkX, &JunkY, p->width + 2 * Scr->BorderWidth, p->height + 2 * Scr->BorderWidth);
     else
 #endif
     {

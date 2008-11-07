@@ -61,6 +61,7 @@ int origx;
 int origy;
 int origWidth;
 int origHeight;
+int origMask;
 
 static int clampTop;
 static int clampBottom;
@@ -1167,6 +1168,16 @@ DoVirtualMoveResize(TwmWindow * tmp_win, int x, int y, int w, int h)
  * is correct and probably less confusing.)
  */
 
+static int
+FindAreaIntersection(int a[4], int b[4])
+{
+  int dx, dy;
+
+  dx = Distance1D(Lft(a), Rht(a), Lft(b), Rht(b));
+  dy = Distance1D(Bot(a), Top(a), Bot(b), Top(b));
+  return Distance2D(dx,dy);
+}
+
 int
 FindNearestTileToArea(int w[4])
 {
@@ -1175,15 +1186,13 @@ FindNearestTileToArea(int w[4])
    * (or, if 'w' is outside of all tiles, a tile with minimum
    * distance to 'w').
    */
-  int k, dx, dy, a, m, i;
+  int k, a, m, i;
 
   m = -xmax(Scr->VirtualDesktopMaxWidth, Scr->VirtualDesktopMaxHeight);	/*some large value */
   i = 0;
   for (k = 0; k < Scr->ntiles; ++k)
   {
-    dx = Distance1D(Lft(w), Rht(w), Lft(Scr->tiles[k]), Rht(Scr->tiles[k]));
-    dy = Distance1D(Bot(w), Top(w), Bot(Scr->tiles[k]), Top(Scr->tiles[k]));
-    a = Distance2D(dx, dy);
+    a = FindAreaIntersection (w, Scr->tiles[k]);
     if (m < a)
       m = a, i = k;
   }
@@ -1193,15 +1202,16 @@ FindNearestTileToArea(int w[4])
 int
 FindNearestTileToPoint(int x, int y)
 {
-  int k, dx, dy, a, m, i;
+  int k, a, m, i, w[4];
+
+  Lft(w) = Rht(w) = x;
+  Bot(w) = Top(w) = y;
 
   i = 0;
   m = -xmax(Scr->MyDisplayWidth, Scr->MyDisplayHeight);
   for (k = 0; k < Scr->ntiles; ++k)
   {
-    dx = Distance1D(x, x, Lft(Scr->tiles[k]), Rht(Scr->tiles[k]));
-    dy = Distance1D(y, y, Bot(Scr->tiles[k]), Top(Scr->tiles[k]));
-    a = Distance2D(dx, dy);
+    a = FindAreaIntersection (w, Scr->tiles[k]);
     if (m < a)
       m = a, i = k;
   }
@@ -1244,23 +1254,41 @@ EnsureRectangleOnTile(int tile, int *x0, int *y0, int w, int h)
 }
 
 void
-EnsureGeometryVisibility(int mask, int *x0, int *y0, int w, int h)
+EnsureGeometryVisibility(int tile, int mask, int *x0, int *y0, int w, int h)
 {
-  int x, y, Area[4];
+  int Area[4];
 
-  x = (*x0);
-  if (mask & XNegative)
-    x += Scr->MyDisplayWidth - w;
-  y = (*y0);
-  if (mask & YNegative)
-    y += Scr->MyDisplayHeight - h;
+  /*
+   * tile < 0 is 'full X11 screen'
+   * tile = 0 is 'current panel'
+   * tile > 0 is 'panel #'
+   */
+  --tile;
+  if (tile >= 0 && tile < Scr->ntiles)
+  {
+    Lft(Area) = Lft(Scr->tiles[tile]);
+    Bot(Area) = Bot(Scr->tiles[tile]);
+    Rht(Area) = Rht(Scr->tiles[tile]);
+    Top(Area) = Top(Scr->tiles[tile]);
+  }
+  else
+  {
+    int x, y;
 
-  Lft(Area) = x;
-  Rht(Area) = x + w - 1;
-  Bot(Area) = y;
-  Top(Area) = y + h - 1;
+    x = (*x0);
+    if (mask & XNegative)
+      x += Scr->MyDisplayWidth - w;
+    y = (*y0);
+    if (mask & YNegative)
+      y += Scr->MyDisplayHeight - h;
 
-  TilesFullZoom(Area);
+    Lft(Area) = x;
+    Rht(Area) = x + w - 1;
+    Bot(Area) = y;
+    Top(Area) = y + h - 1;
+
+    TilesFullZoom(Area);
+  }
 
   if (mask & XNegative)
     (*x0) += Rht(Area) + 1 - w;
@@ -1804,10 +1832,15 @@ nxt:;
  */
 
 void
-fullzoom(TwmWindow * tmp_win, int flag)
+fullzoom(int tile, TwmWindow * tmp_win, int flag)
 {
-  if (tmp_win->zoomed == flag)
+  Bool mm = False;
+
+  if (tmp_win->zoomed == flag
+	&& flag != F_PANELGEOMETRYZOOM && flag != F_PANELGEOMETRYMOVE)
   {
+    unzoom:;
+
     dragHeight = tmp_win->save_frame_height;
     dragWidth = tmp_win->save_frame_width;
     dragx = tmp_win->save_frame_x;
@@ -1816,32 +1849,60 @@ fullzoom(TwmWindow * tmp_win, int flag)
   }
   else
   {
-    int basex, basey;
-    int frame_bw_times_2 = 2 * tmp_win->frame_bw;
+    int Area[4], basex, basey, basew, baseh, xmask, ymask, dx, dy, frame_bw_times_2;
+
+    XGetGeometry (dpy, (Drawable)tmp_win->frame, &JunkRoot,
+		&dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight,
+		&JunkBW, &JunkDepth);
+
+    frame_bw_times_2 = (int)(JunkBW) * 2;
 
 #ifdef TILED_SCREEN
-
-    int Area[4];
-
-    if (Scr->use_tiles == TRUE)
+    /*
+     * panel-zoom variants (F_PANEL...ZOOM) have their numeric
+     * codes greater than F_MAXIMIZE.  See also parse.h.
+     */
+    if (Scr->use_tiles == TRUE && flag > F_MAXIMIZE && tile >= 0)
     {
-      Lft(Area) = tmp_win->frame_x;
-      Rht(Area) = tmp_win->frame_x + frame_bw_times_2 + tmp_win->frame_width - 1;
-      Bot(Area) = tmp_win->frame_y;
-      Top(Area) = tmp_win->frame_y + frame_bw_times_2 + tmp_win->frame_height - 1;
-
-      TilesFullZoom(Area);
-
-      basex = Lft(Area);	/* Cartesian origin:   */
-      basey = Bot(Area);	/* (x0,y0) = (Lft,Bot) */
+      /*
+       * On fullzoom() entry:
+       * tile < 0 is 'zoom on X11 logical screen' (denoted by "0" in .twmrc)
+       * tile = 0 is 'zoom on current panel(s)'   (denoted by "." in .twmrc)
+       * tile > 0 is 'zoom on panel #'  (counting in .twmrc starts from "1")
+       */
+      tile--;
+      if (tile >= 0 && tile < Scr->ntiles)
+      {
+	Lft(Area) = Lft(Scr->tiles[tile]);
+	Bot(Area) = Bot(Scr->tiles[tile]);
+	Rht(Area) = Rht(Scr->tiles[tile]);
+	Top(Area) = Top(Scr->tiles[tile]);
+      }
+      else
+      {
+	/*
+	 * fallback: compute maximum area across
+	 * tiles the window initially intersects
+	 */
+	Lft(Area) = dragx;
+	Rht(Area) = dragx + frame_bw_times_2 + dragWidth  - 1;
+	Bot(Area) = dragy;
+	Top(Area) = dragy + frame_bw_times_2 + dragHeight - 1;
+	TilesFullZoom (Area);
+      }
+      basex = Lft(Area); /* Cartesian origin:   */
+      basey = Bot(Area); /* (x0,y0) = (Lft,Bot) */
+      basew = AreaWidth(Area);
+      baseh = AreaHeight(Area);
     }
     else
 #endif
-      basex = basey = 0;
-
-    XGetGeometry(dpy, (Drawable) tmp_win->frame, &JunkRoot,
-		 &dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight, &JunkBW, &JunkDepth);
-
+    {
+      basex = 0;
+      basey = 0;
+      basew = Scr->MyDisplayWidth;
+      baseh = Scr->MyDisplayHeight;
+    }
 
     if (tmp_win->zoomed == ZOOM_NONE)
     {
@@ -1851,130 +1912,374 @@ fullzoom(TwmWindow * tmp_win, int flag)
       tmp_win->save_frame_height = dragHeight;
     }
 
-    tmp_win->zoomed = flag;
-
     switch (flag)
     {
     case ZOOM_NONE:
       break;
+
+    case F_PANELZOOM:
     case F_ZOOM:
       dragx = tmp_win->save_frame_x;
       dragy = basey;
       dragWidth = tmp_win->save_frame_width;
-#ifdef TILED_SCREEN
-      if (Scr->use_tiles == TRUE)
-	dragHeight = AreaHeight(Area) - frame_bw_times_2;
-      else
-#endif
-	dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
+      dragHeight = baseh - frame_bw_times_2;
       break;
+
+    case F_PANELHORIZOOM:
     case F_HORIZOOM:
       dragx = basex;
       dragy = tmp_win->save_frame_y;
-#ifdef TILED_SCREEN
-      if (Scr->use_tiles == TRUE)
-	dragWidth = AreaWidth(Area) - frame_bw_times_2;
-      else
-#endif
-	dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
+      dragWidth = basew - frame_bw_times_2;
       dragHeight = tmp_win->save_frame_height;
       break;
+
+    case F_PANELFULLZOOM:
+    case F_PANELMAXIMIZE:
     case F_FULLZOOM:
     case F_MAXIMIZE:
       dragx = basex;
       dragy = basey;
-#ifdef TILED_SCREEN
-      if (Scr->use_tiles == TRUE)
+      dragWidth = basew;
+      dragHeight = baseh;
+      if (flag == F_FULLZOOM || flag == F_PANELFULLZOOM)
       {
-	dragWidth = AreaWidth(Area);
-	dragHeight = AreaHeight(Area);
-      }
-      else
-#endif
-      {
-	dragWidth = Scr->MyDisplayWidth;
-	dragHeight = Scr->MyDisplayHeight;
-      }
-      if (flag == F_FULLZOOM)
-      {
-	dragHeight -= frame_bw_times_2;
 	dragWidth  -= frame_bw_times_2;
+	dragHeight -= frame_bw_times_2;
       }
       else
       {
-	dragx -= (tmp_win->frame_bw + tmp_win->frame_bw3D);
-	dragy -= (tmp_win->frame_bw + tmp_win->frame_bw3D) + tmp_win->title_height;
-	dragHeight += 2*tmp_win->frame_bw3D + tmp_win->title_height;
+	dragx -= ((int)(JunkBW) + tmp_win->frame_bw3D);
+	dragy -= ((int)(JunkBW) + tmp_win->frame_bw3D) + tmp_win->title_height;
 	dragWidth  += 2*tmp_win->frame_bw3D;
+	dragHeight += 2*tmp_win->frame_bw3D + tmp_win->title_height;
       }
       break;
+
+    case F_PANELLEFTZOOM:
     case F_LEFTZOOM:
       dragx = basex;
       dragy = basey;
-#ifdef TILED_SCREEN
-      if (Scr->use_tiles == TRUE)
-      {
-	dragWidth = AreaWidth(Area) / 2 - frame_bw_times_2;
-	dragHeight = AreaHeight(Area) - frame_bw_times_2;
-      }
-      else
-#endif
-      {
-	dragWidth = Scr->MyDisplayWidth / 2 - frame_bw_times_2;
-	dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
-      }
+      dragWidth = basew / 2 - frame_bw_times_2;
+      dragHeight = baseh - frame_bw_times_2;
       break;
+
+    case F_PANELRIGHTZOOM:
     case F_RIGHTZOOM:
+      dragx = basex + basew / 2;
       dragy = basey;
-#ifdef TILED_SCREEN
-      if (Scr->use_tiles == TRUE)
-      {
-	dragx = basex + AreaWidth(Area) / 2;
-	dragWidth = AreaWidth(Area) / 2 - frame_bw_times_2;
-	dragHeight = AreaHeight(Area) - frame_bw_times_2;
-      }
-      else
-#endif
-      {
-	dragx = basex + Scr->MyDisplayWidth / 2;
-	dragWidth = Scr->MyDisplayWidth / 2 - frame_bw_times_2;
-	dragHeight = Scr->MyDisplayHeight - frame_bw_times_2;
-      }
+      dragWidth = basew / 2 - frame_bw_times_2;
+      dragHeight = baseh - frame_bw_times_2;
       break;
+
+    case F_PANELTOPZOOM:
     case F_TOPZOOM:
       dragx = basex;
       dragy = basey;
-#ifdef TILED_SCREEN
-      if (Scr->use_tiles == TRUE)
-      {
-	dragWidth = AreaWidth(Area) - frame_bw_times_2;
-	dragHeight = AreaHeight(Area) / 2 - frame_bw_times_2;
-      }
-      else
-#endif
-      {
-	dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
-	dragHeight = Scr->MyDisplayHeight / 2 - frame_bw_times_2;
-      }
+      dragWidth = basew - frame_bw_times_2;
+      dragHeight = baseh / 2 - frame_bw_times_2;
       break;
+
+    case F_PANELBOTTOMZOOM:
     case F_BOTTOMZOOM:
       dragx = basex;
-#ifdef TILED_SCREEN
-      if (Scr->use_tiles == TRUE)
+      dragy = basey + baseh / 2;
+      dragWidth = basew - frame_bw_times_2;
+      dragHeight = baseh / 2 - frame_bw_times_2;
+      break;
+
+    case F_PANELLEFTMOVE:
+      dragx = basex;
+      break;
+
+    case F_PANELRIGHTMOVE:
+      dragx = basex + basew - dragWidth - frame_bw_times_2;
+      break;
+
+    case F_PANELTOPMOVE:
+      dragy = basey;
+      break;
+
+    case F_PANELBOTTOMMOVE:
+      dragy = basey + baseh - dragHeight - frame_bw_times_2;
+      break;
+
+    case F_PANELGEOMETRYZOOM:
+    case F_PANELGEOMETRYMOVE:
+
+      /*
+       * mask and requested geometry are precomputed in fullgeomzoom()
+       * as origMask, origx, origy, origWidth, origHeight
+       */
+
+      xmask = ((origMask & (XValue|WidthValue))  == (XValue|WidthValue));
+      ymask = ((origMask & (YValue|HeightValue)) == (YValue|HeightValue));
+
+      mm = XQueryPointer (dpy, tmp_win->frame, &JunkRoot, &JunkChild,
+			    &JunkX, &JunkY, &HotX, &HotY, &JunkMask);
+
+      /* check if mouse on target area */
+      if (mm == True
+	    && basex <= JunkX && JunkX < basex + basew
+	    && basey <= JunkY && JunkY < basey + baseh)
       {
-	dragy = basey + AreaHeight(Area) / 2;
-	dragWidth = AreaWidth(Area) - frame_bw_times_2;
-	dragHeight = AreaHeight(Area) / 2 - frame_bw_times_2;
+	if ((origx == 0 && origy == 0)
+	      || HotX < -(int)(JunkBW) || HotX >= dragWidth  + (int)(JunkBW)
+	      || HotY < -(int)(JunkBW) || HotY >= dragHeight + (int)(JunkBW))
+	{
+	  mm = False;
+	}
+
+	/*
+	 * special cases on current panel: geometry "0x0-0-0" or "0x0+0+0"
+	 * recover size/pos, set 'unzoomed'
+	 */
+	if (xmask && (origx == 0) && (origWidth == 0)
+	      && ymask && (origy == 0) && (origHeight == 0))
+	{
+	  flag = 1;
+	  if (origMask & XNegative) { /* recover horizontal geometry */
+	    dragWidth = tmp_win->save_frame_width;
+	    dragx = tmp_win->save_frame_x;
+	    flag = 0;
+	  } else {
+	    tmp_win->save_frame_width = dragWidth;
+	    tmp_win->save_frame_x = dragx;
+	  }
+	  if (origMask & YNegative) { /* recover vertical geometry */
+	    dragHeight = tmp_win->save_frame_height;
+	    dragy = tmp_win->save_frame_y;
+	    flag = 0;
+	  } else {
+	    tmp_win->save_frame_height = dragHeight;
+	    tmp_win->save_frame_y = dragy;
+	  }
+
+	  tmp_win->zoomed = ZOOM_NONE; /* set state to 'unzoomed' */
+	  if (flag == 1)
+	    return;
+
+	  flag = ZOOM_NONE;
+	  break;
+	}
       }
       else
-#endif
+	mm = False;
+
+      dx = dragx - basex;
+      dy = dragy - basey;
+
+      if (dx < 0 || basew < dx + dragWidth + frame_bw_times_2
+	  || dy < 0 || baseh < dy + dragHeight + frame_bw_times_2)
       {
-	dragy = basey + Scr->MyDisplayHeight / 2;
-	dragWidth = Scr->MyDisplayWidth - frame_bw_times_2;
-	dragHeight = Scr->MyDisplayHeight / 2 - frame_bw_times_2;
+	/*
+	 * target area/panel is (partially) outside the source area/panel:
+	 * recompute dragx, dragy
+	 */
+	if (dragWidth + frame_bw_times_2 < basew) {
+	  if (dragHeight + frame_bw_times_2 < baseh) {
+	    /* window completely fits onto target panel */
+	    int k, a;
+	    Lft(Area) = dragx;
+	    Rht(Area) = dragx + frame_bw_times_2 + dragWidth  - 1;
+	    Bot(Area) = dragy;
+	    Top(Area) = dragy + frame_bw_times_2 + dragHeight - 1;
+	    k = FindNearestTileToArea (Area);
+	    a = FindAreaIntersection (Area, Scr->tiles[k]);
+	    if (a == (dragWidth+frame_bw_times_2) * (dragHeight+frame_bw_times_2)) {
+	      /* completely fitted on source panel, move to target panel, keep relative location */
+	      dragx = basex + (dragx - Lft(Scr->tiles[k])) * (basew - frame_bw_times_2 - dragWidth)
+				/ (AreaWidth(Scr->tiles[k])  - frame_bw_times_2 - dragWidth);
+	      dragy = basey + (dragy - Bot(Scr->tiles[k])) * (baseh - frame_bw_times_2 - dragHeight)
+				/ (AreaHeight(Scr->tiles[k]) - frame_bw_times_2 - dragHeight);
+	    } else {
+	      /* intersected various panels in source area */
+#if 1
+	      PlaceXY area;
+	      area.x = basex;
+	      area.y = basey;
+	      area.width = basew;
+	      area.height = baseh;
+	      area.next = NULL;
+	      if (FindEmptyArea(Scr->TwmRoot.next, tmp_win, &area, &area) == TRUE)
+	      {
+		/* found emtpy area large enough to completely fit the window */
+		int x, y, b = Scr->TitleHeight + (int)(JunkBW);
+		/* slightly off-centered: */
+		x = (area.width  - dragWidth)  / 3;
+		y = (area.height - dragHeight) / 2;
+		/* tight placing: */
+		if (y < b && x > b)
+		  x = b;
+		if (x < b && y > b)
+		  y = b;
+		/* loosen placing: */
+		if (area.width  > 4*b + dragWidth  && x > 2*b)
+		  x = 2*b;
+		if (area.height > 4*b + dragHeight && y > 2*b)
+		  y = 2*b;
+		dragx = area.x + x;
+		dragy = area.y + y;
+	      }
+	      else
+#endif
+	      {
+		/* not found empty area, put centered onto target panel */
+		dragx = basex + (basew - dragWidth  - frame_bw_times_2) / 2;
+		dragy = basey + (baseh - dragHeight - frame_bw_times_2) / 2;
+	      }
+	    }
+	  } else {
+	    /* vertically not fitting onto target panel */
+	    if ((tmp_win->hints.flags & PWinGravity)
+		  && (tmp_win->hints.win_gravity == SouthWestGravity
+		      || tmp_win->hints.win_gravity == SouthGravity
+		      || tmp_win->hints.win_gravity == SouthEastGravity))
+	    {
+	      /* align to panel lower edge */
+	      dragy = basey + (baseh - dragHeight - frame_bw_times_2);
+	      basey = dragy;
+	    } else
+	      /* align to panel upper edge */
+	      dragy = basey;
+	    /* put horizontally centered */
+	    dragx = basex + (basew - dragWidth  - frame_bw_times_2) / 2;
+	  }
+	} else {
+	  /* horizontally not fitting onto target panel */
+	  if ((tmp_win->hints.flags & PWinGravity)
+		&& (tmp_win->hints.win_gravity == NorthEastGravity
+		    || tmp_win->hints.win_gravity == EastGravity
+		    || tmp_win->hints.win_gravity == SouthEastGravity))
+	  {
+	    /* align to panel right edge */
+	    dragx = basex + (basew - dragWidth - frame_bw_times_2);
+	    basex = dragx;
+	  } else
+	    /* align to panel left edge */
+	    dragx = basex;
+
+	  /* check fitting vertically */
+	  if (dragHeight + frame_bw_times_2 < baseh)
+	    /* yes, put vertically centered */
+	    dragy = basey + (baseh - dragHeight - frame_bw_times_2) / 2;
+	  else {
+	    /* no, vertically not fitting onto target panel */
+	    if ((tmp_win->hints.flags & PWinGravity)
+		  && (tmp_win->hints.win_gravity == SouthWestGravity
+		      || tmp_win->hints.win_gravity == SouthGravity
+		      || tmp_win->hints.win_gravity == SouthEastGravity))
+	    {
+	      /* align to panel lower edge */
+	      dragy = basey + (baseh - dragHeight - frame_bw_times_2);
+	      basey = dragy;
+	    } else
+	      /* align to panel upper edge */
+	      dragy = basey;
+	  }
+	}
+
+	dx = dragx - basex;
+	dy = dragy - basey;
+      }
+
+      /* now finally treat horizontal geometry ('W' and 'X' of "WxH+X+Y"): */
+      if (xmask && (origWidth > 0))
+      {
+#if 0
+	/* stepping/stretching reached panel edge, execute 'unzoom' */
+	if ((tmp_win->zoomed != ZOOM_NONE)
+	      && origx == 0 && (dx == 0 || dx + dragWidth + frame_bw_times_2 == basew))
+	  goto unzoom;
+#endif
+	if (origMask & XNegative) { /** step/stretch to the left **/
+	  if (origx != 0 && -origx*origWidth < dx) { /* "WxH-X+Y" (X != 0) */
+	    /* step/stretch inside panel area */
+	    if (flag == F_PANELGEOMETRYZOOM)
+	      dragWidth -= origx*origWidth;
+	    dragx += origx*origWidth;
+	    /* keep window right edge fixed */
+	    JunkWidth = dragWidth;
+	    JunkHeight = dragHeight;
+	    ConstrainSize (tmp_win, &JunkWidth, &JunkHeight);
+	    if (dragWidth != JunkWidth)
+	      dragx += dragWidth - JunkWidth;
+	  } else { /* geometry is "WxH-0+Y", or */
+	    /* step/stretch to/across panel left edge */
+	    if (flag == F_PANELGEOMETRYZOOM)
+	      dragWidth += dx;
+	    dragx = basex;
+	  }
+	} else { /** step/stretch to the right **/
+	  if (origx != 0 && dx+dragWidth + origx*origWidth + frame_bw_times_2 < basew) { /* "WxH+X+Y" (X != 0) */
+	    /* step/stretch inside panel area */
+	    if (flag == F_PANELGEOMETRYZOOM)
+	      dragWidth += origx*origWidth;
+	    else
+	      dragx += origx*origWidth;
+	  } else { /* geometry is "WxH+0+Y", or */
+	    /* step/stretch to/across panel right edge */
+	    if (flag == F_PANELGEOMETRYZOOM)
+	      dragWidth = basew - dx - frame_bw_times_2;
+	    else
+	      dragx = basew - dragWidth + basex - frame_bw_times_2;
+	    /* fix window right edge at panel edge */
+	    JunkWidth = dragWidth;
+	    JunkHeight = dragHeight;
+	    ConstrainSize (tmp_win, &JunkWidth, &JunkHeight);
+	    if (dragWidth != JunkWidth)
+	      dragx += dragWidth - JunkWidth;
+	  }
+	}
+      }
+
+      /* treat vertical geometry ('H' and 'Y' of "WxH+X+Y"): */
+      if (ymask && (origHeight > 0))
+      {
+#if 0
+	if ((tmp_win->zoomed != ZOOM_NONE)
+	      && origy == 0 && (dy == 0 || dy + dragHeight + frame_bw_times_2 == baseh))
+	  goto unzoom;
+#endif
+	if (origMask & YNegative) { /* step/stretch up */
+	  if (origy != 0 && -origy*origHeight < dy) {
+	    if (flag == F_PANELGEOMETRYZOOM)
+	      dragHeight -= origy*origHeight;
+	    dragy += origy*origHeight;
+	    /* keep window bottom edge fixed */
+	    JunkWidth = dragWidth;
+	    JunkHeight = dragHeight;
+	    ConstrainSize (tmp_win, &JunkWidth, &JunkHeight);
+	    if (dragHeight != JunkHeight)
+	      dragy += dragHeight - JunkHeight;
+	  } else {
+	    if (flag == F_PANELGEOMETRYZOOM)
+	      dragHeight += dy;
+	    dragy = basey;
+	  }
+	} else { /* step/stretch down */
+	  if (origy != 0 && dy+dragHeight + origy*origHeight + frame_bw_times_2 < baseh) {
+	    if (flag == F_PANELGEOMETRYZOOM)
+	      dragHeight += origy*origHeight;
+	    else
+	      dragy += origy*origHeight;
+	  } else {
+	    if (flag == F_PANELGEOMETRYZOOM)
+	      dragHeight = baseh - dy - frame_bw_times_2;
+	    else
+	      dragy = baseh - dragHeight + basey - frame_bw_times_2;
+	    /* fix window bottom edge at panel edge */
+	    JunkWidth = dragWidth;
+	    JunkHeight = dragHeight;
+	    ConstrainSize (tmp_win, &JunkWidth, &JunkHeight);
+	    if (dragHeight != JunkHeight)
+	      dragy += dragHeight - JunkHeight;
+	  }
+	}
       }
       break;
     }
+
+    tmp_win->zoomed = flag;
   }
 
   if (!Scr->NoRaiseResize)
@@ -1992,9 +2297,38 @@ fullzoom(TwmWindow * tmp_win, int flag)
 
   if ((Scr->WarpCursor || LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)))
     WarpToWindow(tmp_win);
+#if 1
+  else if (mm == True && flag == F_PANELGEOMETRYMOVE)
+    /* if mouse did/would fall inside the window, move mouse as well */
+    XWarpPointer(dpy, None, tmp_win->frame, 0, 0, 0, 0, HotX, HotY);
+#endif
 
   XUngrabPointer(dpy, CurrentTime);
   XUngrabServer(dpy);
+}
+
+void
+fullgeomzoom(char *geometry_name, TwmWindow *tmp_win, int flag)
+{
+  int tile;
+  char *name;
+  char geom[200];
+
+  strncpy (geom, geometry_name, sizeof(geom)-1); /*work on a copy*/
+  geom[sizeof(geom)-1] = '\0';
+  name = strchr (geom, '@');
+  if (name != NULL)
+    *name++ = '\0';
+  tile = ParsePanelIndex (name);
+
+  /*
+   * precompute the mask and requested geometry for fullzoom()
+   * as origMask, origx, origy, origWidth, origHeight
+   */
+  origMask = XParseGeometry (geom, &origx, &origy,
+			(unsigned int *)&origWidth, (unsigned int *)&origHeight);
+
+  fullzoom (tile, tmp_win, flag);
 }
 
 /*

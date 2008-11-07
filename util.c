@@ -66,6 +66,7 @@ in this Software without prior written authorization from The Open Group.
 #include "image_formats.h"
 #include "util.h"
 #include "gram.h"
+#include "parse.h"
 #include "screen.h"
 #include "list.h"
 #include "prototypes.h"
@@ -76,9 +77,13 @@ in this Software without prior written authorization from The Open Group.
 #ifndef NO_XPM_SUPPORT
 #include <X11/xpm.h>
 #endif
+#ifdef TWM_USE_XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 /* see Zoom() - djhjr - 10/11/01 */
 #ifdef NEED_SELECT_H
@@ -2711,6 +2716,291 @@ PropagateWindowOpacity(TwmWindow * tmp)
     XChangeProperty(dpy, tmp->frame, _XA_NET_WM_WINDOW_OPACITY, XA_CARDINAL, 32, PropModeReplace, data, 1);
     XFree((void *)data);
   }
+}
+#endif
+
+
+int
+ParsePanelIndex (char *name)
+{
+  int k;
+  char *s;
+
+  if (name == NULL || name[0] == '\0'
+      || strcmp(name, ".") == 0 || XmuCompareISOLatin1(name, "current") == 0)
+    /*
+     * return 'current panel'
+     * (though, if zooming, 'f.function-code <= F_MAXIMIZE'
+     * overrides this and enforces 'full X11-screen')
+     */
+    return 0;
+  else if (strcmp(name, "0") == 0 || XmuCompareISOLatin1(name, "all") == 0)
+    /* return 'full X11-screen' */
+  return -1;
+
+  /* check if panel index is encoded as numeric string "1", "2", ... etc */
+  s = name;
+  while (*s && isascii(*s) && isdigit(*s))
+    s++;
+  if (*s == '\0')
+    return atoi (name);
+
+#ifdef TILED_SCREEN
+  /*
+   * Check if panel index is alphanumeric name "Xinerama0", "Xinerama1", etc
+   * or Xrandr connector name "LVDS", "VGA", "TMDS-1", "TV", etc
+   */
+  if (Scr->tile_names != NULL) {
+    for (k = 0; k < Scr->ntiles; ++k)
+      if (Scr->tile_names[k] != NULL && strcmp(Scr->tile_names[k], name) == 0)
+	break;
+      if (k < Scr->ntiles)
+	return k+1; /* count from 1 */
+  }
+
+  k = FindNearestTileToMouse();
+
+  if (XmuCompareISOLatin1(name, "pointer") == 0)
+    return k+1; /* count from 1 */
+
+  if (XmuCompareISOLatin1(name, "next") == 0) {
+    if (Scr->ntiles > 1)
+      return ((k+1)%Scr->ntiles) + 1;
+    else
+      return k+1;
+  }
+
+  if (XmuCompareISOLatin1(name, "prev") == 0) {
+    if (Scr->ntiles > 1)
+      return ((k-1+Scr->ntiles)%Scr->ntiles) + 1;
+    else
+      return k+1;
+  }
+#endif
+
+  return 0; /* fallback: 'current panel' */
+}
+
+int
+ParsePanelZoomType (char *name)
+{
+  if (name != NULL && name[0] != '\0')
+  {
+    int mask;
+
+    if (XmuCompareISOLatin1(name, "maximize") == 0)
+      return F_PANELMAXIMIZE;
+    if (XmuCompareISOLatin1(name, "full") == 0)
+      return F_PANELFULLZOOM;
+    if (XmuCompareISOLatin1(name, "horizontal") == 0)
+      return F_PANELHORIZOOM;
+    if (XmuCompareISOLatin1(name, "vertical") == 0)
+      return F_PANELZOOM;
+    if (XmuCompareISOLatin1(name, "left") == 0)
+      return F_PANELLEFTZOOM;
+    if (XmuCompareISOLatin1(name, "right") == 0)
+      return F_PANELRIGHTZOOM;
+    if (XmuCompareISOLatin1(name, "top") == 0)
+      return F_PANELTOPZOOM;
+    if (XmuCompareISOLatin1(name, "bottom") == 0)
+      return F_PANELBOTTOMZOOM;
+
+    mask = XParseGeometry (name, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
+    if (((mask & (XValue|WidthValue)) == (XValue|WidthValue))
+	    || ((mask & (YValue|HeightValue)) == (YValue|HeightValue)))
+      return F_PANELGEOMETRYZOOM;
+  }
+
+  return F_PANELZOOM; /* fallback */
+}
+
+int
+ParsePanelMoveType (char *name)
+{
+  if (name != NULL && name[0] != '\0')
+  {
+    int mask;
+
+    if (XmuCompareISOLatin1(name, "left") == 0)
+      return F_PANELLEFTMOVE;
+    if (XmuCompareISOLatin1(name, "right") == 0)
+      return F_PANELRIGHTMOVE;
+    if (XmuCompareISOLatin1(name, "top") == 0)
+      return F_PANELTOPMOVE;
+    if (XmuCompareISOLatin1(name, "bottom") == 0)
+      return F_PANELBOTTOMMOVE;
+
+    mask = XParseGeometry (name, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
+    if (((mask & (XValue|WidthValue)) == (XValue|WidthValue))
+	    || ((mask & (YValue|HeightValue)) == (YValue|HeightValue)))
+      return F_PANELGEOMETRYMOVE;
+  }
+
+  return F_PANELTOPMOVE; /* fallback */
+}
+
+#ifdef TILED_SCREEN
+int
+ComputeTiledAreaBoundingBox (struct ScreenInfo *scr)
+{
+  int i, r = FALSE;
+
+  if (scr->tiles != NULL)
+    /* bypass panel management if the only panel exactly covers the X11-screen: */
+    if (scr->ntiles > 1
+	    || Lft(scr->tiles[0]) != 0 || Bot(scr->tiles[0]) != 0
+	    || AreaWidth(scr->tiles[0]) != scr->MyDisplayWidth
+	    || AreaHeight(scr->tiles[0]) != scr->MyDisplayHeight)
+    {
+      Lft(scr->tiles_bb) = Lft(scr->tiles[0]);
+      Bot(scr->tiles_bb) = Bot(scr->tiles[0]);
+      Rht(scr->tiles_bb) = Rht(scr->tiles[0]);
+      Top(scr->tiles_bb) = Top(scr->tiles[0]);
+
+      for (i = 1; i < scr->ntiles; ++i) {
+	/* (x0,y0), (x1,y1) of tiled area bounding-box: */
+	if (Lft(scr->tiles_bb) > Lft(scr->tiles[i]))
+	  Lft(scr->tiles_bb) = Lft(scr->tiles[i]);
+	if (Bot(scr->tiles_bb) > Bot(scr->tiles[i]))
+	  Bot(scr->tiles_bb) = Bot(scr->tiles[i]);
+	if (Rht(scr->tiles_bb) < Rht(scr->tiles[i]))
+	  Rht(scr->tiles_bb) = Rht(scr->tiles[i]);
+	if (Top(scr->tiles_bb) < Top(scr->tiles[i]))
+	  Top(scr->tiles_bb) = Top(scr->tiles[i]);
+      }
+      r = TRUE;
+    }
+  return r;
+}
+#endif
+
+#ifdef TWM_USE_XINERAMA
+int
+GetXineramaTilesGeometries (struct ScreenInfo *scr)
+{
+  extern Bool PrintErrorMessages;
+  XineramaScreenInfo *si;
+  int r, i;
+
+  if (scr->tile_names != NULL) {
+    for (i = 0; i < scr->ntiles; ++i)
+      if (scr->tile_names[i] != NULL)
+	free (scr->tile_names[i]);
+    free (scr->tile_names);
+    scr->tile_names = NULL;
+  }
+  if (scr->tiles != NULL) {
+    free (scr->tiles);
+    scr->tiles = NULL;
+  }
+  scr->ntiles = 0;
+
+  r = FALSE;
+  si = XineramaQueryScreens (dpy, &scr->ntiles);
+  if (si != (XineramaScreenInfo*)(0)) {
+    if (scr->ntiles > 0) {
+      scr->tile_names = (char**) calloc (scr->ntiles, sizeof(scr->tile_names[0]));
+      scr->tiles = (int(*)[4]) calloc (scr->ntiles, sizeof(scr->tiles[0]));
+      if (scr->tiles != (int(*)[4])(0)) {
+	for (i = 0; i < scr->ntiles; ++i) {
+	  Lft(scr->tiles[i]) = si[i].x_org; /* x0 */
+	  Bot(scr->tiles[i]) = si[i].y_org; /* y0 */
+	  Rht(scr->tiles[i]) = si[i].x_org + si[i].width  - 1; /* x1 */
+	  Top(scr->tiles[i]) = si[i].y_org + si[i].height - 1; /* y1 */
+#if 1
+	  if (PrintErrorMessages)
+	    fprintf (stderr,
+		    "%s: Xinerama panel %d (screen_number = %d) at x = %d, y = %d, width = %d, height = %d detected.\n",
+		    ProgramName, i+1, si[i].screen_number,
+		    si[i].x_org, si[i].y_org, si[i].width, si[i].height);
+#endif
+	  if (scr->tile_names != NULL) {
+	    char name[8+6+1];
+	    sprintf (name, "Xinerama%d", (si[i].screen_number%1000000));
+	    name[sizeof(name)-1] = '\0';
+	    scr->tile_names[i] = strdup (name);
+	  }
+	}
+	r = TRUE;
+      }
+    }
+    XFree (si);
+  }
+  return r;
+}
+#endif
+
+#ifdef TWM_USE_XRANDR
+int
+GetXrandrTilesGeometries (struct ScreenInfo *scr)
+{
+  extern Bool PrintErrorMessages;
+  int r = FALSE;
+
+  if (HasXrandr == True)
+  {
+#if RANDR_MAJOR > 1 || (RANDR_MAJOR == 1 && RANDR_MINOR >= 2)
+    int i, j;
+    XRRScreenResources * res;
+
+    if (scr->tile_names != NULL) {
+      for (i = 0; i < scr->ntiles; ++i)
+	if (scr->tile_names[i] != NULL)
+	  free (scr->tile_names[i]);
+      free (scr->tile_names);
+      scr->tile_names = NULL;
+    }
+    if (scr->tiles != NULL) {
+	    free (scr->tiles);
+	    scr->tiles = NULL;
+    }
+    scr->ntiles = 0;
+
+    res = XRRGetScreenResources (dpy, scr->Root);
+    if (res != (XRRScreenResources*)(0)) {
+      if (res->ncrtc > 0) {
+	scr->tile_names = (char**) calloc (res->ncrtc, sizeof(scr->tile_names[0]));
+	scr->tiles = (int(*)[4]) calloc (res->ncrtc, sizeof(scr->tiles[0]));
+	if (scr->tiles != (int(*)[4])(0)) {
+	  for (i = 0; i < res->ncrtc; ++i) {
+	    XRRCrtcInfo * crt = XRRGetCrtcInfo (dpy, res, res->crtcs[i]);
+	    if (crt != (XRRCrtcInfo*)(0)) {
+	      if (crt->mode != None) {
+		for (j = 0; j < crt->noutput /*crt->npossible*/; ++j) {
+		  XRROutputInfo * out = XRRGetOutputInfo (dpy, res, crt->outputs[j] /*crt->possible[j]*/);
+		  if (out != (XRROutputInfo*)(0)) {
+		    if (out->crtc == res->crtcs[i]) {
+		      if (scr->tile_names != NULL)
+			scr->tile_names[i] = strdup (out->name);
+		      j = crt->noutput; /*crt->npossible;*/ /*exit 'for'*/
+		    }
+		    XRRFreeOutputInfo (out);
+		  }
+		}
+		Lft(scr->tiles[scr->ntiles]) = crt->x; /* x0 */
+		Bot(scr->tiles[scr->ntiles]) = crt->y; /* y0 */
+		Rht(scr->tiles[scr->ntiles]) = crt->x + crt->width  - 1; /* x1 */
+		Top(scr->tiles[scr->ntiles]) = crt->y + crt->height - 1; /* y1 */
+#if 1
+		if (PrintErrorMessages)
+		  fprintf (stderr,
+			"%s: Xrandr panel %d (connector '%s') on X11-screen %d at x = %d, y = %d, width = %d, height = %d detected.\n",
+			ProgramName, scr->ntiles+1, (scr->tile_names&&scr->tile_names[i]?scr->tile_names[i]:"unknown"), scr->screen,
+			crt->x, crt->y, crt->width, crt->height);
+#endif
+		scr->ntiles++;
+	      }
+	      XRRFreeCrtcInfo (crt);
+	    }
+	  }
+	  r = TRUE;
+	}
+      }
+      XRRFreeScreenResources (res);
+    }
+#endif
+  }
+  return r;
 }
 #endif
 

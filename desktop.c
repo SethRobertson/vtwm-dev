@@ -763,6 +763,15 @@ MoveResizeDesktop(TwmWindow * tmp_win, int noraise)
 void
 SetVirtualDesktop(char *geom, int scale)
 {
+  /*
+   * panel name is encoded into geometry string as "1200x20+10-10@1"
+   * where "@1" is panel "1"
+   */
+  int tile;
+  char *tile_name = strchr (geom, '@');
+  if (tile_name != NULL)
+    *tile_name++ = '\0';
+  tile = ParsePanelIndex (tile_name);
 
   if (Scr->Virtual)
   {
@@ -822,7 +831,7 @@ SetVirtualDesktop(char *geom, int scale)
 #ifdef TILED_SCREEN
   if ((Scr->use_tiles == TRUE) && (JunkMask & XValue) && (JunkMask & YValue))
   {
-    EnsureGeometryVisibility(JunkMask, &JunkX, &JunkY,
+    EnsureGeometryVisibility(tile, JunkMask, &JunkX, &JunkY,
 			     JunkWidth + 2 * (Scr->BorderWidth + Scr->VirtualDesktopBevelWidth),
 			     JunkHeight + 2 * (Scr->BorderWidth + Scr->VirtualDesktopBevelWidth));
 

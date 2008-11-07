@@ -783,6 +783,7 @@ action		: FKEYWORD	{ $$ = $1; }
 						 Action);
 					$$ = F_NOP;
 				    }
+				    break;
 				  case F_WARPTOSCREEN:
 				    if (!CheckWarpScreenArg (Action)) {
 					twmrc_error_prefix();
@@ -801,6 +802,28 @@ action		: FKEYWORD	{ $$ = $1; }
 			"ignoring invalid f.colormap argument \"%s\"\n",
 						 Action);
 					$$ = F_NOP;
+				    }
+				    break;
+				  case F_PANELMOVE:
+				  case F_PANELZOOM:
+				    {
+					int func;
+					char *panel_name = strchr (($2), '@');
+					if (panel_name != NULL)
+					    *panel_name = '\0';
+					if (($1) == F_PANELMOVE)
+					    func = ParsePanelMoveType ($2);
+					else
+					    func = ParsePanelZoomType ($2);
+					if (panel_name != NULL) {
+						if (func == F_PANELGEOMETRYMOVE ||
+							func == F_PANELGEOMETRYZOOM)
+						    *panel_name = '@';
+						else
+						    Action = panel_name+1;
+					} else
+					    Action = NULL;
+					$$ = func;
 				    }
 				    break;
 				} /* end switch */

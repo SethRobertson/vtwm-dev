@@ -803,8 +803,9 @@ in the door-list has the following format:
 .fi
 .RE
 .IP
-Windows with the name \fIwinname\fP appear with geometry and position
-as defined in \fIlocation\fP, and warp the user to \fIjumpTo\fP when
+Windows with the name \fIwinname\fP appear with size and position as
+defined in \fIlocation\fP (for extended geometry specification see
+\fBIconManagerGeometry\fP), and warp the user to \fIjumpTo\fP when
 \&\fBf.enterdoor\fP is executed inside them.  Doors have a class of "VTWM Door".
 .IP "\fBEnableXftFontRenderer\fP" 8
 This variable indicates that instead of the X11 core font renderer
@@ -954,12 +955,27 @@ The default is \fI"gray85"\fP.
 .IP "\fBIconManagerGeometry\fP \fIstring\fP [ \fIcolumns\fP ]" 8
 This variable indicates that a default icon manager is to be created, with
 the geometry specified with \fIstring\fP. The \fIstring\fP argument should
-be a standard X geometry specification, specifying the initial size and/or
+be a standard X geometry specification \fI"WxH+X+Y"\fP, specifying the initial size and/or
 location.  The icon manager window is then broken into \fIcolumns\fP pieces
 and scaled according to the number of entries in the icon manager.  Extra
 entries are wrapped to form additional rows.
 The default \fIstring\fP is \fI"+0+0"\fP, and the default \fIcolumns\fP
 is \fI1\fP.
+.IP
+The geometry specification may include an extra parameter \fI@P\fP appended
+as in \fIWxH+X+Y@P\fP to denote the \fIXinerama\fP or \fIXrandr\fP panel
+(or a rectangular area) as the origin for the denoted geometry.
+Valid values for \fIP\fP include absolute panel indices as positive integers
+(or alphanumeric \fIXinerama\fP or \fIXrandr\fP output connector names, e.g.
+\fIXinerama0\fP, \fIXinerama1\fP, \fILVDS\fP, \fIVGA\fP, \fITMDS-1\fP, \fITV\fP, etc.)
+and dynamic indices denoted by keywords \fIpointer\fP, \fInext\fP and \fIprev\fP
+specifying the panel (resp. the next or previous one) containing the mouse.
+The special keyword \fIall\fP is an alias for the \fIX11\fP logical screen
+at full size (use with care in 'non-wall' panel arrangements).
+Further, \fIcurrent\fP denotes the maximum rectangular visible area
+spanned across panels intersected by the standard part \fIWxH+X+Y\fP
+(which is then considered relative to \fIall\fP) of the geometry specification.
+If the extended parameter \fI@P\fP is missing, \fI@current\fP is assumed.
 .IP "\fBIconManagerHighlight\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies the border color to be used when highlighting
 the icon manager entry that currently has the focus,
@@ -981,7 +997,7 @@ in the \fIiconmgr-list\fP has the following format:
 .RS
 where \fIwinname\fP is the name of the windows that should be put into this
 icon manager, \fIiconname\fP is the name of that icon manager window's icon,
-\&\fIgeometry\fP is a standard geometry specification, and \fIcolumns\fP is
+\&\fIgeometry\fP is an extended geometry specification, and \fIcolumns\fP is
 the number of columns in this icon manager as described in
 \&\fBIconManagerGeometry\fP.  For example:
 .RE
@@ -1013,7 +1029,8 @@ Default value is 255.
 .IP "\fBIconRegion\fP \fIgeomstr\fP \fIvgrav hgrav hgrid vgrid\fP"
 This variable specifies an area on the root window in which icons are placed
 if no specific icon location is provided by the client.  The \fIgeomstr\fP
-is a quoted string containing a standard geometry specification for the
+is a quoted string containing an extended geometry
+specification (see \fBIconManagerGeometry\fP) for the
 region size and location.  If more than one \fBIconRegion\fP line is given,
 icons will be put into the succeeding regions when the first is full.  The
 \&\fIvgrav\fP argument should be either \fBNorth\fP or \fBSouth\fP and is used
@@ -1446,6 +1463,12 @@ This per-screen variable indicates that vtwm should automatically execute
 XRANDR X11-extension occurs on the given screen.
 In order to preserve client window unzoomed sizes all zoomed clients
 are unzoomed first.
+.IP "\fBRestartOnScreenSizeChangeNotify\fP" 8
+In contrast to \fBRestartOnScreenChangeNotify\fP this variable indicates
+that vtwm should restart on the \fIRRScreenChangeNotify\fP event
+only if the X11 logical screen size has changed (i.e. the values
+returned by \fIXDisplayWidth()\fP or \fIXDisplayHeight()\fP differ from
+those in effect during vtwm startup).
 .IP "\fBRestartPreviousState\fP" 8
 This variable indicates that
 \&\fBvtwm\fP should attempt to use the WM_STATE property on client windows
@@ -1704,6 +1727,8 @@ the same manner as \fBtwm\fP. This variable specifies where to place
 the virtual desktop window and its size. The \fIgeometry\fP is a
 standard X geometry specification and defines the size and location
 of the window containing the desktop representation.
+The \fIgeometry\fP specification may include the \fI@P\fP parameter
+appended as described in \fBIconManagerGeometry\fP.
 .IP
 The \fIscale\fP parameter specifies the scaling of the virtual
 desktop window compared to the desktop. The size specification can
@@ -2175,6 +2200,43 @@ on the current or any succeeding screen.
 .IP "\fBf.nop\fP" 8
 This function does nothing and is typically used with the \fBDefaultFunction\fP
 or \fBWindowFunction\fP variables or to introduce blank lines in menus.
+.IP "\fBf.panelmove \fIgeomstring\fP" 8
+This function moves the selected window to the location denoted by the extended
+geometry specification \fIgeomstring\fP as described in \fBIconManagerGeometry\fP.
+Geometry aliases \fIleft\fP, \fIright\fP, \fItop\fP, \fIbottom\fP
+(e.g. \fI"left@pointer"\fP, \fI"top@1"\fP, etc.) denote the window is to be moved
+and aligned to the left, right, top or bottom edge on the specified target panel.
+A relative shift by \fI(X,Y)\fP of the selected window can be specified by
+\fI"[01]x[01]+X+Y@P"\fP analogously to the description in \fBf.panelzoom\fP below.
+.IP "\fBf.panelzoom \fIgeomstring\fP" 8
+This function enlarges the selected window as denoted by the extended geometry
+specification \fIgeomstring\fP described in \fBIconManagerGeometry\fP.
+Accepted are \fIleft\fP, \fIright\fP, \fItop\fP, \fIbottom\fP,
+\fIvertical\fP, \fIhorizontal\fP, \fIfull\fP and \fImaximize\fP as
+geometry aliases in order to perform a zoom operation analogous to
+\fBf.leftzoom\fP, ..., \fBf.maximize\fP but restricted to the target panel
+specified by \fI@P\fP of \fIgeomstring\fP.
+.IP
+The non-aliased geometry string is used to denote relative zoom by
+\fI(X,Y)\fP pixels and has the form \fI"[01]x[01]+X+Y@P"\fP,
+i.e. \fIW\fP, \fIH\fP having values 0 or 1 denoting if the
+\fIX\fP or \fIY\fP component (or both) is to be considered in
+the following zoom operation.
+If \fIX\fP (or \fIY\fP) is positive, the right (or bottom) edge of the
+selected window is moved that many pixels to the right (or bottom).
+If \fIX\fP (or \fIY\fP) is negative, the left (or top) edge of the
+selected window is moved that many pixels to the left (or top) accordingly.
+If \fIX\fP (or \fIY\fP) is zero, then the corresponding window edge,
+left or right (top or bottom) depending on the '-' or '+'
+of \fIX\fP (or \fIY\fP), is taken to the appropriate panel edge.
+The special value \fI"0x0-0-0@current"\fP of \fIgeomstring\fP
+can be used to restore the original window size and location after
+repeated execution of the geometry-based zooming.
+Analogously \fI"0x0+0+0@current"\fP overwrites the saved original
+size/location with the current values of the window size and location.
+(For other values in \fI@P\fP, e.g. \fI"0x0+0+0@next"\fP, the window
+is only moved to the specified panel without changing its size,
+keeping its relative location as on the source panel if possible.)
 .IP "\fBf.panup\fP \fIN\fP" 8
 .IP "\fBf.pandown\fP \fIN\fP" 8
 .IP "\fBf.panleft\fP \fIN\fP" 8

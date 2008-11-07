@@ -6,6 +6,7 @@
 #include <regex.h>
 #endif
 #include "regions.h"
+#include "add_window.h"
 
 extern void Zoom(Window wf, IconMgr * ipf, Window wt, IconMgr * ipt);
 extern void MoveOutline(Window root, int x, int y, int width, int height, int bw, int th);
@@ -49,6 +50,20 @@ extern void SetWindowOpacity(Window win, unsigned int opacity);
 extern void PropagateWindowOpacity(TwmWindow * tmp);
 #endif
 
+extern int ParsePanelIndex(char *name);
+extern int ParsePanelMoveType(char *name);
+extern int ParsePanelZoomType(char *name);
+
+#ifdef TILED_SCREEN
+extern int ComputeTiledAreaBoundingBox(struct ScreenInfo *scr);
+#endif
+#ifdef TWM_USE_XINERAMA
+extern int GetXineramaTilesGeometries(struct ScreenInfo *scr);
+#endif
+#ifdef TWM_USE_XRANDR
+extern int GetXrandrTilesGeometries(struct ScreenInfo *scr);
+#endif
+
 extern void Reborder(Time time);
 extern void ComputeCommonTitleOffsets(void);
 extern void ComputeWindowTitleOffsets(TwmWindow * tmp_win, int width, int squeeze);
@@ -62,12 +77,13 @@ extern ScreenInfo *FindPointerScreenInfo(void);
 extern ScreenInfo *FindDrawableScreenInfo(Drawable d);
 extern ScreenInfo *FindWindowScreenInfo(XWindowAttributes * attr);
 extern ScreenInfo *FindScreenInfo(Window w);
+extern int FindEmptyArea(TwmWindow *lst, TwmWindow *twm, struct PlaceXY *areas, struct PlaceXY *pos);
 extern int FindNearestTileToArea(int x0y0x1y1[4]);
 extern int FindNearestTileToPoint(int x, int y);
 extern int FindNearestTileToClient(TwmWindow * tmp);
 extern int FindNearestTileToMouse(void);
 extern void EnsureRectangleOnTile(int tile, int *x0, int *y0, int w, int h);
-extern void EnsureGeometryVisibility(int mask, int *x0, int *y0, int w, int h);
+extern void EnsureGeometryVisibility(int tile, int mask, int *x0, int *y0, int w, int h);
 extern void TilesFullZoom(int x0y0x1y1[4]);
 extern void StartResize(XEvent * evp, TwmWindow * tmp_win, int fromtitlebar, int context);
 extern void AddStartResize(TwmWindow * tmp_win, int x, int y, int w, int h);
@@ -82,7 +98,8 @@ extern void ConstrainSize(TwmWindow * tmp_win, int *widthp, int *heightp);
 extern void MenuStartResize(TwmWindow * tmp_win, int x, int y, int w, int h, int context);
 extern void MenuEndResize(TwmWindow * tmp_win, int context);
 extern void PaintBorderAndTitlebar(TwmWindow * tmp_win);
-extern void fullzoom(TwmWindow * tmp_win, int flag);
+extern void fullzoom(int tile, TwmWindow * tmp_win, int flag);
+extern void fullgeomzoom(char *geometry_name, TwmWindow *tmp_win, int flag);
 extern int ParseTwmrc(char *filename, char *display_name, int m4_preprocess, char *m4_option);
 extern int ParseStringList(char **sl);
 extern int (*twmInputFunc) (void);

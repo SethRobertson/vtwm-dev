@@ -161,6 +161,28 @@
 #define F_SLOPPYFOCUS		128
 #endif
 
+/*
+ * Attention: the following panel-zoom functions should have their numeric codes
+ * greater than the corresponding non-panel variants above, F_MAXIMIZE being the
+ * 'threshold'. See also fullzoom().
+ */
+#define F_PANELZOOM		129	/* f.panelzoom "geom@#" (panel #, "0"-full, "."-current) */
+#define F_PANELLEFTZOOM		130	/* geom := "left" */
+#define F_PANELRIGHTZOOM	131
+#define F_PANELTOPZOOM		132
+#define F_PANELBOTTOMZOOM	133	/*  -"-           */
+#define F_PANELHORIZOOM		134
+#define F_PANELFULLZOOM		135
+#define F_PANELMAXIMIZE		136
+#define F_PANELGEOMETRYZOOM	137	/* geom := "WxH+X+Y" */
+
+#define F_PANELMOVE		138	/* f.panelmove "geom@#" */
+#define F_PANELLEFTMOVE		139
+#define F_PANELRIGHTMOVE	140
+#define F_PANELTOPMOVE		141
+#define F_PANELBOTTOMMOVE	142
+#define F_PANELGEOMETRYMOVE	143
+
 #define D_NORTH			1
 #define D_SOUTH			2
 #define D_EAST			3

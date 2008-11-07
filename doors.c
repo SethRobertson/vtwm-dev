@@ -34,15 +34,25 @@ extern void SetupWindow(TwmWindow * tmp_win, int x, int y, int w, int h, int bw)
 TwmDoor *
 door_add(char *name, char *position, char *destination)
 {
-  int px, py, pw, ph, dx, dy;
+  int px, py, pw, ph, dx, dy, bw;
 
-  int bw = Scr->BorderWidth;
+  /*
+   * panel name is encoded into geometry string as "1200x20+10-10@1"
+   * where "@1" is panel "1"
+   */
+  int tile;
+  char *tile_name = strchr (position, '@');
+  if (tile_name != NULL)
+    *tile_name++ = '\0';
+  tile = ParsePanelIndex (tile_name);
+
+  bw = Scr->BorderWidth;
 
   JunkMask = XParseGeometry(position, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
 
 #ifdef TILED_SCREEN
   if ((Scr->use_tiles == TRUE) && (JunkMask & XValue) && (JunkMask & YValue))
-    EnsureGeometryVisibility(JunkMask, &JunkX, &JunkY, JunkWidth + 2 * bw, JunkHeight + 2 * bw);
+    EnsureGeometryVisibility(tile, JunkMask, &JunkX, &JunkY, JunkWidth + 2 * bw, JunkHeight + 2 * bw);
   else
 #endif
   {

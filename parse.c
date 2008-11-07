@@ -478,6 +478,7 @@ typedef struct _TwmKeyword
 
 #ifdef TWM_USE_XRANDR
 #define kw0_RestartOnScreenChangeNotify	71
+#define kw0_RestartOnScreenSizeChangeNotify	72
 #endif
 
 #define kws_IconFont			2
@@ -708,6 +709,8 @@ static TwmKeyword keytable[] = {
   {"f.nexticonmgr", FKEYWORD, F_NEXTICONMGR},
   {"f.nop", FKEYWORD, F_NOP},
   {"f.pandown", FSKEYWORD, F_PANDOWN},
+  {"f.panelmove", FSKEYWORD, F_PANELMOVE},
+  {"f.panelzoom", FSKEYWORD, F_PANELZOOM},
   {"f.panleft", FSKEYWORD, F_PANLEFT},
   {"f.panright", FSKEYWORD, F_PANRIGHT},
   {"f.panup", FSKEYWORD, F_PANUP},
@@ -963,6 +966,7 @@ static TwmKeyword keytable[] = {
 
 #ifdef TWM_USE_XRANDR
   {"restartonscreenchangenotify", KEYWORD, kw0_RestartOnScreenChangeNotify},
+  {"restartonscreensizechangenotify", KEYWORD, kw0_RestartOnScreenSizeChangeNotify},
 #endif
   {"restartpreviousstate", KEYWORD, kw0_RestartPreviousState},
   {"rhspulldownmenus", KEYWORD, kw0_RightHandSidePulldownMenus},
@@ -1361,6 +1365,10 @@ do_single_keyword(int keyword)
 #ifdef TWM_USE_XRANDR
   case kw0_RestartOnScreenChangeNotify:
     Scr->RRScreenChangeRestart = TRUE;
+    return 1;
+
+  case kw0_RestartOnScreenSizeChangeNotify:
+    Scr->RRScreenSizeChangeRestart = TRUE;
     return 1;
 #endif
   }

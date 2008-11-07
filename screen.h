@@ -293,10 +293,12 @@ typedef struct ScreenInfo
   int tiles_bb[4];		/* (x0,y0) and (x1,y1) coordinates of tiled screen bounding-box */
   int ntiles;			/* number of tiles */
   int (*tiles)[4];		/* tiles vertices coordinates: (x0,y0), (x1,y1) */
+  char **tile_names;		/* Xinerama screen index or Xrandr output connector names */
 #endif
 
 #ifdef TWM_USE_XRANDR
   short RRScreenChangeRestart;	/* if TRUE restart vtwm on RRScreenChangeNotify events */
+  short RRScreenSizeChangeRestart; /* if TRUE, restart if DisplayWidth/-Height changes */
 #endif
 
   IconMgr iconmgr;		/* default icon manager */

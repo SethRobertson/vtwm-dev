@@ -3177,18 +3177,23 @@ HandleShapeNotify(void)
 static void
 HandleXrandrScreenChangeNotify(void)
 {
-  if (Scr->RRScreenChangeRestart == TRUE)
+  XEvent button;
+
+  sleep (1); /* Don't proceed too quickly, as of Oct 2008 there are Xorg Xrandr problems then. */
+  if (Scr->RRScreenChangeRestart == TRUE
+	|| (Scr->RRScreenSizeChangeRestart == TRUE
+	      && (Scr->MyDisplayWidth != DisplayWidth(dpy, Scr->screen)
+		  || Scr->MyDisplayHeight != DisplayHeight(dpy, Scr->screen))))
   {
     int i;
     TwmWindow *tmp;
-    XEvent button;
 
     /* to preserve size unzoom all windows on all screens: */
     for (i = 0; i < NumScreens; ++i)
       if (ScreenList[i] != NULL)
 	for (tmp = ScreenList[i]->TwmRoot.next; tmp != NULL; tmp = tmp->next)
 	  if (tmp->zoomed != ZOOM_NONE)
-	    fullzoom(tmp, tmp->zoomed);
+	    fullzoom(-1, tmp, (/*bypass geo-zoom*/tmp->zoomed=ZOOM_NONE));
 
     /* prepare a faked button event: */
     button.xany = Event.xany;
@@ -3196,6 +3201,16 @@ HandleXrandrScreenChangeNotify(void)
 
     /* initiate "f.restart": */
     ExecuteFunction(F_RESTART, NULLSTR, Event.xany.window, NULL, &button, C_ROOT, FALSE);
+  }
+  else
+  {
+    /* drop any further RR-events for other panels (one is enough): */
+    while (XCheckTypedWindowEvent(dpy, Scr->Root, XrandrEventBase+RRScreenChangeNotify, &button) == True)
+      continue;
+    if (GetXrandrTilesGeometries (Scr) == TRUE)
+      Scr->use_tiles = ComputeTiledAreaBoundingBox (Scr);
+    else
+      Scr->use_tiles = FALSE;
   }
 }
 #endif
@@ -3649,6 +3664,14 @@ dumpevent(XEvent * e)
     name = "MappingNotify";
     break;
   }
+
+  if (HasShape && e->type == (ShapeEventBase+ShapeNotify))
+    name = "ShapeNotify";
+
+#ifdef TWM_USE_XRANDR
+  if (HasXrandr && e->type == (XrandrEventBase+RRScreenChangeNotify))
+    name = "RRScreenChangeNotify";
+#endif
 
   if (name)
   {

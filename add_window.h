@@ -40,6 +40,11 @@
 
 extern char NoName[];
 
+typedef struct PlaceXY
+{
+  struct PlaceXY *next;
+  int x, y, width, height;
+} PlaceXY;
 
 extern int AddingX;
 extern int AddingY;

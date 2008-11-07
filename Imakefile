@@ -22,7 +22,7 @@ XCOMM To omit PNG image support, uncomment this
 XCOMM   NO_PNG_SUPPORT = -DNO_PNG_SUPPORT
 XCOMM and comment these
            PNGLIB = -lpng
-           PNGINC = -I/usr/include/libpng12 -I/usr/include/libpng
+XCOMM      PNGINC = -I/usr/include/libpng12 -I/usr/include/libpng
 
 XCOMM To omit regular expressions ("RE"s) support, uncomment this
 XCOMM NO_REGEX_SUPPORT = -DNO_REGEX_SUPPORT

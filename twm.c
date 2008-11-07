@@ -597,113 +597,22 @@ main(int argc, char **argv, char **environ)
 #endif
 
 #ifdef TILED_SCREEN
-    Scr->use_tiles = FALSE;
+    Scr->tile_names = NULL;
     Scr->tiles = NULL;
-#endif
-
-#ifdef TWM_USE_XINERAMA
-    if (xinerama_available == TRUE)
-    {
-      XineramaScreenInfo *si = XineramaQueryScreens(dpy, &Scr->ntiles);
-
-      if (si != (XineramaScreenInfo *) (0))
-      {
-	/* allocate memory which is automatically free()'d by exit(): */
-	Scr->tiles = (int (*)[4])malloc(Scr->ntiles * sizeof(Scr->tiles[0]));
-	if (Scr->tiles != (int (*)[4])(0))
-	{
-	  for (i = 0; i < Scr->ntiles; ++i)
-	  {			/* unused: si[i].screen_number */
-	    Lft(Scr->tiles[i]) = si[i].x_org;	/* x0 */
-	    Bot(Scr->tiles[i]) = si[i].y_org;	/* y0 */
-	    Rht(Scr->tiles[i]) = si[i].x_org + si[i].width - 1;	/* x1 */
-	    Top(Scr->tiles[i]) = si[i].y_org + si[i].height - 1;	/* y1 */
-	    if (PrintErrorMessages)
-	      fprintf(stderr,
-		      "%s: Xinerama tile %d at x = %d, y = %d, width = %d, height = %d detected.\n",
-		      ProgramName, si[i].screen_number, si[i].x_org, si[i].y_org, si[i].width, si[i].height);
-	  }
-	  /* bypass Xinerama if the only tile exactly covers the X11-screen: */
-	  if (Scr->ntiles > 1
-	      || Lft(Scr->tiles[0]) != 0 || Bot(Scr->tiles[0]) != 0
-	      || AreaWidth(Scr->tiles[0]) != Scr->MyDisplayWidth || AreaHeight(Scr->tiles[0]) != Scr->MyDisplayHeight)
-	    Scr->use_tiles = TRUE;
-	}
-	XFree(si);
-      }
-    }
+    Scr->ntiles = 0;
 #endif
 
 #ifdef TWM_USE_XRANDR
-#if RANDR_MAJOR > 1 || (RANDR_MAJOR == 1 && RANDR_MINOR >= 2)
-    if (HasXrandr == True && Scr->tiles == NULL)
-    {
-      XRRScreenResources *res = XRRGetScreenResources(dpy, Scr->Root);
-
-      if (res != (XRRScreenResources *) (0))
-      {
-	/* allocate memory which is automatically free()'d by exit(): */
-	Scr->tiles = (int (*)[4])malloc(res->ncrtc * sizeof(Scr->tiles[0]));
-	if (Scr->tiles != (int (*)[4])(0))
-	{
-	  Scr->ntiles = 0;
-	  for (i = 0; i < res->ncrtc; ++i)
-	  {
-	    XRRCrtcInfo *crt = XRRGetCrtcInfo(dpy, res, res->crtcs[i]);
-
-	    if (crt != (XRRCrtcInfo *) (0))
-	    {
-	      if (crt->mode != None)
-	      {
-		Lft(Scr->tiles[Scr->ntiles]) = crt->x;	/* x0 */
-		Bot(Scr->tiles[Scr->ntiles]) = crt->y;	/* y0 */
-		Rht(Scr->tiles[Scr->ntiles]) = crt->x + crt->width - 1;	/* x1 */
-		Top(Scr->tiles[Scr->ntiles]) = crt->y + crt->height - 1;	/* y1 */
-		if (PrintErrorMessages)
-		  fprintf(stderr,
-			  "%s: Xrandr tile %d on screen %d at x = %d, y = %d, width = %d, height = %d detected.\n",
-			  ProgramName, Scr->ntiles, Scr->screen, crt->x, crt->y, crt->width, crt->height);
-		++Scr->ntiles;
-	      }
-	      XRRFreeCrtcInfo(crt);
-	    }
-	  }
-	  if (Scr->ntiles > 0)
-	  {
-	    /* bypass "tile management" if the only tile exactly covers the X11-screen: */
-	    if (Scr->ntiles > 1
-		|| Lft(Scr->tiles[0]) != 0 || Bot(Scr->tiles[0]) != 0
-		|| AreaWidth(Scr->tiles[0]) != Scr->MyDisplayWidth || AreaHeight(Scr->tiles[0]) != Scr->MyDisplayHeight)
-	      Scr->use_tiles = TRUE;
-	  }
-	}
-	XRRFreeScreenResources(res);
-      }
-    }
+    GetXrandrTilesGeometries (Scr);
 #endif
+
+#ifdef TWM_USE_XINERAMA
+    if (xinerama_available == TRUE && Scr->tiles == NULL)
+      GetXineramaTilesGeometries (Scr);
 #endif
 
 #ifdef TILED_SCREEN
-    if (Scr->use_tiles == TRUE)
-    {
-      Lft(Scr->tiles_bb) = Lft(Scr->tiles[0]);
-      Bot(Scr->tiles_bb) = Bot(Scr->tiles[0]);
-      Rht(Scr->tiles_bb) = Rht(Scr->tiles[0]);
-      Top(Scr->tiles_bb) = Top(Scr->tiles[0]);
-
-      for (i = 1; i < Scr->ntiles; ++i)
-      {
-	/* (x0,y0), (x1,y1) of tiled area bounding-box: */
-	if (Lft(Scr->tiles_bb) > Lft(Scr->tiles[i]))
-	  Lft(Scr->tiles_bb) = Lft(Scr->tiles[i]);
-	if (Bot(Scr->tiles_bb) > Bot(Scr->tiles[i]))
-	  Bot(Scr->tiles_bb) = Bot(Scr->tiles[i]);
-	if (Rht(Scr->tiles_bb) < Rht(Scr->tiles[i]))
-	  Rht(Scr->tiles_bb) = Rht(Scr->tiles[i]);
-	if (Top(Scr->tiles_bb) < Top(Scr->tiles[i]))
-	  Top(Scr->tiles_bb) = Top(Scr->tiles[i]);
-      }
-    }
+    Scr->use_tiles = ComputeTiledAreaBoundingBox (Scr);
 #endif
 
     InitVariables();
@@ -1264,6 +1173,7 @@ InitVariables(void)
 
 #ifdef TWM_USE_XRANDR
   Scr->RRScreenChangeRestart = FALSE;
+  Scr->RRScreenSizeChangeRestart = FALSE;
 #endif
 
   /* no names unless they say so */

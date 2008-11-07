@@ -86,12 +86,6 @@ int AddingH;
 
 char NoName[] = "Untitled";	/* name if no name is specified */
 
-typedef struct _PlaceXY
-{
-  struct _PlaceXY *next;
-  int x, y, width, height;
-} PlaceXY;
-
 
 /************************************************************************
  *
@@ -814,7 +808,7 @@ AddPaintRealWindows(TwmWindow * tmp_win, int x, int y)
  *  tiles	tile list to search
  *  pos		return found tile
  */
-static int
+int
 FindEmptyArea(TwmWindow * lst, TwmWindow * twm, PlaceXY * tiles, PlaceXY * pos)
 {
   PlaceXY *t, **pt;

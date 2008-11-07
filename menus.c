@@ -1908,6 +1908,20 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
   case F_TOPZOOM:
   case F_ZOOM:
   case F_MAXIMIZE:
+  case F_PANELZOOM:
+  case F_PANELHORIZOOM:
+  case F_PANELFULLZOOM:
+  case F_PANELMAXIMIZE:
+  case F_PANELLEFTZOOM:
+  case F_PANELRIGHTZOOM:
+  case F_PANELTOPZOOM:
+  case F_PANELBOTTOMZOOM:
+  case F_PANELGEOMETRYZOOM:
+  case F_PANELLEFTMOVE:
+  case F_PANELRIGHTMOVE:
+  case F_PANELTOPMOVE:
+  case F_PANELBOTTOMMOVE:
+  case F_PANELGEOMETRYMOVE:
   case F_BACKICONMGR:
   case F_DOWNICONMGR:
   case F_FORWICONMGR:
@@ -2440,12 +2454,30 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
   case F_TOPZOOM:
   case F_BOTTOMZOOM:
   case F_MAXIMIZE:
+  case F_PANELZOOM:
+  case F_PANELHORIZOOM:
+  case F_PANELFULLZOOM:
+  case F_PANELMAXIMIZE:
+  case F_PANELLEFTZOOM:
+  case F_PANELRIGHTZOOM:
+  case F_PANELTOPZOOM:
+  case F_PANELBOTTOMZOOM:
+  case F_PANELGEOMETRYZOOM:
+  case F_PANELLEFTMOVE:
+  case F_PANELRIGHTMOVE:
+  case F_PANELTOPMOVE:
+  case F_PANELBOTTOMMOVE:
+  case F_PANELGEOMETRYMOVE:
     if (DeferExecution(context, func, Scr->SelectCursor))
       return TRUE;
 
     PopDownMenu();
 
-    fullzoom(tmp_win, func);
+    if (func == F_PANELGEOMETRYZOOM || func == F_PANELGEOMETRYMOVE)
+      fullgeomzoom (action, tmp_win, func);
+    else
+      fullzoom (ParsePanelIndex(action), tmp_win, func);
+
     MoveResizeDesktop(tmp_win, Scr->NoRaiseMove);
     break;
 
@@ -4187,6 +4219,20 @@ NeedToDefer(MenuRoot * root)
     case F_LEFTZOOM:
     case F_TOPZOOM:
     case F_BOTTOMZOOM:
+    case F_PANELZOOM:
+    case F_PANELHORIZOOM:
+    case F_PANELFULLZOOM:
+    case F_PANELMAXIMIZE:
+    case F_PANELLEFTZOOM:
+    case F_PANELRIGHTZOOM:
+    case F_PANELTOPZOOM:
+    case F_PANELBOTTOMZOOM:
+    case F_PANELGEOMETRYZOOM:
+    case F_PANELLEFTMOVE:
+    case F_PANELRIGHTMOVE:
+    case F_PANELTOPMOVE:
+    case F_PANELBOTTOMMOVE:
+    case F_PANELGEOMETRYMOVE:
     case F_AUTORAISE:
     case F_NAIL:
     case F_SNUGWINDOW:
@@ -4647,9 +4693,9 @@ Identify(TwmWindow * t)
     Info[n++][0] = '\0';
   }
 
-#ifndef NO_BUILD_INFO
   else
   {
+#ifndef NO_BUILD_INFO
     char is_m4, is_xpm;
     char is_rplay;
     char is_regex;
@@ -4683,10 +4729,22 @@ Identify(TwmWindow * t)
     is_regex = '+';
 #endif
     (void)sprintf(Info[n++], "Options:  %cm4 %cregex %crplay %cxpm", is_m4, is_regex, is_rplay, is_xpm);
-
     Info[n++][0] = '\0';
-  }
 #endif
+#ifdef TILED_SCREEN
+    if (Scr->use_tiles == TRUE)
+    {
+      i = FindNearestTileToMouse();
+      if (i >= 0 && i < Scr->ntiles) {
+	(void) sprintf(Info[n++], "Panel %d (connector '%s'): x = %d  y = %d  w = %d  h = %d", i+1,
+		    (Scr->tile_names && Scr->tile_names[i] ? Scr->tile_names[i] : "unknown"),
+		    Lft(Scr->tiles[i]), Bot(Scr->tiles[i]),
+		    AreaWidth(Scr->tiles[i]), AreaHeight(Scr->tiles[i]));
+	Info[n++][0] = '\0';
+      }
+    }
+#endif
+  }
 
   (void)sprintf(Info[n++], "Click to dismiss...");
 
@@ -5297,10 +5355,31 @@ WarpAlongRing(XButtonEvent * ev, Bool forward)
 static void
 WarpToScreen(ScreenInfo * scr, int n, int inc)
 {
-  Window dumwin;
-  int x, y, dumint;
-  unsigned int dummask;
   ScreenInfo *newscr = NULL;
+
+#ifdef TILED_SCREEN
+  if (scr->use_tiles == TRUE)
+    if (scr->ntiles > 1)
+    {
+      int k = FindNearestTileToMouse();
+
+      if (inc != 0)
+	n = k + inc;
+      while (n < 0)
+	n += scr->ntiles;
+      n %= scr->ntiles;
+
+      XQueryPointer (dpy, scr->Root, &JunkRoot, &JunkChild,
+		    &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkMask);
+
+      JunkX +=  Lft(scr->tiles[n]) - Lft(scr->tiles[k]);
+      JunkY +=  Bot(scr->tiles[n]) - Bot(scr->tiles[k]);
+
+      XWarpPointer (dpy, None, scr->Root, 0, 0, 0, 0, JunkX, JunkY);
+      PreviousScreen = k; /* save previous panel (on 'global' screen) */
+      return;
+    }
+#endif
 
   while (!newscr)
   {
@@ -5328,13 +5407,14 @@ WarpToScreen(ScreenInfo * scr, int n, int inc)
     return;			/* already on that screen */
 
   PreviousScreen = scr->screen;
-  XQueryPointer(dpy, scr->Root, &dumwin, &dumwin, &x, &y, &dumint, &dumint, &dummask);
+  XQueryPointer (dpy, scr->Root, &JunkRoot, &JunkChild, &JunkX, &JunkY,
+		&JunkWidth, &JunkHeight, &JunkMask);
 
 #ifndef NO_SOUND_SUPPORT
   PlaySound(F_WARPTOSCREEN);
 #endif
 
-  XWarpPointer(dpy, None, newscr->Root, 0, 0, 0, 0, x, y);
+  XWarpPointer (dpy, None, newscr->Root, 0, 0, 0, 0, JunkX, JunkY);
 }
 
 
