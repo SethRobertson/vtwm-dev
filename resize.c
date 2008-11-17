@@ -37,6 +37,7 @@
  ***********************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include "twm.h"
 #include "parse.h"
 #include "image_formats.h"
@@ -1224,9 +1225,9 @@ FindNearestTileToClient(TwmWindow * tmp)
   int w[4];
 
   Lft(w) = tmp->frame_x;
-  Rht(w) = tmp->frame_x + tmp->frame_width - 1;
+  Rht(w) = tmp->frame_x + tmp->frame_width  + 2*tmp->frame_bw - 1;
   Bot(w) = tmp->frame_y;
-  Top(w) = tmp->frame_y + tmp->frame_height - 1;
+  Top(w) = tmp->frame_y + tmp->frame_height + 2*tmp->frame_bw - 1;
   return FindNearestTileToArea(w);
 }
 
@@ -2068,6 +2069,7 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
       dx = dragx - basex;
       dy = dragy - basey;
 
+#ifdef TILED_SCREEN
       if (dx < 0 || basew < dx + dragWidth + frame_bw_times_2
 	  || dy < 0 || baseh < dy + dragHeight + frame_bw_times_2)
       {
@@ -2181,6 +2183,7 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
 	dx = dragx - basex;
 	dy = dragy - basey;
       }
+#endif /*TILED_SCREEN*/
 
       /* now finally treat horizontal geometry ('W' and 'X' of "WxH+X+Y"): */
       if (xmask && (origWidth > 0))

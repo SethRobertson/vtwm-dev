@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include "twm.h"
 #include "screen.h"
 #include "add_window.h"

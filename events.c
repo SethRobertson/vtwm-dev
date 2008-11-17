@@ -3179,7 +3179,12 @@ HandleXrandrScreenChangeNotify(void)
 {
   XEvent button;
 
-  sleep (1); /* Don't proceed too quickly, as of Oct 2008 there are Xorg Xrandr problems then. */
+  button = Event;
+  /* drop any further RR-events for other panels (one is enough): */
+  while (XCheckTypedWindowEvent(dpy, Scr->Root, XrandrEventBase+RRScreenChangeNotify, &button) == True)
+    continue;
+  XRRUpdateConfiguration (&button);
+
   if (Scr->RRScreenChangeRestart == TRUE
 	|| (Scr->RRScreenSizeChangeRestart == TRUE
 	      && (Scr->MyDisplayWidth != DisplayWidth(dpy, Scr->screen)
@@ -3204,9 +3209,9 @@ HandleXrandrScreenChangeNotify(void)
   }
   else
   {
-    /* drop any further RR-events for other panels (one is enough): */
-    while (XCheckTypedWindowEvent(dpy, Scr->Root, XrandrEventBase+RRScreenChangeNotify, &button) == True)
-      continue;
+    /* Scr->MyDisplayWidth, Scr->MyDisplayHeight must be updated: */
+    Scr->MyDisplayWidth = DisplayWidth (dpy, Scr->screen);
+    Scr->MyDisplayHeight = DisplayHeight (dpy, Scr->screen);
     if (GetXrandrTilesGeometries (Scr) == TRUE)
       Scr->use_tiles = ComputeTiledAreaBoundingBox (Scr);
     else

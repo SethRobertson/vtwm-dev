@@ -5359,7 +5359,7 @@ WarpToScreen(ScreenInfo * scr, int n, int inc)
 
 #ifdef TILED_SCREEN
   if (scr->use_tiles == TRUE)
-    if (scr->ntiles > 1)
+    if (scr->ntiles > 0)
     {
       int k = FindNearestTileToMouse();
 
@@ -5372,8 +5372,22 @@ WarpToScreen(ScreenInfo * scr, int n, int inc)
       XQueryPointer (dpy, scr->Root, &JunkRoot, &JunkChild,
 		    &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkMask);
 
-      JunkX +=  Lft(scr->tiles[n]) - Lft(scr->tiles[k]);
-      JunkY +=  Bot(scr->tiles[n]) - Bot(scr->tiles[k]);
+      if (JunkX < Lft(scr->tiles[k]) || JunkX > Rht(scr->tiles[k])
+	    || JunkY < Bot(scr->tiles[k]) || JunkY > Top(scr->tiles[k]))
+      {
+	/* fetch mouse from dead area */
+	JunkX = (Lft(scr->tiles[k]) + Rht(scr->tiles[k])) / 2;
+	JunkY = (Bot(scr->tiles[k]) + Top(scr->tiles[k])) / 2;
+      }
+      else if (JunkX < Lft(scr->tiles[n]) || JunkX > Rht(scr->tiles[n])
+	    || JunkY < Bot(scr->tiles[n]) || JunkY > Top(scr->tiles[n]))
+      {
+	/* warp, keep relative position resp. top-left pixel */
+	JunkX = Lft(scr->tiles[n]) + (JunkX - Lft(scr->tiles[k]))
+		    * AreaWidth(Scr->tiles[n])  / AreaWidth(Scr->tiles[k]);
+	JunkY = Bot(scr->tiles[n]) + (JunkY - Bot(scr->tiles[k]))
+		    * AreaHeight(Scr->tiles[n]) / AreaHeight(Scr->tiles[k]);
+      }
 
       XWarpPointer (dpy, None, scr->Root, 0, 0, 0, 0, JunkX, JunkY);
       PreviousScreen = k; /* save previous panel (on 'global' screen) */
@@ -5409,6 +5423,10 @@ WarpToScreen(ScreenInfo * scr, int n, int inc)
   PreviousScreen = scr->screen;
   XQueryPointer (dpy, scr->Root, &JunkRoot, &JunkChild, &JunkX, &JunkY,
 		&JunkWidth, &JunkHeight, &JunkMask);
+
+  /* keep relative position: */
+  JunkX = (JunkX * newscr->MyDisplayWidth)  / scr->MyDisplayWidth;
+  JunkY = (JunkY * newscr->MyDisplayHeight) / scr->MyDisplayHeight;
 
 #ifndef NO_SOUND_SUPPORT
   PlaySound(F_WARPTOSCREEN);

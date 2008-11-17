@@ -822,7 +822,7 @@ action		: FKEYWORD	{ $$ = $1; }
 						else
 						    Action = panel_name+1;
 					} else
-					    Action = NULL;
+					    Action = "";
 					$$ = func;
 				    }
 				    break;

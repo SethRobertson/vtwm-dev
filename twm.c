@@ -522,10 +522,41 @@ main(int argc, char **argv, char **environ)
     Scr->TBInfo.leftx = 0;
     Scr->TBInfo.titlex = 0;
 
+#ifdef TILED_SCREEN
+    Scr->tile_names = NULL;
+    Scr->tiles = NULL;
+    Scr->ntiles = 0;
+#endif
+
+#ifdef TWM_USE_XRANDR
+    if (HasXrandr == True)
+    {
+      XEvent e;
+      XRRSelectInput (dpy, Scr->Root, RRScreenChangeNotifyMask);
+      XSync (dpy, False);
+      while (XCheckTypedWindowEvent(dpy, Scr->Root,
+			XrandrEventBase+RRScreenChangeNotify, &e) == True)
+      {
+	XRRUpdateConfiguration (&e);
+      }
+      GetXrandrTilesGeometries (Scr);
+    }
+#endif
+
+#ifdef TWM_USE_XINERAMA
+    if (xinerama_available == TRUE && Scr->tiles == NULL)
+      GetXineramaTilesGeometries (Scr);
+#endif
+
     Scr->MyDisplayWidth = DisplayWidth(dpy, scrnum);
     Scr->MyDisplayHeight = DisplayHeight(dpy, scrnum);
     Scr->MaxWindowWidth = 32767 - Scr->MyDisplayWidth;
     Scr->MaxWindowHeight = 32767 - Scr->MyDisplayHeight;
+
+#ifdef TILED_SCREEN
+    /* prerequisite: Scr->MyDisplayWidth, Scr->MyDisplayHeight are initialised: */
+    Scr->use_tiles = ComputeTiledAreaBoundingBox (Scr);
+#endif
 
     Scr->XORvalue = (((unsigned long)1) << Scr->d_depth) - 1;
 
@@ -555,6 +586,7 @@ main(int argc, char **argv, char **environ)
       NewFontCursor(&MiddleButt, "middlebutton");
     }
 
+    Scr->iconmgr.geometry = "";
     Scr->iconmgr.x = 0;
     Scr->iconmgr.y = 0;
     Scr->iconmgr.width = 150;
@@ -594,25 +626,6 @@ main(int argc, char **argv, char **environ)
       Scr->use_xft = 0;		/* evtl. .vtwmrc sets this to '+1' */
     else
       Scr->use_xft = -1;	/* remains '-1' */
-#endif
-
-#ifdef TILED_SCREEN
-    Scr->tile_names = NULL;
-    Scr->tiles = NULL;
-    Scr->ntiles = 0;
-#endif
-
-#ifdef TWM_USE_XRANDR
-    GetXrandrTilesGeometries (Scr);
-#endif
-
-#ifdef TWM_USE_XINERAMA
-    if (xinerama_available == TRUE && Scr->tiles == NULL)
-      GetXineramaTilesGeometries (Scr);
-#endif
-
-#ifdef TILED_SCREEN
-    Scr->use_tiles = ComputeTiledAreaBoundingBox (Scr);
 #endif
 
     InitVariables();

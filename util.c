@@ -2971,7 +2971,7 @@ GetXrandrTilesGeometries (struct ScreenInfo *scr)
 		  if (out != (XRROutputInfo*)(0)) {
 		    if (out->crtc == res->crtcs[i]) {
 		      if (scr->tile_names != NULL)
-			scr->tile_names[i] = strdup (out->name);
+			scr->tile_names[scr->ntiles] = strdup (out->name);
 		      j = crt->noutput; /*crt->npossible;*/ /*exit 'for'*/
 		    }
 		    XRRFreeOutputInfo (out);
@@ -2984,9 +2984,10 @@ GetXrandrTilesGeometries (struct ScreenInfo *scr)
 #if 1
 		if (PrintErrorMessages)
 		  fprintf (stderr,
-			"%s: Xrandr panel %d (connector '%s') on X11-screen %d at x = %d, y = %d, width = %d, height = %d detected.\n",
-			ProgramName, scr->ntiles+1, (scr->tile_names&&scr->tile_names[i]?scr->tile_names[i]:"unknown"), scr->screen,
-			crt->x, crt->y, crt->width, crt->height);
+			"%s: Xrandr panel %d (connector '%s') on X%d-screen %d at x = %d, y = %d, width = %d, height = %d detected.\n",
+			ProgramName, scr->ntiles+1,
+			(scr->tile_names&&scr->tile_names[scr->ntiles]?scr->tile_names[scr->ntiles]:"unknown"),
+			XProtocolVersion(dpy), scr->screen, crt->x, crt->y, crt->width, crt->height);
 #endif
 		scr->ntiles++;
 	      }

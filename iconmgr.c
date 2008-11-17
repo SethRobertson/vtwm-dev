@@ -31,6 +31,7 @@
  ***********************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include "twm.h"
 #include "image_formats.h"
 #include "util.h"
