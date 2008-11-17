@@ -502,7 +502,7 @@ LoadImage(char *path, Image * img, Pixel color)
 {
   char *extn;
 
-  extn = strchr(path, '.');
+  extn = strrchr(path, '.');
 
 #ifndef NO_XPM_SUPPORT
   if (strcasecmp(extn, ".xpm") == 0)
