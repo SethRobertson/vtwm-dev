@@ -51,7 +51,7 @@
 #include "iconmgr.h"
 #include "version.h"
 #include "desktop.h"
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
 #include "sound.h"
 #endif
 #include "prototypes.h"
@@ -75,7 +75,7 @@ extern int iconifybox_width, iconifybox_height;
 extern unsigned int mods_used;
 extern int menuFromFrameOrWindowOrTitlebar;
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
 extern int createSoundFromFunction;
 extern int destroySoundFromFunction;
 #endif
@@ -1571,7 +1571,7 @@ HandleDestroyNotify(void)
   if (Tmp_win == NULL)
     return;
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   if (destroySoundFromFunction == FALSE)
     PlaySound(S_CUNMAP);
   else
@@ -1759,7 +1759,7 @@ HandleMapRequest(void)
       }
     }
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
     if (createSoundFromFunction == FALSE)
       PlaySound(S_CMAP);
     else
@@ -2130,7 +2130,7 @@ HandleButtonPress(void)
 
   if (InfoLines)		/* StayUpMenus */
   {
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
     PlaySound(S_IUNMAP);
 #endif
 
@@ -2579,7 +2579,7 @@ HandleEnterNotify(void)
 	    xdiff = ydiff = xwarp = ywarp = 0;
 	  }
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
 	  PlaySound(S_APAN);
 #endif
 

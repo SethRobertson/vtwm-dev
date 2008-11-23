@@ -63,7 +63,7 @@
 #include "doors.h"
 #include "desktop.h"
 #include "add_window.h"
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
 #include "sound.h"
 #endif
 #include "version.h"
@@ -83,7 +83,7 @@ int MoveFunction = F_NOFUNCTION;	/* or F_MOVE or F_FORCEMOVE */
 int WindowMoved = FALSE;
 int menuFromFrameOrWindowOrTitlebar = FALSE;
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
 int createSoundFromFunction = FALSE;
 int destroySoundFromFunction = FALSE;
 #endif
@@ -1423,7 +1423,7 @@ PopUpMenu(MenuRoot * menu, int x, int y, Bool center)
   if (!menu)
     return False;
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   if (!PlaySound(F_MENU))
     PlaySound(S_MMAP);
 #endif
@@ -1612,7 +1612,7 @@ PopDownMenu(void)
   if (ActiveMenu == NULL)
     return;
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   PlaySound(S_MUNMAP);
 #endif
 
@@ -1819,7 +1819,7 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
   case F_WARPSNUG:
   case F_WARPVISIBLE:
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   case F_SOUNDS:
 #endif
 
@@ -1860,7 +1860,7 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
     break;
   }
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   switch (func)
   {
   case F_BEEP:
@@ -1952,2166 +1952,2166 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
 
   switch (func)
   {
-  case F_NOP:
-  case F_TITLE:
-    break;
+    case F_NOP:
+    case F_TITLE:
+      break;
 
-  case F_DELTASTOP:
-    if (WindowMoved)
-      do_next_action = FALSE;
-    break;
+    case F_DELTASTOP:
+      if (WindowMoved)
+	do_next_action = FALSE;
+      break;
 
-  case F_RESTART:
+    case F_RESTART:
 
-  case F_STARTWM:
-    if (func == F_STARTWM)
-    {
-      /* dynamic allocation of (char **)my_argv - djhjr - 9/26/02 */
-
-      char *p, *delims = " \t";
-      char *new_argv = NULL, **my_argv = NULL;
-      int i = 0, j = 0;
-
-      p = strtok(action, delims);
-      while (p)
+    case F_STARTWM:
+      if (func == F_STARTWM)
       {
-	if (j >= i)
+	/* dynamic allocation of (char **)my_argv - djhjr - 9/26/02 */
+
+	char *p, *delims = " \t";
+	char *new_argv = NULL, **my_argv = NULL;
+	int i = 0, j = 0;
+
+	p = strtok(action, delims);
+	while (p)
 	{
-	  i += 5;
-	  new_argv = (char *)realloc((char *)my_argv, i * sizeof(char *));
-	  if (new_argv == NULL)
+	  if (j >= i)
 	  {
-	    fprintf(stderr, "%s: unable to allocate %lu bytes for execvp()\n", ProgramName, i * sizeof(char *));
-	    break;
+	    i += 5;
+	    new_argv = (char *)realloc((char *)my_argv, i * sizeof(char *));
+	    if (new_argv == NULL)
+	    {
+	      fprintf(stderr, "%s: unable to allocate %lu bytes for execvp()\n", ProgramName, i * sizeof(char *));
+	      break;
+	    }
+	    else
+	      my_argv = (char **)new_argv;
 	  }
-	  else
-	    my_argv = (char **)new_argv;
+
+	  my_argv[j++] = strdup(p);
+	  p = strtok(NULL, delims);
 	}
 
-	my_argv[j++] = strdup(p);
-	p = strtok(NULL, delims);
-      }
+	if (new_argv != NULL)
+	{
+	  my_argv[j] = NULL;
 
-      if (new_argv != NULL)
-      {
-	my_argv[j] = NULL;
+	  setup_restart(eventp->xbutton.time);
 
-	setup_restart(eventp->xbutton.time);
+	  execvp(*my_argv, my_argv);
+	  fprintf(stderr, "%s:  unable to start \"%s\"\n", ProgramName, *my_argv);
+	  new_argv = NULL;
+	}
 
-	execvp(*my_argv, my_argv);
-	fprintf(stderr, "%s:  unable to start \"%s\"\n", ProgramName, *my_argv);
-	new_argv = NULL;
-      }
-
-      if (new_argv == NULL)
-      {
-	i = 0;
-	while (i < j)
-	  free(my_argv[i++]);
-	if (j)
-	  free((char *)my_argv);
-      }
-    }
-    else
-      RestartVtwm(eventp->xbutton.time);
-
-    break;
-
-  case F_UPICONMGR:
-  case F_DOWNICONMGR:
-  case F_LEFTICONMGR:
-  case F_RIGHTICONMGR:
-  case F_FORWICONMGR:
-  case F_BACKICONMGR:
-    MoveIconManager(func);
-    break;
-
-  case F_NEXTICONMGR:
-  case F_PREVICONMGR:
-    JumpIconManager(func);
-    break;
-
-  case F_SHOWLIST:
-
-    if (context == C_ROOT)
-    {
-      name_list *list;
-
-      ShowIconMgr(&Scr->iconmgr);
-
-      /*
-       * New code in list.c necessitates 'next_entry()' and
-       * 'contents_of_entry()' - djhjr - 10/20/01
-       */
-      for (list = Scr->IconMgrs; list != NULL; list = next_entry(list))
-	ShowIconMgr((IconMgr *) contents_of_entry(list));
-    }
-    else
-    {
-      IconMgr *ip;
-
-      if ((ip = (IconMgr *) LookInList(Scr->IconMgrs, tmp_win->full_name, &tmp_win->class)) == NULL)
-	ip = &Scr->iconmgr;
-
-      ShowIconMgr(ip);
-    }
-
-    RaiseStickyAbove();
-    RaiseAutoPan();
-
-    break;
-
-  case F_HIDELIST:
-
-    if (Scr->NoIconManagers)
-      break;
-
-    HideIconManager((context == C_ROOT) ? NULL : tmp_win);
-
-    break;
-
-  case F_SORTICONMGR:
-
-    if (Scr->NoIconManagers || Scr->iconmgr.count == 0)
-      break;
-
-    if (DeferExecution(context, func, Scr->SelectCursor))
-      return TRUE;
-
-    {
-      int save_sort;
-
-      save_sort = Scr->SortIconMgr;
-      Scr->SortIconMgr = TRUE;
-
-      if (context == C_ICONMGR)
-	SortIconManager((IconMgr *) NULL);
-      else if (tmp_win->iconmgr)
-	SortIconManager(tmp_win->iconmgrp);
-      else
-	DoAudible();
-
-      Scr->SortIconMgr = save_sort;
-    }
-    break;
-
-  case F_IDENTIFY:
-    if (DeferExecution(context, func, Scr->SelectCursor))
-    {
-      return TRUE;
-    }
-
-    Identify(tmp_win);
-    break;
-
-  case F_VERSION:
-    Identify((TwmWindow *) NULL);
-    break;
-
-  case F_ZOOMZOOM:
-    Zoom(None, NULL, None, NULL);
-    break;
-
-  case F_AUTOPAN:
-    {				/* toggle autopan */
-      static int saved;
-
-      if (Scr->AutoPanX)
-      {
-	saved = Scr->AutoPanX;
-	Scr->AutoPanX = 0;
+	if (new_argv == NULL)
+	{
+	  i = 0;
+	  while (i < j)
+	    free(my_argv[i++]);
+	  if (j)
+	    free((char *)my_argv);
+	}
       }
       else
+	RestartVtwm(eventp->xbutton.time);
+
+      break;
+
+    case F_UPICONMGR:
+    case F_DOWNICONMGR:
+    case F_LEFTICONMGR:
+    case F_RIGHTICONMGR:
+    case F_FORWICONMGR:
+    case F_BACKICONMGR:
+      MoveIconManager(func);
+      break;
+
+    case F_NEXTICONMGR:
+    case F_PREVICONMGR:
+      JumpIconManager(func);
+      break;
+
+    case F_SHOWLIST:
+
+      if (context == C_ROOT)
       {
-	Scr->AutoPanX = saved;
-	/* if restart with no autopan, we'll set the
-	 ** variable but we won't pan
+	name_list *list;
+
+	ShowIconMgr(&Scr->iconmgr);
+
+	/*
+	 * New code in list.c necessitates 'next_entry()' and
+	 * 'contents_of_entry()' - djhjr - 10/20/01
 	 */
-	RaiseAutoPan();
+	for (list = Scr->IconMgrs; list != NULL; list = next_entry(list))
+	  ShowIconMgr((IconMgr *) contents_of_entry(list));
       }
-      break;
-    }
+      else
+      {
+	IconMgr *ip;
 
-  case F_STICKYABOVE:
-    if (Scr->StickyAbove)
-    {
-      LowerSticky();
-      Scr->StickyAbove = FALSE;
-      /* don't change the order of execution! */
-    }
-    else
-    {
-      Scr->StickyAbove = TRUE;
-      RaiseStickyAbove();
-      RaiseAutoPan();
-      /* don't change the order of execution! */
-    }
-    return TRUE;
+	if ((ip = (IconMgr *) LookInList(Scr->IconMgrs, tmp_win->full_name, &tmp_win->class)) == NULL)
+	  ip = &Scr->iconmgr;
 
-  case F_AUTORAISE:
-    if (DeferExecution(context, func, Scr->SelectCursor))
-      return TRUE;
-
-    tmp_win->auto_raise = !tmp_win->auto_raise;
-    if (tmp_win->auto_raise)
-      ++(Scr->NumAutoRaises);
-    else
-      --(Scr->NumAutoRaises);
-    break;
-
-  case F_BEEP:
-
-#ifndef NO_SOUND_SUPPORT
-    /* sound has priority over bell */
-    if (PlaySound(func))
-      break;
-#endif
-
-    DoAudible();
-    break;
-
-  case F_POPUP:
-    tmp_win = (TwmWindow *) action;
-    if (Scr->WindowFunction.func != F_NOFUNCTION)
-    {
-      ExecuteFunction(Scr->WindowFunction.func, Scr->WindowFunction.item->action, w, tmp_win, eventp, C_FRAME, FALSE);
-    }
-    else
-    {
-      DeIconify(tmp_win);
-      XRaiseWindow(dpy, tmp_win->frame);
-      XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
+	ShowIconMgr(ip);
+      }
 
       RaiseStickyAbove();
       RaiseAutoPan();
-    }
-    break;
 
-  case F_RESIZE:
-    {
-      TwmWindow *focused = NULL;
-      Bool fromtitlebar = False;
-      long releaseEvent;
-      long movementMask;
-      int resizefromcenter = 0;
+      break;
 
-#ifndef NO_SOUND_SUPPORT
-      int did_playsound = FALSE;
-#endif
+    case F_HIDELIST:
 
-      if (DeferExecution(context, func, Scr->ResizeCursor))
+      if (Scr->NoIconManagers)
+	break;
+
+      HideIconManager((context == C_ROOT) ? NULL : tmp_win);
+
+      break;
+
+    case F_SORTICONMGR:
+
+      if (Scr->NoIconManagers || Scr->iconmgr.count == 0)
+	break;
+
+      if (DeferExecution(context, func, Scr->SelectCursor))
 	return TRUE;
 
-      PopDownMenu();
-
-      if (pulldown)
-	XWarpPointer(dpy, None, Scr->Root, 0, 0, 0, 0, eventp->xbutton.x_root, eventp->xbutton.y_root);
-
-      EventHandler[EnterNotify] = HandleUnknown;
-      EventHandler[LeaveNotify] = HandleUnknown;
-
-      if (context == C_ICON)	/* can't resize icons */
       {
-	DoAudible();
+	int save_sort;
+
+	save_sort = Scr->SortIconMgr;
+	Scr->SortIconMgr = TRUE;
+
+	if (context == C_ICONMGR)
+	  SortIconManager((IconMgr *) NULL);
+	else if (tmp_win->iconmgr)
+	  SortIconManager(tmp_win->iconmgrp);
+	else
+	  DoAudible();
+
+	Scr->SortIconMgr = save_sort;
+      }
+      break;
+
+    case F_IDENTIFY:
+      if (DeferExecution(context, func, Scr->SelectCursor))
+      {
+	return TRUE;
+      }
+
+      Identify(tmp_win);
+      break;
+
+    case F_VERSION:
+      Identify((TwmWindow *) NULL);
+      break;
+
+    case F_ZOOMZOOM:
+      Zoom(None, NULL, None, NULL);
+      break;
+
+    case F_AUTOPAN:
+      {				/* toggle autopan */
+	static int saved;
+
+	if (Scr->AutoPanX)
+	{
+	  saved = Scr->AutoPanX;
+	  Scr->AutoPanX = 0;
+	}
+	else
+	{
+	  Scr->AutoPanX = saved;
+	  /* if restart with no autopan, we'll set the
+	   ** variable but we won't pan
+	   */
+	  RaiseAutoPan();
+	}
 	break;
       }
 
-      /*
-       * Resizing from a titlebar menu was handled uniquely long
-       * before I got here, and I added virtual windows and icon
-       * managers on 9/15/99 and 10/11/01, leveraging that code.
-       * It's all been integrated here.
-       */
-      if (Context & (C_FRAME_BIT | C_WINDOW_BIT | C_TITLE_BIT) && menuFromFrameOrWindowOrTitlebar)
+    case F_STICKYABOVE:
+      if (Scr->StickyAbove)
       {
-	XGetGeometry(dpy, w, &JunkRoot, &origDragX, &origDragY,
-		     (unsigned int *)&DragWidth, (unsigned int *)&DragHeight, &JunkBW, &JunkDepth);
-
-	resizefromcenter = 2;
-      }
-      else if (Context == C_VIRTUAL_WIN)
-      {
-	TwmWindow *twin;
-
-	if ((XFindContext(dpy, eventp->xbutton.subwindow, VirtualContext, (caddr_t *) & twin) == XCNOENT))
-	{
-	  DoAudible();
-	  break;
-	}
-
-	context = C_WINDOW;
-	tmp_win = twin;
-	resizefromcenter = 1;
-      }
-      else if (Context == C_ICONMGR && tmp_win->list)
-      {
-	if (!warp_if_warpunmapped(tmp_win, F_NOFUNCTION))
-	{
-	  DoAudible();
-	  break;
-	}
-
-	resizefromcenter = 1;
-      }
-
-      if (resizefromcenter)
-      {
-	WarpScreenToWindow(tmp_win);
-
-	XWarpPointer(dpy, None, Scr->Root, 0, 0, 0, 0,
-		     tmp_win->frame_x + tmp_win->frame_width / 2, tmp_win->frame_y + tmp_win->frame_height / 2);
-
-	focused = Focus;
-	Focus = tmp_win;
-	SetBorder(Focus, True);
-
-	/* save positions so we can tell if it was moved or not */
-	ResizeOrigX = tmp_win->frame_x + tmp_win->frame_width / 2;
-	ResizeOrigY = tmp_win->frame_y + tmp_win->frame_height / 2;
+	LowerSticky();
+	Scr->StickyAbove = FALSE;
+	/* don't change the order of execution! */
       }
       else
       {
-	/* save position so we can tell if it was moved or not */
-	ResizeOrigX = eventp->xbutton.x_root;
-	ResizeOrigY = eventp->xbutton.y_root;
+	Scr->StickyAbove = TRUE;
+	RaiseStickyAbove();
+	RaiseAutoPan();
+	/* don't change the order of execution! */
       }
+      return TRUE;
 
-      /* see if this is being done from the titlebar */
-      fromtitlebar = belongs_to_twm_window(tmp_win, eventp->xbutton.window);
+    case F_AUTORAISE:
+      if (DeferExecution(context, func, Scr->SelectCursor))
+	return TRUE;
 
-      if (resizefromcenter == 2)
-      {
-	MenuStartResize(tmp_win, origDragX, origDragY, DragWidth, DragHeight, Context);
-
-	releaseEvent = ButtonPress;
-	movementMask = PointerMotionMask;
-      }
+      tmp_win->auto_raise = !tmp_win->auto_raise;
+      if (tmp_win->auto_raise)
+	++(Scr->NumAutoRaises);
       else
-      {
-	StartResize(eventp, tmp_win, fromtitlebar, context);
+	--(Scr->NumAutoRaises);
+      break;
 
-	fromtitlebar = False;
-	releaseEvent = ButtonRelease;
-	movementMask = ButtonMotionMask;
-      }
+    case F_BEEP:
 
-      while (TRUE)
-      {
-	XMaskEvent(dpy, ButtonPressMask | ButtonReleaseMask |
-		   EnterWindowMask | LeaveWindowMask | ExposureMask | VisibilityChangeMask | movementMask, &Event);
-
-
-	/*
-	 * Don't discard exposure events before release
-	 * or window borders and/or their titles in the
-	 * virtual desktop won't get redrawn - djhjr
-	 */
-
-	/* discard any extra motion events before a release */
-	if (Event.type == MotionNotify)
-	{
-	  while (XCheckMaskEvent(dpy, releaseEvent | movementMask, &Event))
-	  {
-	    if (Event.type == releaseEvent)
-	      break;
-	  }
-	}
-
-
-	if (Event.type == releaseEvent)
-	{
-	  if (Cancel)
-	  {
-	    if (tmp_win->opaque_resize)
-	    {
-	      ConstrainSize(tmp_win, &origWidth, &origHeight);
-	      SetupWindow(tmp_win, origx, origy, origWidth, origHeight, -1);
-	      ResizeTwmWindowContents(tmp_win, origWidth, origHeight);
-	    }
-	    else
-	      MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
-
-	    ResizeWindow = None;
-	    resizing_window = 0;
-	    do_next_action = FALSE;
-	  }
-	  else
-	  {
-	    if (resizefromcenter == 2)
-	    {
-	      MenuEndResize(tmp_win, Context);
-	    }
-	    else
-	      EndResize();
-
-	    DispatchEvent();
-
-	    if (!Scr->NoRaiseResize && !Scr->RaiseOnStart && WindowMoved)
-	    {
-	      XRaiseWindow(dpy, tmp_win->frame);
-	      SetRaiseWindow(tmp_win);
-	    }
-	  }
-
-	  break;
-	}
-
-	if (!DispatchEvent())
-	  continue;
-
-	if (Event.type != MotionNotify)
-	  continue;
-
-	XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild, &JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
-
-	if (!resizing_window && (abs(AddingX - ResizeOrigX) < Scr->MoveDelta && abs(AddingY - ResizeOrigY) < Scr->MoveDelta))
-	{
-	  continue;
-	}
-
-	resizing_window = 1;
-	WindowMoved = TRUE;
-
-	if ((!Scr->NoRaiseResize && Scr->RaiseOnStart)
-	    || (tmp_win->opaque_resize && (HasShape && (tmp_win->wShaped || tmp_win->squeeze_info))))
-	{
-	  XRaiseWindow(dpy, tmp_win->frame);
-	  SetRaiseWindow(tmp_win);
-	  if (Scr->Virtual && tmp_win->VirtualDesktopDisplayWindow.win)
-	    XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
-	}
-
-#ifndef NO_SOUND_SUPPORT
-	if (did_playsound == FALSE)
-	{
-	  PlaySound(func);
-	  did_playsound = TRUE;
-	}
+#ifdef SOUND_SUPPORT
+      /* sound has priority over bell */
+      if (PlaySound(func))
+	break;
 #endif
 
-	DoResize(AddingX, AddingY, tmp_win);
-      }
+      DoAudible();
+      break;
 
-      if (!tmp_win->opaque_resize)
-	XUngrabServer(dpy);
-
-      /*
-       * All this stuff from resize.c:EndResize() - djhjr - 10/6/02
-       */
-
-      if (!tmp_win->opaque_resize)
-	UninstallRootColormap();
-
-      /* discard queued enter and leave events - djhjr - 5/27/03 */
-      while (XCheckMaskEvent(dpy, EnterWindowMask | LeaveWindowMask, &Event))
-	;
-
-      if (!Scr->NoRaiseResize)
+    case F_POPUP:
+      tmp_win = (TwmWindow *) action;
+      if (Scr->WindowFunction.func != F_NOFUNCTION)
       {
+	ExecuteFunction(Scr->WindowFunction.func, Scr->WindowFunction.item->action, w, tmp_win, eventp, C_FRAME, FALSE);
+      }
+      else
+      {
+	DeIconify(tmp_win);
+	XRaiseWindow(dpy, tmp_win->frame);
+	XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
+
 	RaiseStickyAbove();
 	RaiseAutoPan();
       }
-
-      /* update virtual coords */
-      tmp_win->virtual_frame_x = Scr->VirtualDesktopX + tmp_win->frame_x;
-      tmp_win->virtual_frame_y = Scr->VirtualDesktopY + tmp_win->frame_y;
-
-      MoveResizeDesktop(tmp_win, Cancel | Scr->NoRaiseResize);
-
-      if (Context == C_VIRTUAL_WIN)
-      {
-	/*
-	 * Mask a bug that calls MoveOutline(zeros) after the
-	 * border has been repainted, leaving artifacts. I think
-	 * I know what the bug is, but I can't seem to fix it.
-	 */
-	if (Scr->BorderBevelWidth > 0)
-	  PaintBorders(tmp_win, False);
-
-	JunkX = tmp_win->virtual_frame_x + tmp_win->frame_width / 2;
-	JunkY = tmp_win->virtual_frame_y + tmp_win->frame_height / 2;
-	XWarpPointer(dpy, None, Scr->VirtualDesktopDisplayOuter, 0, 0, 0, 0, SCALE_D(JunkX), SCALE_D(JunkY));
-
-	SetBorder(Focus, False);
-	Focus = focused;
-      }
-
-      /* don't re-map if the window is the virtual desktop - djhjr - 2/28/99 */
-      if (Scr->VirtualReceivesMotionEvents && tmp_win->w != Scr->VirtualDesktopDisplayOuter)
-      {
-	XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
-	XMapWindow(dpy, Scr->VirtualDesktopDisplay);
-      }
-
       break;
-    }
 
-  case F_ZOOM:
-  case F_HORIZOOM:
-  case F_FULLZOOM:
-  case F_LEFTZOOM:
-  case F_RIGHTZOOM:
-  case F_TOPZOOM:
-  case F_BOTTOMZOOM:
-  case F_MAXIMIZE:
-  case F_PANELZOOM:
-  case F_PANELHORIZOOM:
-  case F_PANELFULLZOOM:
-  case F_PANELMAXIMIZE:
-  case F_PANELLEFTZOOM:
-  case F_PANELRIGHTZOOM:
-  case F_PANELTOPZOOM:
-  case F_PANELBOTTOMZOOM:
-  case F_PANELGEOMETRYZOOM:
-  case F_PANELLEFTMOVE:
-  case F_PANELRIGHTMOVE:
-  case F_PANELTOPMOVE:
-  case F_PANELBOTTOMMOVE:
-  case F_PANELGEOMETRYMOVE:
-    if (DeferExecution(context, func, Scr->SelectCursor))
-      return TRUE;
+    case F_RESIZE:
+      {
+	TwmWindow *focused = NULL;
+	Bool fromtitlebar = False;
+	long releaseEvent;
+	long movementMask;
+	int resizefromcenter = 0;
 
-    PopDownMenu();
-
-    if (func == F_PANELGEOMETRYZOOM || func == F_PANELGEOMETRYMOVE)
-      fullgeomzoom (action, tmp_win, func);
-    else
-      fullzoom (ParsePanelIndex(action), tmp_win, func);
-
-    MoveResizeDesktop(tmp_win, Scr->NoRaiseMove);
-    break;
-
-  case F_MOVE:
-  case F_FORCEMOVE:
-    {
-      static Time last_time = 0;
-      Window rootw;
-      Bool fromtitlebar = False;
-      int moving_icon = FALSE;
-      int constMoveDir, constMoveX = 0, constMoveY = 0;
-      int constMoveXL = 0, constMoveXR = 0, constMoveYT = 0, constMoveYB = 0;
-      int origX, origY;
-      long releaseEvent;
-      long movementMask;
-      int xl = 0, yt = 0, xr = 0, yb = 0;
-      int movefromcenter = 0;
-
-#ifndef NO_SOUND_SUPPORT
-      int did_playsound = FALSE;
+#ifdef SOUND_SUPPORT
+	int did_playsound = FALSE;
 #endif
 
-      if (DeferExecution(context, func, Scr->MoveCursor))
-	return TRUE;
+	if (DeferExecution(context, func, Scr->ResizeCursor))
+	  return TRUE;
 
-      PopDownMenu();
-      rootw = eventp->xbutton.root;
+	PopDownMenu();
 
-      if (pulldown)
-	XWarpPointer(dpy, None, Scr->Root, 0, 0, 0, 0, eventp->xbutton.x_root, eventp->xbutton.y_root);
+	if (pulldown)
+	  XWarpPointer(dpy, None, Scr->Root, 0, 0, 0, 0, eventp->xbutton.x_root, eventp->xbutton.y_root);
 
-      EventHandler[EnterNotify] = HandleUnknown;
-      EventHandler[LeaveNotify] = HandleUnknown;
+	EventHandler[EnterNotify] = HandleUnknown;
+	EventHandler[LeaveNotify] = HandleUnknown;
 
-      if (!tmp_win->opaque_move)
-	XGrabServer(dpy);
-
-
-      XGrabPointer(dpy, eventp->xbutton.root, True,
-		   ButtonPressMask | ButtonReleaseMask |
-		   ButtonMotionMask | PointerMotionMask, GrabModeAsync, GrabModeAsync, Scr->Root, Scr->MoveCursor, CurrentTime);
-
-      if (context == C_VIRTUAL_WIN)
-      {
-	TwmWindow *twin;
-
-	if ((XFindContext(dpy, eventp->xbutton.subwindow, VirtualContext, (caddr_t *) & twin) == XCNOENT))
+	if (context == C_ICON)	/* can't resize icons */
 	{
 	  DoAudible();
 	  break;
 	}
-
-	tmp_win = twin;
-	moveFromCenterWrapper(tmp_win);
-	w = tmp_win->frame;
-	movefromcenter = 1;
-      }
-      else
-       if (context == C_ICONMGR && tmp_win->list)
-      {
-	if (!warp_if_warpunmapped(tmp_win, F_NOFUNCTION))
-	{
-	  DoAudible();
-	  break;
-	}
-
-	moveFromCenterWrapper(tmp_win);
-	w = tmp_win->frame;
-	movefromcenter = 1;
-      }
-      else
-       if (context == C_ICON && tmp_win->icon_w.win)
-      {
-	DragX = eventp->xbutton.x;
-	DragY = eventp->xbutton.y;
-
-	w = tmp_win->icon_w.win;
-	moving_icon = TRUE;
-      }
-      else if (w != tmp_win->icon_w.win)
-      {
-	XTranslateCoordinates(dpy, w, tmp_win->frame, eventp->xbutton.x, eventp->xbutton.y, &DragX, &DragY, &JunkChild);
-
-	w = tmp_win->frame;
-      }
-
-#ifdef TILED_SCREEN
-      if (Scr->use_tiles == TRUE)
-      {
-	int k = FindNearestTileToMouse();
-
-	XMoveWindow(dpy, Scr->SizeWindow.win, Lft(Scr->tiles[k]), Bot(Scr->tiles[k]));
-      }
-#endif
-      XMapRaised(dpy, Scr->SizeWindow.win);
-
-      DragWindow = None;
-
-      MoveFunction = func;	/* set for DispatchEvent() */
-
-      XGetGeometry(dpy, w, &JunkRoot, &origDragX, &origDragY,
-		   (unsigned int *)&DragWidth, (unsigned int *)&DragHeight, &JunkBW, &JunkDepth);
-
-      if (menuFromFrameOrWindowOrTitlebar || movefromcenter || (moving_icon && fromMenu))
-      {
-	origX = DragX = origDragX + DragWidth / 2;
-	origY = DragY = origDragY + DragHeight / 2;
-      }
-      else
-      {
-	origX = eventp->xbutton.x_root;
-	origY = eventp->xbutton.y_root;
-      }
-
-      CurrentDragX = origDragX;
-      CurrentDragY = origDragY;
-
-      /*
-       * Only do the constrained move if timer is set -
-       * need to check it in case of stupid or wicked fast servers.
-       */
-      if (ConstrainedMoveTime && eventp->xbutton.time - last_time < ConstrainedMoveTime)
-      {
-	int width, height;
-
-	ConstMove = TRUE;
-	constMoveDir = MOVE_NONE;
-	constMoveX = eventp->xbutton.x_root - DragX - JunkBW;
-	constMoveY = eventp->xbutton.y_root - DragY - JunkBW;
-	width = DragWidth + 2 * JunkBW;
-	height = DragHeight + 2 * JunkBW;
-	constMoveXL = constMoveX + width / 3;
-	constMoveXR = constMoveX + 2 * (width / 3);
-	constMoveYT = constMoveY + height / 3;
-	constMoveYB = constMoveY + 2 * (height / 3);
-
-	XWarpPointer(dpy, None, w, 0, 0, 0, 0, DragWidth / 2, DragHeight / 2);
-
-	XQueryPointer(dpy, w, &JunkRoot, &JunkChild, &JunkX, &JunkY, &DragX, &DragY, &JunkMask);
-      }
-      last_time = eventp->xbutton.time;
-
-      if (!tmp_win->opaque_move)
-      {
-	InstallRootColormap();
-	{
-	  /*
-	   * Draw initial outline.  This was previously done the
-	   * first time though the outer loop by dropping out of
-	   * the XCheckMaskEvent inner loop down to one of the
-	   * MoveOutline's below.
-	   */
-	  MoveOutline(rootw,
-		      origDragX - JunkBW, origDragY - JunkBW,
-		      DragWidth + 2 * JunkBW, DragHeight + 2 * JunkBW,
-		      tmp_win->frame_bw, moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
-
-	}
-      }
-
-      /*
-       * see if this is being done from the titlebar
-       */
-      fromtitlebar = belongs_to_twm_window(tmp_win, eventp->xbutton.window);
-
-      if ((menuFromFrameOrWindowOrTitlebar && !fromtitlebar) || movefromcenter || (moving_icon && fromMenu))
-      {
-	/* warp the pointer to the middle of the window */
-	XWarpPointer(dpy, None, Scr->Root, 0, 0, 0, 0, origDragX + DragWidth / 2, origDragY + DragHeight / 2);
-
-	SetBorder(tmp_win, True);
-
-	XFlush(dpy);
-      }
-
-      DisplayPosition(CurrentDragX, CurrentDragY);
-
-      if (menuFromFrameOrWindowOrTitlebar)
-      {
-	releaseEvent = ButtonPress;
-	movementMask = PointerMotionMask;
-      }
-      else
-      {
-	releaseEvent = ButtonRelease;
-	movementMask = ButtonMotionMask;
-      }
-
-      while (TRUE)
-      {
-	/* block until there is an interesting event */
-	XMaskEvent(dpy, ButtonPressMask | ButtonReleaseMask |
-		   EnterWindowMask | LeaveWindowMask | ExposureMask | VisibilityChangeMask | movementMask, &Event);
-
 
 	/*
-	 * Don't discard exposure events before release
-	 * or window borders and/or their titles in the
-	 * virtual desktop won't get redrawn - djhjr
+	 * Resizing from a titlebar menu was handled uniquely long
+	 * before I got here, and I added virtual windows and icon
+	 * managers on 9/15/99 and 10/11/01, leveraging that code.
+	 * It's all been integrated here.
 	 */
-
-	/* discard any extra motion events before a release */
-	if (Event.type == MotionNotify)
+	if (Context & (C_FRAME_BIT | C_WINDOW_BIT | C_TITLE_BIT) && menuFromFrameOrWindowOrTitlebar)
 	{
-	  while (XCheckMaskEvent(dpy, movementMask | releaseEvent, &Event))
+	  XGetGeometry(dpy, w, &JunkRoot, &origDragX, &origDragY,
+		       (unsigned int *)&DragWidth, (unsigned int *)&DragHeight, &JunkBW, &JunkDepth);
+
+	  resizefromcenter = 2;
+	}
+	else if (Context == C_VIRTUAL_WIN)
+	{
+	  TwmWindow *twin;
+
+	  if ((XFindContext(dpy, eventp->xbutton.subwindow, VirtualContext, (caddr_t *) & twin) == XCNOENT))
 	  {
-	    if (Event.type == releaseEvent)
-	      break;
+	    DoAudible();
+	    break;
 	  }
+
+	  context = C_WINDOW;
+	  tmp_win = twin;
+	  resizefromcenter = 1;
+	}
+	else if (Context == C_ICONMGR && tmp_win->list)
+	{
+	  if (!warp_if_warpunmapped(tmp_win, F_NOFUNCTION))
+	  {
+	    DoAudible();
+	    break;
+	  }
+
+	  resizefromcenter = 1;
 	}
 
-	/*
-	 * There used to be a couple of routines that handled the
-	 * cancel functionality here, each doing a portion of the
-	 * job, then returning immediately. They became redundant
-	 * to just letting program execution fall through. So now,
-	 * the 'if (Event.type == releaseEvent) if (Cancel)' below
-	 * does just that, clearing a few flags first.
-	 */
-
-	if (fromtitlebar && Event.type == ButtonPress)
+	if (resizefromcenter)
 	{
+	  WarpScreenToWindow(tmp_win);
+
+	  XWarpPointer(dpy, None, Scr->Root, 0, 0, 0, 0,
+		       tmp_win->frame_x + tmp_win->frame_width / 2, tmp_win->frame_y + tmp_win->frame_height / 2);
+
+	  focused = Focus;
+	  Focus = tmp_win;
+	  SetBorder(Focus, True);
+
+	  /* save positions so we can tell if it was moved or not */
+	  ResizeOrigX = tmp_win->frame_x + tmp_win->frame_width / 2;
+	  ResizeOrigY = tmp_win->frame_y + tmp_win->frame_height / 2;
+	}
+	else
+	{
+	  /* save position so we can tell if it was moved or not */
+	  ResizeOrigX = eventp->xbutton.x_root;
+	  ResizeOrigY = eventp->xbutton.y_root;
+	}
+
+	/* see if this is being done from the titlebar */
+	fromtitlebar = belongs_to_twm_window(tmp_win, eventp->xbutton.window);
+
+	if (resizefromcenter == 2)
+	{
+	  MenuStartResize(tmp_win, origDragX, origDragY, DragWidth, DragHeight, Context);
+
+	  releaseEvent = ButtonPress;
+	  movementMask = PointerMotionMask;
+	}
+	else
+	{
+	  StartResize(eventp, tmp_win, fromtitlebar, context);
+
 	  fromtitlebar = False;
-	  CurrentDragX = origX = Event.xbutton.x_root;
-	  CurrentDragY = origY = Event.xbutton.y_root;
-	  XTranslateCoordinates(dpy, rootw, tmp_win->frame, origX, origY, &DragX, &DragY, &JunkChild);
-
-	  continue;
+	  releaseEvent = ButtonRelease;
+	  movementMask = ButtonMotionMask;
 	}
 
-	if (!DispatchEvent())
-	  continue;
-
-	if (Event.type == releaseEvent)
+	while (TRUE)
 	{
-	  MoveOutline(rootw, 0, 0, 0, 0, 0, 0);
+	  XMaskEvent(dpy, ButtonPressMask | ButtonReleaseMask |
+		     EnterWindowMask | LeaveWindowMask | ExposureMask | VisibilityChangeMask | movementMask, &Event);
 
-	  if (Cancel)
+
+	  /*
+	   * Don't discard exposure events before release
+	   * or window borders and/or their titles in the
+	   * virtual desktop won't get redrawn - djhjr
+	   */
+
+	  /* discard any extra motion events before a release */
+	  if (Event.type == MotionNotify)
 	  {
-	    DragWindow = None;
-	    ConstMove = WindowMoved = do_next_action = FALSE;
-	  }
-	  else if (WindowMoved)
-	  {
-	    if (moving_icon)
+	    while (XCheckMaskEvent(dpy, releaseEvent | movementMask, &Event))
 	    {
-	      tmp_win->icon_moved = TRUE;
-	      XMoveWindow(dpy, tmp_win->icon_w.win, CurrentDragX, CurrentDragY);
+	      if (Event.type == releaseEvent)
+		break;
+	    }
+	  }
 
-	      if (!Scr->NoRaiseMove && !Scr->RaiseOnStart)
+
+	  if (Event.type == releaseEvent)
+	  {
+	    if (Cancel)
+	    {
+	      if (tmp_win->opaque_resize)
 	      {
-		XRaiseWindow(dpy, tmp_win->icon_w.win);
-		SetRaiseWindow(tmp_win);
+		ConstrainSize(tmp_win, &origWidth, &origHeight);
+		SetupWindow(tmp_win, origx, origy, origWidth, origHeight, -1);
+		ResizeTwmWindowContents(tmp_win, origWidth, origHeight);
 	      }
+	      else
+		MoveOutline(Scr->Root, 0, 0, 0, 0, 0, 0);
+
+	      ResizeWindow = None;
+	      resizing_window = 0;
+	      do_next_action = FALSE;
 	    }
 	    else
 	    {
-	      if (movefromcenter)
+	      if (resizefromcenter == 2)
 	      {
-		tmp_win->frame_x = Event.xbutton.x_root - DragWidth / 2;
-		tmp_win->frame_y = Event.xbutton.y_root - DragHeight / 2;
+		MenuEndResize(tmp_win, Context);
 	      }
 	      else
-	      {
-		tmp_win->frame_x = CurrentDragX;
-		tmp_win->frame_y = CurrentDragY;
-	      }
+		EndResize();
 
-	      XMoveWindow(dpy, tmp_win->frame, tmp_win->frame_x, tmp_win->frame_y);
-	      SendConfigureNotify(tmp_win, tmp_win->frame_x, tmp_win->frame_y);
+	      DispatchEvent();
 
-	      if (!Scr->NoRaiseMove && !Scr->RaiseOnStart)
+	      if (!Scr->NoRaiseResize && !Scr->RaiseOnStart && WindowMoved)
 	      {
 		XRaiseWindow(dpy, tmp_win->frame);
 		SetRaiseWindow(tmp_win);
 	      }
 	    }
+
+	    break;
 	  }
 
-	  break;
-	}
+	  if (!DispatchEvent())
+	    continue;
 
-	/* something left to do only if the pointer moved */
-	if (Event.type != MotionNotify)
-	  continue;
+	  if (Event.type != MotionNotify)
+	    continue;
 
-	XQueryPointer(dpy, rootw, &(eventp->xmotion.root), &JunkChild,
-		      &(eventp->xmotion.x_root), &(eventp->xmotion.y_root), &JunkX, &JunkY, &JunkMask);
+	  XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild, &JunkX, &JunkY, &AddingX, &AddingY, &JunkMask);
 
-	if (DragWindow == None &&
-	    abs(eventp->xmotion.x_root - origX) < Scr->MoveDelta && abs(eventp->xmotion.y_root - origY) < Scr->MoveDelta)
-	{
-	  continue;
-	}
-
-	WindowMoved = TRUE;
-	DragWindow = w;
-
-	if (!Scr->NoRaiseMove && Scr->RaiseOnStart)
-	{
-	  if (moving_icon)
+	  if (!resizing_window && (abs(AddingX - ResizeOrigX) < Scr->MoveDelta && abs(AddingY - ResizeOrigY) < Scr->MoveDelta))
 	  {
-	    XRaiseWindow(dpy, tmp_win->icon_w.win);
-	    SetRaiseWindow(tmp_win);
+	    continue;
 	  }
-	  else
+
+	  resizing_window = 1;
+	  WindowMoved = TRUE;
+
+	  if ((!Scr->NoRaiseResize && Scr->RaiseOnStart)
+	      || (tmp_win->opaque_resize && (HasShape && (tmp_win->wShaped || tmp_win->squeeze_info))))
 	  {
 	    XRaiseWindow(dpy, tmp_win->frame);
 	    SetRaiseWindow(tmp_win);
 	    if (Scr->Virtual && tmp_win->VirtualDesktopDisplayWindow.win)
 	      XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
 	  }
-	}
 
-	if (ConstMove)
-	{
-	  switch (constMoveDir)
-	  {
-	  case MOVE_NONE:
-	    if (eventp->xmotion.x_root < constMoveXL || eventp->xmotion.x_root > constMoveXR)
-	    {
-	      constMoveDir = MOVE_HORIZ;
-	    }
-	    if (eventp->xmotion.y_root < constMoveYT || eventp->xmotion.y_root > constMoveYB)
-	    {
-	      constMoveDir = MOVE_VERT;
-	    }
-	    XQueryPointer(dpy, DragWindow, &JunkRoot, &JunkChild, &JunkX, &JunkY, &DragX, &DragY, &JunkMask);
-	    break;
-	  case MOVE_VERT:
-	    constMoveY = eventp->xmotion.y_root - DragY - JunkBW;
-	    break;
-	  case MOVE_HORIZ:
-	    constMoveX = eventp->xmotion.x_root - DragX - JunkBW;
-	    break;
-	  }
-
-	  xl = constMoveX;
-	  yt = constMoveY;
-	}
-	else if (DragWindow != None)
-	{
-	  if (!menuFromFrameOrWindowOrTitlebar && !movefromcenter && !(moving_icon && fromMenu))
-	  {
-	    xl = eventp->xmotion.x_root - DragX - JunkBW;
-	    yt = eventp->xmotion.y_root - DragY - JunkBW;
-	  }
-	  else
-	  {
-	    xl = eventp->xmotion.x_root - (DragWidth / 2);
-	    yt = eventp->xmotion.y_root - (DragHeight / 2);
-	  }
-	}
-
-	if ((ConstMove && constMoveDir != MOVE_NONE) || DragWindow != None)
-	{
-	  int width = DragWidth + 2 * JunkBW;
-	  int height = DragHeight + 2 * JunkBW;
-
-	  if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
-	  {
-	    xr = xl + width;
-	    yb = yt + height;
-
-	    if (xl < 0)
-	      xl = 0;
-	    if (xr > Scr->MyDisplayWidth)
-	      xl = Scr->MyDisplayWidth - width;
-
-	    if (yt < 0)
-	      yt = 0;
-	    if (yb > Scr->MyDisplayHeight)
-	      yt = Scr->MyDisplayHeight - height;
-	  }
-
-	  CurrentDragX = xl;
-	  CurrentDragY = yt;
-
-#ifndef NO_SOUND_SUPPORT
-	  if ((!ConstMove || constMoveDir != MOVE_NONE) && did_playsound == FALSE)
+#ifdef SOUND_SUPPORT
+	  if (did_playsound == FALSE)
 	  {
 	    PlaySound(func);
 	    did_playsound = TRUE;
 	  }
 #endif
 
-	  if (tmp_win->opaque_move)
-	    XMoveWindow(dpy, DragWindow, xl, yt);
-	  else
-	    MoveOutline(eventp->xmotion.root, xl, yt,
-			width, height, tmp_win->frame_bw, moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
-
-	  if (Scr->VirtualReceivesMotionEvents)
-	  {
-	    tmp_win->virtual_frame_x = R_TO_V_X(xl);
-	    tmp_win->virtual_frame_y = R_TO_V_Y(yt);
-	    MoveResizeDesktop(tmp_win, TRUE);
-	  }
-
-	  DisplayPosition(xl, yt);
+	  DoResize(AddingX, AddingY, tmp_win);
 	}
-      }
 
-      if (!tmp_win->opaque_move)
-	XUngrabServer(dpy);
+	if (!tmp_win->opaque_resize)
+	  XUngrabServer(dpy);
 
-      XUnmapWindow(dpy, Scr->SizeWindow.win);
-
-      MovedFromKeyPress = False;
-
-      if (!tmp_win->opaque_move)
-	UninstallRootColormap();
-
-      while (XCheckMaskEvent(dpy, EnterWindowMask | LeaveWindowMask, &Event))
-	;
-
-      if (!Scr->NoRaiseMove)
-      {
-	RaiseStickyAbove();
-	RaiseAutoPan();
-      }
-
-      /* update virtual coords */
-      tmp_win->virtual_frame_x = Scr->VirtualDesktopX + tmp_win->frame_x;
-      tmp_win->virtual_frame_y = Scr->VirtualDesktopY + tmp_win->frame_y;
-
-      /* UpdateDesktop() hoses the stacking order - djhjr - 10/6/02 */
-      MoveResizeDesktop(tmp_win, Cancel | Scr->NoRaiseMove);
-
-      if (Context == C_VIRTUAL_WIN)
-      {
 	/*
-	 * Mask a bug that calls MoveOutline(zeros) after the
-	 * border has been repainted, leaving artifacts. I think
-	 * I know what the bug is, but I can't seem to fix it.
+	 * All this stuff from resize.c:EndResize() - djhjr - 10/6/02
 	 */
-	if (Scr->BorderBevelWidth > 0)
-	  PaintBorders(tmp_win, False);
 
-	JunkX = tmp_win->virtual_frame_x + tmp_win->frame_width / 2;
-	JunkY = tmp_win->virtual_frame_y + tmp_win->frame_height / 2;
-	XWarpPointer(dpy, None, Scr->VirtualDesktopDisplayOuter, 0, 0, 0, 0, SCALE_D(JunkX), SCALE_D(JunkY));
-      }
+	if (!tmp_win->opaque_resize)
+	  UninstallRootColormap();
 
-      /* don't re-map if the window is the virtual desktop - djhjr - 2/28/99 */
-      if (Scr->VirtualReceivesMotionEvents && tmp_win->w != Scr->VirtualDesktopDisplayOuter)
-      {
-	XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
-	XMapWindow(dpy, Scr->VirtualDesktopDisplay);
-      }
+	/* discard queued enter and leave events - djhjr - 5/27/03 */
+	while (XCheckMaskEvent(dpy, EnterWindowMask | LeaveWindowMask, &Event))
+	  ;
 
-      MoveFunction = F_NOFUNCTION;	/* clear for DispatchEvent() */
-
-      /* sanity check (also in events.c:HandleButtonRelease()) - djhjr - 10/6/02 */
-      DragWindow = None;
-      ConstMove = FALSE;
-
-      break;
-    }
-  case F_FUNCTION:
-    {
-      MenuRoot *mroot;
-      MenuItem *mitem;
-      Cursor cursor;
-
-      if ((mroot = FindMenuRoot(action)) == NULL)
-      {
-	fprintf(stderr, "%s: couldn't find function \"%s\"\n", ProgramName, action);
-	return TRUE;
-      }
-
-      if ((cursor = NeedToDefer(mroot)) != None && DeferExecution(context, func, cursor))
-	return TRUE;
-      else
-      {
-	for (mitem = mroot->first; mitem != NULL; mitem = mitem->next)
+	if (!Scr->NoRaiseResize)
 	{
-	  if (!ExecuteFunction(mitem->func, mitem->action, w, tmp_win, eventp, context, pulldown))
-	    break;
+	  RaiseStickyAbove();
+	  RaiseAutoPan();
 	}
+
+	/* update virtual coords */
+	tmp_win->virtual_frame_x = Scr->VirtualDesktopX + tmp_win->frame_x;
+	tmp_win->virtual_frame_y = Scr->VirtualDesktopY + tmp_win->frame_y;
+
+	MoveResizeDesktop(tmp_win, Cancel | Scr->NoRaiseResize);
+
+	if (Context == C_VIRTUAL_WIN)
+	{
+	  /*
+	   * Mask a bug that calls MoveOutline(zeros) after the
+	   * border has been repainted, leaving artifacts. I think
+	   * I know what the bug is, but I can't seem to fix it.
+	   */
+	  if (Scr->BorderBevelWidth > 0)
+	    PaintBorders(tmp_win, False);
+
+	  JunkX = tmp_win->virtual_frame_x + tmp_win->frame_width / 2;
+	  JunkY = tmp_win->virtual_frame_y + tmp_win->frame_height / 2;
+	  XWarpPointer(dpy, None, Scr->VirtualDesktopDisplayOuter, 0, 0, 0, 0, SCALE_D(JunkX), SCALE_D(JunkY));
+
+	  SetBorder(Focus, False);
+	  Focus = focused;
+	}
+
+	/* don't re-map if the window is the virtual desktop - djhjr - 2/28/99 */
+	if (Scr->VirtualReceivesMotionEvents && tmp_win->w != Scr->VirtualDesktopDisplayOuter)
+	{
+	  XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
+	  XMapWindow(dpy, Scr->VirtualDesktopDisplay);
+	}
+
+	break;
       }
-    }
-    break;
 
-  case F_DEICONIFY:
-  case F_ICONIFY:
-    if (DeferExecution(context, func, Scr->SelectCursor))
-      return TRUE;
+    case F_ZOOM:
+    case F_HORIZOOM:
+    case F_FULLZOOM:
+    case F_LEFTZOOM:
+    case F_RIGHTZOOM:
+    case F_TOPZOOM:
+    case F_BOTTOMZOOM:
+    case F_MAXIMIZE:
+    case F_PANELZOOM:
+    case F_PANELHORIZOOM:
+    case F_PANELFULLZOOM:
+    case F_PANELMAXIMIZE:
+    case F_PANELLEFTZOOM:
+    case F_PANELRIGHTZOOM:
+    case F_PANELTOPZOOM:
+    case F_PANELBOTTOMZOOM:
+    case F_PANELGEOMETRYZOOM:
+    case F_PANELLEFTMOVE:
+    case F_PANELRIGHTMOVE:
+    case F_PANELTOPMOVE:
+    case F_PANELBOTTOMMOVE:
+    case F_PANELGEOMETRYMOVE:
+      if (DeferExecution(context, func, Scr->SelectCursor))
+	return TRUE;
 
-    if (tmp_win->icon || (func == F_DEICONIFY && tmp_win == tmp_win->list->twm))
-    {
-#ifndef NO_SOUND_SUPPORT
-      PlaySound(func);
+      PopDownMenu();
+
+      if (func == F_PANELGEOMETRYZOOM || func == F_PANELGEOMETRYMOVE)
+	fullgeomzoom (action, tmp_win, func);
+      else
+	fullzoom (ParsePanelIndex(action), tmp_win, func);
+
+      MoveResizeDesktop(tmp_win, Scr->NoRaiseMove);
+      break;
+
+    case F_MOVE:
+    case F_FORCEMOVE:
+      {
+	static Time last_time = 0;
+	Window rootw;
+	Bool fromtitlebar = False;
+	int moving_icon = FALSE;
+	int constMoveDir, constMoveX = 0, constMoveY = 0;
+	int constMoveXL = 0, constMoveXR = 0, constMoveYT = 0, constMoveYB = 0;
+	int origX, origY;
+	long releaseEvent;
+	long movementMask;
+	int xl = 0, yt = 0, xr = 0, yb = 0;
+	int movefromcenter = 0;
+
+#ifdef SOUND_SUPPORT
+	int did_playsound = FALSE;
 #endif
 
-      DeIconify(tmp_win);
+	if (DeferExecution(context, func, Scr->MoveCursor))
+	  return TRUE;
 
-      /*
-       * now HERE's a fine bit of kludge! it's to mask a hole in the
-       * code I can't find that messes up when trying to warp to the
-       * de-iconified window not in the real screen when WarpWindows
-       * isn't used. see also the change in DeIconify().
-       */
-      if (!Scr->WarpWindows && (Scr->WarpCursor || LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)))
-      {
-	RaiseStickyAbove();
-	RaiseAutoPan();
+	PopDownMenu();
+	rootw = eventp->xbutton.root;
 
-	WarpToWindow(tmp_win);
-      }
-    }
-    else if (func == F_ICONIFY)
-    {
-      TwmDoor *d;
-      TwmWindow *tmgr = NULL, *twin = NULL;
-      MenuRoot *mr;
+	if (pulldown)
+	  XWarpPointer(dpy, None, Scr->Root, 0, 0, 0, 0, eventp->xbutton.x_root, eventp->xbutton.y_root);
 
-      if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *) & d) != XCNOENT)
-      {
-	twin = tmp_win;
-	tmp_win = d->twin;
-      }
+	EventHandler[EnterNotify] = HandleUnknown;
+	EventHandler[LeaveNotify] = HandleUnknown;
 
-      /*
-       * don't iconify if there's no way to get it back - not fool-proof
-       */
-      if (tmp_win->iconify_by_unmapping)
-      {
-	/* iconified by unmapping */
+	if (!tmp_win->opaque_move)
+	  XGrabServer(dpy);
 
-	if (tmp_win->list)
-	  tmgr = tmp_win->list->iconmgr->twm_win;
 
-	if ((tmgr && !tmgr->mapped && tmgr->iconify_by_unmapping) ||
-	    ((Scr->IconManagerDontShow ||
-	      LookInList(Scr->IconMgrNoShow, tmp_win->full_name, &tmp_win->class)) &&
-	     LookInList(Scr->IconMgrShow, tmp_win->full_name, &tmp_win->class) == (char *)NULL))
+	XGrabPointer(dpy, eventp->xbutton.root, True,
+		     ButtonPressMask | ButtonReleaseMask |
+		     ButtonMotionMask | PointerMotionMask, GrabModeAsync, GrabModeAsync, Scr->Root, Scr->MoveCursor, CurrentTime);
+
+	if (context == C_VIRTUAL_WIN)
 	{
-	  /* icon manager not mapped or not shown in one */
+	  TwmWindow *twin;
 
-	  if (mr)
+	  if ((XFindContext(dpy, eventp->xbutton.subwindow, VirtualContext, (caddr_t *) & twin) == XCNOENT))
 	  {
-	    /*
-	     * Yes, this is an intentional uninitialized variable dereference, the
-	     * sole purpose of which is to draw your attention to the problem
-	     * expressed herewithin:
-	     * 
-	     * Eeri Kask writes:
-	     * Actually the whole concept of 'have_twmwindows', 'have_showdesktop',
-	     * 'have_showdesktop' being 'global' variables is defect because one can
-	     * have different vtwm-configurations for different screens: .vtwmrc.0,
-	     * .vtwmrc.1, etc. and then it is not apparent which of these screens
-	     * state do these three variables then denote.  (At least they should be
-	     * enclosed into 'Scr'.)
-	     * 
-	     * 
-	     * It seems the whole idea of
-	     * 
-	     * "don't iconify if there's no way to get it back - not fool-proof"
-	     * 
-	     * snippet is to guard the user from losing windows by iconifying "by
-	     * unmapping" and the same time not having e.g.
-	     * 
-	     * f.menu "TwmWindows"
-	     * 
-	     * (a) attached to any hotkey/hotbutton (FindMenuOrFuncInBindings()), or
-	     * (b) attached to any context (frame, titlebar) or titlebar-buttons
-	     * (FindMenuOrFuncInWindows()).
-	     * 
-	     * 
-	     * Further, the 'mr' pointer cannot be made 'static' as well because of the
-	     * same reason as the three 'global' context bitmap variables above.
-	     * 
-	     * The 'mr' pointer is checked in FindMenuOrFuncInWindows() against window
-	     * title buttons: i.e. a window is assumed deiconifiable if the
-	     * "TwmWindows" menu is attached to some title-bar-button.  In case there
-	     * is only one client then it remains to be figured out how to push that
-	     * button in emergency in order to deiconify if the window is iconified.
-	     */
-	    mr = NULL;
+	    DoAudible();
+	    break;
 	  }
 
-	  if (have_twmwindows == -1)
+	  tmp_win = twin;
+	  moveFromCenterWrapper(tmp_win);
+	  w = tmp_win->frame;
+	  movefromcenter = 1;
+	}
+	else
+	  if (context == C_ICONMGR && tmp_win->list)
 	  {
-	    have_twmwindows = 0;
-
-	    /* better than two calls to FindMenuRoot() */
-	    for (mr = Scr->MenuList; mr != NULL; mr = mr->next)
-	      if (strcmp(mr->name, TWM_WINDOWS) == 0 || strcmp(mr->name, VTWM_WINDOWS) == 0)
-	      {
-		have_twmwindows = FindMenuOrFuncInBindings(C_ALL_BITS, mr, F_NOFUNCTION);
-		break;
-	      }
-	  }
-	  if (have_showdesktop == -1)
-	    have_showdesktop = FindMenuOrFuncInBindings(C_ALL_BITS, NULL, F_SHOWDESKTOP);
-	  if (have_showlist == -1)
-	    have_showlist = FindMenuOrFuncInBindings(C_ALL_BITS, NULL, F_SHOWLIST);
-
-	  if (!FindMenuOrFuncInWindows(tmp_win, have_twmwindows, mr, F_NOFUNCTION) ||
-	      LookInList(Scr->DontShowInTWMWindows, tmp_win->full_name, &tmp_win->class))
-	  {
-	    /* no TwmWindows menu or not shown in it */
-
-	    if (tmp_win->w == Scr->VirtualDesktopDisplayOuter &&
-		FindMenuOrFuncInWindows(tmp_win, have_showdesktop, NULL, F_SHOWDESKTOP))
-	      ;
-	    else if (tmp_win->iconmgr && FindMenuOrFuncInWindows(tmp_win, have_showlist, NULL, F_SHOWLIST))
-	      ;
-	    else if (tmgr && FindMenuOrFuncInWindows(tmgr, have_showlist, NULL, F_SHOWLIST))
-	      ;
-	    else
+	    if (!warp_if_warpunmapped(tmp_win, F_NOFUNCTION))
 	    {
-	      /* no f.showdesktop or f.showiconmgr */
-
 	      DoAudible();
-
-	      if (twin)
-		tmp_win = twin;
 	      break;
 	    }
+
+	    moveFromCenterWrapper(tmp_win);
+	    w = tmp_win->frame;
+	    movefromcenter = 1;
+	  }
+	  else
+	    if (context == C_ICON && tmp_win->icon_w.win)
+	    {
+	      DragX = eventp->xbutton.x;
+	      DragY = eventp->xbutton.y;
+
+	      w = tmp_win->icon_w.win;
+	      moving_icon = TRUE;
+	    }
+	    else if (w != tmp_win->icon_w.win)
+	    {
+	      XTranslateCoordinates(dpy, w, tmp_win->frame, eventp->xbutton.x, eventp->xbutton.y, &DragX, &DragY, &JunkChild);
+
+	      w = tmp_win->frame;
+	    }
+
+#ifdef TILED_SCREEN
+	if (Scr->use_tiles == TRUE)
+	{
+	  int k = FindNearestTileToMouse();
+
+	  XMoveWindow(dpy, Scr->SizeWindow.win, Lft(Scr->tiles[k]), Bot(Scr->tiles[k]));
+	}
+#endif
+	XMapRaised(dpy, Scr->SizeWindow.win);
+
+	DragWindow = None;
+
+	MoveFunction = func;	/* set for DispatchEvent() */
+
+	XGetGeometry(dpy, w, &JunkRoot, &origDragX, &origDragY,
+		     (unsigned int *)&DragWidth, (unsigned int *)&DragHeight, &JunkBW, &JunkDepth);
+
+	if (menuFromFrameOrWindowOrTitlebar || movefromcenter || (moving_icon && fromMenu))
+	{
+	  origX = DragX = origDragX + DragWidth / 2;
+	  origY = DragY = origDragY + DragHeight / 2;
+	}
+	else
+	{
+	  origX = eventp->xbutton.x_root;
+	  origY = eventp->xbutton.y_root;
+	}
+
+	CurrentDragX = origDragX;
+	CurrentDragY = origDragY;
+
+	/*
+	 * Only do the constrained move if timer is set -
+	 * need to check it in case of stupid or wicked fast servers.
+	 */
+	if (ConstrainedMoveTime && eventp->xbutton.time - last_time < ConstrainedMoveTime)
+	{
+	  int width, height;
+
+	  ConstMove = TRUE;
+	  constMoveDir = MOVE_NONE;
+	  constMoveX = eventp->xbutton.x_root - DragX - JunkBW;
+	  constMoveY = eventp->xbutton.y_root - DragY - JunkBW;
+	  width = DragWidth + 2 * JunkBW;
+	  height = DragHeight + 2 * JunkBW;
+	  constMoveXL = constMoveX + width / 3;
+	  constMoveXR = constMoveX + 2 * (width / 3);
+	  constMoveYT = constMoveY + height / 3;
+	  constMoveYB = constMoveY + 2 * (height / 3);
+
+	  XWarpPointer(dpy, None, w, 0, 0, 0, 0, DragWidth / 2, DragHeight / 2);
+
+	  XQueryPointer(dpy, w, &JunkRoot, &JunkChild, &JunkX, &JunkY, &DragX, &DragY, &JunkMask);
+	}
+	last_time = eventp->xbutton.time;
+
+	if (!tmp_win->opaque_move)
+	{
+	  InstallRootColormap();
+	  {
+	    /*
+	     * Draw initial outline.  This was previously done the
+	     * first time though the outer loop by dropping out of
+	     * the XCheckMaskEvent inner loop down to one of the
+	     * MoveOutline's below.
+	     */
+	    MoveOutline(rootw,
+			origDragX - JunkBW, origDragY - JunkBW,
+			DragWidth + 2 * JunkBW, DragHeight + 2 * JunkBW,
+			tmp_win->frame_bw, moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
+
+	  }
+	}
+
+	/*
+	 * see if this is being done from the titlebar
+	 */
+	fromtitlebar = belongs_to_twm_window(tmp_win, eventp->xbutton.window);
+
+	if ((menuFromFrameOrWindowOrTitlebar && !fromtitlebar) || movefromcenter || (moving_icon && fromMenu))
+	{
+	  /* warp the pointer to the middle of the window */
+	  XWarpPointer(dpy, None, Scr->Root, 0, 0, 0, 0, origDragX + DragWidth / 2, origDragY + DragHeight / 2);
+
+	  SetBorder(tmp_win, True);
+
+	  XFlush(dpy);
+	}
+
+	DisplayPosition(CurrentDragX, CurrentDragY);
+
+	if (menuFromFrameOrWindowOrTitlebar)
+	{
+	  releaseEvent = ButtonPress;
+	  movementMask = PointerMotionMask;
+	}
+	else
+	{
+	  releaseEvent = ButtonRelease;
+	  movementMask = ButtonMotionMask;
+	}
+
+	while (TRUE)
+	{
+	  /* block until there is an interesting event */
+	  XMaskEvent(dpy, ButtonPressMask | ButtonReleaseMask |
+		     EnterWindowMask | LeaveWindowMask | ExposureMask | VisibilityChangeMask | movementMask, &Event);
+
+
+	  /*
+	   * Don't discard exposure events before release
+	   * or window borders and/or their titles in the
+	   * virtual desktop won't get redrawn - djhjr
+	   */
+
+	  /* discard any extra motion events before a release */
+	  if (Event.type == MotionNotify)
+	  {
+	    while (XCheckMaskEvent(dpy, movementMask | releaseEvent, &Event))
+	    {
+	      if (Event.type == releaseEvent)
+		break;
+	    }
+	  }
+
+	  /*
+	   * There used to be a couple of routines that handled the
+	   * cancel functionality here, each doing a portion of the
+	   * job, then returning immediately. They became redundant
+	   * to just letting program execution fall through. So now,
+	   * the 'if (Event.type == releaseEvent) if (Cancel)' below
+	   * does just that, clearing a few flags first.
+	   */
+
+	  if (fromtitlebar && Event.type == ButtonPress)
+	  {
+	    fromtitlebar = False;
+	    CurrentDragX = origX = Event.xbutton.x_root;
+	    CurrentDragY = origY = Event.xbutton.y_root;
+	    XTranslateCoordinates(dpy, rootw, tmp_win->frame, origX, origY, &DragX, &DragY, &JunkChild);
+
+	    continue;
+	  }
+
+	  if (!DispatchEvent())
+	    continue;
+
+	  if (Event.type == releaseEvent)
+	  {
+	    MoveOutline(rootw, 0, 0, 0, 0, 0, 0);
+
+	    if (Cancel)
+	    {
+	      DragWindow = None;
+	      ConstMove = WindowMoved = do_next_action = FALSE;
+	    }
+	    else if (WindowMoved)
+	    {
+	      if (moving_icon)
+	      {
+		tmp_win->icon_moved = TRUE;
+		XMoveWindow(dpy, tmp_win->icon_w.win, CurrentDragX, CurrentDragY);
+
+		if (!Scr->NoRaiseMove && !Scr->RaiseOnStart)
+		{
+		  XRaiseWindow(dpy, tmp_win->icon_w.win);
+		  SetRaiseWindow(tmp_win);
+		}
+	      }
+	      else
+	      {
+		if (movefromcenter)
+		{
+		  tmp_win->frame_x = Event.xbutton.x_root - DragWidth / 2;
+		  tmp_win->frame_y = Event.xbutton.y_root - DragHeight / 2;
+		}
+		else
+		{
+		  tmp_win->frame_x = CurrentDragX;
+		  tmp_win->frame_y = CurrentDragY;
+		}
+
+		XMoveWindow(dpy, tmp_win->frame, tmp_win->frame_x, tmp_win->frame_y);
+		SendConfigureNotify(tmp_win, tmp_win->frame_x, tmp_win->frame_y);
+
+		if (!Scr->NoRaiseMove && !Scr->RaiseOnStart)
+		{
+		  XRaiseWindow(dpy, tmp_win->frame);
+		  SetRaiseWindow(tmp_win);
+		}
+	      }
+	    }
+
+	    break;
+	  }
+
+	  /* something left to do only if the pointer moved */
+	  if (Event.type != MotionNotify)
+	    continue;
+
+	  XQueryPointer(dpy, rootw, &(eventp->xmotion.root), &JunkChild,
+			&(eventp->xmotion.x_root), &(eventp->xmotion.y_root), &JunkX, &JunkY, &JunkMask);
+
+	  if (DragWindow == None &&
+	      abs(eventp->xmotion.x_root - origX) < Scr->MoveDelta && abs(eventp->xmotion.y_root - origY) < Scr->MoveDelta)
+	  {
+	    continue;
+	  }
+
+	  WindowMoved = TRUE;
+	  DragWindow = w;
+
+	  if (!Scr->NoRaiseMove && Scr->RaiseOnStart)
+	  {
+	    if (moving_icon)
+	    {
+	      XRaiseWindow(dpy, tmp_win->icon_w.win);
+	      SetRaiseWindow(tmp_win);
+	    }
+	    else
+	    {
+	      XRaiseWindow(dpy, tmp_win->frame);
+	      SetRaiseWindow(tmp_win);
+	      if (Scr->Virtual && tmp_win->VirtualDesktopDisplayWindow.win)
+		XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
+	    }
+	  }
+
+	  if (ConstMove)
+	  {
+	    switch (constMoveDir)
+	    {
+	      case MOVE_NONE:
+		if (eventp->xmotion.x_root < constMoveXL || eventp->xmotion.x_root > constMoveXR)
+		{
+		  constMoveDir = MOVE_HORIZ;
+		}
+		if (eventp->xmotion.y_root < constMoveYT || eventp->xmotion.y_root > constMoveYB)
+		{
+		  constMoveDir = MOVE_VERT;
+		}
+		XQueryPointer(dpy, DragWindow, &JunkRoot, &JunkChild, &JunkX, &JunkY, &DragX, &DragY, &JunkMask);
+		break;
+	      case MOVE_VERT:
+		constMoveY = eventp->xmotion.y_root - DragY - JunkBW;
+		break;
+	      case MOVE_HORIZ:
+		constMoveX = eventp->xmotion.x_root - DragX - JunkBW;
+		break;
+	    }
+
+	    xl = constMoveX;
+	    yt = constMoveY;
+	  }
+	  else if (DragWindow != None)
+	  {
+	    if (!menuFromFrameOrWindowOrTitlebar && !movefromcenter && !(moving_icon && fromMenu))
+	    {
+	      xl = eventp->xmotion.x_root - DragX - JunkBW;
+	      yt = eventp->xmotion.y_root - DragY - JunkBW;
+	    }
+	    else
+	    {
+	      xl = eventp->xmotion.x_root - (DragWidth / 2);
+	      yt = eventp->xmotion.y_root - (DragHeight / 2);
+	    }
+	  }
+
+	  if ((ConstMove && constMoveDir != MOVE_NONE) || DragWindow != None)
+	  {
+	    int width = DragWidth + 2 * JunkBW;
+	    int height = DragHeight + 2 * JunkBW;
+
+	    if (Scr->DontMoveOff && MoveFunction != F_FORCEMOVE)
+	    {
+	      xr = xl + width;
+	      yb = yt + height;
+
+	      if (xl < 0)
+		xl = 0;
+	      if (xr > Scr->MyDisplayWidth)
+		xl = Scr->MyDisplayWidth - width;
+
+	      if (yt < 0)
+		yt = 0;
+	      if (yb > Scr->MyDisplayHeight)
+		yt = Scr->MyDisplayHeight - height;
+	    }
+
+	    CurrentDragX = xl;
+	    CurrentDragY = yt;
+
+#ifdef SOUND_SUPPORT
+	    if ((!ConstMove || constMoveDir != MOVE_NONE) && did_playsound == FALSE)
+	    {
+	      PlaySound(func);
+	      did_playsound = TRUE;
+	    }
+#endif
+
+	    if (tmp_win->opaque_move)
+	      XMoveWindow(dpy, DragWindow, xl, yt);
+	    else
+	      MoveOutline(eventp->xmotion.root, xl, yt,
+			  width, height, tmp_win->frame_bw, moving_icon ? 0 : tmp_win->title_height + tmp_win->frame_bw3D);
+
+	    if (Scr->VirtualReceivesMotionEvents)
+	    {
+	      tmp_win->virtual_frame_x = R_TO_V_X(xl);
+	      tmp_win->virtual_frame_y = R_TO_V_Y(yt);
+	      MoveResizeDesktop(tmp_win, TRUE);
+	    }
+
+	    DisplayPosition(xl, yt);
+	  }
+	}
+
+	if (!tmp_win->opaque_move)
+	  XUngrabServer(dpy);
+
+	XUnmapWindow(dpy, Scr->SizeWindow.win);
+
+	MovedFromKeyPress = False;
+
+	if (!tmp_win->opaque_move)
+	  UninstallRootColormap();
+
+	while (XCheckMaskEvent(dpy, EnterWindowMask | LeaveWindowMask, &Event))
+	  ;
+
+	if (!Scr->NoRaiseMove)
+	{
+	  RaiseStickyAbove();
+	  RaiseAutoPan();
+	}
+
+	/* update virtual coords */
+	tmp_win->virtual_frame_x = Scr->VirtualDesktopX + tmp_win->frame_x;
+	tmp_win->virtual_frame_y = Scr->VirtualDesktopY + tmp_win->frame_y;
+
+	/* UpdateDesktop() hoses the stacking order - djhjr - 10/6/02 */
+	MoveResizeDesktop(tmp_win, Cancel | Scr->NoRaiseMove);
+
+	if (Context == C_VIRTUAL_WIN)
+	{
+	  /*
+	   * Mask a bug that calls MoveOutline(zeros) after the
+	   * border has been repainted, leaving artifacts. I think
+	   * I know what the bug is, but I can't seem to fix it.
+	   */
+	  if (Scr->BorderBevelWidth > 0)
+	    PaintBorders(tmp_win, False);
+
+	  JunkX = tmp_win->virtual_frame_x + tmp_win->frame_width / 2;
+	  JunkY = tmp_win->virtual_frame_y + tmp_win->frame_height / 2;
+	  XWarpPointer(dpy, None, Scr->VirtualDesktopDisplayOuter, 0, 0, 0, 0, SCALE_D(JunkX), SCALE_D(JunkY));
+	}
+
+	/* don't re-map if the window is the virtual desktop - djhjr - 2/28/99 */
+	if (Scr->VirtualReceivesMotionEvents && tmp_win->w != Scr->VirtualDesktopDisplayOuter)
+	{
+	  XUnmapWindow(dpy, Scr->VirtualDesktopDisplay);
+	  XMapWindow(dpy, Scr->VirtualDesktopDisplay);
+	}
+
+	MoveFunction = F_NOFUNCTION;	/* clear for DispatchEvent() */
+
+	/* sanity check (also in events.c:HandleButtonRelease()) - djhjr - 10/6/02 */
+	DragWindow = None;
+	ConstMove = FALSE;
+
+	break;
+      }
+    case F_FUNCTION:
+      {
+	MenuRoot *mroot;
+	MenuItem *mitem;
+	Cursor cursor;
+
+	if ((mroot = FindMenuRoot(action)) == NULL)
+	{
+	  fprintf(stderr, "%s: couldn't find function \"%s\"\n", ProgramName, action);
+	  return TRUE;
+	}
+
+	if ((cursor = NeedToDefer(mroot)) != None && DeferExecution(context, func, cursor))
+	  return TRUE;
+	else
+	{
+	  for (mitem = mroot->first; mitem != NULL; mitem = mitem->next)
+	  {
+	    if (!ExecuteFunction(mitem->func, mitem->action, w, tmp_win, eventp, context, pulldown))
+	      break;
 	  }
 	}
       }
+      break;
 
-      if (twin)
-	tmp_win = twin;
+    case F_DEICONIFY:
+    case F_ICONIFY:
+      if (DeferExecution(context, func, Scr->SelectCursor))
+	return TRUE;
 
-      if (tmp_win->list || !Scr->NoIconifyIconManagers)
+      if (tmp_win->icon || (func == F_DEICONIFY && tmp_win == tmp_win->list->twm))
       {
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
 	PlaySound(func);
 #endif
 
-	Iconify(tmp_win, eventp->xbutton.x_root - EDGE_OFFSET, eventp->xbutton.y_root - EDGE_OFFSET);
-      }
-    }
-    break;
+	DeIconify(tmp_win);
 
-  case F_RAISELOWER:
-    if (DeferExecution(context, func, Scr->SelectCursor))
-      return TRUE;
-
-    if (!WindowMoved)
-    {
-      XWindowChanges xwc;
-
-      xwc.stack_mode = Opposite;
-      if (w != tmp_win->icon_w.win)
-	w = tmp_win->frame;
-      XConfigureWindow(dpy, w, CWStackMode, &xwc);
-      XConfigureWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win, CWStackMode, &xwc);
-      /* ug */
-      XLowerWindow(dpy, Scr->VirtualDesktopDScreen);
-    }
-    break;
-
-  case F_RAISE:
-    if (DeferExecution(context, func, Scr->SelectCursor))
-      return TRUE;
-
-    /* check to make sure raise is not from the WindowFunction */
-    if (w == tmp_win->icon_w.win && Context != C_ROOT)
-      XRaiseWindow(dpy, tmp_win->icon_w.win);
-    else
-    {
-      XRaiseWindow(dpy, tmp_win->frame);
-      XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
-    }
-
-    RaiseStickyAbove();
-    RaiseAutoPan();
-
-    break;
-
-  case F_LOWER:
-    if (DeferExecution(context, func, Scr->SelectCursor))
-      return TRUE;
-
-    if (!(Scr->StickyAbove && tmp_win->nailed))
-    {
-      if (w == tmp_win->icon_w.win)
-	XLowerWindow(dpy, tmp_win->icon_w.win);
-      else
-      {
-	XLowerWindow(dpy, tmp_win->frame);
-	XLowerWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
-	XLowerWindow(dpy, Scr->VirtualDesktopDScreen);
-      }
-    }
-
-    break;
-
-  case F_FOCUS:
-#ifdef TWM_USE_SLOPPYFOCUS
-    if (SloppyFocus == TRUE)
-    {
-      SloppyFocus = FALSE;
-      FocusOnRoot();
-    }
-#endif
-    if (DeferExecution(context, func, Scr->SelectCursor))
-      return TRUE;
-
-    if (tmp_win->icon == FALSE)
-    {
-      if (!FocusRoot && Focus == tmp_win)
-      {
-	FocusOnRoot();
-      }
-      else
-      {
-	FocusOnClient(tmp_win);
-      }
-    }
-    break;
-
-  case F_DESTROY:
-    if (DeferExecution(context, func, Scr->DestroyCursor))
-      return TRUE;
-
-#ifndef NO_SOUND_SUPPORT
-    /* flag for the handler */
-    if (PlaySound(func))
-      destroySoundFromFunction = TRUE;
-#endif
-
-    if (tmp_win == Scr->VirtualDesktopDisplayTwin)
-    {
-      if (have_showdesktop == -1)
-	have_showdesktop = FindMenuOrFuncInBindings(C_ALL_BITS, NULL, F_SHOWDESKTOP);
-      if (FindMenuOrFuncInWindows(tmp_win, have_showdesktop, NULL, F_SHOWDESKTOP))
-	XUnmapWindow(dpy, Scr->VirtualDesktopDisplayTwin->frame);
-      else
-
-	DoAudible();
-      break;
-    }
-
-    {
-      TwmDoor *d;
-
-      if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *) & d) != XCNOENT)
-      {
-	/* for some reason, we don't get the button up event - djhjr - 9/10/99 */
-	ButtonPressed = -1;
-	door_delete(tmp_win->w, d);
-
-	break;
-      }
-    }
-
-    if (tmp_win->iconmgr)	/* don't send ourself a message */
-    {
-      if (have_showlist == -1)
-	have_showlist = FindMenuOrFuncInBindings(C_ALL_BITS, NULL, F_SHOWLIST);
-      if (FindMenuOrFuncInWindows(tmp_win, have_showlist, NULL, F_SHOWLIST))
-
-	HideIconManager(tmp_win);
-
-      else
-	DoAudible();
-    }
-    else
-    {
-      AppletDown(tmp_win);
-
-      XKillClient(dpy, tmp_win->w);
-    }
-    break;
-
-  case F_DELETE:
-    if (DeferExecution(context, func, Scr->DestroyCursor))
-      return TRUE;
-
-#ifndef NO_SOUND_SUPPORT
-    /* flag for the handler */
-    if (PlaySound(func))
-      destroySoundFromFunction = TRUE;
-#endif
-
-    if (tmp_win == Scr->VirtualDesktopDisplayTwin)
-    {
-      if (have_showdesktop == -1)
-	have_showdesktop = FindMenuOrFuncInBindings(C_ALL_BITS, NULL, F_SHOWDESKTOP);
-      if (FindMenuOrFuncInWindows(tmp_win, have_showdesktop, NULL, F_SHOWDESKTOP))
-	XUnmapWindow(dpy, Scr->VirtualDesktopDisplayTwin->frame);
-      else
-	DoAudible();
-
-      break;
-    }
-
-    {
-      TwmDoor *d;
-
-      if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *) & d) != XCNOENT)
-      {
-	/* for some reason, we don't get the button up event - djhjr - 9/10/99 */
-	ButtonPressed = -1;
-	door_delete(tmp_win->w, d);
-
-	break;
-      }
-    }
-
-    if (tmp_win->iconmgr)	/* don't send ourself a message */
-    {
-      if (have_showlist == -1)
-	have_showlist = FindMenuOrFuncInBindings(C_ALL_BITS, NULL, F_SHOWLIST);
-      if (FindMenuOrFuncInWindows(tmp_win, have_showlist, NULL, F_SHOWLIST))
-
-	HideIconManager(tmp_win);
-
-      else
-	DoAudible();
-    }
-    else if (tmp_win->protocols & DoesWmDeleteWindow)
-    {
-      AppletDown(tmp_win);
-
-      SendDeleteWindowMessage(tmp_win, LastTimestamp());
-    }
-    else
-      DoAudible();
-    break;
-
-  case F_SAVEYOURSELF:
-    if (DeferExecution(context, func, Scr->SelectCursor))
-      return TRUE;
-
-    if (tmp_win->protocols & DoesWmSaveYourself)
-      SendSaveYourselfMessage(tmp_win, LastTimestamp());
-    else
-      DoAudible();
-    break;
-
-  case F_CIRCLEUP:
-    XCirculateSubwindowsUp(dpy, Scr->Root);
-    break;
-
-  case F_CIRCLEDOWN:
-    XCirculateSubwindowsDown(dpy, Scr->Root);
-    break;
-
-  case F_EXEC:
-    {
-      ScreenInfo *scr;
-
-      if (FocusRoot != TRUE)
 	/*
-	 * f.focus / f.sloppyfocus:  Execute external program
-	 * on the screen where the mouse is and not where
-	 * the current X11-event occurred.  (The XGrabPointer()
-	 * above should not 'confine_to' the mouse onto that
-	 * screen as well.)
+	 * now HERE's a fine bit of kludge! it's to mask a hole in the
+	 * code I can't find that messes up when trying to warp to the
+	 * de-iconified window not in the real screen when WarpWindows
+	 * isn't used. see also the change in DeIconify().
 	 */
-	scr = FindPointerScreenInfo();
-      else
-	scr = Scr;
-
-      PopDownMenu();
-      if (!scr->NoGrabServer)
-      {
-	XUngrabServer(dpy);
-	XSync(dpy, False);
-      }
-
-#ifndef NO_SOUND_SUPPORT
-      /* flag for the handler */
-      if (PlaySound(func))
-	createSoundFromFunction = TRUE;
-#endif
-      Execute(scr, action);
-    }
-    break;
-
-  case F_UNFOCUS:
-#ifdef TWM_USE_SLOPPYFOCUS
-    SloppyFocus = FALSE;
-#endif
-    FocusOnRoot();
-    break;
-
-#ifdef TWM_USE_SLOPPYFOCUS
-  case F_SLOPPYFOCUS:
-    SloppyFocus = TRUE;
-    FocusOnRoot();
-    break;
-#endif
-
-  case F_CUT:
-    strcpy(tmp, action);
-    strcat(tmp, "\n");
-    XStoreBytes(dpy, tmp, strlen(tmp));
-    break;
-
-  case F_CUTFILE:
-    ptr = XFetchBytes(dpy, &count);
-    if (ptr)
-    {
-      if (sscanf(ptr, "%s", tmp) == 1)
-      {
-	XFree(ptr);
-	ptr = ExpandFilename(tmp);
-	if (ptr)
+	if (!Scr->WarpWindows && (Scr->WarpCursor || LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)))
 	{
-	  fd = open(ptr, 0);
-	  if (fd >= 0)
-	  {
-	    count = read(fd, buff, MAX_FILE_SIZE - 1);
-	    if (count > 0)
-	      XStoreBytes(dpy, buff, count);
-	    close(fd);
-	  }
-	  else
-	  {
-	    fprintf(stderr, "%s:  unable to open cut file \"%s\"\n", ProgramName, tmp);
-	  }
-	  if (ptr != tmp)
-	    free(ptr);
-	}
-      }
-      else
-      {
-	XFree(ptr);
-      }
-    }
-    else
-    {
-      fprintf(stderr, "%s:  cut buffer is empty\n", ProgramName);
-    }
-    break;
-
-  case F_WARPTOSCREEN:
-    {
-      ScreenInfo *scr;
-
-      if (FocusRoot != TRUE)
-      {
-	/*
-	 * f.focus / f.sloppyfocus is active:  KeyPress X11-events
-	 * are delivered into the focused window probably on
-	 * another screen, then "Scr" is not where the mouse is:
-	 */
-	scr = FindPointerScreenInfo();
-#ifdef TWM_USE_SLOPPYFOCUS
-	if (SloppyFocus == TRUE)
-	  FocusOnRoot();	/* drop client focus before screen switch */
-#endif
-      }
-      else
-	scr = Scr;
-
-      if (strcmp(action, WARPSCREEN_NEXT) == 0)
-      {
-	WarpToScreen(scr, scr->screen + 1, 1);
-      }
-      else if (strcmp(action, WARPSCREEN_PREV) == 0)
-      {
-	WarpToScreen(scr, scr->screen - 1, -1);
-      }
-      else if (strcmp(action, WARPSCREEN_BACK) == 0)
-      {
-	WarpToScreen(scr, PreviousScreen, 0);
-      }
-      else
-      {
-	WarpToScreen(scr, atoi(action), 0);
-      }
-    }
-    break;
-
-  case F_COLORMAP:
-    {
-      if (strcmp(action, COLORMAP_NEXT) == 0)
-      {
-	BumpWindowColormap(tmp_win, 1);
-      }
-      else if (strcmp(action, COLORMAP_PREV) == 0)
-      {
-	BumpWindowColormap(tmp_win, -1);
-      }
-      else
-      {
-	BumpWindowColormap(tmp_win, 0);
-      }
-    }
-    break;
-
-  case F_WARPCLASSNEXT:
-  case F_WARPCLASSPREV:
-    WarpClass(func == F_WARPCLASSNEXT, tmp_win, action);
-    break;
-
-  case F_WARPTONEWEST:
-    if (Scr->Newest && warp_if_warpunmapped(Scr->Newest, F_NOFUNCTION))
-    {
-      RaiseStickyAbove();
-      RaiseAutoPan();
-
-#ifndef NO_SOUND_SUPPORT
-      PlaySound(func);
-#endif
-
-      WarpToWindow(Scr->Newest);
-    }
-    else
-      DoAudible();
-    break;
-
-  case F_WARPTO:
-    {
-      register TwmWindow *t;
-      int did_warpto = FALSE;
-
-      for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
-      {
-	/*
-	 * This used to fall through into F_WARP, but the
-	 * warp_if_warpunmapped() meant this loop couldn't
-	 * continue to look for a match in the window list.
-	 */
-
-	if (MatchWinName(action, t) == 0 && warp_if_warpunmapped(t, func))
-	{
-	  tmp_win = t;
 	  RaiseStickyAbove();
 	  RaiseAutoPan();
 
-#ifndef NO_SOUND_SUPPORT
-	  PlaySound(func);
-#endif
-	  did_warpto = TRUE;
-
 	  WarpToWindow(tmp_win);
-	  break;
 	}
       }
-
-      if (!did_warpto)
-	DoAudible();
-    }
-    break;
-
-  case F_WARP:
-    {
-      if (tmp_win && warp_if_warpunmapped(tmp_win, F_NOFUNCTION))
+      else if (func == F_ICONIFY)
       {
-	RaiseStickyAbove();
-	RaiseAutoPan();
+	TwmDoor *d;
+	TwmWindow *tmgr = NULL, *twin = NULL;
+	MenuRoot *mr;
 
-#ifndef NO_SOUND_SUPPORT
-	PlaySound(func);
-#endif
-
-	WarpToWindow(tmp_win);
-      }
-      else
-      {
-	DoAudible();
-      }
-    }
-    break;
-
-  case F_WARPTOICONMGR:
-    {
-      TwmWindow *t;
-      int len;
-
-/*
- * raisewin now points to the window's icon manager entry, and
- * iconwin now points to raisewin's icon manager - djhjr - 5/30/00
- *
- */
-      WList *raisewin = NULL;
-      TwmWindow *iconwin = None;
-
-      len = strlen(action);
-      if (len == 0)
-      {
-	if (tmp_win && tmp_win->list)
+	if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *) & d) != XCNOENT)
 	{
-	  raisewin = tmp_win->list;
+	  twin = tmp_win;
+	  tmp_win = d->twin;
 	}
-	else if (Scr->iconmgr.active)
+
+	/*
+	 * don't iconify if there's no way to get it back - not fool-proof
+	 */
+	if (tmp_win->iconify_by_unmapping)
 	{
-	  raisewin = Scr->iconmgr.active;
-	}
-      }
-      else
-      {
-	for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
-	{
-	  if (strncmp(action, t->icon_name, len) == 0)
+	  /* iconified by unmapping */
+
+	  if (tmp_win->list)
+	    tmgr = tmp_win->list->iconmgr->twm_win;
+
+	  if ((tmgr && !tmgr->mapped && tmgr->iconify_by_unmapping) ||
+	      ((Scr->IconManagerDontShow ||
+		LookInList(Scr->IconMgrNoShow, tmp_win->full_name, &tmp_win->class)) &&
+	       LookInList(Scr->IconMgrShow, tmp_win->full_name, &tmp_win->class) == (char *)NULL))
 	  {
-	    if (t->list && t->list->iconmgr->twm_win->mapped)
-	    {
+	    /* icon manager not mapped or not shown in one */
 
-	      raisewin = t->list;
-	      break;
+	    if (mr)
+	    {
+	      /*
+	       * Yes, this is an intentional uninitialized variable dereference, the
+	       * sole purpose of which is to draw your attention to the problem
+	       * expressed herewithin:
+	       * 
+	       * Eeri Kask writes:
+	       * Actually the whole concept of 'have_twmwindows', 'have_showdesktop',
+	       * 'have_showdesktop' being 'global' variables is defect because one can
+	       * have different vtwm-configurations for different screens: .vtwmrc.0,
+	       * .vtwmrc.1, etc. and then it is not apparent which of these screens
+	       * state do these three variables then denote.  (At least they should be
+	       * enclosed into 'Scr'.)
+	       * 
+	       * 
+	       * It seems the whole idea of
+	       * 
+	       * "don't iconify if there's no way to get it back - not fool-proof"
+	       * 
+	       * snippet is to guard the user from losing windows by iconifying "by
+	       * unmapping" and the same time not having e.g.
+	       * 
+	       * f.menu "TwmWindows"
+	       * 
+	       * (a) attached to any hotkey/hotbutton (FindMenuOrFuncInBindings()), or
+	       * (b) attached to any context (frame, titlebar) or titlebar-buttons
+	       * (FindMenuOrFuncInWindows()).
+	       * 
+	       * 
+	       * Further, the 'mr' pointer cannot be made 'static' as well because of the
+	       * same reason as the three 'global' context bitmap variables above.
+	       * 
+	       * The 'mr' pointer is checked in FindMenuOrFuncInWindows() against window
+	       * title buttons: i.e. a window is assumed deiconifiable if the
+	       * "TwmWindows" menu is attached to some title-bar-button.  In case there
+	       * is only one client then it remains to be figured out how to push that
+	       * button in emergency in order to deiconify if the window is iconified.
+	       */
+	      mr = NULL;
+	    }
+
+	    if (have_twmwindows == -1)
+	    {
+	      have_twmwindows = 0;
+
+	      /* better than two calls to FindMenuRoot() */
+	      for (mr = Scr->MenuList; mr != NULL; mr = mr->next)
+		if (strcmp(mr->name, TWM_WINDOWS) == 0 || strcmp(mr->name, VTWM_WINDOWS) == 0)
+		{
+		  have_twmwindows = FindMenuOrFuncInBindings(C_ALL_BITS, mr, F_NOFUNCTION);
+		  break;
+		}
+	    }
+	    if (have_showdesktop == -1)
+	      have_showdesktop = FindMenuOrFuncInBindings(C_ALL_BITS, NULL, F_SHOWDESKTOP);
+	    if (have_showlist == -1)
+	      have_showlist = FindMenuOrFuncInBindings(C_ALL_BITS, NULL, F_SHOWLIST);
+
+	    if (!FindMenuOrFuncInWindows(tmp_win, have_twmwindows, mr, F_NOFUNCTION) ||
+		LookInList(Scr->DontShowInTWMWindows, tmp_win->full_name, &tmp_win->class))
+	    {
+	      /* no TwmWindows menu or not shown in it */
+
+	      if (tmp_win->w == Scr->VirtualDesktopDisplayOuter &&
+		  FindMenuOrFuncInWindows(tmp_win, have_showdesktop, NULL, F_SHOWDESKTOP))
+		;
+	      else if (tmp_win->iconmgr && FindMenuOrFuncInWindows(tmp_win, have_showlist, NULL, F_SHOWLIST))
+		;
+	      else if (tmgr && FindMenuOrFuncInWindows(tmgr, have_showlist, NULL, F_SHOWLIST))
+		;
+	      else
+	      {
+		/* no f.showdesktop or f.showiconmgr */
+
+		DoAudible();
+
+		if (twin)
+		  tmp_win = twin;
+		break;
+	      }
 	    }
 	  }
 	}
-      }
 
-      if (!raisewin)
-      {
-	DoAudible();
-	break;
-      }
+	if (twin)
+	  tmp_win = twin;
 
-      iconwin = raisewin->iconmgr->twm_win;
-
-      if (iconwin && warp_if_warpunmapped(iconwin, F_NOFUNCTION))
-      {
-#ifndef NO_SOUND_SUPPORT
-	PlaySound(func);
-#endif
-
-	WarpInIconMgr(raisewin, iconwin);
-      }
-      else
-      {
-	DoAudible();
-      }
-    }
-    break;
-
-  case F_SQUEEZELEFT:
-    {
-      static SqueezeInfo left_squeeze = { J_LEFT, 0, 0 };
-
-      if (do_squeezetitle(context, func, tmp_win, &left_squeeze))
-	return TRUE;		/* deferred */
-    }
-    break;
-
-  case F_SQUEEZERIGHT:
-    {
-      static SqueezeInfo right_squeeze = { J_RIGHT, 0, 0 };
-
-      if (do_squeezetitle(context, func, tmp_win, &right_squeeze))
-	return TRUE;		/* deferred */
-    }
-    break;
-
-  case F_SQUEEZECENTER:
-    {
-      static SqueezeInfo center_squeeze = { J_CENTER, 0, 0 };
-
-      if (do_squeezetitle(context, func, tmp_win, &center_squeeze))
-	return TRUE;		/* deferred */
-    }
-    break;
-
-  case F_RING:
-    if (DeferExecution(context, func, Scr->SelectCursor))
-      return TRUE;
-    if (tmp_win->ring.next || tmp_win->ring.prev)
-      RemoveWindowFromRing(tmp_win);
-    else
-      AddWindowToRing(tmp_win);
-    break;
-
-  case F_WARPRING:
-    switch (action[0])
-    {
-    case 'n':
-      WarpAlongRing(&eventp->xbutton, True);
-      break;
-    case 'p':
-      WarpAlongRing(&eventp->xbutton, False);
-      break;
-    default:
-      DoAudible();
-      break;
-    }
-    break;
-
-  case F_FILE:
-    action = ExpandFilename(action);
-    fd = open(action, 0);
-    if (fd >= 0)
-    {
-      count = read(fd, buff, MAX_FILE_SIZE - 1);
-      if (count > 0)
-	XStoreBytes(dpy, buff, count);
-
-      close(fd);
-    }
-    else
-    {
-      fprintf(stderr, "%s:  unable to open file \"%s\"\n", ProgramName, action);
-    }
-    break;
-
-  case F_REFRESH:
-    {
-      XSetWindowAttributes attributes;
-      unsigned long valuemask;
-
-      valuemask = (CWBackPixel | CWBackingStore | CWSaveUnder);
-      attributes.background_pixel = Scr->Black;
-      attributes.backing_store = NotUseful;
-      attributes.save_under = False;
-      w = XCreateWindow(dpy, Scr->Root, 0, 0,
-			(unsigned int)Scr->MyDisplayWidth,
-			(unsigned int)Scr->MyDisplayHeight,
-			(unsigned int)0,
-			CopyFromParent, (unsigned int)CopyFromParent, (Visual *) CopyFromParent, valuemask, &attributes);
-      XMapWindow(dpy, w);
-      XDestroyWindow(dpy, w);
-      XFlush(dpy);
-    }
-    break;
-
-  case F_WINREFRESH:
-    if (DeferExecution(context, func, Scr->SelectCursor))
-      return TRUE;
-
-    if (context == C_ICON && tmp_win->icon_w.win)
-      w = XCreateSimpleWindow(dpy, tmp_win->icon_w.win, 0, 0, 9999, 9999, 0, Scr->Black, Scr->Black);
-    else
-      w = XCreateSimpleWindow(dpy, tmp_win->frame, 0, 0, 9999, 9999, 0, Scr->Black, Scr->Black);
-
-    XMapWindow(dpy, w);
-    XDestroyWindow(dpy, w);
-    XFlush(dpy);
-    break;
-
-  case F_NAIL:
-    if (DeferExecution(context, func, Scr->SelectCursor))
-      return TRUE;
-
-    tmp_win->nailed = !tmp_win->nailed;
-    /* update the vd display */
-    NailDesktop(tmp_win);
-
-#ifdef DEBUG
-    fprintf(stdout, "%s:  nail state of %s is now %s\n", ProgramName, tmp_win->name, (tmp_win->nailed ? "nailed" : "free"));
-#endif /* DEBUG */
-
-    RaiseStickyAbove();
-    RaiseAutoPan();
-
-    break;
-
-    /*
-     * move a percentage in a particular direction
-     */
-  case F_PANDOWN:
-    PanRealScreen(0, (atoi(action) * Scr->MyDisplayHeight) / 100, NULL, NULL);
-    break;
-  case F_PANLEFT:
-    PanRealScreen(-((atoi(action) * Scr->MyDisplayWidth) / 100), 0, NULL, NULL);
-    break;
-  case F_PANRIGHT:
-    PanRealScreen((atoi(action) * Scr->MyDisplayWidth) / 100, 0, NULL, NULL);
-    break;
-  case F_PANUP:
-    PanRealScreen(0, -((atoi(action) * Scr->MyDisplayHeight) / 100), NULL, NULL);
-    break;
-
-  case F_RESETDESKTOP:
-    SetRealScreen(0, 0);
-    break;
-
-    {
-      TwmWindow *scan;
-      int right, left, up, down;
-      int inited;
-
-  case F_SNUGDESKTOP:
-      right = left = up = down = 0;
-
-      inited = 0;
-      for (scan = Scr->TwmRoot.next; scan != NULL; scan = scan->next)
-      {
-	if (scan->nailed)
-	  continue;
-	if (scan->frame_x > Scr->MyDisplayWidth || scan->frame_y > Scr->MyDisplayHeight)
-	  continue;
-	if (scan->frame_x + scan->frame_width < 0 || scan->frame_y + scan->frame_height < 0)
-	  continue;
-	if (inited == 0 || scan->frame_x < right)
-	  right = scan->frame_x;
-	if (inited == 0 || scan->frame_y < up)
-	  up = scan->frame_y;
-	if (inited == 0 || scan->frame_x + scan->frame_width > left)
-	  left = scan->frame_x + scan->frame_width;
-	if (inited == 0 || scan->frame_y + scan->frame_height > down)
-	  down = scan->frame_y + scan->frame_height;
-	inited = 1;
-      }
-      if (inited)
-      {
-	int dx, dy;
-
-	if (left - right < Scr->MyDisplayWidth && (right < 0 || left > Scr->MyDisplayWidth))
-	  dx = right - (Scr->MyDisplayWidth - (left - right)) / 2;
-	else
-	  dx = 0;
-	if (down - up < Scr->MyDisplayHeight && (up < 0 || down > Scr->MyDisplayHeight))
-	  dy = up - (Scr->MyDisplayHeight - (down - up)) / 2;
-	else
-	  dy = 0;
-	if (dx != 0 || dy != 0)
-	  PanRealScreen(dx, dy, NULL, NULL);
-
-	else
-	  DoAudible();
-      }
-      else
-	DoAudible();
-      break;
-
-  case F_SNUGWINDOW:
-      if (DeferExecution(context, func, Scr->SelectCursor))
-	return TRUE;
-
-      inited = 0;
-      right = tmp_win->frame_x;
-      left = tmp_win->frame_x + tmp_win->frame_width;
-      up = tmp_win->frame_y;
-      down = tmp_win->frame_y + tmp_win->frame_height;
-      inited = 1;
-      if (inited)
-      {
-	int dx, dy;
-
-	dx = 0;
-	if (left - right < Scr->MyDisplayWidth)
+	if (tmp_win->list || !Scr->NoIconifyIconManagers)
 	{
-	  if (right < 0)
-	    dx = right;
-	  else if (left > Scr->MyDisplayWidth)
-	    dx = left - Scr->MyDisplayWidth;
-	}
-
-	dy = 0;
-	if (down - up < Scr->MyDisplayHeight)
-	{
-	  if (up < 0)
-	    dy = up;
-	  else if (down > Scr->MyDisplayHeight)
-	    dy = down - Scr->MyDisplayHeight;
-	}
-
-	if (dx != 0 || dy != 0)
-	  PanRealScreen(dx, dy, NULL, NULL);
-
-	else
-	  DoAudible();
-      }
-      else
-	DoAudible();
-
-      break;
-    }
-
-  case F_BINDBUTTONS:
-    {
-      int i, j;
-
-      if (DeferExecution(context, func, Scr->SelectCursor))
-	return TRUE;
-      for (i = 0; i < NumButtons + 1; i++)
-	for (j = 0; j < MOD_SIZE; j++)
-	  if (Scr->Mouse[MOUSELOC(i, C_WINDOW, j)].func != F_NOFUNCTION)
-	    XGrabButton(dpy, i, j, tmp_win->frame,
-			True, ButtonPressMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, Scr->FrameCursor);
-      break;
-    }
-  case F_BINDKEYS:
-    {
-      FuncKey *tmp;
-
-      if (DeferExecution(context, func, Scr->SelectCursor))
-	return TRUE;
-      for (tmp = Scr->FuncKeyRoot.next; tmp != NULL; tmp = tmp->next)
-	if (tmp->cont == C_WINDOW)
-	  GrabModKeys(tmp_win->w, tmp);
-      break;
-    }
-  case F_UNBINDBUTTONS:
-    {
-      int i, j;
-
-      if (DeferExecution(context, func, Scr->SelectCursor))
-	return TRUE;
-      for (i = 0; i < NumButtons + 1; i++)
-	for (j = 0; j < MOD_SIZE; j++)
-	  if (Scr->Mouse[MOUSELOC(i, C_WINDOW, j)].func != F_NOFUNCTION)
-	    XUngrabButton(dpy, i, j, tmp_win->frame);
-      break;
-    }
-  case F_UNBINDKEYS:
-    {
-      FuncKey *tmp;
-
-      if (DeferExecution(context, func, Scr->SelectCursor))
-	return TRUE;
-      for (tmp = Scr->FuncKeyRoot.next; tmp != NULL; tmp = tmp->next)
-	if (tmp->cont == C_WINDOW)
-	  UngrabModKeys(tmp_win->w, tmp);
-      break;
-    }
-
-  case F_MOVESCREEN:
-
-    /*
-     * Breaks badly if not called by the default button press.
-     */
-
-    {
-      long releaseEvent = ButtonRelease;
-      long movementMask = ButtonMotionMask;
-
-#ifndef NO_SOUND_SUPPORT
-      int did_playsound = FALSE;
-#endif
-
-      StartMoveWindowInDesktop(eventp->xmotion);
-
-      while (TRUE)
-      {
-	XMaskEvent(dpy, ButtonPressMask | ButtonReleaseMask |
-		   EnterWindowMask | LeaveWindowMask | ExposureMask | VisibilityChangeMask | movementMask, &Event);
-
-	/*
-	 * Don't discard exposure events before release
-	 * or window borders and/or their titles in the
-	 * virtual desktop won't get redrawn - djhjr
-	 */
-
-	/* discard any extra motion events before a release */
-	if (Event.type == MotionNotify)
-	{
-	  while (XCheckMaskEvent(dpy, releaseEvent | movementMask, &Event))
-	  {
-	    if (Event.type == releaseEvent)
-	      break;
-	  }
-	}
-
-	if (Event.type == releaseEvent)
-	{
-	  EndMoveWindowOnDesktop();
-	  break;
-	}
-
-	if (!DispatchEvent())
-	  continue;
-
-	if (Event.type != MotionNotify)
-	  continue;
-
-#ifndef NO_SOUND_SUPPORT
-	if (did_playsound == FALSE)
-	{
+#ifdef SOUND_SUPPORT
 	  PlaySound(func);
-	  did_playsound = TRUE;
-	}
 #endif
 
-	DoMoveWindowOnDesktop(Event.xmotion.x, Event.xmotion.y);
+	  Iconify(tmp_win, eventp->xbutton.x_root - EDGE_OFFSET, eventp->xbutton.y_root - EDGE_OFFSET);
+	}
       }
-
-      /* discard queued enter and leave events */
-      while (XCheckMaskEvent(dpy, EnterWindowMask | LeaveWindowMask, &Event))
-	;
-
-      /* will clear the XGrabPointer() in events.c:HandleButtonPress() */
-      ButtonPressed = -1;
-
       break;
-    }
 
-  case F_SNAP:
-    SnapRealScreen();
-    /* and update the data structures */
-    SetRealScreen(Scr->VirtualDesktopX, Scr->VirtualDesktopY);
-    break;
+    case F_RAISELOWER:
+      if (DeferExecution(context, func, Scr->SelectCursor))
+	return TRUE;
 
-  case F_SNAPREALSCREEN:
-    Scr->snapRealScreen = !Scr->snapRealScreen;
-    break;
-
-  case F_STATICICONPOSITIONS:
-    Scr->StaticIconPositions = !Scr->StaticIconPositions;
-    break;
-
-  case F_STRICTICONMGR:
-    {
-      TwmWindow *t;
-
-      Scr->StrictIconManager = !Scr->StrictIconManager;
-      if (Scr->StrictIconManager)
+      if (!WindowMoved)
       {
-	for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
-	  if (!t->icon)
-	    RemoveIconManager(t);
+	XWindowChanges xwc;
+
+	xwc.stack_mode = Opposite;
+	if (w != tmp_win->icon_w.win)
+	  w = tmp_win->frame;
+	XConfigureWindow(dpy, w, CWStackMode, &xwc);
+	XConfigureWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win, CWStackMode, &xwc);
+	/* ug */
+	XLowerWindow(dpy, Scr->VirtualDesktopDScreen);
       }
+      break;
+
+    case F_RAISE:
+      if (DeferExecution(context, func, Scr->SelectCursor))
+	return TRUE;
+
+      /* check to make sure raise is not from the WindowFunction */
+      if (w == tmp_win->icon_w.win && Context != C_ROOT)
+	XRaiseWindow(dpy, tmp_win->icon_w.win);
       else
       {
-	for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
-	  if (!t->list)
-	    AddIconManager(t);
+	XRaiseWindow(dpy, tmp_win->frame);
+	XRaiseWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
+      }
+
+      RaiseStickyAbove();
+      RaiseAutoPan();
+
+      break;
+
+    case F_LOWER:
+      if (DeferExecution(context, func, Scr->SelectCursor))
+	return TRUE;
+
+      if (!(Scr->StickyAbove && tmp_win->nailed))
+      {
+	if (w == tmp_win->icon_w.win)
+	  XLowerWindow(dpy, tmp_win->icon_w.win);
+	else
+	{
+	  XLowerWindow(dpy, tmp_win->frame);
+	  XLowerWindow(dpy, tmp_win->VirtualDesktopDisplayWindow.win);
+	  XLowerWindow(dpy, Scr->VirtualDesktopDScreen);
+	}
       }
 
       break;
-    }
 
-  case F_SETREALSCREEN:
-    {
-      int newx = Scr->VirtualDesktopX;
-      int newy = Scr->VirtualDesktopY;
+    case F_FOCUS:
+#ifdef TWM_USE_SLOPPYFOCUS
+      if (SloppyFocus == TRUE)
+      {
+	SloppyFocus = FALSE;
+	FocusOnRoot();
+      }
+#endif
+      if (DeferExecution(context, func, Scr->SelectCursor))
+	return TRUE;
 
-      /* parse the geometry */
-      JunkMask = XParseGeometry(action, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
-
-      if (JunkMask & XValue)
-	newx = JunkX;
-      if (JunkMask & YValue)
-	newy = JunkY;
-
-      if (newx < 0)
-	newx = Scr->VirtualDesktopWidth + newx;
-      if (newy < 0)
-	newy = Scr->VirtualDesktopHeight + newy;
-
-      SetRealScreen(newx, newy);
-
+      if (tmp_win->icon == FALSE)
+      {
+	if (!FocusRoot && Focus == tmp_win)
+	{
+	  FocusOnRoot();
+	}
+	else
+	{
+	  FocusOnClient(tmp_win);
+	}
+      }
       break;
-    }
 
-  case F_HIDEDESKTOP:
-    if (Scr->Virtual)
-      XUnmapWindow(dpy, Scr->VirtualDesktopDisplayTwin->frame);
-    break;
-
-  case F_SHOWDESKTOP:
-    if (Scr->Virtual)
-    {
-      XMapWindow(dpy, Scr->VirtualDesktopDisplayTwin->frame);
-
-      if (Scr->VirtualDesktopDisplayTwin->icon)
-	DeIconify(Scr->VirtualDesktopDisplayTwin);
-    }
-    break;
-
-  case F_ENTERDOOR:
-    {
-      TwmDoor *d;
-
-      if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *) & d) != XCNOENT)
-	door_enter(tmp_win->w, d);
-      break;
-    }
-
-  case F_DELETEDOOR:
-    {
-      TwmDoor *d;
-
+    case F_DESTROY:
       if (DeferExecution(context, func, Scr->DestroyCursor))
 	return TRUE;
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
       /* flag for the handler */
       if (PlaySound(func))
 	destroySoundFromFunction = TRUE;
 #endif
 
-      if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *) & d) != XCNOENT)
+      if (tmp_win == Scr->VirtualDesktopDisplayTwin)
       {
-	/* for some reason, we don't get the button up event - djhjr - 5/13/99 */
-	ButtonPressed = -1;
+	if (have_showdesktop == -1)
+	  have_showdesktop = FindMenuOrFuncInBindings(C_ALL_BITS, NULL, F_SHOWDESKTOP);
+	if (FindMenuOrFuncInWindows(tmp_win, have_showdesktop, NULL, F_SHOWDESKTOP))
+	  XUnmapWindow(dpy, Scr->VirtualDesktopDisplayTwin->frame);
+	else
 
-	door_delete(tmp_win->w, d);
+	  DoAudible();
+	break;
+      }
+
+      {
+	TwmDoor *d;
+
+	if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *) & d) != XCNOENT)
+	{
+	  /* for some reason, we don't get the button up event - djhjr - 9/10/99 */
+	  ButtonPressed = -1;
+	  door_delete(tmp_win->w, d);
+
+	  break;
+	}
+      }
+
+      if (tmp_win->iconmgr)	/* don't send ourself a message */
+      {
+	if (have_showlist == -1)
+	  have_showlist = FindMenuOrFuncInBindings(C_ALL_BITS, NULL, F_SHOWLIST);
+	if (FindMenuOrFuncInWindows(tmp_win, have_showlist, NULL, F_SHOWLIST))
+
+	  HideIconManager(tmp_win);
+
+	else
+	  DoAudible();
+      }
+      else
+      {
+	AppletDown(tmp_win);
+
+	XKillClient(dpy, tmp_win->w);
       }
       break;
-    }
 
-  case F_NEWDOOR:
-    PopDownMenu();
-    door_new();
-    break;
+    case F_DELETE:
+      if (DeferExecution(context, func, Scr->DestroyCursor))
+	return TRUE;
 
-  case F_NAMEDOOR:
-    {
-      TwmDoor *d;
-
-      if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *) & d) != XCNOENT)
-	door_paste_name(tmp_win->w, d);
-      break;
-    }
-
-  case F_QUIT:
-
-#ifndef NO_SOUND_SUPPORT
-    if (PlaySound(func))
-    {
-      /* allow time to emit */
-      if (Scr->PauseOnQuit)
-	sleep(Scr->PauseOnQuit);
-    }
-    else
-      PlaySoundDone();
+#ifdef SOUND_SUPPORT
+      /* flag for the handler */
+      if (PlaySound(func))
+	destroySoundFromFunction = TRUE;
 #endif
 
-    Done(0);
-    break;
+      if (tmp_win == Scr->VirtualDesktopDisplayTwin)
+      {
+	if (have_showdesktop == -1)
+	  have_showdesktop = FindMenuOrFuncInBindings(C_ALL_BITS, NULL, F_SHOWDESKTOP);
+	if (FindMenuOrFuncInWindows(tmp_win, have_showdesktop, NULL, F_SHOWDESKTOP))
+	  XUnmapWindow(dpy, Scr->VirtualDesktopDisplayTwin->frame);
+	else
+	  DoAudible();
 
-  case F_VIRTUALGEOMETRIES:
-    Scr->GeometriesAreVirtual = !Scr->GeometriesAreVirtual;
-    break;
+	break;
+      }
 
-  case F_WARPVISIBLE:
-    Scr->WarpVisible = !Scr->WarpVisible;
-    break;
+      {
+	TwmDoor *d;
 
-  case F_WARPSNUG:
-    Scr->WarpSnug = !Scr->WarpSnug;
-    break;
+	if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *) & d) != XCNOENT)
+	{
+	  /* for some reason, we don't get the button up event - djhjr - 9/10/99 */
+	  ButtonPressed = -1;
+	  door_delete(tmp_win->w, d);
 
-#ifndef NO_SOUND_SUPPORT
-  case F_SOUNDS:
-    ToggleSounds();
-    break;
+	  break;
+	}
+      }
 
-  case F_PLAYSOUND:
-    PlaySoundAdhoc(action);
-    break;
+      if (tmp_win->iconmgr)	/* don't send ourself a message */
+      {
+	if (have_showlist == -1)
+	  have_showlist = FindMenuOrFuncInBindings(C_ALL_BITS, NULL, F_SHOWLIST);
+	if (FindMenuOrFuncInWindows(tmp_win, have_showlist, NULL, F_SHOWLIST))
+
+	  HideIconManager(tmp_win);
+
+	else
+	  DoAudible();
+      }
+      else if (tmp_win->protocols & DoesWmDeleteWindow)
+      {
+	AppletDown(tmp_win);
+
+	SendDeleteWindowMessage(tmp_win, LastTimestamp());
+      }
+      else
+	DoAudible();
+      break;
+
+    case F_SAVEYOURSELF:
+      if (DeferExecution(context, func, Scr->SelectCursor))
+	return TRUE;
+
+      if (tmp_win->protocols & DoesWmSaveYourself)
+	SendSaveYourselfMessage(tmp_win, LastTimestamp());
+      else
+	DoAudible();
+      break;
+
+    case F_CIRCLEUP:
+      XCirculateSubwindowsUp(dpy, Scr->Root);
+      break;
+
+    case F_CIRCLEDOWN:
+      XCirculateSubwindowsDown(dpy, Scr->Root);
+      break;
+
+    case F_EXEC:
+      {
+	ScreenInfo *scr;
+
+	if (FocusRoot != TRUE)
+	  /*
+	   * f.focus / f.sloppyfocus:  Execute external program
+	   * on the screen where the mouse is and not where
+	   * the current X11-event occurred.  (The XGrabPointer()
+	   * above should not 'confine_to' the mouse onto that
+	   * screen as well.)
+	   */
+	  scr = FindPointerScreenInfo();
+	else
+	  scr = Scr;
+
+	PopDownMenu();
+	if (!scr->NoGrabServer)
+	{
+	  XUngrabServer(dpy);
+	  XSync(dpy, False);
+	}
+
+#ifdef SOUND_SUPPORT
+	/* flag for the handler */
+	if (PlaySound(func))
+	  createSoundFromFunction = TRUE;
+#endif
+	Execute(scr, action);
+      }
+      break;
+
+    case F_UNFOCUS:
+#ifdef TWM_USE_SLOPPYFOCUS
+      SloppyFocus = FALSE;
+#endif
+      FocusOnRoot();
+      break;
+
+#ifdef TWM_USE_SLOPPYFOCUS
+    case F_SLOPPYFOCUS:
+      SloppyFocus = TRUE;
+      FocusOnRoot();
+      break;
+#endif
+
+    case F_CUT:
+      strcpy(tmp, action);
+      strcat(tmp, "\n");
+      XStoreBytes(dpy, tmp, strlen(tmp));
+      break;
+
+    case F_CUTFILE:
+      ptr = XFetchBytes(dpy, &count);
+      if (ptr)
+      {
+	if (sscanf(ptr, "%s", tmp) == 1)
+	{
+	  XFree(ptr);
+	  ptr = ExpandFilename(tmp);
+	  if (ptr)
+	  {
+	    fd = open(ptr, 0);
+	    if (fd >= 0)
+	    {
+	      count = read(fd, buff, MAX_FILE_SIZE - 1);
+	      if (count > 0)
+		XStoreBytes(dpy, buff, count);
+	      close(fd);
+	    }
+	    else
+	    {
+	      fprintf(stderr, "%s:  unable to open cut file \"%s\"\n", ProgramName, tmp);
+	    }
+	    if (ptr != tmp)
+	      free(ptr);
+	  }
+	}
+	else
+	{
+	  XFree(ptr);
+	}
+      }
+      else
+      {
+	fprintf(stderr, "%s:  cut buffer is empty\n", ProgramName);
+      }
+      break;
+
+    case F_WARPTOSCREEN:
+      {
+	ScreenInfo *scr;
+
+	if (FocusRoot != TRUE)
+	{
+	  /*
+	   * f.focus / f.sloppyfocus is active:  KeyPress X11-events
+	   * are delivered into the focused window probably on
+	   * another screen, then "Scr" is not where the mouse is:
+	   */
+	  scr = FindPointerScreenInfo();
+#ifdef TWM_USE_SLOPPYFOCUS
+	  if (SloppyFocus == TRUE)
+	    FocusOnRoot();	/* drop client focus before screen switch */
+#endif
+	}
+	else
+	  scr = Scr;
+
+	if (strcmp(action, WARPSCREEN_NEXT) == 0)
+	{
+	  WarpToScreen(scr, scr->screen + 1, 1);
+	}
+	else if (strcmp(action, WARPSCREEN_PREV) == 0)
+	{
+	  WarpToScreen(scr, scr->screen - 1, -1);
+	}
+	else if (strcmp(action, WARPSCREEN_BACK) == 0)
+	{
+	  WarpToScreen(scr, PreviousScreen, 0);
+	}
+	else
+	{
+	  WarpToScreen(scr, atoi(action), 0);
+	}
+      }
+      break;
+
+    case F_COLORMAP:
+      {
+	if (strcmp(action, COLORMAP_NEXT) == 0)
+	{
+	  BumpWindowColormap(tmp_win, 1);
+	}
+	else if (strcmp(action, COLORMAP_PREV) == 0)
+	{
+	  BumpWindowColormap(tmp_win, -1);
+	}
+	else
+	{
+	  BumpWindowColormap(tmp_win, 0);
+	}
+      }
+      break;
+
+    case F_WARPCLASSNEXT:
+    case F_WARPCLASSPREV:
+      WarpClass(func == F_WARPCLASSNEXT, tmp_win, action);
+      break;
+
+    case F_WARPTONEWEST:
+      if (Scr->Newest && warp_if_warpunmapped(Scr->Newest, F_NOFUNCTION))
+      {
+	RaiseStickyAbove();
+	RaiseAutoPan();
+
+#ifdef SOUND_SUPPORT
+	PlaySound(func);
+#endif
+
+	WarpToWindow(Scr->Newest);
+      }
+      else
+	DoAudible();
+      break;
+
+    case F_WARPTO:
+      {
+	register TwmWindow *t;
+	int did_warpto = FALSE;
+
+	for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
+	{
+	  /*
+	   * This used to fall through into F_WARP, but the
+	   * warp_if_warpunmapped() meant this loop couldn't
+	   * continue to look for a match in the window list.
+	   */
+
+	  if (MatchWinName(action, t) == 0 && warp_if_warpunmapped(t, func))
+	  {
+	    tmp_win = t;
+	    RaiseStickyAbove();
+	    RaiseAutoPan();
+
+#ifdef SOUND_SUPPORT
+	    PlaySound(func);
+#endif
+	    did_warpto = TRUE;
+
+	    WarpToWindow(tmp_win);
+	    break;
+	  }
+	}
+
+	if (!did_warpto)
+	  DoAudible();
+      }
+      break;
+
+    case F_WARP:
+      {
+	if (tmp_win && warp_if_warpunmapped(tmp_win, F_NOFUNCTION))
+	{
+	  RaiseStickyAbove();
+	  RaiseAutoPan();
+
+#ifdef SOUND_SUPPORT
+	  PlaySound(func);
+#endif
+
+	  WarpToWindow(tmp_win);
+	}
+	else
+	{
+	  DoAudible();
+	}
+      }
+      break;
+
+    case F_WARPTOICONMGR:
+      {
+	TwmWindow *t;
+	int len;
+
+	/*
+	 * raisewin now points to the window's icon manager entry, and
+	 * iconwin now points to raisewin's icon manager - djhjr - 5/30/00
+	 *
+	 */
+	WList *raisewin = NULL;
+	TwmWindow *iconwin = None;
+
+	len = strlen(action);
+	if (len == 0)
+	{
+	  if (tmp_win && tmp_win->list)
+	  {
+	    raisewin = tmp_win->list;
+	  }
+	  else if (Scr->iconmgr.active)
+	  {
+	    raisewin = Scr->iconmgr.active;
+	  }
+	}
+	else
+	{
+	  for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
+	  {
+	    if (strncmp(action, t->icon_name, len) == 0)
+	    {
+	      if (t->list && t->list->iconmgr->twm_win->mapped)
+	      {
+
+		raisewin = t->list;
+		break;
+	      }
+	    }
+	  }
+	}
+
+	if (!raisewin)
+	{
+	  DoAudible();
+	  break;
+	}
+
+	iconwin = raisewin->iconmgr->twm_win;
+
+	if (iconwin && warp_if_warpunmapped(iconwin, F_NOFUNCTION))
+	{
+#ifdef SOUND_SUPPORT
+	  PlaySound(func);
+#endif
+
+	  WarpInIconMgr(raisewin, iconwin);
+	}
+	else
+	{
+	  DoAudible();
+	}
+      }
+      break;
+
+    case F_SQUEEZELEFT:
+      {
+	static SqueezeInfo left_squeeze = { J_LEFT, 0, 0 };
+
+	if (do_squeezetitle(context, func, tmp_win, &left_squeeze))
+	  return TRUE;		/* deferred */
+      }
+      break;
+
+    case F_SQUEEZERIGHT:
+      {
+	static SqueezeInfo right_squeeze = { J_RIGHT, 0, 0 };
+
+	if (do_squeezetitle(context, func, tmp_win, &right_squeeze))
+	  return TRUE;		/* deferred */
+      }
+      break;
+
+    case F_SQUEEZECENTER:
+      {
+	static SqueezeInfo center_squeeze = { J_CENTER, 0, 0 };
+
+	if (do_squeezetitle(context, func, tmp_win, &center_squeeze))
+	  return TRUE;		/* deferred */
+      }
+      break;
+
+    case F_RING:
+      if (DeferExecution(context, func, Scr->SelectCursor))
+	return TRUE;
+      if (tmp_win->ring.next || tmp_win->ring.prev)
+	RemoveWindowFromRing(tmp_win);
+      else
+	AddWindowToRing(tmp_win);
+      break;
+
+    case F_WARPRING:
+      switch (action[0])
+      {
+	case 'n':
+	  WarpAlongRing(&eventp->xbutton, True);
+	  break;
+	case 'p':
+	  WarpAlongRing(&eventp->xbutton, False);
+	  break;
+	default:
+	  DoAudible();
+	  break;
+      }
+      break;
+
+    case F_FILE:
+      action = ExpandFilename(action);
+      fd = open(action, 0);
+      if (fd >= 0)
+      {
+	count = read(fd, buff, MAX_FILE_SIZE - 1);
+	if (count > 0)
+	  XStoreBytes(dpy, buff, count);
+
+	close(fd);
+      }
+      else
+      {
+	fprintf(stderr, "%s:  unable to open file \"%s\"\n", ProgramName, action);
+      }
+      break;
+
+    case F_REFRESH:
+      {
+	XSetWindowAttributes attributes;
+	unsigned long valuemask;
+
+	valuemask = (CWBackPixel | CWBackingStore | CWSaveUnder);
+	attributes.background_pixel = Scr->Black;
+	attributes.backing_store = NotUseful;
+	attributes.save_under = False;
+	w = XCreateWindow(dpy, Scr->Root, 0, 0,
+			  (unsigned int)Scr->MyDisplayWidth,
+			  (unsigned int)Scr->MyDisplayHeight,
+			  (unsigned int)0,
+			  CopyFromParent, (unsigned int)CopyFromParent, (Visual *) CopyFromParent, valuemask, &attributes);
+	XMapWindow(dpy, w);
+	XDestroyWindow(dpy, w);
+	XFlush(dpy);
+      }
+      break;
+
+    case F_WINREFRESH:
+      if (DeferExecution(context, func, Scr->SelectCursor))
+	return TRUE;
+
+      if (context == C_ICON && tmp_win->icon_w.win)
+	w = XCreateSimpleWindow(dpy, tmp_win->icon_w.win, 0, 0, 9999, 9999, 0, Scr->Black, Scr->Black);
+      else
+	w = XCreateSimpleWindow(dpy, tmp_win->frame, 0, 0, 9999, 9999, 0, Scr->Black, Scr->Black);
+
+      XMapWindow(dpy, w);
+      XDestroyWindow(dpy, w);
+      XFlush(dpy);
+      break;
+
+    case F_NAIL:
+      if (DeferExecution(context, func, Scr->SelectCursor))
+	return TRUE;
+
+      tmp_win->nailed = !tmp_win->nailed;
+      /* update the vd display */
+      NailDesktop(tmp_win);
+
+#ifdef DEBUG
+      fprintf(stdout, "%s:  nail state of %s is now %s\n", ProgramName, tmp_win->name, (tmp_win->nailed ? "nailed" : "free"));
+#endif /* DEBUG */
+
+      RaiseStickyAbove();
+      RaiseAutoPan();
+
+      break;
+
+      /*
+       * move a percentage in a particular direction
+       */
+    case F_PANDOWN:
+      PanRealScreen(0, (atoi(action) * Scr->MyDisplayHeight) / 100, NULL, NULL);
+      break;
+    case F_PANLEFT:
+      PanRealScreen(-((atoi(action) * Scr->MyDisplayWidth) / 100), 0, NULL, NULL);
+      break;
+    case F_PANRIGHT:
+      PanRealScreen((atoi(action) * Scr->MyDisplayWidth) / 100, 0, NULL, NULL);
+      break;
+    case F_PANUP:
+      PanRealScreen(0, -((atoi(action) * Scr->MyDisplayHeight) / 100), NULL, NULL);
+      break;
+
+    case F_RESETDESKTOP:
+      SetRealScreen(0, 0);
+      break;
+
+      {
+	TwmWindow *scan;
+	int right, left, up, down;
+	int inited;
+
+	case F_SNUGDESKTOP:
+	right = left = up = down = 0;
+
+	inited = 0;
+	for (scan = Scr->TwmRoot.next; scan != NULL; scan = scan->next)
+	{
+	  if (scan->nailed)
+	    continue;
+	  if (scan->frame_x > Scr->MyDisplayWidth || scan->frame_y > Scr->MyDisplayHeight)
+	    continue;
+	  if (scan->frame_x + scan->frame_width < 0 || scan->frame_y + scan->frame_height < 0)
+	    continue;
+	  if (inited == 0 || scan->frame_x < right)
+	    right = scan->frame_x;
+	  if (inited == 0 || scan->frame_y < up)
+	    up = scan->frame_y;
+	  if (inited == 0 || scan->frame_x + scan->frame_width > left)
+	    left = scan->frame_x + scan->frame_width;
+	  if (inited == 0 || scan->frame_y + scan->frame_height > down)
+	    down = scan->frame_y + scan->frame_height;
+	  inited = 1;
+	}
+	if (inited)
+	{
+	  int dx, dy;
+
+	  if (left - right < Scr->MyDisplayWidth && (right < 0 || left > Scr->MyDisplayWidth))
+	    dx = right - (Scr->MyDisplayWidth - (left - right)) / 2;
+	  else
+	    dx = 0;
+	  if (down - up < Scr->MyDisplayHeight && (up < 0 || down > Scr->MyDisplayHeight))
+	    dy = up - (Scr->MyDisplayHeight - (down - up)) / 2;
+	  else
+	    dy = 0;
+	  if (dx != 0 || dy != 0)
+	    PanRealScreen(dx, dy, NULL, NULL);
+
+	  else
+	    DoAudible();
+	}
+	else
+	  DoAudible();
+	break;
+
+	case F_SNUGWINDOW:
+	if (DeferExecution(context, func, Scr->SelectCursor))
+	  return TRUE;
+
+	inited = 0;
+	right = tmp_win->frame_x;
+	left = tmp_win->frame_x + tmp_win->frame_width;
+	up = tmp_win->frame_y;
+	down = tmp_win->frame_y + tmp_win->frame_height;
+	inited = 1;
+	if (inited)
+	{
+	  int dx, dy;
+
+	  dx = 0;
+	  if (left - right < Scr->MyDisplayWidth)
+	  {
+	    if (right < 0)
+	      dx = right;
+	    else if (left > Scr->MyDisplayWidth)
+	      dx = left - Scr->MyDisplayWidth;
+	  }
+
+	  dy = 0;
+	  if (down - up < Scr->MyDisplayHeight)
+	  {
+	    if (up < 0)
+	      dy = up;
+	    else if (down > Scr->MyDisplayHeight)
+	      dy = down - Scr->MyDisplayHeight;
+	  }
+
+	  if (dx != 0 || dy != 0)
+	    PanRealScreen(dx, dy, NULL, NULL);
+
+	  else
+	    DoAudible();
+	}
+	else
+	  DoAudible();
+
+	break;
+      }
+
+    case F_BINDBUTTONS:
+      {
+	int i, j;
+
+	if (DeferExecution(context, func, Scr->SelectCursor))
+	  return TRUE;
+	for (i = 0; i < NumButtons + 1; i++)
+	  for (j = 0; j < MOD_SIZE; j++)
+	    if (Scr->Mouse[MOUSELOC(i, C_WINDOW, j)].func != F_NOFUNCTION)
+	      XGrabButton(dpy, i, j, tmp_win->frame,
+			  True, ButtonPressMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, Scr->FrameCursor);
+	break;
+      }
+    case F_BINDKEYS:
+      {
+	FuncKey *tmp;
+
+	if (DeferExecution(context, func, Scr->SelectCursor))
+	  return TRUE;
+	for (tmp = Scr->FuncKeyRoot.next; tmp != NULL; tmp = tmp->next)
+	  if (tmp->cont == C_WINDOW)
+	    GrabModKeys(tmp_win->w, tmp);
+	break;
+      }
+    case F_UNBINDBUTTONS:
+      {
+	int i, j;
+
+	if (DeferExecution(context, func, Scr->SelectCursor))
+	  return TRUE;
+	for (i = 0; i < NumButtons + 1; i++)
+	  for (j = 0; j < MOD_SIZE; j++)
+	    if (Scr->Mouse[MOUSELOC(i, C_WINDOW, j)].func != F_NOFUNCTION)
+	      XUngrabButton(dpy, i, j, tmp_win->frame);
+	break;
+      }
+    case F_UNBINDKEYS:
+      {
+	FuncKey *tmp;
+
+	if (DeferExecution(context, func, Scr->SelectCursor))
+	  return TRUE;
+	for (tmp = Scr->FuncKeyRoot.next; tmp != NULL; tmp = tmp->next)
+	  if (tmp->cont == C_WINDOW)
+	    UngrabModKeys(tmp_win->w, tmp);
+	break;
+      }
+
+    case F_MOVESCREEN:
+
+      /*
+       * Breaks badly if not called by the default button press.
+       */
+
+      {
+	long releaseEvent = ButtonRelease;
+	long movementMask = ButtonMotionMask;
+
+#ifdef SOUND_SUPPORT
+	int did_playsound = FALSE;
+#endif
+
+	StartMoveWindowInDesktop(eventp->xmotion);
+
+	while (TRUE)
+	{
+	  XMaskEvent(dpy, ButtonPressMask | ButtonReleaseMask |
+		     EnterWindowMask | LeaveWindowMask | ExposureMask | VisibilityChangeMask | movementMask, &Event);
+
+	  /*
+	   * Don't discard exposure events before release
+	   * or window borders and/or their titles in the
+	   * virtual desktop won't get redrawn - djhjr
+	   */
+
+	  /* discard any extra motion events before a release */
+	  if (Event.type == MotionNotify)
+	  {
+	    while (XCheckMaskEvent(dpy, releaseEvent | movementMask, &Event))
+	    {
+	      if (Event.type == releaseEvent)
+		break;
+	    }
+	  }
+
+	  if (Event.type == releaseEvent)
+	  {
+	    EndMoveWindowOnDesktop();
+	    break;
+	  }
+
+	  if (!DispatchEvent())
+	    continue;
+
+	  if (Event.type != MotionNotify)
+	    continue;
+
+#ifdef SOUND_SUPPORT
+	  if (did_playsound == FALSE)
+	  {
+	    PlaySound(func);
+	    did_playsound = TRUE;
+	  }
+#endif
+
+	  DoMoveWindowOnDesktop(Event.xmotion.x, Event.xmotion.y);
+	}
+
+	/* discard queued enter and leave events */
+	while (XCheckMaskEvent(dpy, EnterWindowMask | LeaveWindowMask, &Event))
+	  ;
+
+	/* will clear the XGrabPointer() in events.c:HandleButtonPress() */
+	ButtonPressed = -1;
+
+	break;
+      }
+
+    case F_SNAP:
+      SnapRealScreen();
+      /* and update the data structures */
+      SetRealScreen(Scr->VirtualDesktopX, Scr->VirtualDesktopY);
+      break;
+
+    case F_SNAPREALSCREEN:
+      Scr->snapRealScreen = !Scr->snapRealScreen;
+      break;
+
+    case F_STATICICONPOSITIONS:
+      Scr->StaticIconPositions = !Scr->StaticIconPositions;
+      break;
+
+    case F_STRICTICONMGR:
+      {
+	TwmWindow *t;
+
+	Scr->StrictIconManager = !Scr->StrictIconManager;
+	if (Scr->StrictIconManager)
+	{
+	  for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
+	    if (!t->icon)
+	      RemoveIconManager(t);
+	}
+	else
+	{
+	  for (t = Scr->TwmRoot.next; t != NULL; t = t->next)
+	    if (!t->list)
+	      AddIconManager(t);
+	}
+
+	break;
+      }
+
+    case F_SETREALSCREEN:
+      {
+	int newx = Scr->VirtualDesktopX;
+	int newy = Scr->VirtualDesktopY;
+
+	/* parse the geometry */
+	JunkMask = XParseGeometry(action, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
+
+	if (JunkMask & XValue)
+	  newx = JunkX;
+	if (JunkMask & YValue)
+	  newy = JunkY;
+
+	if (newx < 0)
+	  newx = Scr->VirtualDesktopWidth + newx;
+	if (newy < 0)
+	  newy = Scr->VirtualDesktopHeight + newy;
+
+	SetRealScreen(newx, newy);
+
+	break;
+      }
+
+    case F_HIDEDESKTOP:
+      if (Scr->Virtual)
+	XUnmapWindow(dpy, Scr->VirtualDesktopDisplayTwin->frame);
+      break;
+
+    case F_SHOWDESKTOP:
+      if (Scr->Virtual)
+      {
+	XMapWindow(dpy, Scr->VirtualDesktopDisplayTwin->frame);
+
+	if (Scr->VirtualDesktopDisplayTwin->icon)
+	  DeIconify(Scr->VirtualDesktopDisplayTwin);
+      }
+      break;
+
+    case F_ENTERDOOR:
+      {
+	TwmDoor *d;
+
+	if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *) & d) != XCNOENT)
+	  door_enter(tmp_win->w, d);
+	break;
+      }
+
+    case F_DELETEDOOR:
+      {
+	TwmDoor *d;
+
+	if (DeferExecution(context, func, Scr->DestroyCursor))
+	  return TRUE;
+
+#ifdef SOUND_SUPPORT
+	/* flag for the handler */
+	if (PlaySound(func))
+	  destroySoundFromFunction = TRUE;
+#endif
+
+	if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *) & d) != XCNOENT)
+	{
+	  /* for some reason, we don't get the button up event - djhjr - 5/13/99 */
+	  ButtonPressed = -1;
+
+	  door_delete(tmp_win->w, d);
+	}
+	break;
+      }
+
+    case F_NEWDOOR:
+      PopDownMenu();
+      door_new();
+      break;
+
+    case F_NAMEDOOR:
+      {
+	TwmDoor *d;
+
+	if (XFindContext(dpy, tmp_win->w, DoorContext, (caddr_t *) & d) != XCNOENT)
+	  door_paste_name(tmp_win->w, d);
+	break;
+      }
+
+    case F_QUIT:
+
+#ifdef SOUND_SUPPORT
+      if (PlaySound(func))
+      {
+	/* allow time to emit */
+	if (Scr->PauseOnQuit)
+	  sleep(Scr->PauseOnQuit);
+      }
+      else
+	PlaySoundDone(0);
+#endif
+
+      Done(0);
+      break;
+
+    case F_VIRTUALGEOMETRIES:
+      Scr->GeometriesAreVirtual = !Scr->GeometriesAreVirtual;
+      break;
+
+    case F_WARPVISIBLE:
+      Scr->WarpVisible = !Scr->WarpVisible;
+      break;
+
+    case F_WARPSNUG:
+      Scr->WarpSnug = !Scr->WarpSnug;
+      break;
+
+#ifdef SOUND_SUPPORT
+    case F_SOUNDS:
+      ToggleSounds();
+      break;
+
+    case F_PLAYSOUND:
+      PlaySoundAdhoc(action);
+      break;
 #endif
   }
 
@@ -4668,7 +4668,7 @@ Identify(TwmWindow * t)
   int px, py, dummy;
   unsigned udummy;
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   PlaySound(F_IDENTIFY);
 #endif
 
@@ -4697,9 +4697,11 @@ Identify(TwmWindow * t)
   {
 #ifndef NO_BUILD_INFO
     char is_m4, is_xpm;
+    char is_sound; /* cjp - 2007/01/08 */
+    char is_esd; /* cjp - 2007/01/08 */
+    char is_oss; /* cjp - 2007/01/08 */
     char is_rplay;
     char is_regex;
-
 
     /*
      * Was a 'do ... while()' that accessed unallocated memory.
@@ -4718,17 +4720,32 @@ Identify(TwmWindow * t)
 #else
     is_xpm = '+';
 #endif
-#ifdef NO_SOUND_SUPPORT
-    is_rplay = '-';
+#ifdef SOUND_SUPPORT
+    is_sound = '+';
 #else
+    is_sound = '-';
+#endif
+#ifdef HAVE_RPLAY
     is_rplay = '+';
+#else
+    is_rplay = '-';
+#endif
+#ifdef HAVE_ESD
+    is_esd = '+';
+#else
+    is_esd = '-';
+#endif
+#ifdef HAVE_OSS
+    is_oss = '+';
+#else
+    is_oss = '-';
 #endif
 #ifdef NO_REGEX_SUPPORT
     is_regex = '-';
 #else
     is_regex = '+';
 #endif
-    (void)sprintf(Info[n++], "Options:  %cm4 %cregex %crplay %cxpm", is_m4, is_regex, is_rplay, is_xpm);
+    (void)sprintf(Info[n++], "Options:  %cm4 %cregex %csound %crplay %cesd %coss %cxpm", is_m4, is_regex, is_sound, is_rplay, is_esd, is_oss, is_xpm);
     Info[n++][0] = '\0';
 #endif
 #ifdef TILED_SCREEN
@@ -4737,9 +4754,9 @@ Identify(TwmWindow * t)
       i = FindNearestTileToMouse();
       if (i >= 0 && i < Scr->ntiles) {
 	(void) sprintf(Info[n++], "Panel %d (connector '%s'): x = %d  y = %d  w = %d  h = %d", i+1,
-		    (Scr->tile_names && Scr->tile_names[i] ? Scr->tile_names[i] : "unknown"),
-		    Lft(Scr->tiles[i]), Bot(Scr->tiles[i]),
-		    AreaWidth(Scr->tiles[i]), AreaHeight(Scr->tiles[i]));
+		       (Scr->tile_names && Scr->tile_names[i] ? Scr->tile_names[i] : "unknown"),
+		       Lft(Scr->tiles[i]), Bot(Scr->tiles[i]),
+		       AreaWidth(Scr->tiles[i]), AreaHeight(Scr->tiles[i]));
 	Info[n++][0] = '\0';
       }
     }
@@ -5252,7 +5269,7 @@ WarpClass(int next, TwmWindow * t, char *class)
       RaiseStickyAbove();
       RaiseAutoPan();
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
       PlaySound((next) ? F_WARPCLASSNEXT : F_WARPCLASSPREV);
 #endif
 
@@ -5339,7 +5356,7 @@ WarpAlongRing(XButtonEvent * ev, Bool forward)
     RaiseStickyAbove();
     RaiseAutoPan();
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
     PlaySound(F_WARPRING);
 #endif
 
@@ -5428,7 +5445,7 @@ WarpToScreen(ScreenInfo * scr, int n, int inc)
   JunkX = (JunkX * newscr->MyDisplayWidth)  / scr->MyDisplayWidth;
   JunkY = (JunkY * newscr->MyDisplayHeight) / scr->MyDisplayHeight;
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   PlaySound(F_WARPTOSCREEN);
 #endif
 
@@ -5652,7 +5669,7 @@ do_squeezetitle(int context, int func, TwmWindow * tmp_win, SqueezeInfo * squeez
     {
       PopDownMenu();
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
       PlaySound(func);
 #endif
 
@@ -5680,7 +5697,7 @@ do_squeezetitle(int context, int func, TwmWindow * tmp_win, SqueezeInfo * squeez
 static void
 setup_restart(Time time)
 {
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   CloseSound();
 #endif
 
@@ -5996,7 +6013,7 @@ FindFuncInMenus(MenuRoot * mr, int func)
 void
 DoAudible(void)
 {
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   if (PlaySound(S_BELL))
     return;
 #endif

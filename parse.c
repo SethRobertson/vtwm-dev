@@ -88,9 +88,9 @@ extern Bool PrintErrorMessages;
 static char *make_m4_cmdline(char *display_name, char *cp, char *m4_option);
 #endif
 
-#ifndef NO_SOUND_SUPPORT
-extern void SetSoundHost();
-extern void SetSoundVolume();
+#ifdef SOUND_SUPPORT
+extern void SetSoundHost(char *host);
+extern void SetSoundVolume(int volume);
 #endif
 
 /***********************************************************************
@@ -497,7 +497,7 @@ typedef struct _TwmKeyword
 
 #define kws_ResizeRegion		14
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
 #define kws_SoundHost			15
 #endif
 
@@ -534,7 +534,7 @@ typedef struct _TwmKeyword
 #define kwn_PanResistance		30
 #define kwn_MenuScrollBorderWidth	31
 #define kwn_MenuScrollJump			32
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
 #define kwn_SoundVolume			33
 #endif
 #define kwn_PauseOnExit			34
@@ -744,7 +744,7 @@ static TwmKeyword keytable[] = {
   {"f.snugwindow", FKEYWORD, F_SNUGWINDOW},
   {"f.sorticonmgr", FKEYWORD, F_SORTICONMGR},
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   {"f.sounds", FKEYWORD, F_SOUNDS},
 #endif
 
@@ -988,7 +988,7 @@ static TwmKeyword keytable[] = {
   {"snaprealscreen", KEYWORD, kw0_SnapRealScreen},
   {"sorticonmanager", KEYWORD, kw0_SortIconManager},
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   {"soundhost", SKEYWORD, kws_SoundHost},
   {"sounds", SOUNDS, 0},
   {"soundvolume", NKEYWORD, kwn_SoundVolume},
@@ -1465,7 +1465,7 @@ do_string_keyword(int keyword, char *s)
       Scr->DoorFont.name = s;
     return 1;
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   case kws_SoundHost:
     if (Scr->FirstTime)
       SetSoundHost(s);
@@ -1717,7 +1717,7 @@ do_number_keyword(int keyword, int num)
       Scr->MenuScrollJump = num;
     return 1;
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   case kwn_SoundVolume:
     if (Scr->FirstTime)
       SetSoundVolume(num);
@@ -2159,10 +2159,10 @@ make_m4_cmdline(char *display_name, char *cp, char *m4_option)
 #else
   is_xpm = "Yes";
 #endif
-#ifdef NO_SOUND_SUPPORT
-  is_sound = "No";
-#else
+#ifdef SOUND_SUPPORT
   is_sound = "Yes";
+#else
+  is_sound = "No";
 #endif
 #ifdef NO_REGEX_SUPPORT
   is_regex = "No";

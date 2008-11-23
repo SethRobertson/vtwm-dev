@@ -42,25 +42,8 @@
 #define S_APAN		907
 #define S_BELL		908
 
-extern int OpenSound(void);
-extern void CloseSound(void);
-extern int SetSound(char *function, char *filename, int volume);
-extern int PlaySound(int function);
-extern int PlaySoundAdhoc(char *filename);
-extern void SetSoundHost(char *host);
-extern void SetSoundVolume(int volume);
-extern int ToggleSounds(void);
-extern void PlaySoundDone(void);
+extern int OpenSound(), SetSound(char *function, char *filename, int volume), ToggleSounds();
+extern int PlaySound(int function), PlaySoundAdhoc(char *filename);
+extern void CloseSound(), SetSoundHost(char *host), SetSoundVolume(int volume);
 
-#endif /* _SOUND_ */
-
-
-/*
-  Local Variables:
-  mode:c
-  c-file-style:"GNU"
-  c-file-offsets:((substatement-open 0)(brace-list-open 0)(c-hanging-comment-ender-p . nil)(c-hanging-comment-beginner-p . nil)(comment-start . "// ")(comment-end . "")(comment-column . 48))
-  End:
-*/
-/* vim: sw=2
-*/
+#endif	/* _SOUND_ */

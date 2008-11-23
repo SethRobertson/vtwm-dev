@@ -54,8 +54,11 @@
 #include "screen.h"
 #include "iconmgr.h"
 #include "desktop.h"
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
 #include "sound.h"
+#ifdef HAVE_OSS
+#include <sys/wait.h>
+#endif
 #endif
 #include "prototypes.h"
 #include <X11/Xresource.h>
@@ -173,7 +176,7 @@ main(int argc, char **argv, char **environ)
   int m4_preprocess = False;	/* filter the *twmrc file through m4 */
   char *m4_option = NULL;	/* pass these options to m4 - djhjr - 2/20/98 */
 #endif
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   int sound_state = 0;
 #endif
   extern char *defTwmrc[];
@@ -257,7 +260,7 @@ main(int argc, char **argv, char **environ)
   if (PrintErrorMessages)
     fprintf(stderr, "%s: L10N %sabled.\n", ProgramName, (use_fontset) ? "en" : "dis");
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
 #define sounddonehandler(sig) \
     if (signal (sig, SIG_IGN) != SIG_IGN) (void) signal (sig, PlaySoundDone)
 #else
@@ -272,6 +275,12 @@ main(int argc, char **argv, char **environ)
   sounddonehandler(SIGQUIT);
   sounddonehandler(SIGTERM);
 
+#ifdef SOUND_SUPPORT
+  /* cjp - 2007/01/08 Collect child processes from playing sounds */
+#ifdef HAVE_OSS
+  signal(SIGCHLD,HandleChildExit);
+#endif
+#endif
   donehandler(SIGABRT);
   donehandler(SIGFPE);
   donehandler(SIGSEGV);
@@ -643,7 +652,7 @@ main(int argc, char **argv, char **environ)
 #endif
     }
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
     OpenSound();
 
     if (PlaySound(S_START))
@@ -889,7 +898,7 @@ main(int argc, char **argv, char **environ)
     ExecuteFunction(F_FUNCTION, VTWM_PROFILE, Event.xany.window, &Scr->TwmRoot, &Event, C_NO_CONTEXT, FALSE);
   }
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
   /* restore setting from resource file */
   if (sound_state == 1)
     ToggleSounds();
@@ -1402,9 +1411,10 @@ delete_pidfile(void)
  *    QueueRestartVtwm()
  */
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
+
 SIGNAL_T
-PlaySoundDone(int)
+PlaySoundDone(int val)
 {
   if (PlaySound(S_STOP))
   {
@@ -1416,6 +1426,15 @@ PlaySoundDone(int)
   Done(0);
   SIGNAL_RETURN;
 }
+
+#ifdef HAVE_OSS
+SIGNAL_T
+HandleChildExit()
+{
+  waitpid(-1,NULL,WNOHANG);
+  SIGNAL_RETURN;
+}
+#endif
 
 void
 Done(int signum)
@@ -1430,7 +1449,9 @@ Done(int signum)
 
   exit(0);
 }
+
 #else
+
 SIGNAL_T
 Done(int signum)
 {
@@ -1443,6 +1464,7 @@ Done(int signum)
   exit(0);
   SIGNAL_RETURN;
 }
+
 #endif
 
 SIGNAL_T

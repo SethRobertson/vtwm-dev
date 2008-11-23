@@ -441,8 +441,10 @@ extern char *malloc(), *calloc(), *realloc(), *getenv();
 extern void free();
 #endif
 
-#ifndef NO_SOUND_SUPPORT
-extern SIGNAL_T PlaySoundDone(void);
+#if defined(HAVE_RPLAY) || defined(HAVE_ESD) || defined(HAVE_OSS)
+#define SOUND_SUPPORT
+extern SIGNAL_T PlaySoundDone(int);
+extern SIGNAL_T HandleChildExit();
 void Done(int);
 #else
 extern SIGNAL_T Done(int);

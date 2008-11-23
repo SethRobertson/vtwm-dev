@@ -31,12 +31,21 @@ XCOMM and comment these
          REGEXINC =
 XCOMM (the library must conform to the POSIX 1003.2 specification)
 
-XCOMM To omit sound support, uncomment this
-NO_SOUND_SUPPORT = -DNO_SOUND_SUPPORT
-XCOMM and comment these
-XCOMM SOUNDLIB = -L/usr/local/lib -lrplay
+XCOMM To include sound support, uncomment any of the following sounds methods
+XCOMM and corresponding library.
+XCOMM Sound is supported either by way of the rplay library, esd, oss, or
+XCOMM alsa in 'oss compatible' mode.
+
+XCOMM General include dir for headers for any sound method.
 XCOMM SOUNDINC = -I/usr/local/include
-XCOMM (sound is supported only by way of the rplay library)
+XCOMM Uncomment the following 2 lines for RPlay Sound Support
+XCOMM HAVE_RPLAY=-DHAVE_RPLAY
+XCOMM RPLAYLIB = -L/usr/local/lib -lrplay
+XCOMM Uncomment the following 2 lines for ESD Sound Support
+XCOMM HAVE_ESD=-DHAVE_ESD
+XCOMM ESDLIB = -L/usr/local/lib -lesd
+XCOMM Uncomment the following line for OSS Sound Support
+XCOMM HAVE_OSS=-DHAVE_OSS
 
 XCOMM To add Xft font rendering support, uncomment these
      TWM_USE_XFT = -DTWM_USE_XFT
@@ -111,12 +120,13 @@ XCOMM ========= Editing below here should not be necessary ==========
 
            YFLAGS = -d
           DEPLIBS = $(DEPXMULIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
-  LOCAL_LIBRARIES = $(LEXLIB) $(XPMLIB) $(REGEXLIB) $(SOUNDLIB) \
+  LOCAL_LIBRARIES = $(LEXLIB) $(XPMLIB) $(REGEXLIB)  $(RPLAYLIB) $(ESDLIB) \
                     $(XMULIB) $(EXTENSIONLIB) $(XLIB) $(PNGLIB)
          LINTLIBS = $(LINTXMU) $(LINTEXTENSIONLIB) $(LINTXLIB)
    EXTRA_INCLUDES = $(XPMINC) $(REGEXINC) $(SOUNDINC) $(XFTINCLUDES) $(PNGINC)
           DEFINES = $(SIGNAL_DEFINES) $(NO_XPM_SUPPORT) $(NO_REGEX_SUPPORT) \
-                    $(NO_SOUND_SUPPORT) $(NO_M4_SUPPORT) $(NO_PNG_SUPPORT) \
+                    $(NO_SOUND_SUPPORT)  $(HAVE_RPLAY) $(HAVE_ESD) $(HAVE_OSS) \
+		    $(NO_M4_SUPPORT) $(NO_PNG_SUPPORT) \
 		    $(TWM_USE_XFT) $(TWM_USE_SPACING) $(TWM_USE_OPACITY) \
 		    $(TWM_USE_XINERAMA) \
 		    $(TWM_USE_XRANDR) \

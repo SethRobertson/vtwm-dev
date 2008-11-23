@@ -144,7 +144,7 @@
 
 #define F_WARPSNUG		120
 
-#ifndef NO_SOUND_SUPPORT
+#ifdef SOUND_SUPPORT
 #define F_SOUNDS		121
 #endif
 
