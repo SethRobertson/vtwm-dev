@@ -593,21 +593,18 @@ SetSound(char *function, char *filename, int volume)
     else
       sptr->volume = adjustVolume(volume);
 #ifdef HAVE_RPLAY
-    if (sound_state & SOUND_RPLAY)
+    if ((sptr->rp = rplay_create(RPLAY_PLAY)) == NULL)
     {
-      if ((sptr->rp = rplay_create(RPLAY_PLAY)) == NULL)
-      {
-	twmrc_error_prefix();
-	fprintf(stderr, "unable to add to sound list\n");
-	Done(0);
-      }
-      if (rplay_set(sptr->rp, RPLAY_INSERT, 0, RPLAY_SOUND, sptr->filename,
-		    RPLAY_VOLUME, sptr->volume, NULL) < 0)
-      {
-	twmrc_error_prefix();
-	fprintf(stderr, "unable to set \"%s\" in sound list\n", filename);
-	Done(0);
-      }
+      twmrc_error_prefix();
+      fprintf(stderr, "unable to add to sound list\n");
+      Done(0);
+    }
+    if (rplay_set(sptr->rp, RPLAY_INSERT, 0, RPLAY_SOUND, sptr->filename,
+		  RPLAY_VOLUME, sptr->volume, NULL) < 0)
+    {
+      twmrc_error_prefix();
+      fprintf(stderr, "unable to set \"%s\" in sound list\n", filename);
+      Done(0);
     }
 #endif
 #ifdef HAVE_ESD
