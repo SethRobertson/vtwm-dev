@@ -2482,7 +2482,7 @@ HandleEnterNotify(void)
    * Save the id of the window entered.  This will be used to remove
    * border highlight on entering the next application window.
    */
-  if (UnHighLight_win && UnHighLight_win->w != ewp->window)
+  if (UnHighLight_win && UnHighLight_win->w != ewp->window && (ewp->window == Scr->Root || ewp->mode != NotifyGrab))
   {
     SetBorder(UnHighLight_win, False);	/* application window */
     if (UnHighLight_win->list && UnHighLight_win->list->w.win != ewp->window)
