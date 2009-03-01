@@ -1724,13 +1724,11 @@ HandleCreateNotify(void)
 void
 HandleMapRequest(void)
 {
-
-  int stat;
-  int zoom_save;
+  int state;
 
   Event.xany.window = Event.xmaprequest.window;
-  stat = XFindContext(dpy, Event.xany.window, TwmContext, (caddr_t *) & Tmp_win);
-  if (stat == XCNOENT)
+  state = XFindContext(dpy, Event.xany.window, TwmContext, (caddr_t *) & Tmp_win);
+  if (state == XCNOENT)
     Tmp_win = NULL;
 
   /* If the window has never been mapped before ... */
@@ -1781,50 +1779,49 @@ HandleMapRequest(void)
   }
 
   /* If it's not merely iconified, and we have hints, use them. */
-  if ((!Tmp_win->icon) && Tmp_win->wmhints && (Tmp_win->wmhints->flags & StateHint))
+  if (Tmp_win->icon == FALSE)
   {
-    int state;
-    Window icon;
-
     /* use WM_STATE if enabled */
-    if (!(RestartPreviousState && GetWMState(Tmp_win->w, &state, &icon) && (state == NormalState || state == IconicState)))
-      state = Tmp_win->wmhints->initial_state;
-
-    switch (state)
+    if ((RestartPreviousState && GetWMState(Tmp_win->w, &state, &JunkChild)
+			&& (state == NormalState || state == IconicState))
+	|| (Tmp_win->wmhints && (Tmp_win->wmhints->flags & StateHint)
+			&& (state=Tmp_win->wmhints->initial_state) == state))
     {
-    case DontCareState:
-    case NormalState:
-    case ZoomState:
-    case InactiveState:
-      XMapWindow(dpy, Tmp_win->w);
-      XMapWindow(dpy, Tmp_win->frame);
-      SetMapStateProp(Tmp_win, NormalState);
-      SetRaiseWindow(Tmp_win);
+      int zoom_save;
 
-      if (Scr->StrictIconManager)
-	if (Tmp_win->list)
-	  RemoveIconManager(Tmp_win);
+      switch (state)
+      {
+      case DontCareState:
+      case NormalState:
+      case ZoomState:
+      case InactiveState:
+	XMapWindow(dpy, Tmp_win->w);
+	XMapWindow(dpy, Tmp_win->frame);
+	SetMapStateProp(Tmp_win, NormalState);
+	SetRaiseWindow(Tmp_win);
 
-      break;
+	if (Scr->StrictIconManager)
+	  if (Tmp_win->list)
+	    RemoveIconManager(Tmp_win);
 
-    case IconicState:
-      zoom_save = Scr->DoZoom;
-      Scr->DoZoom = FALSE;
-      Iconify(Tmp_win, 0, 0);
-      Scr->DoZoom = zoom_save;
-      break;
+	goto hmrxit;
+
+      case IconicState:
+	zoom_save = Scr->DoZoom;
+	Scr->DoZoom = FALSE;
+	Iconify(Tmp_win, 0, 0);
+	Scr->DoZoom = zoom_save;
+	goto hmrxit;
+      }
     }
   }
   /* If no hints, or currently an icon, just "deiconify" */
-  else
-  {
-    DeIconify(Tmp_win);
-    SetRaiseWindow(Tmp_win);
-  }
+  DeIconify(Tmp_win);
+  SetRaiseWindow(Tmp_win);
 
+  hmrxit:;
   RaiseStickyAbove();
   RaiseAutoPan();
-
 }
 
 
