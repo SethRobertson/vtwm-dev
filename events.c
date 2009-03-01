@@ -711,7 +711,7 @@ HandleKeyPress(void)
       case F_WARPCLASSPREV:
       case F_WARPRING:
 	if (Context == C_ICONMGR)
-	  Focus = Tmp_win = Tmp_win->list->iconmgr->twm_win;
+	  Tmp_win = Tmp_win->list->iconmgr->twm_win;
 
 	if (have_ScrFocus)
 	{

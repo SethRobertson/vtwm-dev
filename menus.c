@@ -1717,8 +1717,6 @@ moveFromCenterWrapper(TwmWindow * tmp_win)
     tmp_win->highlight = True;
     SetBorder(tmp_win, (hilite) ? True : False);
     tmp_win->highlight = hilite;
-
-    Focus = tmp_win;
   }
 
   if (!tmp_win->opaque_move)
@@ -2189,7 +2187,6 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
 
     case F_RESIZE:
       {
-	TwmWindow *focused = NULL;
 	Bool fromtitlebar = False;
 	long releaseEvent;
 	long movementMask;
@@ -2261,9 +2258,7 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
 	  XWarpPointer(dpy, None, Scr->Root, 0, 0, 0, 0,
 		       tmp_win->frame_x + tmp_win->frame_width / 2, tmp_win->frame_y + tmp_win->frame_height / 2);
 
-	  focused = Focus;
-	  Focus = tmp_win;
-	  SetBorder(Focus, True);
+	  SetBorder(tmp_win, True);
 
 	  /* save positions so we can tell if it was moved or not */
 	  ResizeOrigX = tmp_win->frame_x + tmp_win->frame_width / 2;
@@ -2432,8 +2427,7 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
 	  JunkY = tmp_win->virtual_frame_y + tmp_win->frame_height / 2;
 	  XWarpPointer(dpy, None, Scr->VirtualDesktopDisplayOuter, 0, 0, 0, 0, SCALE_D(JunkX), SCALE_D(JunkY));
 
-	  SetBorder(Focus, False);
-	  Focus = focused;
+	  SetBorder(tmp_win, False);
 	}
 
 	/* don't re-map if the window is the virtual desktop - djhjr - 2/28/99 */

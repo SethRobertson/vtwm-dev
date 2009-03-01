@@ -580,8 +580,6 @@ StartMoveWindowInDesktop(XMotionEvent ev)
       SetBorder(moving_twindow, (hilite) ? True : False);
       moving_twindow->highlight = hilite;
 
-      Focus = moving_twindow;	/* evil */
-
       EventHandler[EnterNotify] = HandleUnknown;
       EventHandler[LeaveNotify] = HandleUnknown;
     }
@@ -661,8 +659,6 @@ DoMoveWindowOnDesktop(int x, int y)
 		    moving_twindow->frame_width,
 		    moving_twindow->frame_height,
 		    moving_twindow->frame_bw, moving_twindow->title_height + moving_twindow->frame_bw3D);
-
-      Focus = moving_twindow;	/* evil */
     }
 }
 
@@ -712,8 +708,6 @@ EndMoveWindowOnDesktop(void)
       moving_twindow->highlight = True;
       SetBorder(moving_twindow, False);
       moving_twindow->highlight = hilite;
-
-      Focus = NULL;		/* evil */
 
       EventHandler[EnterNotify] = HandleEnterNotify;
       EventHandler[LeaveNotify] = HandleLeaveNotify;
