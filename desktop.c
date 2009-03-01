@@ -1073,7 +1073,7 @@ RaiseAutoPan(void)
 {
   int i;
 
-  if (Scr->AutoPanX > 0)
+  if (Scr && Scr->AutoPanX > 0)
     for (i = 0; i <= 3; i++)
       XRaiseWindow(dpy, Scr->VirtualDesktopAutoPan[i]);
 }
@@ -1085,7 +1085,7 @@ RaiseAutoPan(void)
 void
 RaiseStickyAbove(void)
 {
-  if (Scr->StickyAbove)
+  if (Scr && Scr->StickyAbove)
   {
     TwmWindow *Tmp_win;
 

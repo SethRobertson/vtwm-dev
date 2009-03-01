@@ -140,6 +140,19 @@ CreateGCs(void)
     Scr->ShadGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
     XSetDashes(dpy, Scr->ShadGC, 0, dashlist, 2);
   }
+
+  gcm = 0;
+  Scr->RootGC = XCreateGC(dpy, Scr->Root, gcm, &gcv);
+
+  /* depth-1 pixmap-GC for shape mask copying: */
+  gcm = 0;
+  gcv.graphics_exposures = False; /* suppress 'NoExpose' events */
+  gcm |= GCGraphicsExposures;
+  gcv.foreground = WhitePixel (dpy, Scr->screen); /* '1' */
+  gcv.background = BlackPixel (dpy, Scr->screen); /* '0' */
+  gcm |= GCForeground;
+  gcm |= GCBackground;
+  Scr->BitGC = XCreateGC(dpy, greypixmap, gcm, &gcv);
 }
 
 

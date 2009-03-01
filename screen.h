@@ -269,6 +269,7 @@ typedef struct ScreenInfo
 
   GC GreyGC;			/* for shadowing on monochrome displays */
   GC ShadGC;			/* for shadowing on with patterns */
+  GC BitGC;			/* for depth-1 pixmap copy operations */
 
   unsigned long Black;
   unsigned long White;

@@ -191,7 +191,6 @@ static Image *
 GetIconImage(char *name, Pixel background, unsigned int *numcolors)
 {
   Image *iconimage;
-  GC gc;
   Pixmap bm;
   unsigned int bitmap_height, bitmap_width;
 
@@ -202,7 +201,6 @@ GetIconImage(char *name, Pixel background, unsigned int *numcolors)
     if (bm != None)
     {
       iconimage = (Image *) malloc(sizeof(Image));
-      iconimage->mask = None;
       iconimage->height = bitmap_height;
       iconimage->width = bitmap_width;
       iconimage->pixmap = XCreatePixmap(dpy, Scr->Root, bitmap_width, bitmap_height, Scr->d_depth);
@@ -214,19 +212,16 @@ GetIconImage(char *name, Pixel background, unsigned int *numcolors)
        * their icons - djhjr - rem'd 8/23/98, re-instated 11/15/98
        */
       if (JunkDepth == Scr->d_depth)
-	XCopyArea(dpy, bm, iconimage->pixmap, Scr->NormalGC, 0, 0, iconimage->width, iconimage->height, 0, 0);
-      else
-	XCopyPlane(dpy, bm, iconimage->pixmap, Scr->NormalGC, 0, 0, iconimage->width, iconimage->height, 0, 0, 1);
-
-      iconimage->mask = XCreatePixmap(dpy, Scr->Root, iconimage->width, iconimage->height, 1);
-      if (iconimage->mask)
       {
-	gc = XCreateGC(dpy, iconimage->mask, 0, NULL);
-	if (gc)
-	{
-	  XCopyArea(dpy, bm, iconimage->mask, gc, 0, 0, iconimage->width, iconimage->height, 0, 0);
-	  XFreeGC(dpy, gc);
-	}
+	XCopyArea(dpy, bm, iconimage->pixmap, Scr->NormalGC, 0, 0, iconimage->width, iconimage->height, 0, 0);
+	iconimage->mask = None;
+      }
+      else
+      {
+	XCopyPlane(dpy, bm, iconimage->pixmap, Scr->NormalGC, 0, 0, iconimage->width, iconimage->height, 0, 0, 1);
+	iconimage->mask = XCreatePixmap(dpy, Scr->Root, iconimage->width, iconimage->height, 1);
+	if (iconimage->mask != None)
+	  XCopyPlane(dpy, bm, iconimage->mask, Scr->BitGC, 0, 0, iconimage->width, iconimage->height, 0, 0, 1);
       }
 
       XFreePixmap(dpy, bm);
@@ -311,7 +306,7 @@ CreateIconWindow(TwmWindow * tmp_win, int def_x, int def_y)
 
     pm_numcolors = 3;
 
-    iconimage = (Image *) malloc(sizeof(Image));
+    iconimage = (Image *) malloc(sizeof(Image)); /* it looks like as if we leak this memory */
     iconimage->mask = None;
     iconimage->width = JunkWidth;
     iconimage->height = JunkHeight;
@@ -328,18 +323,9 @@ CreateIconWindow(TwmWindow * tmp_win, int def_x, int def_y)
 	XGetGeometry(dpy, tmp_win->wmhints->icon_mask,
 		     &JunkRoot, &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth) && JunkDepth == 1)
     {
-      GC gc;
-
       iconimage->mask = XCreatePixmap(dpy, Scr->Root, JunkWidth, JunkHeight, 1);
-      if (iconimage->mask)
-      {
-	gc = XCreateGC(dpy, iconimage->mask, 0, NULL);
-	if (gc)
-	{
-	  XCopyArea(dpy, tmp_win->wmhints->icon_mask, iconimage->mask, gc, 0, 0, JunkWidth, JunkHeight, 0, 0);
-	  XFreeGC(dpy, gc);
-	}
-      }
+      if (iconimage->mask != None)
+	  XCopyPlane(dpy, tmp_win->wmhints->icon_mask, iconimage->mask, Scr->BitGC, 0, 0, JunkWidth, JunkHeight, 0, 0, 1);
     }
 
     if (iconimage != NULL)
@@ -376,9 +362,6 @@ CreateIconWindow(TwmWindow * tmp_win, int def_x, int def_y)
   if (pm == None && Scr->unknownName != NULL)
   {
     iconimage = GetIconImage(Scr->unknownName, tmp_win->iconc.back, &pm_numcolors);
-
-
-
 
     if (iconimage != NULL)
     {
@@ -511,10 +494,10 @@ CreateIconWindow(TwmWindow * tmp_win, int def_x, int def_y)
 				       (unsigned int)0, Scr->d_depth,
 				       (unsigned int)CopyFromParent, Scr->d_visual, valuemask, &attributes);
 
-
     if (HasShape)
-      if (iconimage != NULL && iconimage->mask != None)
-	XShapeCombineMask(dpy, tmp_win->icon_bm_w, ShapeBounding, 0, 0, iconimage->mask, ShapeSet);
+      if (tmp_win->icon_not_ours != TRUE)
+	if (iconimage != NULL && iconimage->mask != None)
+	  XShapeCombineMask(dpy, tmp_win->icon_bm_w, ShapeBounding, 0, 0, iconimage->mask, ShapeSet);
   }
 
   /* I need to figure out where to put the icon window now, because

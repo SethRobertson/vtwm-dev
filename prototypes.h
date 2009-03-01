@@ -194,6 +194,7 @@ extern void HandlePropertyNotify(void);
 extern void HandleKeyPress(void);
 extern void HandleColormapNotify(void);
 extern void HandleVisibilityNotify(void);
+extern void HandleGraphicsExpose(void);
 extern void HandleUnknown(void);
 extern void SendConfigureNotify(TwmWindow * tmp_win, int x, int y);
 extern void InstallRootColormap(void);

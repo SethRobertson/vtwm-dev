@@ -39,6 +39,7 @@
 #include <string.h>
 #include "twm.h"
 #include <X11/Xatom.h>
+#include <X11/Xproto.h>
 #include "add_window.h"
 #include "menus.h"
 #include "events.h"
@@ -191,6 +192,8 @@ InitEvents(void)
   EventHandler[KeyPress] = HandleKeyPress;
   EventHandler[ColormapNotify] = HandleColormapNotify;
   EventHandler[VisibilityNotify] = HandleVisibilityNotify;
+  EventHandler[GraphicsExpose] = HandleGraphicsExpose;
+  EventHandler[NoExpose] = HandleGraphicsExpose;
   if (HasShape)
     EventHandler[ShapeEventBase + ShapeNotify] = HandleShapeNotify;
 #ifdef TWM_USE_XRANDR
@@ -1049,23 +1052,26 @@ HandlePropertyNotify(void)
 		      (unsigned int)Tmp_win->icon_height,
 		      (unsigned int)0, Scr->d_depth, (unsigned int)CopyFromParent, Scr->d_visual, valuemask, &attributes);
 
-      if (!(Tmp_win->wmhints->flags & IconMaskHint))
-      {
-	XRectangle rect;
-
-	rect.x = rect.y = 0;
-	rect.width = Tmp_win->icon_width;
-	rect.height = Tmp_win->icon_height;
-	XShapeCombineRectangles(dpy, Tmp_win->icon_w.win, ShapeBounding, 0, 0, &rect, 1, ShapeUnion, 0);
-      }
+      if (HasShape)
+	if (Tmp_win->icon_not_ours != TRUE)
+	  if (Tmp_win->wmhints->flags & IconMaskHint)
+	    XShapeCombineMask(dpy, Tmp_win->icon_bm_w, ShapeBounding, 0, 0, Tmp_win->wmhints->icon_mask, ShapeSet);
 
       XFreePixmap(dpy, pm);
       RedoIconName();
     }
 
+#if 0
     if (Tmp_win->icon_w.win && !Tmp_win->forced && Tmp_win->wmhints && (Tmp_win->wmhints->flags & IconMaskHint))
     {
-      GC gc;
+      /*
+       * It makes sense to enter this 'if'-statement only if and only if
+       *
+       *    if (Tmp_win->wmhints->flags & IconPixmapHint)
+       *
+       * above is false, otherwise see the code just preceding.
+       * (I.e. we have IconPixmapHint not set but IconMaskHint is set, which is kind of pointless.)
+       */
 
       if (!XGetGeometry(dpy, Tmp_win->wmhints->icon_mask, &JunkRoot, &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth))
       {
@@ -1078,16 +1084,13 @@ HandlePropertyNotify(void)
       if (!pm)
 	return;
 
-      gc = XCreateGC(dpy, pm, 0, NULL);
-      if (!gc)
-	return;
-
-      XCopyArea(dpy, Tmp_win->wmhints->icon_mask, pm, gc, 0, 0, JunkWidth, JunkHeight, 0, 0);
-      XFreeGC(dpy, gc);
+      /* we copy nowhere: */
+      XCopyPlane(dpy, Tmp_win->wmhints->icon_mask, pm, Scr->BitGC, 0, 0, JunkWidth, JunkHeight, 0, 0, 1);
 
       XFreePixmap(dpy, pm);
       RedoIconName();
     }
+#endif
     break;
 
   case XA_WM_NORMAL_HINTS:
@@ -3219,6 +3222,37 @@ HandleXrandrScreenChangeNotify(void)
   }
 }
 #endif
+
+
+
+/***********************************************************************
+ *
+ *  Procedure:
+ *	HandleGraphicsExpose - GraphicsExpose/NoExpose event handler
+ *
+ ***********************************************************************
+ */
+
+void
+HandleGraphicsExpose(void)
+{
+  /* in fact we don't expect XCopyArea()/XCopyPlane() generate these events (i.e. we should never execute this): */
+  if (Event.type == GraphicsExpose)
+  {
+    fprintf(stderr, "%s: GraphicsExpose(%s): drawable = %ld x = %d y = %d w = %d h = %d cnt = %d\n", ProgramName,
+	(Event.xgraphicsexpose.major_code==X_CopyArea?"XCopyArea":(Event.xgraphicsexpose.major_code==X_CopyPlane?"XCopyPlane":"Unknown")),
+	(long)Event.xgraphicsexpose.drawable, Event.xgraphicsexpose.x, Event.xgraphicsexpose.y,
+	Event.xgraphicsexpose.width, Event.xgraphicsexpose.height, Event.xgraphicsexpose.count);
+  }
+  else if (Event.type == NoExpose)
+  {
+    fprintf(stderr, "%s: NoExpose(%s): drawable = %ld\n", ProgramName,
+	(Event.xnoexpose.major_code==X_CopyArea?"XCopyArea":(Event.xnoexpose.major_code==X_CopyPlane?"XCopyPlane":"Unknown")),
+	(long)Event.xnoexpose.drawable);
+  }
+  else
+    fprintf(stderr, "%s: HandleGraphicsExpose(): event type unknown.\n", ProgramName);
+}
 
 
 

@@ -532,9 +532,18 @@ FindImage(char *name, Pixel color)
    */
   bigname = ExpandFilename(name);
   if (!bigname)
-    return None;
+    return NULL;
 
   newimage = (Image *) calloc(1, sizeof(Image));
+  if (newimage == NULL)
+    return NULL;
+  else
+  {
+    newimage->pixmap = None;
+    newimage->mask = None;
+    newimage->type = IMAGE_TYPE_NONE;
+  }
+
   LoadImage(bigname, newimage, color);
 
   /*

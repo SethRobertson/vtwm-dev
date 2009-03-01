@@ -1690,9 +1690,6 @@ DrawBackground(Drawable d, int x, int y, int w, int h, ColorPair cp, int use_roo
 
   if (use_rootGC)
   {
-    if (Scr->RootGC == (GC) 0)
-      Scr->RootGC = XCreateGC(dpy, Scr->Root, 0, &gcvalues);
-
     gcvalues.background = cp.back;
     gcvalues.foreground = cp.fore;
     XChangeGC(dpy, Scr->RootGC, GCForeground | GCBackground, &gcvalues);
@@ -1780,9 +1777,6 @@ DrawTitleHighlight(TwmWindow * t, int state)
       {
 	if (pmtab[i].use_rootGC)
 	{
-	  if (Scr->RootGC == (GC) 0)
-	    Scr->RootGC = XCreateGC(dpy, Scr->Root, 0, &gcvalues);
-
 	  gcvalues.background = cp.back;
 	  gcvalues.foreground = cp.fore;
 	  XChangeGC(dpy, Scr->RootGC, GCForeground | GCBackground, &gcvalues);
@@ -2173,8 +2167,6 @@ LoadBitmapImage(char *name, ColorPair cp)
   int width, height;
   XGCValues gcvalues;
 
-  if (Scr->RootGC == (GC) 0)
-    Scr->RootGC = XCreateGC(dpy, Scr->Root, 0, &gcvalues);
   bm = FindBitmap(name, (unsigned int *)&width, (unsigned int *)&height);
   if (bm == None)
     return (None);
