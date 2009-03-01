@@ -863,11 +863,6 @@ main(int argc, char **argv, char **environ)
     SetWindowOpacity(Scr->InfoWindow.win, Scr->MenuOpacity);
 #endif
 
-#ifdef TWM_USE_XRANDR
-    if (HasXrandr == True)
-      XRRSelectInput(dpy, Scr->Root, RRScreenChangeNotifyMask);
-#endif
-
     XUngrabServer(dpy);
 
     FirstScreen = FALSE;
