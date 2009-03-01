@@ -2443,6 +2443,22 @@ HENQueueScanner(Display * dpy, XEvent * ev, char *args)
 }
 
 
+static Bool
+HENQueueScannerWakeRaiseDelay(Display * dpy, XEvent * ev, char *args)
+{
+  if (ev->type == ButtonPress || ev->type == KeyPress || ev->type == ConfigureRequest || ev->type == UnmapNotify)
+  {
+    /*
+     * This is a trick: tell vtwm we left the window in order to wake
+     * AutoRaiseDelay-sleep on some vtwm Button- or KeyPress binding,
+     * or ConfigureRequest/UnmapNotify event:
+     */
+    ((HENScanArgs *) args)->leaves = True;
+    ((HENScanArgs *) args)->inferior = (0 != 0);
+    return False;
+  }
+  return HENQueueScanner(dpy, ev, args); /* go check for Leave-events */
+}
 
 /***********************************************************************
  *
@@ -2608,85 +2624,6 @@ HandleEnterNotify(void)
       return;
     }
 
-    /* Handle RaiseDelay, if any..... */
-    if (RaiseDelay > 0)
-    {
-      if (Tmp_win && Tmp_win->auto_raise && (!Tmp_win->list || Tmp_win->list->w.win != ewp->window))
-      {
-	ColormapWindow *cwin;
-
-	static struct timeval timeoutval = { 0, 12500 };
-	struct timeval timeout;
-
-
-	if (XFindContext(dpy, Tmp_win->w, ColormapContext, (caddr_t *) & cwin) == XCNOENT)
-	{
-	  cwin = (ColormapWindow *) NULL;
-	}
-
-	if ((ewp->detail != NotifyInferior || Tmp_win->frame == ewp->window) && (!cwin || cwin->visibility != VisibilityUnobscured))
-	{
-	  int x, y, px, py, d, i;
-	  Window w;
-
-	  XQueryPointer(dpy, Scr->Root, &w, &w, &px, &py, &d, &d, (unsigned int *)&d);
-
-	  /* The granularity of RaiseDelay is about 25 ms.
-	   * The timeout variable is set to 12.5 ms since we
-	   * pass this way twice each time a twm window is
-	   * entered.
-	   */
-	  for (i = 25; i < RaiseDelay; i += 25)
-	  {
-
-	    /* The timeout needs initialising each time on Linux */
-	    timeout = timeoutval;
-
-	    select(0, 0, 0, 0, &timeout);
-	    /* Did we leave this window already? */
-	    scanArgs.w = ewp->window;
-	    scanArgs.leaves = scanArgs.enters = False;
-	    (void)XCheckIfEvent(dpy, &dummy, HENQueueScanner, (char *)&scanArgs);
-	    if (scanArgs.leaves && !scanArgs.inferior)
-	      return;
-
-	    XQueryPointer(dpy, Scr->Root, &w, &w, &x, &y, &d, &d, (unsigned int *)&d);
-
-	    /* Has the pointer moved?  If so reset the loop cnt.
-	     * We want the pointer to be still for RaiseDelay
-	     * milliseconds before terminating the loop
-	     */
-	    if (x != px || y != py)
-	    {
-	      i = 0;
-	      px = x;
-	      py = y;
-	    }
-	  }
-	}
-      }
-
-      /*
-       * Scan for Leave and Enter Notify events to see if we can avoid some
-       * unnecessary processing.
-       */
-      scanArgs.w = ewp->window;
-      scanArgs.leaves = scanArgs.enters = False;
-      (void)XCheckIfEvent(dpy, &dummy, HENQueueScanner, (char *)&scanArgs);
-
-      /*
-       * if entering root window, restore twm default colormap so that
-       * titlebars are legible
-       */
-      if (ewp->window == Scr->Root)
-      {
-	if (!scanArgs.leaves && !scanArgs.enters)
-	  InstallWindowColormaps(EnterNotify, &Scr->TwmRoot);
-	return;
-      }
-    }
-    /* End of RaiseDelay modification. */
-
     /*
      * if we have an event for a specific one of our windows
      */
@@ -2802,17 +2739,93 @@ HandleEnterNotify(void)
 	if (Tmp_win->wmhints != NULL && ewp->window == Tmp_win->wmhints->icon_window && (!scanArgs.leaves || scanArgs.inferior))
 	  InstallWindowColormaps(EnterNotify, Tmp_win);
       }				/* end if FocusRoot */
+
       /*
        * If this window is to be autoraised, mark it so
        */
       if (Tmp_win->auto_raise)
       {
-	enter_win = Tmp_win;
-	if (enter_flag == FALSE)
-	  AutoRaiseWindow(Tmp_win);
+	if (RaiseDelay > 0 && Tmp_win->iconmgr != TRUE) /* raise iconmgr window instantly to avoid focus lag */
+	{
+	  /* Delay only if we entered the client frame or corresponding iconmgr entry (from outside): */
+	  if (ewp->detail != NotifyInferior
+	      && (ewp->window == Tmp_win->frame
+		|| (Tmp_win->list != NULL && ewp->window == Tmp_win->list->w.win)))
+	  {
+#if 0
+	    ColormapWindow *cwin;
+
+	    if (XFindContext(dpy, Tmp_win->w, ColormapContext, (caddr_t *) & cwin) == XCNOENT)
+	      cwin = (ColormapWindow *) NULL;
+
+	    if (!cwin || cwin->visibility != VisibilityUnobscured) /* Composite managers (xcompmgr) cause this 'if' to fail? */
+#endif
+	    {
+	      static struct timeval timeoutval = { 0, 15000 };
+	      struct timeval timeout;
+	      int px, py, x, y, i;
+
+	      XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild, &px, &py, &JunkX, &JunkY, &JunkMask);
+
+	      /* The granularity of RaiseDelay is about 15 ms.
+	       * The timeout variable is set to 15 ms since we
+	       * pass this way once each time a twm window is
+	       * entered.
+	       */
+	      for (i = 0; i < RaiseDelay; i += 15)
+	      {
+		/* The timeout needs initialising each time on Linux */
+		timeout = timeoutval;
+		select(0, NULL, NULL, NULL, &timeout);
+		/* Did we leave this window already? */
+		scanArgs.w = ewp->window;
+		scanArgs.leaves = scanArgs.enters = False;
+		/*
+		 * Don't consider pending FocusIn/FocusOut etc events,
+		 * but incoming Leave, UnmapNotify, KeyPress, ButtonPress events
+		 * will interrupt the delay (i.e. cancel auto-raise):
+		 */
+		(void)XCheckIfEvent(dpy, &dummy, HENQueueScannerWakeRaiseDelay, (char *)&scanArgs);
+		if (scanArgs.leaves && !scanArgs.inferior)
+		  break;
+
+		/* Has the pointer moved?  If so reset the loop cnt.
+		 * We want the pointer to be still for RaiseDelay
+		 * milliseconds before terminating the loop
+		 */
+		XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild, &x, &y, &JunkX, &JunkY, &JunkMask);
+		if (x != px || y != py)
+		{
+		  i = 0;
+		  px = x;
+		  py = y;
+		}
+	      }
+
+	      if (i >= RaiseDelay)
+	      {
+		enter_win = Tmp_win;
+		if (enter_flag == FALSE)
+		  AutoRaiseWindow(Tmp_win);
+		goto raised;
+	      }
+	    }
+	  }
+	}
+	else
+	{
+	  enter_win = Tmp_win;
+	  if (enter_flag == FALSE)
+	    AutoRaiseWindow(Tmp_win);
+	  goto raised;
+	}
       }
-      else if (enter_flag && raise_win == Tmp_win)
+
+      if (enter_flag && raise_win == Tmp_win)
 	enter_win = Tmp_win;
+
+ raised:;
+
       /*
        * set ring leader
        */
