@@ -705,7 +705,8 @@ AddWindow(Window w, int iconm, IconMgr * iconp)
     tmp_win->wShaped = boundingShaped;
   }
 
-  if (!tmp_win->iconmgr)
+  if (HandlingEvents == TRUE /* icon managers and virtual desktop windows are created on startup */
+	|| (tmp_win->iconmgr == FALSE && strcmp(tmp_win->class.res_class, VTWM_DESKTOP_CLASS) != 0))
     XAddToSaveSet(dpy, tmp_win->w);
 
   XReparentWindow(dpy, tmp_win->w, tmp_win->frame, tmp_win->frame_bw3D, tmp_win->title_height + tmp_win->frame_bw3D);

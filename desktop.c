@@ -94,6 +94,7 @@ CreateDesktopDisplay(void)
   XSetWindowAttributes attributes;	/* attributes for create windows */
   unsigned long valuemask;
   unsigned int pm_numcolors;
+  XClassHint class;
 
   if (!Scr->Virtual)
     return;
@@ -182,6 +183,10 @@ CreateDesktopDisplay(void)
 
   XSetStandardProperties(dpy, Scr->VirtualDesktopDisplayOuter, VTWM_DESKTOP_CLASS, VTWM_DESKTOP_CLASS, None, NULL, 0, NULL);
 
+  class.res_name = VTWM_DESKTOP_CLASS;
+  class.res_class = VTWM_DESKTOP_CLASS;
+  XSetClassHint(dpy, Scr->VirtualDesktopDisplayOuter, &class);
+
   border = Scr->RealScreenBorderWidth;
 
   pm_numcolors = 0;
@@ -243,10 +248,6 @@ CreateDesktopDisplay(void)
   XSelectInput(dpy, Scr->VirtualDesktopDisplay, ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask | ExposureMask);
 
   Scr->VirtualDesktopDisplayTwin = AddWindow(Scr->VirtualDesktopDisplayOuter, FALSE, NULL);
-
-  Scr->VirtualDesktopDisplayTwin->class.res_name = strdup(VTWM_DESKTOP_CLASS);
-  Scr->VirtualDesktopDisplayTwin->class.res_class = strdup(VTWM_DESKTOP_CLASS);
-  XSetClassHint(dpy, Scr->VirtualDesktopDisplayOuter, &Scr->VirtualDesktopDisplayTwin->class);
 
   /* limit the minimum size of the virtual desktop - djhjr - 2/23/99 */
   Scr->VirtualDesktopDisplayTwin->hints.flags |= PMinSize;
