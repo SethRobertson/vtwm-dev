@@ -1842,10 +1842,12 @@ Draw3DBorder(Drawable w, int x, int y, int width, int height, int bw, ColorPair 
   int i;
   ScreenInfo *scr;
 
-  if (width < 1 || height < 1)
+  if (width < 1 || height < 1 || w == None)
     return;
 
   scr = FindDrawableScreenInfo(w);	/* frame, pixmap, client */
+  if (scr == NULL)			/* nonexistent */
+    return;
 
   if (scr->Monochrome != COLOR)
   {
