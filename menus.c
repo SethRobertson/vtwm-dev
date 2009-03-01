@@ -2969,18 +2969,19 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
 
 	DeIconify(tmp_win);
 
-	/*
-	 * now HERE's a fine bit of kludge! it's to mask a hole in the
-	 * code I can't find that messes up when trying to warp to the
-	 * de-iconified window not in the real screen when WarpWindows
-	 * isn't used. see also the change in DeIconify().
-	 */
-	if (!Scr->WarpWindows && (Scr->WarpCursor || LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)))
+#ifdef TWM_USE_SLOPPYFOCUS
+	if (SloppyFocus == TRUE || FocusRoot == TRUE)
+#else
+	if (FocusRoot == TRUE)	/* only warp if f.focus is not active */
+#endif
 	{
-	  RaiseStickyAbove();
-	  RaiseAutoPan();
+	  if (Scr->WarpCursor || LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class))
+	  {
+	    RaiseStickyAbove();
+	    RaiseAutoPan();
 
-	  WarpToWindow(tmp_win);
+	    WarpToWindow(tmp_win);
+	  }
 	}
       }
       else if (func == F_ICONIFY)
@@ -4519,18 +4520,6 @@ DeIconify(TwmWindow * tmp_win)
       }
     }
   }
-
-  RaiseStickyAbove();
-  RaiseAutoPan();
-
-#ifdef TWM_USE_SLOPPYFOCUS
-  if (SloppyFocus == TRUE || FocusRoot == TRUE)
-#else
-  if (FocusRoot == TRUE)	/* only warp if f.focus is not active */
-#endif
-    if (((Scr->WarpCursor ||
-	  LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)) && tmp_win->icon) && Scr->WarpWindows)
-      WarpToWindow(tmp_win);
 
   XSync(dpy, 0);
 }
