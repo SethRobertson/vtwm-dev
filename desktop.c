@@ -802,24 +802,24 @@ SetVirtualDesktop(char *geom, int scale)
    * More flexible way of selecting size of virtual desktop (ala tvtwm)
    */
   if (JunkWidth > Scr->MyDisplayWidth)
+  {
     /* specified as total pixels */
-    JunkWidth /= Scr->VirtualDesktopDScale;
+  }
   else if (JunkWidth * Scr->VirtualDesktopDScale < Scr->MyDisplayWidth)
   {
     /* specified as number of physical screens */
     JunkWidth *= Scr->MyDisplayWidth;
-    JunkWidth /= Scr->VirtualDesktopDScale;
   }
   /* else specified as size of panner window */
 
   if (JunkHeight > Scr->MyDisplayHeight)
+  {
     /* specified as total pixels */
-    JunkHeight /= Scr->VirtualDesktopDScale;
+  }
   else if (JunkHeight * Scr->VirtualDesktopDScale < Scr->MyDisplayHeight)
   {
     /* specified as number of physical screens */
     JunkHeight *= Scr->MyDisplayHeight;
-    JunkHeight /= Scr->VirtualDesktopDScale;
   }
   /* else specified as size of panner window */
 
@@ -827,8 +827,10 @@ SetVirtualDesktop(char *geom, int scale)
   if ((Scr->use_tiles == TRUE) && (JunkMask & XValue) && (JunkMask & YValue))
   {
     EnsureGeometryVisibility(tile, JunkMask, &JunkX, &JunkY,
-			     JunkWidth + 2 * (Scr->BorderWidth + Scr->VirtualDesktopBevelWidth),
-			     JunkHeight + 2 * (Scr->BorderWidth + Scr->VirtualDesktopBevelWidth));
+			     (JunkWidth/Scr->VirtualDesktopDScale)
+				+ 2 * (Scr->BorderWidth + Scr->VirtualDesktopBevelWidth),
+			     (JunkHeight/Scr->VirtualDesktopDScale)
+				+ 2 * (Scr->BorderWidth + Scr->VirtualDesktopBevelWidth));
 
     Scr->VirtualDesktopDX = JunkX;
     Scr->VirtualDesktopDY = JunkY;
@@ -843,7 +845,8 @@ SetVirtualDesktop(char *geom, int scale)
       if (JunkMask & XNegative)
       {
 	Scr->VirtualDesktopDX = Scr->MyDisplayWidth
-	  - JunkWidth - (2 * Scr->BorderWidth) - (2 * Scr->VirtualDesktopBevelWidth) + JunkX;
+	  - (JunkWidth/Scr->VirtualDesktopDScale)
+	  - (2 * Scr->BorderWidth) - (2 * Scr->VirtualDesktopBevelWidth) + JunkX;
       }
       else
 	Scr->VirtualDesktopDX = JunkX;
@@ -853,15 +856,13 @@ SetVirtualDesktop(char *geom, int scale)
       if (JunkMask & YNegative)
       {
 	Scr->VirtualDesktopDY = Scr->MyDisplayHeight
-	  - JunkHeight - (2 * Scr->BorderWidth) - (2 * Scr->VirtualDesktopBevelWidth) + JunkY;
+	  - (JunkHeight/Scr->VirtualDesktopDScale)
+	  - (2 * Scr->BorderWidth) - (2 * Scr->VirtualDesktopBevelWidth) + JunkY;
       }
       else
 	Scr->VirtualDesktopDY = JunkY;
     }
   }
-
-  JunkWidth *= Scr->VirtualDesktopDScale;
-  JunkHeight *= Scr->VirtualDesktopDScale;
 
   Scr->VirtualDesktopWidth = JunkWidth;
   Scr->VirtualDesktopHeight = JunkHeight;
