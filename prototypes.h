@@ -240,6 +240,7 @@ extern void AddDefaultBindings(void);
 extern void SetVirtualDesktop(char *geom, int scale);
 extern void SetRaiseWindow(TwmWindow * tmp);
 extern TwmColormap *CreateTwmColormap(Colormap c);
+extern void free_window_names(TwmWindow * tmp, Bool nukefull, Bool nukename, Bool nukeicon);
 extern void free_cwins(TwmWindow * tmp);
 extern void CreateIconWindow(TwmWindow * tmp_win, int def_x, int def_y);
 extern void IconUp(TwmWindow * tmp_win);

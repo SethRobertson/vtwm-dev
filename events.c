@@ -802,7 +802,7 @@ HandleKeyPress(void)
 
 
 
-static void
+void
 free_window_names(TwmWindow * tmp, Bool nukefull, Bool nukename, Bool nukeicon)
 {
   if (tmp->name == tmp->full_name)

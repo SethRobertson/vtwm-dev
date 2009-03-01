@@ -276,15 +276,6 @@ AddWindow(Window w, int iconm, IconMgr * iconp)
   }
   tmp_win->iconify_by_unmapping |= (LookInList(Scr->IconifyByUn, tmp_win->full_name, &tmp_win->class) != (char *)NULL);
 
-  if ((Scr->UseWindowRing ||
-       LookInList(Scr->WindowRingL, tmp_win->full_name,
-		  &tmp_win->class)) && LookInList(Scr->NoWindowRingL, tmp_win->full_name, &tmp_win->class) == (char *)NULL)
-  {
-    AddWindowToRing(tmp_win);
-  }
-  else
-    tmp_win->ring.next = tmp_win->ring.prev = NULL;
-
   if (LookInList(Scr->NailedDown, tmp_win->full_name, &tmp_win->class))
     tmp_win->nailed = TRUE;
   else
@@ -391,10 +382,7 @@ AddWindow(Window w, int iconm, IconMgr * iconp)
   if (LookInList(Scr->StartIconified, tmp_win->full_name, &tmp_win->class))
   {
     if (!tmp_win->wmhints)
-    {
-      tmp_win->wmhints = (XWMHints *) malloc(sizeof(XWMHints));
-      tmp_win->wmhints->flags = 0;
-    }
+      tmp_win->wmhints = XAllocWMHints();
     tmp_win->wmhints->initial_state = IconicState;
     tmp_win->wmhints->flags |= StateHint;
   }
@@ -511,6 +499,18 @@ AddWindow(Window w, int iconm, IconMgr * iconp)
    */
   if (XGetGeometry(dpy, tmp_win->w, &JunkRoot, &JunkX, &JunkY, &JunkWidth, &JunkHeight, &JunkBW, &JunkDepth) == 0)
   {
+    /*
+     * Allocated are full_name, name, icon_name, wmhints, res_name/-class, cwins.
+     * (See also HandleDestroyNotify().)
+     */
+    free_window_names (tmp_win, True, True, True);  /* 1, 2, 3 */
+    if (tmp_win->wmhints)			    /* 4 */
+      XFree ((char *)tmp_win->wmhints);
+    if (tmp_win->class.res_name && tmp_win->class.res_name != NoName)	/* 5 */
+      XFree ((char *)tmp_win->class.res_name);
+    if (tmp_win->class.res_class && tmp_win->class.res_class != NoName)	/* 6 */
+      XFree ((char *)tmp_win->class.res_class);
+    free_cwins (tmp_win);			    /* 9 */
     free((char *)tmp_win);
     XUngrabServer(dpy);
     return (NULL);
@@ -526,6 +526,15 @@ AddWindow(Window w, int iconm, IconMgr * iconp)
     ptmp_win = &((*ptmp_win)->next);
   }
   (*ptmp_win) = tmp_win;
+
+  if ((Scr->UseWindowRing ||
+       LookInList(Scr->WindowRingL, tmp_win->full_name,
+		  &tmp_win->class)) && LookInList(Scr->NoWindowRingL, tmp_win->full_name, &tmp_win->class) == (char *)NULL)
+  {
+    AddWindowToRing(tmp_win);
+  }
+  else
+    tmp_win->ring.next = tmp_win->ring.prev = NULL;
 
   /* get all the colors for the window */
 
@@ -2146,14 +2155,19 @@ FetchWmColormapWindows(TwmWindow * tmp)
    */
   if (number_cmap_windows == 0)
   {
-
-    number_cmap_windows = 1;
-
-    cwins = (ColormapWindow **) malloc(sizeof(ColormapWindow *));
-    if (XFindContext(dpy, tmp->w, ColormapContext, (caddr_t *) & cwins[0]) == XCNOENT)
-      cwins[0] = CreateColormapWindow(tmp->w, (Bool) tmp->cmaps.number_cwins == 0, False);
-    else
-      cwins[0]->refcnt++;
+    cwins = (ColormapWindow **) calloc(1, sizeof(ColormapWindow *));
+    if (cwins) {
+      if (XFindContext(dpy, tmp->w, ColormapContext, (caddr_t *)&cwins[0]) == XCNOENT)
+	cwins[0] = CreateColormapWindow(tmp->w, (Bool) tmp->cmaps.number_cwins == 0, False);
+      else
+	cwins[0]->refcnt++;
+      if (cwins[0])
+	number_cmap_windows = 1;
+      else {
+	free(cwins);
+	cwins = NULL;
+      }
+    }
   }
 
   if (tmp->cmaps.number_cwins)
