@@ -118,7 +118,9 @@ extern int AddFuncKey(char *name, int cont, int mods, int func, char *win_name, 
 extern int ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * eventp, int context, int pulldown);
 extern int DeferExecution(int context, int func, Cursor cursor);
 extern void Execute(ScreenInfo * scr, char *s);
+extern void FocusedOnRoot(void);
 extern void FocusOnRoot(void);
+extern void FocusedOnClient(TwmWindow * tmp_win);
 extern void FocusOnClient(TwmWindow * tmp_win);
 extern void SetBorder(TwmWindow * tmp, int onoroff);
 extern void ReGrab(void);
@@ -188,6 +190,7 @@ extern void HandleButtonRelease(void);
 extern void HandleButtonPress(void);
 extern void HandleEnterNotify(void);
 extern void HandleLeaveNotify(void);
+extern void HandleFocusChange(void);
 extern void HandleConfigureRequest(void);
 extern void HandleClientMessage(void);
 extern void HandlePropertyNotify(void);

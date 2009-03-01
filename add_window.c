@@ -681,7 +681,7 @@ AddWindow(Window w, int iconm, IconMgr * iconp)
   }
 
   valuemask = (CWEventMask | CWDontPropagate);
-  attributes.event_mask = (StructureNotifyMask | PropertyChangeMask |
+  attributes.event_mask = (StructureNotifyMask | PropertyChangeMask | FocusChangeMask |
 			   ColormapChangeMask | VisibilityChangeMask | EnterWindowMask | LeaveWindowMask);
   attributes.do_not_propagate_mask = ButtonPressMask | ButtonReleaseMask;
   XChangeWindowAttributes(dpy, tmp_win->w, valuemask, &attributes);

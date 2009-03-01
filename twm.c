@@ -417,7 +417,7 @@ main(int argc, char **argv, char **environ)
     RedirectError = FALSE;
     XSetErrorHandler(CatchRedirectError);
     XSelectInput(dpy, RootWindow(dpy, scrnum),
-		 ColormapChangeMask | EnterWindowMask | PropertyChangeMask |
+		 ColormapChangeMask | EnterWindowMask | FocusChangeMask | PropertyChangeMask |
 		 SubstructureRedirectMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask);
     XSync(dpy, 0);
     XSetErrorHandler(TwmErrorHandler);

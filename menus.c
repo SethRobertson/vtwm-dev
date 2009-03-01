@@ -4319,7 +4319,7 @@ Execute(ScreenInfo * scr, char *s)
  */
 
 void
-FocusOnRoot(void)
+FocusedOnRoot(void)
 {
   if (Focus != NULL)
   {
@@ -4328,9 +4328,31 @@ FocusOnRoot(void)
   }
   InstallWindowColormaps(0, &Scr->TwmRoot);
 
-  SetFocus((TwmWindow *) NULL, LastTimestamp());
   Focus = NULL;
   FocusRoot = TRUE;
+}
+
+void
+FocusOnRoot(void)
+{
+  SetFocus((TwmWindow *) NULL, LastTimestamp());
+  FocusedOnRoot();
+}
+
+void
+FocusedOnClient(TwmWindow * tmp_win)
+{
+  if (Focus != NULL)
+  {
+    SetBorder(Focus, False);
+    PaintTitleHighlight(Focus, off);
+  }
+  InstallWindowColormaps(0, tmp_win);
+  SetBorder(tmp_win, True);
+  PaintTitleHighlight(tmp_win, on);
+
+  Focus = tmp_win;
+  FocusRoot = FALSE;
 }
 
 void
@@ -4339,18 +4361,8 @@ FocusOnClient(TwmWindow * tmp_win)
   /* assign focus if 'Passive'/'Locally Active' ICCCM model: */
   if (!tmp_win->wmhints || tmp_win->wmhints->input)
   {
-    if (Focus != NULL)
-    {
-      SetBorder(Focus, False);
-      PaintTitleHighlight(Focus, off);
-    }
-    InstallWindowColormaps(0, tmp_win);
-    SetBorder(tmp_win, True);
-    PaintTitleHighlight(tmp_win, on);
-
     SetFocus(tmp_win, LastTimestamp());
-    Focus = tmp_win;
-    FocusRoot = FALSE;
+    FocusedOnClient(tmp_win);
   }
   else
     FocusOnRoot();

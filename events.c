@@ -186,6 +186,8 @@ InitEvents(void)
   EventHandler[ButtonPress] = HandleButtonPress;
   EventHandler[EnterNotify] = HandleEnterNotify;
   EventHandler[LeaveNotify] = HandleLeaveNotify;
+  EventHandler[FocusIn] = HandleFocusChange;
+  EventHandler[FocusOut] = HandleFocusChange;
   EventHandler[ConfigureRequest] = HandleConfigureRequest;
   EventHandler[ClientMessage] = HandleClientMessage;
   EventHandler[PropertyNotify] = HandlePropertyNotify;
@@ -2973,6 +2975,85 @@ HandleLeaveNotify(void)
     }
     XSync(dpy, 0);
     return;
+  }
+}
+
+
+
+/***********************************************************************
+ *
+ *  Procedure:
+ *	HandleFocusChange - FocusIn/FocusOut event handler
+ *
+ ***********************************************************************
+ */
+
+void
+HandleFocusChange(void)
+{
+  if (Tmp_win == NULL)
+  {
+    if (Event.xfocus.detail == NotifyDetailNone && Event.xfocus.type == FocusIn)
+    {
+      /* some (unmanaged, windowless?) X11-client attempts to turn off focus */
+      FocusOnRoot();
+    }
+  }
+  else
+  {
+    if (Event.type == FocusIn)
+    {
+      if (Event.xfocus.mode == NotifyNormal && Event.xfocus.detail != NotifyPointer)
+      {
+	if (Focus != Tmp_win)
+	{
+	  if (Focus != NULL)
+	  {
+	    /*
+	     * This shouldn't happen but some clients "grab" focus unexpectedly,
+	     * so update VTWM's knowledge where the focus actually is.
+	     *
+	     * Accept focus transfer if it happens inside a window group
+	     * or to/from a "transient-for" window.
+	     */
+	    if (!((Focus->group == Tmp_win->group)
+		|| (Tmp_win->transient == TRUE && Tmp_win->transientfor == Focus->w)
+		|| (Focus->transient == TRUE && Focus->transientfor == Tmp_win->w)))
+	    {
+	      static TwmWindow * thf = NULL;
+	      static long stamp0; /* milliseconds measure */
+	      struct timeval clk;
+	      long stamp1;
+
+	      gettimeofday(&clk, NULL);
+	      stamp1 = (long)(clk.tv_sec * 1000) + (long)(clk.tv_usec / 1000);
+
+	      /* attempt to return focus: */
+	      if (thf != Tmp_win) {
+		thf = Tmp_win;
+		stamp0 = stamp1;
+	      }
+	      if (stamp1 - stamp0 < 166) {
+		XSetInputFocus(dpy, Focus->w, RevertToPointerRoot, CurrentTime);
+		XSync(dpy, False);
+		return;
+	      }
+	      /* 1/6 sec later; give up, let focus go: */
+	      thf = NULL;
+	    }
+	  }
+	  FocusedOnClient(Tmp_win);
+	}
+      }
+    }
+#if 0 /* unused */
+    else /* FocusOut */
+    {
+      if (Event.xfocus.detail != NotifyInferior)
+      {
+      }
+    }
+#endif
   }
 }
 
