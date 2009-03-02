@@ -98,6 +98,7 @@ XCOMM Installation path for the man page
 XCOMM For the traditional look of TWM as the system fallback,
 XCOMM change this to "2D"
   SYS_VTWMRC_LOOK = 3D
+XCOMM CDEBUGFLAGS=-gstabs
 
 XCOMM ================ End of common editables ======================
 

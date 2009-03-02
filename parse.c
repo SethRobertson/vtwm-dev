@@ -167,49 +167,49 @@ ParseTwmrc(char *filename)
   {
     switch (i)
     {
-    case 0:			/* -f filename */
-      cp = filename;
-      break;
-
-    case 1:			/* ~/.vtwmrc.screennum */
-      if (!filename)
-      {
-	cp = tmpfilename;
-	(void)sprintf(tmpfilename, "%s/.vtwmrc.%d", Home, Scr->screen);
+      case 0:			/* -f filename */
+	cp = filename;
 	break;
-      }
-      continue;
 
-    case 2:			/* ~/.vtwmrc */
-      if (!filename)
-      {
-	tmpfilename[HomeLen + 8] = '\0';
-      }
-      break;
+      case 1:			/* ~/.vtwmrc.screennum */
+	if (!filename)
+	{
+	  cp = tmpfilename;
+	  (void)sprintf(tmpfilename, "%s/.vtwmrc.%d", Home, Scr->screen);
+	  break;
+	}
+	continue;
 
-    case 3:			/* system.vtwmrc */
-      cp = SYSTEM_VTWMRC;
-      break;
-
-    case 4:			/* ~/.twmrc.screennum */
-      if (!filename)
-      {
-	cp = tmpfilename;
-	(void)sprintf(tmpfilename, "%s/.twmrc.%d", Home, Scr->screen);
+      case 2:			/* ~/.vtwmrc */
+	if (!filename)
+	{
+	  tmpfilename[HomeLen + 8] = '\0';
+	}
 	break;
-      }
-      continue;
 
-    case 5:			/* ~/.twmrc */
-      if (!filename)
-      {
-	tmpfilename[HomeLen + 7] = '\0';
-      }
-      break;
+      case 3:			/* system.vtwmrc */
+	cp = SYSTEM_VTWMRC;
+	break;
 
-    case 6:			/* system.twmrc */
-      cp = SYSTEM_TWMRC;
-      break;
+      case 4:			/* ~/.twmrc.screennum */
+	if (!filename)
+	{
+	  cp = tmpfilename;
+	  (void)sprintf(tmpfilename, "%s/.twmrc.%d", Home, Scr->screen);
+	  break;
+	}
+	continue;
+
+      case 5:			/* ~/.twmrc */
+	if (!filename)
+	{
+	  tmpfilename[HomeLen + 7] = '\0';
+	}
+	break;
+
+      case 6:			/* system.twmrc */
+	cp = SYSTEM_TWMRC;
+	break;
     }
 
 #ifndef NO_M4_SUPPORT
@@ -1103,273 +1103,273 @@ do_single_keyword(int keyword)
 {
   switch (keyword)
   {
-  case kw0_NoDefaults:
-    Scr->NoDefaultMouseOrKeyboardBindings = TRUE;
-    Scr->NoDefaultTitleButtons = TRUE;
-    return 1;
+    case kw0_NoDefaults:
+      Scr->NoDefaultMouseOrKeyboardBindings = TRUE;
+      Scr->NoDefaultTitleButtons = TRUE;
+      return 1;
 
-  case kw0_NoDefaultMouseOrKeyboardBindings:
-    Scr->NoDefaultMouseOrKeyboardBindings = TRUE;
-    return 1;
+    case kw0_NoDefaultMouseOrKeyboardBindings:
+      Scr->NoDefaultMouseOrKeyboardBindings = TRUE;
+      return 1;
 
-  case kw0_NoDefaultTitleButtons:
-    Scr->NoDefaultTitleButtons = TRUE;
-    return 1;
+    case kw0_NoDefaultTitleButtons:
+      Scr->NoDefaultTitleButtons = TRUE;
+      return 1;
 
-  case kw0_StayUpMenus:
-    if (Scr->FirstTime)
-      Scr->StayUpMenus = TRUE;
-    return 1;
+    case kw0_StayUpMenus:
+      if (Scr->FirstTime)
+	Scr->StayUpMenus = TRUE;
+      return 1;
 
-  case kw0_StayUpOptionalMenus:
-    if (Scr->FirstTime)
-      Scr->StayUpOptionalMenus = Scr->StayUpMenus = TRUE;
-    return 1;
+    case kw0_StayUpOptionalMenus:
+      if (Scr->FirstTime)
+	Scr->StayUpOptionalMenus = Scr->StayUpMenus = TRUE;
+      return 1;
 
 
-  case kw0_OldFashionedTwmWindowsMenu:
-    Scr->OldFashionedTwmWindowsMenu = TRUE;
-    return 1;
+    case kw0_OldFashionedTwmWindowsMenu:
+      Scr->OldFashionedTwmWindowsMenu = TRUE;
+      return 1;
 
-  case kw0_AutoRelativeResize:
-    Scr->AutoRelativeResize = TRUE;
-    return 1;
+    case kw0_AutoRelativeResize:
+      Scr->AutoRelativeResize = TRUE;
+      return 1;
 
-  case kw0_ForceIcons:
-    if (Scr->FirstTime)
-      Scr->ForceIcon = TRUE;
-    return 1;
+    case kw0_ForceIcons:
+      if (Scr->FirstTime)
+	Scr->ForceIcon = TRUE;
+      return 1;
 
-  case kw0_NoIconManagers:
-    Scr->NoIconManagers = TRUE;
-    return 1;
+    case kw0_NoIconManagers:
+      Scr->NoIconManagers = TRUE;
+      return 1;
 
-  case kw0_NoIconifyIconManagers:
-    Scr->NoIconifyIconManagers = TRUE;
-    return 1;
+    case kw0_NoIconifyIconManagers:
+      Scr->NoIconifyIconManagers = TRUE;
+      return 1;
 
-  case kw0_InterpolateMenuColors:
-    if (Scr->FirstTime)
-      Scr->InterpolateMenuColors = TRUE;
-    return 1;
+    case kw0_InterpolateMenuColors:
+      if (Scr->FirstTime)
+	Scr->InterpolateMenuColors = TRUE;
+      return 1;
 
-  case kw0_NoVersion:
-    /* obsolete */
-    return 1;
+    case kw0_NoVersion:
+      /* obsolete */
+      return 1;
 
-  case kw0_SortIconManager:
-    if (Scr->FirstTime)
-      Scr->SortIconMgr = TRUE;
-    return 1;
+    case kw0_SortIconManager:
+      if (Scr->FirstTime)
+	Scr->SortIconMgr = TRUE;
+      return 1;
 
-  case kw0_NoGrabServer:
-    Scr->NoGrabServer = TRUE;
-    return 1;
+    case kw0_NoGrabServer:
+      Scr->NoGrabServer = TRUE;
+      return 1;
 
-  case kw0_NoMenuShadows:
-    if (Scr->FirstTime)
-      Scr->Shadow = FALSE;
-    return 1;
+    case kw0_NoMenuShadows:
+      if (Scr->FirstTime)
+	Scr->Shadow = FALSE;
+      return 1;
 
-  case kw0_NoRaiseOnMove:
-    if (Scr->FirstTime)
-      Scr->NoRaiseMove = TRUE;
-    return 1;
+    case kw0_NoRaiseOnMove:
+      if (Scr->FirstTime)
+	Scr->NoRaiseMove = TRUE;
+      return 1;
 
-  case kw0_NoRaiseOnResize:
-    if (Scr->FirstTime)
-      Scr->NoRaiseResize = TRUE;
-    return 1;
+    case kw0_NoRaiseOnResize:
+      if (Scr->FirstTime)
+	Scr->NoRaiseResize = TRUE;
+      return 1;
 
-  case kw0_NoRaiseOnDeiconify:
-    if (Scr->FirstTime)
-      Scr->NoRaiseDeicon = TRUE;
-    return 1;
+    case kw0_NoRaiseOnDeiconify:
+      if (Scr->FirstTime)
+	Scr->NoRaiseDeicon = TRUE;
+      return 1;
 
-  case kw0_DontMoveOff:
-    Scr->DontMoveOff = TRUE;
-    return 1;
+    case kw0_DontMoveOff:
+      Scr->DontMoveOff = TRUE;
+      return 1;
 
-  case kw0_NoBackingStore:
-    Scr->BackingStore = FALSE;
-    return 1;
+    case kw0_NoBackingStore:
+      Scr->BackingStore = FALSE;
+      return 1;
 
-  case kw0_NoSaveUnders:
-    Scr->SaveUnder = FALSE;
-    return 1;
+    case kw0_NoSaveUnders:
+      Scr->SaveUnder = FALSE;
+      return 1;
 
-  case kw0_RestartPreviousState:
-    RestartPreviousState = True;
-    return 1;
+    case kw0_RestartPreviousState:
+      RestartPreviousState = True;
+      return 1;
 
-  case kw0_ClientBorderWidth:
-    if (Scr->FirstTime)
-      Scr->ClientBorderWidth = TRUE;
-    return 1;
+    case kw0_ClientBorderWidth:
+      if (Scr->FirstTime)
+	Scr->ClientBorderWidth = TRUE;
+      return 1;
 
-  case kw0_NoTitleFocus:
-    Scr->TitleFocus = FALSE;
-    return 1;
+    case kw0_NoTitleFocus:
+      Scr->TitleFocus = FALSE;
+      return 1;
 
-  case kw0_RandomPlacement:
-    Scr->RandomPlacement = TRUE;
-    return 1;
+    case kw0_RandomPlacement:
+      Scr->RandomPlacement = TRUE;
+      return 1;
 
-  case kw0_PointerPlacement:
-    Scr->PointerPlacement = TRUE;
-    return 1;
+    case kw0_PointerPlacement:
+      Scr->PointerPlacement = TRUE;
+      return 1;
 
-  case kw0_DecorateTransients:
-    Scr->DecorateTransients = TRUE;
-    return 1;
+    case kw0_DecorateTransients:
+      Scr->DecorateTransients = TRUE;
+      return 1;
 
-  case kw0_WarpToTransients:
-    Scr->WarpToTransients = TRUE;
-    return 1;
+    case kw0_WarpToTransients:
+      Scr->WarpToTransients = TRUE;
+      return 1;
 
-  case kw0_WarpToLocalTransients:
-    Scr->WarpToLocalTransients = TRUE;
-    return 1;
+    case kw0_WarpToLocalTransients:
+      Scr->WarpToLocalTransients = TRUE;
+      return 1;
 
-  case kw0_ShowIconManager:
-    Scr->ShowIconManager = TRUE;
-    return 1;
+    case kw0_ShowIconManager:
+      Scr->ShowIconManager = TRUE;
+      return 1;
 
-  case kw0_NoCaseSensitive:
-    Scr->CaseSensitive = FALSE;
-    return 1;
+    case kw0_NoCaseSensitive:
+      Scr->CaseSensitive = FALSE;
+      return 1;
 
-  case kw0_NoRaiseOnWarp:
-    Scr->NoRaiseWarp = TRUE;
-    return 1;
+    case kw0_NoRaiseOnWarp:
+      Scr->NoRaiseWarp = TRUE;
+      return 1;
 
-  case kw0_WarpUnmapped:
-    Scr->WarpUnmapped = TRUE;
-    return 1;
+    case kw0_WarpUnmapped:
+      Scr->WarpUnmapped = TRUE;
+      return 1;
 
-  case kw0_DeIconifyToScreen:
-    Scr->DeIconifyToScreen = TRUE;
-    return 1;
+    case kw0_DeIconifyToScreen:
+      Scr->DeIconifyToScreen = TRUE;
+      return 1;
 
-  case kw0_WarpWindows:
-    Scr->WarpWindows = TRUE;
-    return 1;
+    case kw0_WarpWindows:
+      Scr->WarpWindows = TRUE;
+      return 1;
 
-  case kw0_SnapRealScreen:
-    Scr->snapRealScreen = TRUE;
-    return 1;
+    case kw0_SnapRealScreen:
+      Scr->snapRealScreen = TRUE;
+      return 1;
 
-  case kw0_NotVirtualGeometries:
-    Scr->GeometriesAreVirtual = FALSE;
-    return 1;
+    case kw0_NotVirtualGeometries:
+      Scr->GeometriesAreVirtual = FALSE;
+      return 1;
 
-  case kw0_NaturalAutopanBehavior:
-    Scr->AutoPanWarpWithRespectToRealScreen = 100;
-    return 1;
-  case kw0_EnhancedExecResources:
-    Scr->EnhancedExecResources = TRUE;
-    return 1;
-  case kw0_RightHandSidePulldownMenus:
-    Scr->RightHandSidePulldownMenus = TRUE;
-    return 1;
-  case kw0_LessRandomZoomZoom:
-    Scr->LessRandomZoomZoom = TRUE;
-    return 1;
-  case kw0_PrettyZoom:
-    Scr->PrettyZoom = TRUE;
-    return 1;
-  case kw0_StickyAbove:
-    Scr->StickyAbove = TRUE;
-    return 1;
-  case kw0_DontInterpolateTitles:
-    Scr->DontInterpolateTitles = TRUE;
-    return 1;
+    case kw0_NaturalAutopanBehavior:
+      Scr->AutoPanWarpWithRespectToRealScreen = 100;
+      return 1;
+    case kw0_EnhancedExecResources:
+      Scr->EnhancedExecResources = TRUE;
+      return 1;
+    case kw0_RightHandSidePulldownMenus:
+      Scr->RightHandSidePulldownMenus = TRUE;
+      return 1;
+    case kw0_LessRandomZoomZoom:
+      Scr->LessRandomZoomZoom = TRUE;
+      return 1;
+    case kw0_PrettyZoom:
+      Scr->PrettyZoom = TRUE;
+      return 1;
+    case kw0_StickyAbove:
+      Scr->StickyAbove = TRUE;
+      return 1;
+    case kw0_DontInterpolateTitles:
+      Scr->DontInterpolateTitles = TRUE;
+      return 1;
 
-  case kw0_FixManagedVirtualGeometries:
-    Scr->FixManagedVirtualGeometries = TRUE;
-    return 1;
+    case kw0_FixManagedVirtualGeometries:
+      Scr->FixManagedVirtualGeometries = TRUE;
+      return 1;
 
-  case kw0_FixTransientVirtualGeometries:
-    Scr->FixTransientVirtualGeometries = TRUE;
-    return 1;
-  case kw0_WarpSnug:
-    Scr->WarpSnug = TRUE;
-    return 1;
+    case kw0_FixTransientVirtualGeometries:
+      Scr->FixTransientVirtualGeometries = TRUE;
+      return 1;
+    case kw0_WarpSnug:
+      Scr->WarpSnug = TRUE;
+      return 1;
 
-  case kw0_ShallowReliefWindowButton:
-    Scr->ShallowReliefWindowButton = 1;
-    return 1;
+    case kw0_ShallowReliefWindowButton:
+      Scr->ShallowReliefWindowButton = 1;
+      return 1;
 
-  case kw0_ButtonColorIsFrame:
-    Scr->ButtonColorIsFrame = TRUE;
-    return 1;
+    case kw0_ButtonColorIsFrame:
+      Scr->ButtonColorIsFrame = TRUE;
+      return 1;
 
-  case kw0_BeNiceToColormap:
-    Scr->BeNiceToColormap = TRUE;
-    return 1;
+    case kw0_BeNiceToColormap:
+      Scr->BeNiceToColormap = TRUE;
+      return 1;
 
-  case kw0_VirtualReceivesMotionEvents:
-    Scr->VirtualReceivesMotionEvents = TRUE;
-    return 1;
-  case kw0_VirtualSendsMotionEvents:
-    Scr->VirtualSendsMotionEvents = TRUE;
-    return 1;
+    case kw0_VirtualReceivesMotionEvents:
+      Scr->VirtualReceivesMotionEvents = TRUE;
+      return 1;
+    case kw0_VirtualSendsMotionEvents:
+      Scr->VirtualSendsMotionEvents = TRUE;
+      return 1;
 
-  case kw0_NoIconManagerFocus:
-    Scr->IconManagerFocus = FALSE;
-    return 1;
+    case kw0_NoIconManagerFocus:
+      Scr->IconManagerFocus = FALSE;
+      return 1;
 
-  case kw0_StaticIconPositions:
-    Scr->StaticIconPositions = TRUE;
-    return 1;
+    case kw0_StaticIconPositions:
+      Scr->StaticIconPositions = TRUE;
+      return 1;
 
-  case kw0_NoPrettyTitles:
-    Scr->NoPrettyTitles = TRUE;
-    return 1;
+    case kw0_NoPrettyTitles:
+      Scr->NoPrettyTitles = TRUE;
+      return 1;
 
-  case kw0_DontDeiconifyTransients:
-    Scr->DontDeiconifyTransients = TRUE;
-    return 1;
+    case kw0_DontDeiconifyTransients:
+      Scr->DontDeiconifyTransients = TRUE;
+      return 1;
 
-  case kw0_WarpVisible:
-    Scr->WarpVisible = TRUE;
-    return 1;
+    case kw0_WarpVisible:
+      Scr->WarpVisible = TRUE;
+      return 1;
 
-  case kw0_StrictIconManager:
-    Scr->StrictIconManager = TRUE;
-    return 1;
+    case kw0_StrictIconManager:
+      Scr->StrictIconManager = TRUE;
+      return 1;
 
-  case kw0_ZoomZoom:
-    Scr->ZoomZoom = TRUE;
-    return 1;
+    case kw0_ZoomZoom:
+      Scr->ZoomZoom = TRUE;
+      return 1;
 
-  case kw0_NoBorderDecorations:
-    Scr->NoBorderDecorations = TRUE;
-    return 1;
+    case kw0_NoBorderDecorations:
+      Scr->NoBorderDecorations = TRUE;
+      return 1;
 
-  case kw0_RaiseOnStart:
-    Scr->RaiseOnStart = TRUE;
-    return 1;
+    case kw0_RaiseOnStart:
+      Scr->RaiseOnStart = TRUE;
+      return 1;
 
 #ifdef TWM_USE_XFT
-  case kw0_EnableXftFontRenderer:
-    if (Scr->use_xft == 0)	/*Xrender available? */
-      Scr->use_xft = +1;
-    return 1;
+    case kw0_EnableXftFontRenderer:
+      if (Scr->use_xft == 0)	/*Xrender available? */
+	Scr->use_xft = +1;
+      return 1;
 #endif
 #ifdef TWM_USE_SLOPPYFOCUS
-  case kw0_SloppyFocus:
-    SloppyFocus = TRUE;
-    return 1;
+    case kw0_SloppyFocus:
+      SloppyFocus = TRUE;
+      return 1;
 #endif
 #ifdef TWM_USE_XRANDR
-  case kw0_RestartOnScreenChangeNotify:
-    Scr->RRScreenChangeRestart = TRUE;
-    return 1;
+    case kw0_RestartOnScreenChangeNotify:
+      Scr->RRScreenChangeRestart = TRUE;
+      return 1;
 
-  case kw0_RestartOnScreenSizeChangeNotify:
-    Scr->RRScreenSizeChangeRestart = TRUE;
-    return 1;
+    case kw0_RestartOnScreenSizeChangeNotify:
+      Scr->RRScreenSizeChangeRestart = TRUE;
+      return 1;
 #endif
   }
 
@@ -1385,126 +1385,125 @@ do_string_keyword(int keyword, char *s)
 
   switch (keyword)
   {
+    case kws_IconFont:
+      if (!Scr->HaveFonts)
+	Scr->IconFont.name = s;
+      return 1;
 
-  case kws_IconFont:
-    if (!Scr->HaveFonts)
-      Scr->IconFont.name = s;
-    return 1;
+    case kws_ResizeFont:
+      if (!Scr->HaveFonts)
+	Scr->SizeFont.name = s;
+      return 1;
 
-  case kws_ResizeFont:
-    if (!Scr->HaveFonts)
-      Scr->SizeFont.name = s;
-    return 1;
+    case kws_MenuFont:
+      if (!Scr->HaveFonts)
+	Scr->MenuFont.name = s;
+      return 1;
 
-  case kws_MenuFont:
-    if (!Scr->HaveFonts)
-      Scr->MenuFont.name = s;
-    return 1;
+    case kws_TitleFont:
+      if (!Scr->HaveFonts)
+	Scr->TitleBarFont.name = s;
+      return 1;
 
-  case kws_TitleFont:
-    if (!Scr->HaveFonts)
-      Scr->TitleBarFont.name = s;
-    return 1;
+    case kws_IconManagerFont:
+      if (!Scr->HaveFonts)
+	Scr->IconManagerFont.name = s;
+      return 1;
 
-  case kws_IconManagerFont:
-    if (!Scr->HaveFonts)
-      Scr->IconManagerFont.name = s;
-    return 1;
+    case kws_MenuTitleFont:
+      if (!Scr->HaveFonts)
+	Scr->MenuTitleFont.name = s;
+      return 1;
 
-  case kws_MenuTitleFont:
-    if (!Scr->HaveFonts)
-      Scr->MenuTitleFont.name = s;
-    return 1;
+    case kws_InfoFont:
+      if (!Scr->HaveFonts)
+	Scr->InfoFont.name = s;
+      return 1;
 
-  case kws_InfoFont:
-    if (!Scr->HaveFonts)
-      Scr->InfoFont.name = s;
-    return 1;
+    case kws_DefaultFont:
+      if (!Scr->HaveFonts)
+	Scr->DefaultFont.name = s;
+      return 1;
 
-  case kws_DefaultFont:
-    if (!Scr->HaveFonts)
-      Scr->DefaultFont.name = s;
-    return 1;
+    case kws_UnknownIcon:
+      if (Scr->FirstTime)
+	GetUnknownIcon(s);
+      return 1;
 
-  case kws_UnknownIcon:
-    if (Scr->FirstTime)
-      GetUnknownIcon(s);
-    return 1;
+    case kws_IconDirectory:
+      if (Scr->FirstTime)
+	Scr->IconDirectory = ExpandFilename(s);
+      return 1;
 
-  case kws_IconDirectory:
-    if (Scr->FirstTime)
-      Scr->IconDirectory = ExpandFilename(s);
-    return 1;
+    case kws_MaxWindowSize:
+      JunkMask = XParseGeometry(s, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
+      if ((JunkMask & (WidthValue | HeightValue)) != (WidthValue | HeightValue))
+      {
+	twmrc_error_prefix();
+	fprintf(stderr, "bad MaxWindowSize \"%s\"\n", s);
+	return 0;
+      }
+      if (JunkWidth <= 0 || JunkHeight <= 0)
+      {
+	twmrc_error_prefix();
+	fprintf(stderr, "MaxWindowSize \"%s\" must be positive\n", s);
+	return 0;
+      }
+      Scr->MaxWindowWidth = JunkWidth;
+      Scr->MaxWindowHeight = JunkHeight;
+      return 1;
 
-  case kws_MaxWindowSize:
-    JunkMask = XParseGeometry(s, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
-    if ((JunkMask & (WidthValue | HeightValue)) != (WidthValue | HeightValue))
-    {
-      twmrc_error_prefix();
-      fprintf(stderr, "bad MaxWindowSize \"%s\"\n", s);
-      return 0;
-    }
-    if (JunkWidth <= 0 || JunkHeight <= 0)
-    {
-      twmrc_error_prefix();
-      fprintf(stderr, "MaxWindowSize \"%s\" must be positive\n", s);
-      return 0;
-    }
-    Scr->MaxWindowWidth = JunkWidth;
-    Scr->MaxWindowHeight = JunkHeight;
-    return 1;
+    case kws_VirtualFont:
+      Scr->NamesInVirtualDesktop = True;
+      if (!Scr->HaveFonts)
+	Scr->VirtualFont.name = s;
+      return 1;
 
-  case kws_VirtualFont:
-    Scr->NamesInVirtualDesktop = True;
-    if (!Scr->HaveFonts)
-      Scr->VirtualFont.name = s;
-    return 1;
-
-  case kws_DoorFont:
-    if (!Scr->HaveFonts)
-      Scr->DoorFont.name = s;
-    return 1;
+    case kws_DoorFont:
+      if (!Scr->HaveFonts)
+	Scr->DoorFont.name = s;
+      return 1;
 
 #ifdef SOUND_SUPPORT
-  case kws_SoundHost:
-    if (Scr->FirstTime)
-      SetSoundHost(s);
-    return 1;
+    case kws_SoundHost:
+      if (Scr->FirstTime)
+	SetSoundHost(s);
+      return 1;
 #endif
 
-  case kws_ResizeRegion:
-    XmuCopyISOLatin1Lowered(s, s);
-    if (strcmp(s, "northwest") == 0)
-    {
-      Scr->ResizeX = R_NORTHWEST;
-      return 1;
-    }
-    else if (strcmp(s, "northeast") == 0)
-    {
-      Scr->ResizeX = R_NORTHEAST;
-      return 1;
-    }
-    if (strcmp(s, "southwest") == 0)
-    {
-      Scr->ResizeX = R_SOUTHWEST;
-      return 1;
-    }
-    else if (strcmp(s, "southeast") == 0)
-    {
-      Scr->ResizeX = R_SOUTHEAST;
-      return 1;
-    }
-    else if (strcmp(s, "centered") == 0)
-    {
-      Scr->ResizeX = R_CENTERED;
-      return 1;
-    }
-    else
-    {
-      twmrc_error_prefix();
-      fprintf(stderr, "Invalid ResizeRegion \"%s\"\n", s);
-      return 0;
-    }
+    case kws_ResizeRegion:
+      XmuCopyISOLatin1Lowered(s, s);
+      if (strcmp(s, "northwest") == 0)
+      {
+	Scr->ResizeX = R_NORTHWEST;
+	return 1;
+      }
+      else if (strcmp(s, "northeast") == 0)
+      {
+	Scr->ResizeX = R_NORTHEAST;
+	return 1;
+      }
+      if (strcmp(s, "southwest") == 0)
+      {
+	Scr->ResizeX = R_SOUTHWEST;
+	return 1;
+      }
+      else if (strcmp(s, "southeast") == 0)
+      {
+	Scr->ResizeX = R_SOUTHEAST;
+	return 1;
+      }
+      else if (strcmp(s, "centered") == 0)
+      {
+	Scr->ResizeX = R_CENTERED;
+	return 1;
+      }
+      else
+      {
+	twmrc_error_prefix();
+	fprintf(stderr, "Invalid ResizeRegion \"%s\"\n", s);
+	return 0;
+      }
   }
 
   return 0;
@@ -1516,232 +1515,232 @@ do_number_keyword(int keyword, int num)
 {
   switch (keyword)
   {
-  case kwn_ConstrainedMoveTime:
-    ConstrainedMoveTime = num;
-    return 1;
+    case kwn_ConstrainedMoveTime:
+      ConstrainedMoveTime = num;
+      return 1;
 
-  case kwn_AutoPanBorderWidth:
-    Scr->AutoPanBorderWidth = (num < 1) ? 1 : num;
-    return 1;
+    case kwn_AutoPanBorderWidth:
+      Scr->AutoPanBorderWidth = (num < 1) ? 1 : num;
+      return 1;
 
-  case kwn_AutoPanExtraWarp:
-    Scr->AutoPanExtraWarp = (num < 0) ? 0 : num;
-    return 1;
+    case kwn_AutoPanExtraWarp:
+      Scr->AutoPanExtraWarp = (num < 0) ? 0 : num;
+      return 1;
 
-  case kwn_RealScreenBorderWidth:
-    Scr->RealScreenBorderWidth = (num < 0) ? 0 : num;
-    return 1;
+    case kwn_RealScreenBorderWidth:
+      Scr->RealScreenBorderWidth = (num < 0) ? 0 : num;
+      return 1;
 
-  case kwn_MoveDelta:
-    Scr->MoveDelta = num;
-    return 1;
+    case kwn_MoveDelta:
+      Scr->MoveDelta = num;
+      return 1;
 
-  case kwn_XorValue:
-    if (Scr->FirstTime)
-      Scr->XORvalue = num;
-    return 1;
+    case kwn_XorValue:
+      if (Scr->FirstTime)
+	Scr->XORvalue = num;
+      return 1;
 
-  case kwn_FramePadding:
-    if (Scr->FirstTime)
-      Scr->FramePadding = num;
-    return 1;
+    case kwn_FramePadding:
+      if (Scr->FirstTime)
+	Scr->FramePadding = num;
+      return 1;
 
-  case kwn_TitlePadding:
-    if (Scr->FirstTime)
-      Scr->TitlePadding = num;
-    return 1;
+    case kwn_TitlePadding:
+      if (Scr->FirstTime)
+	Scr->TitlePadding = num;
+      return 1;
 
-  case kwn_ButtonIndent:
-    if (Scr->FirstTime)
-      Scr->ButtonIndent = num;
-    return 1;
+    case kwn_ButtonIndent:
+      if (Scr->FirstTime)
+	Scr->ButtonIndent = num;
+      return 1;
 
-  case kwn_BorderWidth:
-    if (Scr->FirstTime)
-      Scr->BorderWidth = num;
-    return 1;
+    case kwn_BorderWidth:
+      if (Scr->FirstTime)
+	Scr->BorderWidth = num;
+      return 1;
 
-  case kwn_IconBorderWidth:
-    if (Scr->FirstTime)
-      Scr->IconBorderWidth = num;
-    return 1;
+    case kwn_IconBorderWidth:
+      if (Scr->FirstTime)
+	Scr->IconBorderWidth = num;
+      return 1;
 
-  case kwn_TitleButtonBorderWidth:
-    if (Scr->FirstTime)
-      Scr->TBInfo.border = num;
-    return 1;
+    case kwn_TitleButtonBorderWidth:
+      if (Scr->FirstTime)
+	Scr->TBInfo.border = num;
+      return 1;
 
-  case kwn_PanDistanceX:
-    if (Scr->FirstTime)
-    {
-      Scr->VirtualDesktopPanDistanceX = (num * Scr->MyDisplayWidth) / 100;
-      if (Scr->VirtualDesktopPanDistanceX <= 0)
-	Scr->VirtualDesktopPanDistanceX = 1;
-    }
-    return 1;
+    case kwn_PanDistanceX:
+      if (Scr->FirstTime)
+      {
+	Scr->VirtualDesktopPanDistanceX = (num * Scr->MyDisplayWidth) / 100;
+	if (Scr->VirtualDesktopPanDistanceX <= 0)
+	  Scr->VirtualDesktopPanDistanceX = 1;
+      }
+      return 1;
 
-  case kwn_PanDistanceY:
-    if (Scr->FirstTime)
-    {
-      Scr->VirtualDesktopPanDistanceY = (num * Scr->MyDisplayHeight) / 100;
-      if (Scr->VirtualDesktopPanDistanceY <= 0)
-	Scr->VirtualDesktopPanDistanceY = 1;
-    }
-    return 1;
+    case kwn_PanDistanceY:
+      if (Scr->FirstTime)
+      {
+	Scr->VirtualDesktopPanDistanceY = (num * Scr->MyDisplayHeight) / 100;
+	if (Scr->VirtualDesktopPanDistanceY <= 0)
+	  Scr->VirtualDesktopPanDistanceY = 1;
+      }
+      return 1;
 
-  case kwn_PanResistance:
-    if (Scr->FirstTime)
-      Scr->VirtualDesktopPanResistance = num;
-    if (Scr->VirtualDesktopPanResistance < 0)
-      Scr->VirtualDesktopPanResistance = 0;
-    return 1;
+    case kwn_PanResistance:
+      if (Scr->FirstTime)
+	Scr->VirtualDesktopPanResistance = num;
+      if (Scr->VirtualDesktopPanResistance < 0)
+	Scr->VirtualDesktopPanResistance = 0;
+      return 1;
 
-  case kwn_RaiseDelay:
-    RaiseDelay = num;
-    return 1;
+    case kwn_RaiseDelay:
+      RaiseDelay = num;
+      return 1;
 
-  case kwn_AutoPan:
-    if (Scr->FirstTime)
-    {
-      Scr->AutoPanX = (num * Scr->MyDisplayWidth) / 100;
-      Scr->AutoPanY = (num * Scr->MyDisplayHeight) / 100;
-      if (Scr->AutoPanX <= 0)
-	Scr->AutoPanX = 1;
-      if (Scr->AutoPanY <= 0)
-	Scr->AutoPanY = 1;
-    }
-    return 1;
+    case kwn_AutoPan:
+      if (Scr->FirstTime)
+      {
+	Scr->AutoPanX = (num * Scr->MyDisplayWidth) / 100;
+	Scr->AutoPanY = (num * Scr->MyDisplayHeight) / 100;
+	if (Scr->AutoPanX <= 0)
+	  Scr->AutoPanX = 1;
+	if (Scr->AutoPanY <= 0)
+	  Scr->AutoPanY = 1;
+      }
+      return 1;
 
-  case kwn_AutoPanWarpWithRespectToRealScreen:
-    Scr->AutoPanWarpWithRespectToRealScreen = (num < 0) ? 0 : (num > 100) ? 100 : num;
-    return 1;
+    case kwn_AutoPanWarpWithRespectToRealScreen:
+      Scr->AutoPanWarpWithRespectToRealScreen = (num < 0) ? 0 : (num > 100) ? 100 : num;
+      return 1;
 
-  case kwn_ClearBevelContrast:
-    if (Scr->FirstTime)
-      Scr->ClearBevelContrast = num;
-    if (Scr->ClearBevelContrast < 0)
-      Scr->ClearBevelContrast = 0;
-    if (Scr->ClearBevelContrast > 100)
-      Scr->ClearBevelContrast = 100;
-    return 1;
-  case kwn_DarkBevelContrast:
-    if (Scr->FirstTime)
-      Scr->DarkBevelContrast = num;
-    if (Scr->DarkBevelContrast < 0)
-      Scr->DarkBevelContrast = 0;
-    if (Scr->DarkBevelContrast > 100)
-      Scr->DarkBevelContrast = 100;
-    return 1;
+    case kwn_ClearBevelContrast:
+      if (Scr->FirstTime)
+	Scr->ClearBevelContrast = num;
+      if (Scr->ClearBevelContrast < 0)
+	Scr->ClearBevelContrast = 0;
+      if (Scr->ClearBevelContrast > 100)
+	Scr->ClearBevelContrast = 100;
+      return 1;
+    case kwn_DarkBevelContrast:
+      if (Scr->FirstTime)
+	Scr->DarkBevelContrast = num;
+      if (Scr->DarkBevelContrast < 0)
+	Scr->DarkBevelContrast = 0;
+      if (Scr->DarkBevelContrast > 100)
+	Scr->DarkBevelContrast = 100;
+      return 1;
 
-  case kwn_BorderBevelWidth:
-    if (Scr->FirstTime)
-      Scr->BorderBevelWidth = num;
-    if (Scr->BorderBevelWidth < 0)
-      Scr->BorderBevelWidth = 0;
-    if (Scr->BorderBevelWidth > 9)
-      Scr->BorderBevelWidth = 9;
-    return 1;
-  case kwn_IconManagerBevelWidth:
-    if (Scr->FirstTime)
-      Scr->IconMgrBevelWidth = num;
-    if (Scr->IconMgrBevelWidth < 0)
-      Scr->IconMgrBevelWidth = 0;
-    if (Scr->IconMgrBevelWidth > 9)
-      Scr->IconMgrBevelWidth = 9;
-    return 1;
-  case kwn_InfoBevelWidth:
-    if (Scr->FirstTime)
-      Scr->InfoBevelWidth = num;
-    if (Scr->InfoBevelWidth < 0)
-      Scr->InfoBevelWidth = 0;
-    if (Scr->InfoBevelWidth > 9)
-      Scr->InfoBevelWidth = 9;
-    return 1;
-  case kwn_MenuBevelWidth:
-    if (Scr->FirstTime)
-      Scr->MenuBevelWidth = num;
-    if (Scr->MenuBevelWidth < 0)
-      Scr->MenuBevelWidth = 0;
-    if (Scr->MenuBevelWidth > 9)
-      Scr->MenuBevelWidth = 9;
-    return 1;
-  case kwn_TitleBevelWidth:
-    if (Scr->FirstTime)
-      Scr->TitleBevelWidth = num;
-    if (Scr->TitleBevelWidth < 0)
-      Scr->TitleBevelWidth = 0;
-    if (Scr->TitleBevelWidth > 9)
-      Scr->TitleBevelWidth = 9;
-    return 1;
+    case kwn_BorderBevelWidth:
+      if (Scr->FirstTime)
+	Scr->BorderBevelWidth = num;
+      if (Scr->BorderBevelWidth < 0)
+	Scr->BorderBevelWidth = 0;
+      if (Scr->BorderBevelWidth > 9)
+	Scr->BorderBevelWidth = 9;
+      return 1;
+    case kwn_IconManagerBevelWidth:
+      if (Scr->FirstTime)
+	Scr->IconMgrBevelWidth = num;
+      if (Scr->IconMgrBevelWidth < 0)
+	Scr->IconMgrBevelWidth = 0;
+      if (Scr->IconMgrBevelWidth > 9)
+	Scr->IconMgrBevelWidth = 9;
+      return 1;
+    case kwn_InfoBevelWidth:
+      if (Scr->FirstTime)
+	Scr->InfoBevelWidth = num;
+      if (Scr->InfoBevelWidth < 0)
+	Scr->InfoBevelWidth = 0;
+      if (Scr->InfoBevelWidth > 9)
+	Scr->InfoBevelWidth = 9;
+      return 1;
+    case kwn_MenuBevelWidth:
+      if (Scr->FirstTime)
+	Scr->MenuBevelWidth = num;
+      if (Scr->MenuBevelWidth < 0)
+	Scr->MenuBevelWidth = 0;
+      if (Scr->MenuBevelWidth > 9)
+	Scr->MenuBevelWidth = 9;
+      return 1;
+    case kwn_TitleBevelWidth:
+      if (Scr->FirstTime)
+	Scr->TitleBevelWidth = num;
+      if (Scr->TitleBevelWidth < 0)
+	Scr->TitleBevelWidth = 0;
+      if (Scr->TitleBevelWidth > 9)
+	Scr->TitleBevelWidth = 9;
+      return 1;
 
-  case kwn_ButtonBevelWidth:
-    if (Scr->FirstTime)
-      Scr->ButtonBevelWidth = num;
-    if (Scr->ButtonBevelWidth < 0)
-      Scr->ButtonBevelWidth = 0;
-    if (Scr->ButtonBevelWidth > 9)
-      Scr->ButtonBevelWidth = 9;
-    return 1;
-  case kwn_IconBevelWidth:
-    if (Scr->FirstTime)
-      Scr->IconBevelWidth = num;
-    if (Scr->IconBevelWidth < 0)
-      Scr->IconBevelWidth = 0;
-    if (Scr->IconBevelWidth > 9)
-      Scr->IconBevelWidth = 9;
-    return 1;
+    case kwn_ButtonBevelWidth:
+      if (Scr->FirstTime)
+	Scr->ButtonBevelWidth = num;
+      if (Scr->ButtonBevelWidth < 0)
+	Scr->ButtonBevelWidth = 0;
+      if (Scr->ButtonBevelWidth > 9)
+	Scr->ButtonBevelWidth = 9;
+      return 1;
+    case kwn_IconBevelWidth:
+      if (Scr->FirstTime)
+	Scr->IconBevelWidth = num;
+      if (Scr->IconBevelWidth < 0)
+	Scr->IconBevelWidth = 0;
+      if (Scr->IconBevelWidth > 9)
+	Scr->IconBevelWidth = 9;
+      return 1;
 
-  case kwn_DoorBevelWidth:
-    if (Scr->FirstTime)
-      Scr->DoorBevelWidth = num;
-    if (Scr->DoorBevelWidth < 0)
-      Scr->DoorBevelWidth = 0;
-    if (Scr->DoorBevelWidth > 9)
-      Scr->DoorBevelWidth = 9;
-    return 1;
-  case kwn_VirtualDesktopBevelWidth:
-    if (Scr->FirstTime)
-      Scr->VirtualDesktopBevelWidth = num;
-    if (Scr->VirtualDesktopBevelWidth < 0)
-      Scr->VirtualDesktopBevelWidth = 0;
-    if (Scr->VirtualDesktopBevelWidth > 9)
-      Scr->VirtualDesktopBevelWidth = 9;
-    return 1;
+    case kwn_DoorBevelWidth:
+      if (Scr->FirstTime)
+	Scr->DoorBevelWidth = num;
+      if (Scr->DoorBevelWidth < 0)
+	Scr->DoorBevelWidth = 0;
+      if (Scr->DoorBevelWidth > 9)
+	Scr->DoorBevelWidth = 9;
+      return 1;
+    case kwn_VirtualDesktopBevelWidth:
+      if (Scr->FirstTime)
+	Scr->VirtualDesktopBevelWidth = num;
+      if (Scr->VirtualDesktopBevelWidth < 0)
+	Scr->VirtualDesktopBevelWidth = 0;
+      if (Scr->VirtualDesktopBevelWidth > 9)
+	Scr->VirtualDesktopBevelWidth = 9;
+      return 1;
 
-  case kwn_MenuScrollBorderWidth:
-    if (Scr->FirstTime)
-      Scr->MenuScrollBorderWidth = num;
-    return 1;
-  case kwn_MenuScrollJump:
-    if (Scr->FirstTime)
-      Scr->MenuScrollJump = num;
-    return 1;
+    case kwn_MenuScrollBorderWidth:
+      if (Scr->FirstTime)
+	Scr->MenuScrollBorderWidth = num;
+      return 1;
+    case kwn_MenuScrollJump:
+      if (Scr->FirstTime)
+	Scr->MenuScrollJump = num;
+      return 1;
 
 #ifdef SOUND_SUPPORT
-  case kwn_SoundVolume:
-    if (Scr->FirstTime)
-      SetSoundVolume(num);
-    return 1;
+    case kwn_SoundVolume:
+      if (Scr->FirstTime)
+	SetSoundVolume(num);
+      return 1;
 #endif
 
-  case kwn_PauseOnExit:
-    if (Scr->FirstTime)
-      Scr->PauseOnExit = num;
-    return 1;
-  case kwn_PauseOnQuit:
-    if (Scr->FirstTime)
-      Scr->PauseOnQuit = num;
-    return 1;
+    case kwn_PauseOnExit:
+      if (Scr->FirstTime)
+	Scr->PauseOnExit = num;
+      return 1;
+    case kwn_PauseOnQuit:
+      if (Scr->FirstTime)
+	Scr->PauseOnQuit = num;
+      return 1;
 
 #ifdef TWM_USE_OPACITY
-  case kwn_MenuOpacity:	/* clamp into range: 0 = transparent ... 255 = opaque */
-    if (Scr->FirstTime)
-      Scr->MenuOpacity = (num > 255 ? 255 : (num < 0 ? 0 : num));
-    return 1;
-  case kwn_IconOpacity:
-    if (Scr->FirstTime)
-      Scr->IconOpacity = (num > 255 ? 255 : (num < 0 ? 0 : num));
-    return 1;
+    case kwn_MenuOpacity:	/* clamp into range: 0 = transparent ... 255 = opaque */
+      if (Scr->FirstTime)
+	Scr->MenuOpacity = (num > 255 ? 255 : (num < 0 ? 0 : num));
+      return 1;
+    case kwn_IconOpacity:
+      if (Scr->FirstTime)
+	Scr->IconOpacity = (num > 255 ? 255 : (num < 0 ? 0 : num));
+      return 1;
 #endif
   }
 
@@ -1753,69 +1752,69 @@ do_colorlist_keyword(int keyword, int colormode, char *s)
 {
   switch (keyword)
   {
-  case kwcl_BorderColor:
-    GetColor(colormode, &Scr->BorderColor, s);
-    return &Scr->BorderColorL;
+    case kwcl_BorderColor:
+      GetColor(colormode, &Scr->BorderColor, s);
+      return &Scr->BorderColorL;
 
-  case kwcl_IconManagerHighlight:
-    GetColor(colormode, &Scr->IconManagerHighlight, s);
-    return &Scr->IconManagerHighlightL;
+    case kwcl_IconManagerHighlight:
+      GetColor(colormode, &Scr->IconManagerHighlight, s);
+      return &Scr->IconManagerHighlightL;
 
-  case kwcl_BorderTileForeground:
-    GetColor(colormode, &Scr->BorderTileC.fore, s);
-    return &Scr->BorderTileForegroundL;
+    case kwcl_BorderTileForeground:
+      GetColor(colormode, &Scr->BorderTileC.fore, s);
+      return &Scr->BorderTileForegroundL;
 
-  case kwcl_BorderTileBackground:
-    GetColor(colormode, &Scr->BorderTileC.back, s);
-    return &Scr->BorderTileBackgroundL;
+    case kwcl_BorderTileBackground:
+      GetColor(colormode, &Scr->BorderTileC.back, s);
+      return &Scr->BorderTileBackgroundL;
 
-  case kwcl_TitleForeground:
-    GetColor(colormode, &Scr->TitleC.fore, s);
-    return &Scr->TitleForegroundL;
+    case kwcl_TitleForeground:
+      GetColor(colormode, &Scr->TitleC.fore, s);
+      return &Scr->TitleForegroundL;
 
-  case kwcl_TitleBackground:
-    GetColor(colormode, &Scr->TitleC.back, s);
-    return &Scr->TitleBackgroundL;
+    case kwcl_TitleBackground:
+      GetColor(colormode, &Scr->TitleC.back, s);
+      return &Scr->TitleBackgroundL;
 
-  case kwcl_IconForeground:
-    GetColor(colormode, &Scr->IconC.fore, s);
-    return &Scr->IconForegroundL;
+    case kwcl_IconForeground:
+      GetColor(colormode, &Scr->IconC.fore, s);
+      return &Scr->IconForegroundL;
 
-  case kwcl_IconBackground:
-    GetColor(colormode, &Scr->IconC.back, s);
-    return &Scr->IconBackgroundL;
+    case kwcl_IconBackground:
+      GetColor(colormode, &Scr->IconC.back, s);
+      return &Scr->IconBackgroundL;
 
-  case kwcl_IconBorderColor:
-    GetColor(colormode, &Scr->IconBorderColor, s);
-    return &Scr->IconBorderColorL;
+    case kwcl_IconBorderColor:
+      GetColor(colormode, &Scr->IconBorderColor, s);
+      return &Scr->IconBorderColorL;
 
-  case kwcl_IconManagerForeground:
-    GetColor(colormode, &Scr->IconManagerC.fore, s);
-    return &Scr->IconManagerFL;
+    case kwcl_IconManagerForeground:
+      GetColor(colormode, &Scr->IconManagerC.fore, s);
+      return &Scr->IconManagerFL;
 
-  case kwcl_IconManagerBackground:
-    GetColor(colormode, &Scr->IconManagerC.back, s);
-    return &Scr->IconManagerBL;
+    case kwcl_IconManagerBackground:
+      GetColor(colormode, &Scr->IconManagerC.back, s);
+      return &Scr->IconManagerBL;
 
-  case kwcl_VirtualDesktopForeground:
-    GetColor(colormode, &Scr->VirtualDesktopDisplayC.fore, s);
-    return &Scr->VirtualDesktopColorFL;
+    case kwcl_VirtualDesktopForeground:
+      GetColor(colormode, &Scr->VirtualDesktopDisplayC.fore, s);
+      return &Scr->VirtualDesktopColorFL;
 
-  case kwcl_VirtualDesktopBackground:
-    GetColor(colormode, &Scr->VirtualDesktopDisplayC.back, s);
-    return &Scr->VirtualDesktopColorBL;
+    case kwcl_VirtualDesktopBackground:
+      GetColor(colormode, &Scr->VirtualDesktopDisplayC.back, s);
+      return &Scr->VirtualDesktopColorBL;
 
-  case kwcl_VirtualDesktopBorder:
-    GetColor(colormode, &Scr->VirtualDesktopDisplayBorder, s);
-    return &Scr->VirtualDesktopColorBoL;
+    case kwcl_VirtualDesktopBorder:
+      GetColor(colormode, &Scr->VirtualDesktopDisplayBorder, s);
+      return &Scr->VirtualDesktopColorBoL;
 
-  case kwcl_DoorForeground:
-    GetColor(colormode, &Scr->DoorC.fore, s);
-    return &Scr->DoorForegroundL;
+    case kwcl_DoorForeground:
+      GetColor(colormode, &Scr->DoorC.fore, s);
+      return &Scr->DoorForegroundL;
 
-  case kwcl_DoorBackground:
-    GetColor(colormode, &Scr->DoorC.back, s);
-    return &Scr->DoorBackgroundL;
+    case kwcl_DoorBackground:
+      GetColor(colormode, &Scr->DoorC.back, s);
+      return &Scr->DoorBackgroundL;
 
   }
   return NULL;
@@ -1826,49 +1825,49 @@ do_color_keyword(int keyword, int colormode, char *s)
 {
   switch (keyword)
   {
-  case kwc_DefaultForeground:
-    GetColor(colormode, &Scr->DefaultC.fore, s);
-    return 1;
+    case kwc_DefaultForeground:
+      GetColor(colormode, &Scr->DefaultC.fore, s);
+      return 1;
 
-  case kwc_DefaultBackground:
-    GetColor(colormode, &Scr->DefaultC.back, s);
-    return 1;
+    case kwc_DefaultBackground:
+      GetColor(colormode, &Scr->DefaultC.back, s);
+      return 1;
 
-  case kwc_MenuForeground:
-    GetColor(colormode, &Scr->MenuC.fore, s);
-    return 1;
+    case kwc_MenuForeground:
+      GetColor(colormode, &Scr->MenuC.fore, s);
+      return 1;
 
-  case kwc_MenuBackground:
-    GetColor(colormode, &Scr->MenuC.back, s);
-    return 1;
+    case kwc_MenuBackground:
+      GetColor(colormode, &Scr->MenuC.back, s);
+      return 1;
 
-  case kwc_MenuTitleForeground:
-    GetColor(colormode, &Scr->MenuTitleC.fore, s);
-    return 1;
+    case kwc_MenuTitleForeground:
+      GetColor(colormode, &Scr->MenuTitleC.fore, s);
+      return 1;
 
-  case kwc_MenuTitleBackground:
-    GetColor(colormode, &Scr->MenuTitleC.back, s);
-    return 1;
+    case kwc_MenuTitleBackground:
+      GetColor(colormode, &Scr->MenuTitleC.back, s);
+      return 1;
 
-  case kwc_MenuShadowColor:
-    GetColor(colormode, &Scr->MenuShadowColor, s);
-    return 1;
+    case kwc_MenuShadowColor:
+      GetColor(colormode, &Scr->MenuShadowColor, s);
+      return 1;
 
-  case kwc_VirtualBackground:
-    GetColor(colormode, &Scr->VirtualC.back, s);
-    return 1;
+    case kwc_VirtualBackground:
+      GetColor(colormode, &Scr->VirtualC.back, s);
+      return 1;
 
-  case kwc_VirtualForeground:
-    GetColor(colormode, &Scr->VirtualC.fore, s);
-    return 1;
+    case kwc_VirtualForeground:
+      GetColor(colormode, &Scr->VirtualC.fore, s);
+      return 1;
 
-  case kwc_RealScreenForeground:
-    GetColor(colormode, &Scr->RealScreenC.fore, s);
-    return 1;
+    case kwc_RealScreenForeground:
+      GetColor(colormode, &Scr->RealScreenC.fore, s);
+      return 1;
 
-  case kwc_RealScreenBackground:
-    GetColor(colormode, &Scr->RealScreenC.back, s);
-    return 1;
+    case kwc_RealScreenBackground:
+      GetColor(colormode, &Scr->RealScreenC.back, s);
+      return 1;
 
   }
 
@@ -1963,39 +1962,39 @@ assign_var_savecolor(void)
   {
     switch (cp->i)
     {
-    case kwcl_BorderColor:
-      put_pixel_on_root(Scr->BorderColor);
-      break;
-    case kwcl_IconManagerHighlight:
-      put_pixel_on_root(Scr->IconManagerHighlight);
-      break;
-    case kwcl_BorderTileForeground:
-      put_pixel_on_root(Scr->BorderTileC.fore);
-      break;
-    case kwcl_BorderTileBackground:
-      put_pixel_on_root(Scr->BorderTileC.back);
-      break;
-    case kwcl_TitleForeground:
-      put_pixel_on_root(Scr->TitleC.fore);
-      break;
-    case kwcl_TitleBackground:
-      put_pixel_on_root(Scr->TitleC.back);
-      break;
-    case kwcl_IconForeground:
-      put_pixel_on_root(Scr->IconC.fore);
-      break;
-    case kwcl_IconBackground:
-      put_pixel_on_root(Scr->IconC.back);
-      break;
-    case kwcl_IconBorderColor:
-      put_pixel_on_root(Scr->IconBorderColor);
-      break;
-    case kwcl_IconManagerForeground:
-      put_pixel_on_root(Scr->IconManagerC.fore);
-      break;
-    case kwcl_IconManagerBackground:
-      put_pixel_on_root(Scr->IconManagerC.back);
-      break;
+      case kwcl_BorderColor:
+	put_pixel_on_root(Scr->BorderColor);
+	break;
+      case kwcl_IconManagerHighlight:
+	put_pixel_on_root(Scr->IconManagerHighlight);
+	break;
+      case kwcl_BorderTileForeground:
+	put_pixel_on_root(Scr->BorderTileC.fore);
+	break;
+      case kwcl_BorderTileBackground:
+	put_pixel_on_root(Scr->BorderTileC.back);
+	break;
+      case kwcl_TitleForeground:
+	put_pixel_on_root(Scr->TitleC.fore);
+	break;
+      case kwcl_TitleBackground:
+	put_pixel_on_root(Scr->TitleC.back);
+	break;
+      case kwcl_IconForeground:
+	put_pixel_on_root(Scr->IconC.fore);
+	break;
+      case kwcl_IconBackground:
+	put_pixel_on_root(Scr->IconC.back);
+	break;
+      case kwcl_IconBorderColor:
+	put_pixel_on_root(Scr->IconBorderColor);
+	break;
+      case kwcl_IconManagerForeground:
+	put_pixel_on_root(Scr->IconManagerC.fore);
+	break;
+      case kwcl_IconManagerBackground:
+	put_pixel_on_root(Scr->IconManagerC.back);
+	break;
     }
     cp = cp->next;
   }
@@ -2174,29 +2173,29 @@ make_m4_cmdline(char *display_name, char *cp, char *m4_option)
   is_color = "Yes";
   switch (Scr->d_visual->class)
   {
-  case (StaticGray):
-    vc = "StaticGray";
-    is_color = "No";
-    break;
-  case (GrayScale):
-    vc = "GrayScale";
-    is_color = "No";
-    break;
-  case (StaticColor):
-    vc = "StaticColor";
-    break;
-  case (PseudoColor):
-    vc = "PseudoColor";
-    break;
-  case (TrueColor):
-    vc = "TrueColor";
-    break;
-  case (DirectColor):
-    vc = "DirectColor";
-    break;
-  default:
-    vc = "NonStandard";
-    break;
+    case (StaticGray):
+      vc = "StaticGray";
+      is_color = "No";
+      break;
+    case (GrayScale):
+      vc = "GrayScale";
+      is_color = "No";
+      break;
+    case (StaticColor):
+      vc = "StaticColor";
+      break;
+    case (PseudoColor):
+      vc = "PseudoColor";
+      break;
+    case (TrueColor):
+      vc = "TrueColor";
+      break;
+    case (DirectColor):
+      vc = "DirectColor";
+      break;
+    default:
+      vc = "NonStandard";
+      break;
   }
 
   if ((env_username = getenv("LOGNAME")) == NULL)

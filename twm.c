@@ -281,12 +281,14 @@ main(int argc, char **argv, char **environ)
   signal(SIGCHLD,HandleChildExit);
 #endif
 #endif
+#if 0
   donehandler(SIGABRT);
   donehandler(SIGFPE);
   donehandler(SIGSEGV);
   donehandler(SIGILL);
   donehandler(SIGTSTP);
   donehandler(SIGPIPE);
+#endif
 #undef sounddonehandler
 #undef donehandler
 

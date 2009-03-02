@@ -100,7 +100,11 @@ extern void MenuEndResize(TwmWindow * tmp_win, int context);
 extern void PaintBorderAndTitlebar(TwmWindow * tmp_win);
 extern void fullzoom(int tile, TwmWindow * tmp_win, int flag);
 extern void fullgeomzoom(char *geometry_name, TwmWindow *tmp_win, int flag);
+#ifdef NO_M4_SUPPORT
+extern int ParseTwmrc(char *filename);
+#else
 extern int ParseTwmrc(char *filename, char *display_name, int m4_preprocess, char *m4_option);
+#endif
 extern int ParseStringList(char **sl);
 extern int (*twmInputFunc) (void);
 extern void twmUnput(int c);
