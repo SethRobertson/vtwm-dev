@@ -25,7 +25,7 @@
 /**    OR PERFORMANCE OF THIS SOFTWARE.                                     **/
 /*****************************************************************************/
 
-char *Version = "Virtual Desktop TWM (VTWM) - Release 5.5.0-pre-20090305144416";
+char *Version = "Virtual Desktop TWM (VTWM) - Release 5.5.0-pre-20090305145852";
 
 
 /*

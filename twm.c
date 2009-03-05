@@ -238,6 +238,9 @@ main(int argc, char **argv, char **environ)
       case 'v':		/* -verbose */
 	PrintErrorMessages = True;
 	continue;
+      case 'V':
+	printf("%s\n", Version);
+	exit(0);
       }
     }
   usage:

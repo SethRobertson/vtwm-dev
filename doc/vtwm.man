@@ -30,7 +30,7 @@ vtwm - Virtual Tab Window Manager for the X Window System
 .SH SYNTAX
 .PP
 \&\fBvtwm\fP [\fB\-d\fP \fIdisplay\fP] [\fB\-f\fP [\fIinitfile\fP]]
-[\fB\-m\fP [\fIoptions\fP]] [\fB\-p\fP] [\fB\-s\fP] [\fB\-v\fP]
+[\fB\-m\fP [\fIoptions\fP]] [\fB\-p\fP] [\fB\-s\fP] [\fB\-v\fP] [\fB-V\fP]
 .PP
 .\"=====================================================================
 .SH DESCRIPTION
@@ -159,6 +159,9 @@ display.
 This option indicates that \fBvtwm\fP should print messages to the stderr
 device when an unexpected event occurs.  This can be be useful for debugging
 applications, but may be distracting in regular use.
+.TP 15
+.B \-V
+Show the version string and exit.
 .\"=====================================================================
 .SH CUSTOMIZATION
 .PP
@@ -2788,7 +2791,7 @@ Nelson H. F. Beebe <beebe@math.utah.edu>,
 Michael Dales <michael@dcs.gla.ac.uk>,
 Jennifer Elaan <jen@elaan.com>,
 Michel Eyckmans <mce@ping.be>,
-Callum Gibson <callum.gibson@db.com>,
+Callum Gibson <callumgibson@optusnet.com.au>,
 Jason Gloudon <jdg@world.std.com>,
 Nicholas Jacobs <nicholas_jacobs@hotmail.com>,
 Caveh Frank Jalali <caveh@eng.sun.com>
