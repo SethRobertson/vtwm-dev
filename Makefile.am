@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-## automake --foreign && autoconf && ./configure
+## aclocal && automake --foreign && autoconf && ./configure
 
 AM_YFLAGS = -d
 
@@ -66,14 +66,14 @@ vtwm_SOURCES =   \
 	twm.h \
 	util.c \
 	util.h \
-	version.c \
+	version-tmp.c \
 	version.h \
 	gram.y \
 	lex.l
 
 nexpm_SOURCES = contrib/nexpm/nexpm.c
 
-BUILT_SOURCES = gram.h gram.c lex.c deftwmrc.c lastmake.c
+BUILT_SOURCES = gram.h gram.c lex.c deftwmrc.c lastmake.c version-tmp.c
 MAINTAINERCLEANFILES =
 DISTCLEANFILES=$(BUILT_SOURCES) system.vtwmrc vtwm.man vtwm.1 nexpm
 DISTCLEANDIRS=autom4te.cache
@@ -89,6 +89,16 @@ deftwmrc.c: system.vtwmrc
 	echo 'char *defTwmrc[] = {' >>deftwmrc.c
 	sed -e '/^$$/d' -e '/^#/d' -e 's/"/\\"/g' -e 's/^/"/' -e 's/$$/",/' -e 's/[	]\{1,\}/ /g' -e 's/^" /"/' system.vtwmrc >>$@
 	echo '(char *)0 };' >>$@
+
+.INTERMEDIATE: version-tmp.c
+version-tmp.c: version.c
+	if [ -d .git ]; then sed "s/SUBST/`git describe --tags`/" < version.c > version-tmp.c; else cp version.c version-tmp.c; fi
+
+releasetar: maintainer-clean
+	if [ ! -d .git ]; then echo Cannot create release tar without git information; exit 2; fi
+	sed -i "s/SUBST/`git describe --tags`/" version.c
+	P=`pwd | sed 's:.*/::'`; (cd ..; tar --exclude .git -czf $$P.tar.gz  $$P)
+	git checkout version.c
 
 FORCE:
 lastmake.c: FORCE

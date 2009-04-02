@@ -174,7 +174,7 @@ install::
 	$(MAKE) install.man
 
 clean::
-	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c \
+	$(RM) y.tab.h y.tab.c lex.yy.c gram.h gram.c lex.c deftwmrc.c version-tmp.c \
 	lastmake.c system.vtwmrc vtwm.dw vtwm.ser vtwm.html vtwm.ps vtwm.man
 
 gram.h gram.c: gram.y
@@ -192,6 +192,17 @@ deftwmrc.c: system.vtwmrc
 	echo 'char *defTwmrc[] = {' >>deftwmrc.c
 	sed -e '/^$$/d' -e '/^#/d' -e 's/"/\\"/g' -e 's/^/"/' -e 's/$$/",/' -e 's/[	]\{1,\}/ /g' -e 's/^" /"/' system.vtwmrc >>$@
 	echo '(char *)0 };' >>$@
+
+version.o: version.c
+	if [ -d .git ]; then sed "s/SUBST/`git describe --tags`/" < version.c > version-tmp.c; else cp version.c version-tmp.c; fi
+	$(CC) -c $(CFLAGS) -o version.o version-tmp.c
+	rm -f version-tmp.c
+
+releasetar: distclean
+	if [ ! -d .git ]; then echo Cannot create release tar without git information; exit 2; fi
+	sed -i "s/SUBST/`git describe --tags`/" version.c
+	P=`pwd | sed 's:.*/::'`; (cd ..; tar --exclude .git -czf $$P.tar.gz  $$P)
+	git checkout version.c
 
 lastmake.c:
 	$(RM) $@
