@@ -4,6 +4,38 @@ A COMPLETE LISTING OF CHANGES MADE TO VTWM SINCE VERSION 5.0
 IN CHRONOLOGICAL ORDER FROM MOST RECENT CHANGES TO EARLIEST.
 ============================================================
 
+    April 2009
+        Move to SourceForge and git
+
+    November 2008
+        Callum Gibson and Eeri Kash have some patches.
+
+
+	    * twm.c - remove signal handler on fatal signals. It just
+              obfuscates the cause of crashes for no reason.
+
+	    * prototypes.h - fix prototype for ParseTwmrc for non-m4
+              compilation.
+
+        Eeri Kask 2nd Patchset #12 - fix border colour on mouse grab release
+        Eeri Kask 2nd Patchset #11 - Fix old BadMatch warning
+        Eeri Kask 2nd Patchset #9 - fix AutoRaiseDelay focus oddity
+        Eeri Kask 2nd Patchset #8 - remove redundant mouse warping
+        Eeri Kask 2nd Patchset #7 - Fix Focus Fighting!
+        Eeri Kask 2nd Patchset #6 - unneeded code removed
+        Eeri Kask 2nd Patchset #5 - remember iconify state properly
+        Eeri Kask 2nd Patchset #4 - Remove abuse of Focus variable.
+        Eeri Kask 2nd Patchset #3 - ScrRing, fix crash
+        Eeri Kask 2nd Patchset #2 - XCreateCG and NoExpose crash fix
+        Eeri Kask 2nd Patchset #1 - ScreenInfo fix
+
+	     * Fix for rplay support.
+ 	     * Colum Paget's sound patches.
+	     * Fix to image load - search for extension from end of path.
+	     * Various Xrandr fixes.
+	     * Xft fix for Door font rendering
+	     * Zoom feature, thanks again to Eeri Kask.
+
     Oct 2008
         Seth Robertson submitted patches to:
 	    * Resurrect ``UsePPosition "on-screen"'' which forces all
