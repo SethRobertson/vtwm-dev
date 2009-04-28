@@ -480,6 +480,7 @@ typedef struct _TwmKeyword
 #define kw0_RestartOnScreenChangeNotify	71
 #define kw0_RestartOnScreenSizeChangeNotify	72
 #endif
+#define kw0_AutoResizeKeepOnScreen	73
 
 #define kws_IconFont			2
 #define kws_ResizeFont			3
@@ -597,6 +598,7 @@ static TwmKeyword keytable[] = {
   {"autoraise", AUTO_RAISE, 0},
   {"autoraisedelay", NKEYWORD, kwn_RaiseDelay},
   {"autorelativeresize", KEYWORD, kw0_AutoRelativeResize},
+  {"autoresizekeeponscreen", KEYWORD, kw0_AutoResizeKeepOnScreen},
   {"benicetocolormap", KEYWORD, kw0_BeNiceToColormap},
   {"borderbevelwidth", NKEYWORD, kwn_BorderBevelWidth},
 
@@ -1133,6 +1135,10 @@ do_single_keyword(int keyword)
 
     case kw0_AutoRelativeResize:
       Scr->AutoRelativeResize = TRUE;
+      return 1;
+
+    case kw0_AutoResizeKeepOnScreen:
+      AutoResizeKeepOnScreen = TRUE;
       return 1;
 
     case kw0_ForceIcons:

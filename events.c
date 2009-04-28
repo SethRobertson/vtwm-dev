@@ -3213,6 +3213,18 @@ HandleConfigureRequest(void)
   if (width != Tmp_win->frame_width || height != Tmp_win->frame_height)
     Tmp_win->zoomed = ZOOM_NONE;
 
+  if (AutoResizeKeepOnScreen && Tmp_win->frame_x >= 0 && Tmp_win->frame_x < Scr->MyDisplayWidth && Tmp_win->frame_y >= 0 && Tmp_win->frame_y < Scr->MyDisplayHeight)
+  {
+    if (x + width > Scr->MyDisplayWidth)
+      x = Scr->MyDisplayWidth - width;
+    if (y + height > Scr->MyDisplayHeight)
+      y = Scr->MyDisplayHeight - height;
+    if (x < 0)
+      x = 0;
+    if (y < 0)
+      y = 0;
+  }
+
   /*
    * SetupWindow (x,y) are the location of the upper-left outer corner and
    * are passed directly to XMoveResizeWindow (frame).  The (width,height)

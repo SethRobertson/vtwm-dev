@@ -486,6 +486,10 @@ titlebar button, \fBvtwm\fP will still wait for the pointer to cross a window
 edge (to prevent accidents).  This option is
 particularly useful for people who like the press-drag-release method of
 sweeping out window sizes.
+.IP "\fBAutoResizeKeepOnScreen\fP" 8
+This variables indicates that if a window is fully on-screen when a
+programmatic (non-user-initiated) resize occurs, that if at all
+possible the window should be onsize after the resize has completed.
 .IP "\fBBeNiceToColormap\fP" 8
 This variable specifies that stippled lines be used for the bevel colors
 when any of the 3D variables are set, to conserve on colormap allocations.

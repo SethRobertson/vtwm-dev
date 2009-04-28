@@ -138,6 +138,7 @@ char **Argv;
 char **Environ;
 
 Bool RestartPreviousState = False;	/* try to restart in previous state */
+Bool AutoResizeKeepOnScreen = False;	/* True means a non-user initiated resize should keep window fully on-screen if previously fully on-screen */
 
 unsigned long black, white;
 
