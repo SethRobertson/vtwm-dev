@@ -1822,6 +1822,8 @@ HandleMapRequest(void)
   SetRaiseWindow(Tmp_win);
 
   hmrxit:;
+
+  UpdateDesktop(Tmp_win);
   RaiseStickyAbove();
   RaiseAutoPan();
 }

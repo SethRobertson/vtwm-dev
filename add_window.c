@@ -740,7 +740,6 @@ AddWindow(Window w, int iconm, IconMgr * iconp)
   }
 
   (void)AddIconManager(tmp_win);
-  UpdateDesktop(tmp_win);
 
   XSaveContext(dpy, tmp_win->w, TwmContext, (caddr_t) tmp_win);
   XSaveContext(dpy, tmp_win->w, ScreenContext, (caddr_t) Scr);
