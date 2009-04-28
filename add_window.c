@@ -1451,6 +1451,9 @@ AddMoveAndResize(TwmWindow * tmp_win, int ask_user)
 	tmp_win->attr.y = Scr->VirtualDesktopHeight - tmp_win->attr.height;
       if (tmp_win->attr.y < 0)
 	tmp_win->attr.y = 0;
+
+      tmp_win->attr.x += tmp_win->frame_bw + tmp_win->frame_bw3D; /* subtracted later */
+      tmp_win->attr.y += tmp_win->frame_bw + tmp_win->frame_bw3D;
     }
 
     /* interpret the position specified as a virtual one if asked */
