@@ -91,6 +91,8 @@ CreateGCs(void)
   gcv.foreground = Scr->MenuC.fore;
   gcm |= GCBackground;
   gcv.background = Scr->MenuC.back;
+  gcm |= GCGraphicsExposures;
+  gcv.graphics_exposures = False;
 
 #ifdef TWM_USE_XFT
   if (!(Scr->use_xft > 0))
