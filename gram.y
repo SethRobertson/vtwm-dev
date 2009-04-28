@@ -815,14 +815,18 @@ action		: FKEYWORD	{ $$ = $1; }
 					    func = ParsePanelMoveType ($2);
 					else
 					    func = ParsePanelZoomType ($2);
-					if (panel_name != NULL) {
-						if (func == F_PANELGEOMETRYMOVE ||
-							func == F_PANELGEOMETRYZOOM)
-						    *panel_name = '@';
-						else
-						    Action = panel_name+1;
-					} else
+					if (func == F_PANELGEOMETRYMOVE || func == F_PANELGEOMETRYZOOM)
+					{
+					  if (panel_name != NULL)
+					    *panel_name = '@'; /*restore full specification*/
+					}
+					else
+					{
+					  if (panel_name != NULL)
+					    Action = panel_name+1; /*pass on panel specification*/
+					  else
 					    Action = "";
+					}
 					$$ = func;
 				    }
 				    break;

@@ -2243,12 +2243,12 @@ selected window is moved that many pixels to the left (or top) accordingly.
 If \fIX\fP (or \fIY\fP) is zero, then the corresponding window edge,
 left or right (top or bottom) depending on the '-' or '+'
 of \fIX\fP (or \fIY\fP), is taken to the appropriate panel edge.
-The special value \fI"0x0-0-0@current"\fP of \fIgeomstring\fP
+The special value \fI"-0-0"\fP of \fIgeomstring\fP
 can be used to restore the original window size and location after
 repeated execution of the geometry-based zooming.
-Analogously \fI"0x0+0+0@current"\fP overwrites the saved original
+Analogously \fI"+0+0"\fP overwrites the saved original
 size/location with the current values of the window size and location.
-(For other values in \fI@P\fP, e.g. \fI"0x0+0+0@next"\fP, the window
+(For values e.g. \fI"0x0+0+0@next"\fP the window
 is only moved to the specified panel without changing its size,
 keeping its relative location as on the source panel if possible.)
 .IP "\fBf.panup\fP \fIN\fP" 8

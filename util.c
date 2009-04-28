@@ -2803,6 +2803,10 @@ ParsePanelZoomType (char *name)
     if (((mask & (XValue|WidthValue)) == (XValue|WidthValue))
 	    || ((mask & (YValue|HeightValue)) == (YValue|HeightValue)))
       return F_PANELGEOMETRYZOOM;
+    /* special case geometry "+0+0" or "-0-0" (or "+0-0" or "-0+0"), no "WxH" part */
+    if (((mask & XValue) != 0) && (JunkX == 0) && ((mask & WidthValue) == 0)
+	    && ((mask & YValue) != 0) && (JunkY == 0) && ((mask & HeightValue) == 0))
+      return F_PANELGEOMETRYMOVE;
   }
 
   return F_PANELZOOM; /* fallback */
@@ -2827,6 +2831,10 @@ ParsePanelMoveType (char *name)
     mask = XParseGeometry (name, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
     if (((mask & (XValue|WidthValue)) == (XValue|WidthValue))
 	    || ((mask & (YValue|HeightValue)) == (YValue|HeightValue)))
+      return F_PANELGEOMETRYMOVE;
+    /* special case geometry "+0+0" or "-0-0" (or "+0-0" or "-0+0"), no "WxH" part */
+    if (((mask & XValue) != 0) && (JunkX == 0) && ((mask & WidthValue) == 0)
+	    && ((mask & YValue) != 0) && (JunkY == 0) && ((mask & HeightValue) == 0))
       return F_PANELGEOMETRYMOVE;
   }
 

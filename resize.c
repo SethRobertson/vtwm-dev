@@ -1989,8 +1989,6 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
   else /* zoom */
 
   {
-    int xmask, ymask;
-
 #ifdef TILED_SCREEN
     /*
      * panel-zoom variants (F_PANEL...ZOOM) have their numeric
@@ -2175,6 +2173,7 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
       dragy = basey + baseh - dragHeight - frame_bw_times_2;
       break;
 
+
     case F_PANELGEOMETRYZOOM:
     case F_PANELGEOMETRYMOVE:
 
@@ -2183,8 +2182,38 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
        * as origMask, origx, origy, origWidth, origHeight
        */
 
-      xmask = ((origMask & (XValue|WidthValue))  == (XValue|WidthValue));
-      ymask = ((origMask & (YValue|HeightValue)) == (YValue|HeightValue));
+      /*
+       * special cases: geometry "+0+0" or "-0-0" (i.e. missing WxH part)
+       * recover size/pos, set 'unzoomed'
+       */
+      if (((origMask & XValue) != 0) && (origx == 0) && ((origMask & WidthValue) == 0)
+	    && ((origMask & YValue) != 0) && (origy == 0) && ((origMask & HeightValue) == 0))
+      {
+	flag = 1;
+	if (origMask & XNegative) { /* recover horizontal geometry */
+	  dragWidth = tmp_win->save_frame_width;
+	  dragx = V_TO_R_X(tmp_win->save_frame_x);
+	  flag = 0;
+	} else {
+	  tmp_win->save_frame_width = dragWidth;
+	  tmp_win->save_frame_x = R_TO_V_X(dragx);
+	}
+	if (origMask & YNegative) { /* recover vertical geometry */
+	  dragHeight = tmp_win->save_frame_height;
+	  dragy = V_TO_R_Y(tmp_win->save_frame_y);
+	  flag = 0;
+	} else {
+	  tmp_win->save_frame_height = dragHeight;
+	  tmp_win->save_frame_y = R_TO_V_Y(dragy);
+	}
+
+	tmp_win->zoomed = ZOOM_NONE; /* set state to 'unzoomed' */
+	if (flag == 1)
+	  return;
+
+	flag = ZOOM_NONE;
+	break;
+      }
 
       mm = XQueryPointer (dpy, tmp_win->frame, &JunkRoot, &JunkChild,
 			    &JunkX, &JunkY, &HotX, &HotY, &JunkMask);
@@ -2199,39 +2228,6 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
 	      || HotY < -(int)(JunkBW) || HotY >= dragHeight + (int)(JunkBW))
 	{
 	  mm = False;
-	}
-
-	/*
-	 * special cases on current panel: geometry "0x0-0-0" or "0x0+0+0"
-	 * recover size/pos, set 'unzoomed'
-	 */
-	if (xmask && (origx == 0) && (origWidth == 0)
-	      && ymask && (origy == 0) && (origHeight == 0))
-	{
-	  flag = 1;
-	  if (origMask & XNegative) { /* recover horizontal geometry */
-	    dragWidth = tmp_win->save_frame_width;
-	    dragx = V_TO_R_X(tmp_win->save_frame_x);
-	    flag = 0;
-	  } else {
-	    tmp_win->save_frame_width = dragWidth;
-	    tmp_win->save_frame_x = R_TO_V_X(dragx);
-	  }
-	  if (origMask & YNegative) { /* recover vertical geometry */
-	    dragHeight = tmp_win->save_frame_height;
-	    dragy = V_TO_R_Y(tmp_win->save_frame_y);
-	    flag = 0;
-	  } else {
-	    tmp_win->save_frame_height = dragHeight;
-	    tmp_win->save_frame_y = R_TO_V_Y(dragy);
-	  }
-
-	  tmp_win->zoomed = ZOOM_NONE; /* set state to 'unzoomed' */
-	  if (flag == 1)
-	    return;
-
-	  flag = ZOOM_NONE;
-	  break;
 	}
       }
       else
@@ -2368,7 +2364,7 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
 
 
       /* now finally treat horizontal geometry ('W' and 'X' of "WxH+X+Y"): */
-      if (xmask && (origWidth > 0))
+      if (((origMask & (XValue|WidthValue)) == (XValue|WidthValue)) && (origWidth > 0))
       {
 #if 0
 	/* stepping/stretching reached panel edge, execute 'unzoom' */
@@ -2418,7 +2414,7 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
       }
 
       /* treat vertical geometry ('H' and 'Y' of "WxH+X+Y"): */
-      if (ymask && (origHeight > 0))
+      if (((origMask & (YValue|HeightValue)) == (YValue|HeightValue)) && (origHeight > 0))
       {
 #if 0
 	if ((tmp_win->zoomed != ZOOM_NONE)
@@ -2506,6 +2502,7 @@ fullgeomzoom(char *geometry_name, TwmWindow *tmp_win, int flag)
    * precompute the mask and requested geometry for fullzoom()
    * as origMask, origx, origy, origWidth, origHeight
    */
+  origx = origy = origWidth = origHeight = 0;
   origMask = XParseGeometry (geom, &origx, &origy,
 			(unsigned int *)&origWidth, (unsigned int *)&origHeight);
 

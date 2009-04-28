@@ -826,8 +826,9 @@ FindEmptyArea(TwmWindow * lst, TwmWindow * twm, PlaceXY * tiles, PlaceXY * pos)
 #define OVERLAP(a,f)	((a)->x < (f)->frame_x+(f)->frame_width && (f)->frame_x < (a)->x+(a)->width \
 			&& (a)->y < (f)->frame_y+(f)->frame_height && (f)->frame_y < (a)->y+(a)->height)
 
-  /* skip unmapped windows, iconmanagers and vtwm-desktop: */
-  while (lst != NULL && (lst->mapped == FALSE || lst->iconmgr == TRUE || strcmp(lst->class.res_class, VTWM_DESKTOP_CLASS) == 0))
+  /* skip unmapped windows, iconmanagers, doors and vtwm-desktop: */
+  while (lst != NULL && (lst->mapped == FALSE || lst->iconmgr == TRUE
+	|| strcmp(lst->class.res_class, VTWM_DESKTOP_CLASS) == 0 || strcmp(lst->class.res_class, VTWM_DOOR_CLASS) == 0))
     lst = lst->next;
 
   if (lst == NULL)
