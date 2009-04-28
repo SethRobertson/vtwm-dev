@@ -1065,6 +1065,8 @@ static TwmKeyword keytable[] = {
   {"xorvalue", NKEYWORD, kwn_XorValue},
   {"zoom", ZOOM, 0},
 
+  {"zoomstate", ZOOMSTATE, 0},
+
   {"zoomzoom", KEYWORD, kw0_ZoomZoom},
 };
 

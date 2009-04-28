@@ -1785,7 +1785,7 @@ HandleMapRequest(void)
   {
     /* use WM_STATE if enabled */
     if ((RestartPreviousState && GetWMState(Tmp_win->w, &state, &JunkChild)
-			&& (state == NormalState || state == IconicState))
+			&& (state == NormalState || state == IconicState || state == ZoomState))
 	|| (Tmp_win->wmhints && (Tmp_win->wmhints->flags & StateHint)
 			&& (state=Tmp_win->wmhints->initial_state) == state))
     {
@@ -1793,9 +1793,11 @@ HandleMapRequest(void)
 
       switch (state)
       {
+      case ZoomState:
+	if (Scr->ZoomFunc != ZOOM_NONE)
+	  fullzoom(Scr->ZoomTile, Tmp_win, Scr->ZoomFunc);
       case DontCareState:
       case NormalState:
-      case ZoomState:
       case InactiveState:
 	XMapWindow(dpy, Tmp_win->w);
 	XMapWindow(dpy, Tmp_win->frame);

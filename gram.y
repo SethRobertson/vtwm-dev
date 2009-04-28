@@ -112,7 +112,7 @@ extern int yylineno;
 
 %token <num> LP RP MENUS MENU BUTTON DEFAULT_FUNCTION PLUS MINUS
 %token <num> ALL OR CURSORS PIXMAPS ICONS COLOR MONOCHROME FUNCTION
-%token <num> ICONMGR_SHOW ICONMGR WINDOW_FUNCTION ZOOM ICONMGRS
+%token <num> ICONMGR_SHOW ICONMGR WINDOW_FUNCTION ZOOM ZOOMSTATE ICONMGRS
 %token <num> ICONMGR_GEOMETRY ICONMGR_NOSHOW MAKE_TITLE
 %token <num> ICONIFY_BY_UNMAPPING DONT_ICONIFY_BY_UNMAPPING
 %token <num> NO_TITLE AUTO_RAISE NO_HILITE NO_ICONMGR_HILITE ICON_REGION
@@ -184,6 +184,24 @@ stmt		: error
 					}
 		| ZOOM			{ if (Scr->FirstTime)
 						Scr->DoZoom = TRUE; }
+		| ZOOMSTATE string {
+				    int func;
+				    char *panel_name = strchr (($2), '@');
+				    if (panel_name != NULL)
+				      *panel_name++ = '\0';
+				    func = ParsePanelZoomType ($2);
+				    if (func == F_PANELGEOMETRYZOOM)
+				    {
+				      twmrc_error_prefix();
+				      fprintf (stderr, "ignoring invalid ZoomState argument\n");
+				    }
+				    else
+				    {
+				      Scr->ZoomFunc = func;
+				      if (panel_name != NULL)
+					Scr->ZoomTile = ParsePanelIndex(panel_name);
+				    }
+				  }
 		| PIXMAPS pixmap_list	{}
 		| CURSORS cursor_list	{}
 		| ICONIFY_BY_UNMAPPING	{ list = &Scr->IconifyByUn; }

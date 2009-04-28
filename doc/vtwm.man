@@ -1845,6 +1845,18 @@ This variable indicates that outlines suggesting movement of a window
 to and from its iconified state should be displayed whenever a window is
 iconified or deiconified.  The optional \fIcount\fP argument specifies the
 number of outlines to be drawn.  The default count is \fI8\fP.
+.IP "\fBZoomState\fP \fIgeomstring\fP" 8
+This per-screen keyword indicates if WM_STATE or WM_HINTS \fIinitial-state\fP
+property is set to \fIZoomState\fP, the window is to be zoomed by
+\fBvtwm\fP on client startup as denoted in \fIgeomstring\fP analogously
+to the \fBf.panelzoom\fP specification.
+The WM_STATE property is set to \fIZoomState\fP on \fBvtwm\fP shutdown if
+the client is zoomed in that moment as given in \fIgeomstring\fP
+(without considering the panel index part).
+Only the 'aliased' zooming geometry specifications are accepted.
+By default the WM_STATE or WM_HINTS \fIinitial-state\fP property value
+of \fIZoomState\fP is treated as \fINormalState\fP and no zooming
+is performed.
 .IP "\fBZoomZoom\fP" 8
 This variable modifies zooms such that a random place will be used for the
 source or destination when there isn't an appropriate window (e.g., an icon,

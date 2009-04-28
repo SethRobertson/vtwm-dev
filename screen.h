@@ -350,6 +350,9 @@ typedef struct ScreenInfo
   short MoveDelta;		/* number of pixels before f.move starts */
   short ZoomCount;		/* zoom outline count */
 
+  int ZoomFunc;			/* method of zoom for XWMHints/initial_state or _XA_WM_STATE */
+  int ZoomTile;			/* target area for 'initial_state' or WM_STATE zooming */
+
   int PauseOnExit;		/* delay before shutting down via Done() */
   int PauseOnQuit;		/* delay before shuttind down via f.quit */
 
