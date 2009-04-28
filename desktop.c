@@ -759,6 +759,7 @@ MoveResizeDesktop(TwmWindow * tmp_win, int noraise)
 void
 SetVirtualDesktop(char *geom, int scale)
 {
+  int x, y, width, height, mask;
   /*
    * panel name is encoded into geometry string as "1200x20+10-10@1"
    * where "@1" is panel "1"
@@ -784,15 +785,15 @@ SetVirtualDesktop(char *geom, int scale)
   }
   Scr->VirtualDesktopDScale = scale;
 
-  JunkMask = XParseGeometry(geom, &JunkX, &JunkY, &JunkWidth, &JunkHeight);
+  mask = XParseGeometry(geom, &x, &y, (unsigned*) &width, (unsigned*) &height);
 
-  if ((JunkMask & (WidthValue | HeightValue)) != (WidthValue | HeightValue))
+  if ((mask & (WidthValue | HeightValue)) != (WidthValue | HeightValue))
   {
     twmrc_error_prefix();
     fprintf(stderr, "bad VirtualDesktop \"%s\"\n", geom);
     return;
   }
-  if (JunkWidth <= 0 || JunkHeight <= 0)
+  if (width <= 0 || height <= 0)
   {
     twmrc_error_prefix();
     fprintf(stderr, "VirtualDesktop \"%s\" must be positive\n", geom);
@@ -802,70 +803,79 @@ SetVirtualDesktop(char *geom, int scale)
   /*
    * More flexible way of selecting size of virtual desktop (ala tvtwm)
    */
-  if (JunkWidth > Scr->MyDisplayWidth)
+  if (width > Scr->MyDisplayWidth)
+  {
     /* specified as total pixels */
-    JunkWidth /= Scr->VirtualDesktopDScale;
-  else if (JunkWidth * Scr->VirtualDesktopDScale < Scr->MyDisplayWidth)
+  }
+  else if (width * Scr->VirtualDesktopDScale < Scr->MyDisplayWidth)
   {
     /* specified as number of physical screens */
-    JunkWidth *= Scr->MyDisplayWidth;
-    JunkWidth /= Scr->VirtualDesktopDScale;
+    width *= Scr->MyDisplayWidth;
   }
-  /* else specified as size of panner window */
+  else
+  {
+    /* else specified as size of panner window */
+    width *= Scr->VirtualDesktopDScale;
+  }
 
-  if (JunkHeight > Scr->MyDisplayHeight)
+  if (height > Scr->MyDisplayHeight)
+  {
     /* specified as total pixels */
-    JunkHeight /= Scr->VirtualDesktopDScale;
-  else if (JunkHeight * Scr->VirtualDesktopDScale < Scr->MyDisplayHeight)
+  }
+  else if (height * Scr->VirtualDesktopDScale < Scr->MyDisplayHeight)
   {
     /* specified as number of physical screens */
-    JunkHeight *= Scr->MyDisplayHeight;
-    JunkHeight /= Scr->VirtualDesktopDScale;
+    height *= Scr->MyDisplayHeight;
   }
-  /* else specified as size of panner window */
+  else
+  {
+    /* else specified as size of panner window */
+    height *= Scr->VirtualDesktopDScale;
+  }
 
 #ifdef TILED_SCREEN
-  if ((Scr->use_tiles == TRUE) && (JunkMask & XValue) && (JunkMask & YValue))
+  if ((Scr->use_tiles == TRUE) && (mask & XValue) && (mask & YValue))
   {
-    EnsureGeometryVisibility(tile, JunkMask, &JunkX, &JunkY,
-			     JunkWidth + 2 * (Scr->BorderWidth + Scr->VirtualDesktopBevelWidth),
-			     JunkHeight + 2 * (Scr->BorderWidth + Scr->VirtualDesktopBevelWidth));
+    EnsureGeometryVisibility(tile, mask, &x, &y,
+			     (width/Scr->VirtualDesktopDScale)
+				+ 2 * (Scr->BorderWidth + Scr->VirtualDesktopBevelWidth),
+			     (height/Scr->VirtualDesktopDScale)
+				+ 2 * (Scr->BorderWidth + Scr->VirtualDesktopBevelWidth));
 
-    Scr->VirtualDesktopDX = JunkX;
-    Scr->VirtualDesktopDY = JunkY;
+    Scr->VirtualDesktopDX = x;
+    Scr->VirtualDesktopDY = y;
   }
   else
 #endif
   {
     /* tar@math.ksu.edu: fix handling of -0 X and Y geometry */
     /* account for VirtualDesktopBevelWidth - djhjr - 9/26/01 */
-    if (JunkMask & XValue)
+    if (mask & XValue)
     {
-      if (JunkMask & XNegative)
+      if (mask & XNegative)
       {
 	Scr->VirtualDesktopDX = Scr->MyDisplayWidth
-	  - JunkWidth - (2 * Scr->BorderWidth) - (2 * Scr->VirtualDesktopBevelWidth) + JunkX;
+	  - (width/Scr->VirtualDesktopDScale)
+	  - (2 * Scr->BorderWidth) - (2 * Scr->VirtualDesktopBevelWidth) + x;
       }
       else
-	Scr->VirtualDesktopDX = JunkX;
+	Scr->VirtualDesktopDX = x;
     }
-    if (JunkMask & YValue)
+    if (mask & YValue)
     {
-      if (JunkMask & YNegative)
+      if (mask & YNegative)
       {
 	Scr->VirtualDesktopDY = Scr->MyDisplayHeight
-	  - JunkHeight - (2 * Scr->BorderWidth) - (2 * Scr->VirtualDesktopBevelWidth) + JunkY;
+	  - (height/Scr->VirtualDesktopDScale)
+	  - (2 * Scr->BorderWidth) - (2 * Scr->VirtualDesktopBevelWidth) + y;
       }
       else
-	Scr->VirtualDesktopDY = JunkY;
+	Scr->VirtualDesktopDY = y;
     }
   }
 
-  JunkWidth *= Scr->VirtualDesktopDScale;
-  JunkHeight *= Scr->VirtualDesktopDScale;
-
-  Scr->VirtualDesktopWidth = JunkWidth;
-  Scr->VirtualDesktopHeight = JunkHeight;
+  Scr->VirtualDesktopWidth = width;
+  Scr->VirtualDesktopHeight = height;
 
   /* all of the values looked reasonable */
   Scr->Virtual = TRUE;
