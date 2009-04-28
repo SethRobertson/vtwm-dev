@@ -1156,8 +1156,6 @@ DoVirtualMoveResize(TwmWindow * tmp_win, int x, int y, int w, int h)
 }
 
 
-#ifdef TILED_SCREEN
-
 /*
  * Attention: in the following tiled screen Zoom functions 'top-edge'
  * is not towards the upper edge of the monitor but the edge having
@@ -1178,6 +1176,8 @@ FindAreaIntersection(int a[4], int b[4])
   dy = Distance1D(Bot(a), Top(a), Bot(b), Top(b));
   return Distance2D(dx,dy);
 }
+
+#ifdef TILED_SCREEN
 
 int
 FindNearestTileToArea(int w[4])
@@ -1832,31 +1832,164 @@ nxt:;
  **********************************************************************
  */
 
+
+#define SET_dragx_TO_PHYSICALLY_VISIBLE		\
+	dragx = V_TO_R_X(tmp_win->save_frame_x);					\
+	if (dragx < basex || dragx + dragWidth + frame_bw_times_2 > basex + basew)	\
+	{	\
+	    dragx = basex + (tmp_win->save_frame_x % basew);			\
+	    if (dragx + dragWidth + frame_bw_times_2 > basex + basew)		\
+	    {	\
+		/* not fitting 'modulo visible width', try centered: */		\
+		dragx = basex + (basew - dragWidth - frame_bw_times_2) / 2;	\
+		if (dragx - basex < 0)		\
+		/* beyond the edge, ensure origin is visible: */		\
+		dragx = basex;			\
+	    }	\
+	}
+
+
+#define SET_dragy_TO_PHYSICALLY_VISIBLE		\
+	dragy = V_TO_R_Y(tmp_win->save_frame_y);					\
+	if (dragy < basey || dragy + dragHeight + frame_bw_times_2 > basey + baseh)	\
+	{	\
+	    dragy = basey + (tmp_win->save_frame_y % baseh);			\
+	    if (dragy + dragHeight + frame_bw_times_2 > basey + baseh)		\
+	    {	\
+		/* not fitting 'modulo visible height', try centered: */	\
+		dragy = basey + (baseh - dragHeight - frame_bw_times_2) / 2;	\
+		if (dragy - basey < 0)		\
+		/* beyond the edge, ensure origin is visible: */		\
+		dragy = basey;			\
+	    }	\
+	}
+
+
 void
 fullzoom(int tile, TwmWindow * tmp_win, int flag)
 {
+  int Area[4], basex, basey, basew, baseh, dx, dy, frame_bw_times_2;
   Bool mm = False;
+
+
+  XGetGeometry (dpy, (Drawable)tmp_win->frame, &JunkRoot,
+		&dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight,
+		&JunkBW, &JunkDepth);
+
+  frame_bw_times_2 = (int)(JunkBW) * 2;
+
 
   if (tmp_win->zoomed == flag
 	&& flag != F_PANELGEOMETRYZOOM && flag != F_PANELGEOMETRYMOVE)
   {
     unzoom:;
 
-    dragHeight = tmp_win->save_frame_height;
+    /** recover location **/
+
+    /* check if zoomed client intersects panel now: */
+    Lft(Area) = dragx;
+    Bot(Area) = dragy;
+    Rht(Area) = Lft(Area) + dragWidth  + 2*tmp_win->frame_bw - 1;
+    Top(Area) = Bot(Area) + dragHeight + 2*tmp_win->frame_bw - 1;
+
+    /* f.maximize dragged size beyond panel, undo this first: */
+    if (flag == F_MAXIMIZE || flag == F_PANELMAXIMIZE)
+    {
+      Lft(Area) += ((int)(JunkBW) + tmp_win->frame_bw3D);
+      Bot(Area) += ((int)(JunkBW) + tmp_win->frame_bw3D) + tmp_win->title_height; /*Bot() is 'top', here it matters*/
+      Rht(Area) -= ((int)(JunkBW) + tmp_win->frame_bw3D);
+      Top(Area) -= ((int)(JunkBW) + tmp_win->frame_bw3D);
+    }
+
+#if defined TILED_SCREEN  &&  0
+    if (Scr->use_tiles == TRUE)
+    {
+      /* consider current panel while unzooming: */
+      int i = FindNearestTileToArea(Area);
+      basex = Lft(Scr->tiles[i]);
+      basey = Bot(Scr->tiles[i]);
+      basew = AreaWidth(Scr->tiles[i]);
+      baseh = AreaHeight(Scr->tiles[i]);
+      dx = FindAreaIntersection(Area, Scr->tiles[i]);
+    }
+    else
+#endif
+    {
+      /* consider current virtual desktop while unzooming: */
+      int s[4];
+      basew = Scr->MyDisplayWidth;
+      baseh = Scr->MyDisplayHeight;
+      Lft(s) = basex = 0;
+      Bot(s) = basey = 0;
+      Rht(s) = Lft(s) + basew - 1;
+      Top(s) = Bot(s) + baseh - 1;
+      dx = FindAreaIntersection(Area, s);
+    }
+
+    /* check if client intersected previous panel/virtual desktop prior to zooming: */
+    Lft(Area) = tmp_win->save_frame_x;
+    Bot(Area) = tmp_win->save_frame_y;
+    Rht(Area) = Lft(Area) + tmp_win->save_frame_width  + 2*tmp_win->frame_bw - 1;
+    Top(Area) = Bot(Area) + tmp_win->save_frame_height + 2*tmp_win->frame_bw - 1;
+    dy = FindAreaIntersection(Area, tmp_win->save_tile);
+
+    /* first check previous panel intersecting previously, then current panel now: */
+    if (dy > 0)
+    {
+      /* pre-zoomed client intersected previous panel: */
+      if (dx > 0)
+      {
+	/* client intersects current VD/panel now: */
+	dragx = basex + (Lft(Area) - Lft(tmp_win->save_tile));
+	dragy = basey + (Bot(Area) - Bot(tmp_win->save_tile));
+      }
+      else
+      {
+	/* client doesn't intersect current panel, recover old panel-relative location: */
+	dragx = V_TO_R_X(tmp_win->save_frame_x); /* recover physical coordinates */
+	dragy = V_TO_R_Y(tmp_win->save_frame_y); /* recover physical coordinates */
+      }
+    }
+    else
+    {
+      /* previous panel/VD-relative location not recoverable */
+      if (dx > 0)
+      {
+	if (Scr->UnzoomToScreen == TRUE || tmp_win->nailed)
+	{
+	  /* client intersects current panel now and is marked 'sticky': */
+	  SET_dragx_TO_PHYSICALLY_VISIBLE;
+	  SET_dragy_TO_PHYSICALLY_VISIBLE;
+	}
+	else
+	{
+	  dragx = V_TO_R_X(tmp_win->save_frame_x); /* recover physical coordinates */
+	  dragy = V_TO_R_Y(tmp_win->save_frame_y); /* recover physical coordinates */
+	}
+      }
+      else
+      {
+	/* don't change location (except slight shift down for f.maximize): */
+	if (flag == F_MAXIMIZE || flag == F_PANELMAXIMIZE)
+	{
+	  dragx += ((int)(JunkBW) + tmp_win->frame_bw3D);
+	  dragy += ((int)(JunkBW) + tmp_win->frame_bw3D) + tmp_win->title_height;
+	}
+      }
+    }
+    /* location recovered */
+
+    /* recover size: */
     dragWidth = tmp_win->save_frame_width;
-    dragx = tmp_win->save_frame_x;
-    dragy = tmp_win->save_frame_y;
+    dragHeight = tmp_win->save_frame_height;
+
     tmp_win->zoomed = ZOOM_NONE;
   }
-  else
+
+  else /* zoom */
+
   {
-    int Area[4], basex, basey, basew, baseh, xmask, ymask, dx, dy, frame_bw_times_2;
-
-    XGetGeometry (dpy, (Drawable)tmp_win->frame, &JunkRoot,
-		&dragx, &dragy, (unsigned int *)&dragWidth, (unsigned int *)&dragHeight,
-		&JunkBW, &JunkDepth);
-
-    frame_bw_times_2 = (int)(JunkBW) * 2;
+    int xmask, ymask;
 
 #ifdef TILED_SCREEN
     /*
@@ -1890,6 +2023,17 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
 	Bot(Area) = dragy;
 	Top(Area) = dragy + frame_bw_times_2 + dragHeight - 1;
 	TilesFullZoom (Area);
+
+	/* Test if client intersects area or not (then area is X11-screen); bring client to mouse-tile */
+	if (!IntersectsH(Area,dragx,dragx+dragWidth-1) || !IntersectsV(Area,dragy,dragy+dragHeight-1))
+	  if (True == XQueryPointer(dpy, Scr->Root, &JunkRoot, &JunkChild, &JunkX, &JunkY, &HotX, &HotY, &JunkMask))
+	  {
+	    int i = FindNearestTileToMouse();
+	    Lft(Area) = Lft(Scr->tiles[i]);
+	    Bot(Area) = Bot(Scr->tiles[i]);
+	    Rht(Area) = Rht(Scr->tiles[i]);
+	    Top(Area) = Top(Scr->tiles[i]);
+	  }
       }
       basex = Lft(Area); /* Cartesian origin:   */
       basey = Bot(Area); /* (x0,y0) = (Lft,Bot) */
@@ -1905,13 +2049,34 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
       baseh = Scr->MyDisplayHeight;
     }
 
+
     if (tmp_win->zoomed == ZOOM_NONE)
     {
-      tmp_win->save_frame_x = dragx;
-      tmp_win->save_frame_y = dragy;
+      tmp_win->save_frame_x = R_TO_V_X(dragx); /* store virtual coordinates */
+      tmp_win->save_frame_y = R_TO_V_Y(dragy); /* store virtual coordinates */
       tmp_win->save_frame_width = dragWidth;
       tmp_win->save_frame_height = dragHeight;
+#if defined TILED_SCREEN  &&  0
+      if (Scr->use_tiles == TRUE)
+      {
+	/* record current panel geometry for later origin recovery */
+        int i = FindNearestTileToClient(tmp_win);
+        Lft(tmp_win->save_tile) = R_TO_V_X(Lft(Scr->tiles[i]));
+        Bot(tmp_win->save_tile) = R_TO_V_Y(Bot(Scr->tiles[i]));
+	Rht(tmp_win->save_tile) = R_TO_V_X(Rht(Scr->tiles[i]));
+	Top(tmp_win->save_tile) = R_TO_V_Y(Top(Scr->tiles[i]));
+      }
+      else
+#endif
+      {
+	/* record current virtual desktop geometry for later origin recovery */
+	Lft(tmp_win->save_tile) = R_TO_V_X(0);
+	Bot(tmp_win->save_tile) = R_TO_V_Y(0);
+	Rht(tmp_win->save_tile) = Lft(tmp_win->save_tile) + Scr->MyDisplayWidth  - 1;
+	Top(tmp_win->save_tile) = Bot(tmp_win->save_tile) + Scr->MyDisplayHeight - 1;
+      }
     }
+
 
     switch (flag)
     {
@@ -1920,7 +2085,8 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
 
     case F_PANELZOOM:
     case F_ZOOM:
-      dragx = tmp_win->save_frame_x;
+      /* first ensure the client appears on X11 screen/panel (horizontally): */
+      SET_dragx_TO_PHYSICALLY_VISIBLE;
       dragy = basey;
       dragWidth = tmp_win->save_frame_width;
       dragHeight = baseh - frame_bw_times_2;
@@ -1928,8 +2094,9 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
 
     case F_PANELHORIZOOM:
     case F_HORIZOOM:
+      /* first ensure the client appears on X11 screen/panel (vertically): */
+      SET_dragy_TO_PHYSICALLY_VISIBLE;
       dragx = basex;
-      dragy = tmp_win->save_frame_y;
       dragWidth = basew - frame_bw_times_2;
       dragHeight = tmp_win->save_frame_height;
       break;
@@ -1989,18 +2156,22 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
       break;
 
     case F_PANELLEFTMOVE:
+      SET_dragy_TO_PHYSICALLY_VISIBLE;
       dragx = basex;
       break;
 
     case F_PANELRIGHTMOVE:
+      SET_dragy_TO_PHYSICALLY_VISIBLE;
       dragx = basex + basew - dragWidth - frame_bw_times_2;
       break;
 
     case F_PANELTOPMOVE:
+      SET_dragx_TO_PHYSICALLY_VISIBLE;
       dragy = basey;
       break;
 
     case F_PANELBOTTOMMOVE:
+      SET_dragx_TO_PHYSICALLY_VISIBLE;
       dragy = basey + baseh - dragHeight - frame_bw_times_2;
       break;
 
@@ -2040,19 +2211,19 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
 	  flag = 1;
 	  if (origMask & XNegative) { /* recover horizontal geometry */
 	    dragWidth = tmp_win->save_frame_width;
-	    dragx = tmp_win->save_frame_x;
+	    dragx = V_TO_R_X(tmp_win->save_frame_x);
 	    flag = 0;
 	  } else {
 	    tmp_win->save_frame_width = dragWidth;
-	    tmp_win->save_frame_x = dragx;
+	    tmp_win->save_frame_x = R_TO_V_X(dragx);
 	  }
 	  if (origMask & YNegative) { /* recover vertical geometry */
 	    dragHeight = tmp_win->save_frame_height;
-	    dragy = tmp_win->save_frame_y;
+	    dragy = V_TO_R_Y(tmp_win->save_frame_y);
 	    flag = 0;
 	  } else {
 	    tmp_win->save_frame_height = dragHeight;
-	    tmp_win->save_frame_y = dragy;
+	    tmp_win->save_frame_y = R_TO_V_Y(dragy);
 	  }
 
 	  tmp_win->zoomed = ZOOM_NONE; /* set state to 'unzoomed' */
@@ -2066,10 +2237,12 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
       else
 	mm = False;
 
+
+#ifdef TILED_SCREEN
+
       dx = dragx - basex;
       dy = dragy - basey;
 
-#ifdef TILED_SCREEN
       if (dx < 0 || basew < dx + dragWidth + frame_bw_times_2
 	  || dy < 0 || baseh < dy + dragHeight + frame_bw_times_2)
       {
@@ -2183,7 +2356,16 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
 	dx = dragx - basex;
 	dy = dragy - basey;
       }
+
+#else /*TILED_SCREEN*/
+
+      SET_dragx_TO_PHYSICALLY_VISIBLE;
+      SET_dragy_TO_PHYSICALLY_VISIBLE;
+      dx = dragx - basex;
+      dy = dragy - basey;
+
 #endif /*TILED_SCREEN*/
+
 
       /* now finally treat horizontal geometry ('W' and 'X' of "WxH+X+Y"): */
       if (xmask && (origWidth > 0))
@@ -2279,6 +2461,7 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
 	  }
 	}
       }
+
       break;
     }
 
@@ -2298,16 +2481,11 @@ fullzoom(int tile, TwmWindow * tmp_win, int flag)
 
   ResizeTwmWindowContents(tmp_win, dragWidth, dragHeight);
 
-  if ((Scr->WarpCursor || LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)))
-    WarpToWindow(tmp_win);
 #if 1
-  else if (mm == True && flag == F_PANELGEOMETRYMOVE)
+  if (mm == True && flag == F_PANELGEOMETRYMOVE)
     /* if mouse did/would fall inside the window, move mouse as well */
     XWarpPointer(dpy, None, tmp_win->frame, 0, 0, 0, 0, HotX, HotY);
 #endif
-
-  XUngrabPointer(dpy, CurrentTime);
-  XUngrabServer(dpy);
 }
 
 void

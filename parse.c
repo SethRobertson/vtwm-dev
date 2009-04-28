@@ -484,6 +484,8 @@ typedef struct _TwmKeyword
 
 #define kw0_AutoResizeKeepOnScreen	74
 
+#define kw0_UnzoomToScreen		73
+
 #define kws_IconFont			2
 #define kws_ResizeFont			3
 #define kws_MenuFont			4
@@ -1024,6 +1026,7 @@ static TwmKeyword keytable[] = {
   {"titlehighlight", TITLE_HILITE, 0},
   {"titlepadding", NKEYWORD, kwn_TitlePadding},
   {"unknownicon", SKEYWORD, kws_UnknownIcon},
+  {"unzoomtoscreen", KEYWORD, kw0_UnzoomToScreen},
   {"usepposition", USE_PPOSITION, 0},
   {"v", VIRTUAL, 0},
   {"virtual", VIRTUAL, 0},
@@ -1257,6 +1260,10 @@ do_single_keyword(int keyword)
 
     case kw0_DeIconifyToScreen:
       Scr->DeIconifyToScreen = TRUE;
+      return 1;
+
+    case kw0_UnzoomToScreen:
+      Scr->UnzoomToScreen = TRUE;
       return 1;
 
     case kw0_WarpWindows:

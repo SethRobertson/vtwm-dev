@@ -1697,6 +1697,13 @@ This variable specifies the filename of an image  file to be
 used as the default icon.  This image will be used as the icon of all
 clients which do not provide an icon image and are not listed
 in the \fBIcons\fP list.
+.IP "\fBUnzoomToScreen\fP" 8
+When unzooming a window, by default, the window will be placed
+at its previous geometry in the virtual desktop. With this variable
+set,
+.B vtwm
+ensures that the window will be placed somewhere on the real
+screen.
 .IP "\fBUsePPosition\fP \fIstring\fP [{ \fIwin-list\fP }]" 8
 This variable specifies whether or not \fBvtwm\fP should honor
 program-requested locations (given by the \fBPPosition\fP flag in the

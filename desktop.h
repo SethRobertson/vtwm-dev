@@ -26,8 +26,8 @@ extern Window moving_window;	/* indicates that we are doing a move in the vd dis
 #define R_TO_V_Y(y) ((y) + Scr->VirtualDesktopY)
 
 /* convert virtual space to real space */
-#define V_TO_R_X(x) (-(Scr->VirtualDesktopX - (x)))
-#define V_TO_R_Y(y) (-(Scr->VirtualDesktopY - (y)))
+#define V_TO_R_X(x) ((x) - Scr->VirtualDesktopX)
+#define V_TO_R_Y(y) ((y) - Scr->VirtualDesktopY)
 
 /* scale up and down from desktop display to real sizes */
 

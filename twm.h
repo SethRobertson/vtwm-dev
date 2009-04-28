@@ -388,10 +388,11 @@ typedef struct TwmWindow
 
   Window transientfor;		/* window contained in XA_XM_TRANSIENT_FOR */
   struct IconMgr *iconmgrp;	/* pointer to it if this is an icon manager */
-  int save_frame_x;		/* x position of frame */
-  int save_frame_y;		/* y position of frame */
+  int save_frame_x;		/* x position of frame in virtual coordinates */
+  int save_frame_y;		/* y position of frame in virtual coordinates */
   int save_frame_width;		/* width of frame */
   int save_frame_height;	/* height of frame */
+  int save_tile[4];		/* tile geometry in the moment of zoom in virtual coordinates */
   unsigned long protocols;	/* which protocols this window handles */
   Colormaps cmaps;		/* colormaps for this application */
   TBWindow *titlebuttons;

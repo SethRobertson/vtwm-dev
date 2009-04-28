@@ -412,6 +412,7 @@ typedef struct ScreenInfo
     unsigned int CaseSensitive:1;
     unsigned int WarpUnmapped:1;
     unsigned int DeIconifyToScreen:1;
+    unsigned int UnzoomToScreen:1;
     unsigned int WarpWindows:1;
     unsigned int snapRealScreen:1;
     unsigned int GeometriesAreVirtual:1;
@@ -517,6 +518,7 @@ typedef struct ScreenInfo
 #define CaseSensitive						userflags.CaseSensitive
 #define WarpUnmapped						userflags.WarpUnmapped
 #define DeIconifyToScreen					userflags.DeIconifyToScreen
+#define UnzoomToScreen						userflags.UnzoomToScreen
 #define WarpWindows							userflags.WarpWindows
 #define snapRealScreen						userflags.snapRealScreen
 #define GeometriesAreVirtual				userflags.GeometriesAreVirtual
@@ -612,14 +614,14 @@ extern int FirstScreen;
 #define xmin(a,b)	    ((a) < (b) ? (a) : (b))
 #define xmax(a,b)	    ((a) > (b) ? (a) : (b))
 
+#endif /*TILED_SCREEN */
+
+
 /* if overlapping return intersection;  else return gapsize as negative value: */
 #define Distance1D(a,b,u,v) (xmin((b),(v)) - xmax((a),(u)))
 
 /* if overlapping return area; else return (larger) gapsize as negative value: */
 #define Distance2D(dx,dy)   ((dx)>=0?((dy)>=0?((dx)+1)*((dy)+1):(dy)):((dy)>=0?(dx):((dx)>(dy)?(dy):(dx))))
-
-
-#endif /*TILED_SCREEN */
 
 #endif /* _SCREEN_ */
 

@@ -2472,6 +2472,12 @@ ExecuteFunction(int func, char *action, Window w, TwmWindow * tmp_win, XEvent * 
       else
 	fullzoom (ParsePanelIndex(action), tmp_win, func);
 
+      if ((Scr->WarpCursor || LookInList(Scr->WarpCursorL, tmp_win->full_name, &tmp_win->class)))
+	WarpToWindow(tmp_win);
+
+      XUngrabPointer(dpy, CurrentTime);
+      XUngrabServer(dpy); /* <-- why? is the server really grabbed? */
+
       MoveResizeDesktop(tmp_win, Scr->NoRaiseMove);
       break;
 
