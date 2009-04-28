@@ -3298,16 +3298,6 @@ HandleXrandrScreenChangeNotify(void)
 	      && (Scr->MyDisplayWidth != DisplayWidth(dpy, Scr->screen)
 		  || Scr->MyDisplayHeight != DisplayHeight(dpy, Scr->screen))))
   {
-    int i;
-    TwmWindow *tmp;
-
-    /* to preserve size unzoom all windows on all screens: */
-    for (i = 0; i < NumScreens; ++i)
-      if (ScreenList[i] != NULL)
-	for (tmp = ScreenList[i]->TwmRoot.next; tmp != NULL; tmp = tmp->next)
-	  if (tmp->zoomed != ZOOM_NONE)
-	    fullzoom(-1, tmp, (/*bypass geo-zoom*/tmp->zoomed=ZOOM_NONE));
-
     /* prepare a faked button event: */
     button.xany = Event.xany;
     button.xbutton.time = CurrentTime;

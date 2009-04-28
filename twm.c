@@ -1380,6 +1380,10 @@ Reborder(Time time)
     InstallWindowColormaps(0, &Scr->TwmRoot);	/* force reinstall */
     for (tmp = Scr->TwmRoot.next; tmp != NULL; tmp = tmp->next)
     {
+      /* unzoom to preserve size: */
+      if (tmp->zoomed != ZOOM_NONE)
+	fullzoom(-1, tmp, (tmp->zoomed=(tmp->zoomed==F_PANELGEOMETRYZOOM||tmp->zoomed==F_PANELGEOMETRYMOVE?ZOOM_NONE:tmp->zoomed)));
+
       RestoreWithdrawnLocation(tmp);
       XMapWindow(dpy, tmp->w);
     }
