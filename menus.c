@@ -4688,7 +4688,7 @@ Identify(TwmWindow * t)
     (void)sprintf(Info[n++], "Icon name:  \"%s\"", t->icon_name);
     Info[n++][0] = '\0';
     (void)sprintf(Info[n++], "Geometry/root:  %dx%d+%d+%d", wwidth, wheight, x, y);
-    (void)sprintf(Info[n++], "Border width:  %d", bw);
+    (void)sprintf(Info[n++], "Border width:  %d", t->old_bw);
     (void)sprintf(Info[n++], "Depth:  %d", depth);
 
     Info[n++][0] = '\0';
@@ -4770,7 +4770,7 @@ Identify(TwmWindow * t)
 
 #ifdef TWM_USE_SPACING
   height = n * (120 * Scr->InfoFont.height / 100);	/*baselineskip 1.2 */
-  height += Scr->InfoFont.height - Scr->InfoFont.y;
+  height += (Scr->InfoFont.height - Scr->InfoFont.y) + 2*Scr->InfoBevelWidth;
 #else
   i = (Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth + 8 : 10;
   height = (n * (Scr->InfoFont.height + 2)) + i;	/* some padding */
@@ -4787,7 +4787,7 @@ Identify(TwmWindow * t)
     XUnmapWindow(dpy, Scr->InfoWindow.win);
 
 #ifdef TWM_USE_SPACING
-  i = Scr->InfoFont.height;
+  i = Scr->InfoFont.height + 2*Scr->InfoBevelWidth;
 #else
   i = (Scr->InfoBevelWidth > 0) ? Scr->InfoBevelWidth + 18 : 20;
 #endif
@@ -4798,10 +4798,7 @@ Identify(TwmWindow * t)
     px -= (width / 2);
     py -= (height / 3);
 
-    if (Scr->InfoBevelWidth > 0)
-      dummy = 2 * Scr->InfoBevelWidth;
-    else
-      dummy = 2 * Scr->BorderWidth;
+    dummy = (Scr->InfoBevelWidth > 0 ? 0 : 2 * Scr->BorderWidth);
 
 #ifdef TILED_SCREEN
     if (Scr->use_tiles == TRUE)

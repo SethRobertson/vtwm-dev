@@ -1414,7 +1414,7 @@ HandleExpose(void)
 
 #ifdef TWM_USE_SPACING
     height = 120 * Scr->InfoFont.height / 100;	/*baselineskip 1.2 */
-    k = Scr->InfoFont.height - Scr->InfoFont.y;
+    k = (Scr->InfoFont.height - Scr->InfoFont.y) + Scr->InfoBevelWidth;
 #else
     height = Scr->InfoFont.height + 2;
 #endif
@@ -1425,7 +1425,7 @@ HandleExpose(void)
 
 #ifndef TWM_USE_SPACING
       k = 5;
-      if (!i && Scr->BorderBevelWidth > 0)
+      if (!i && Scr->InfoBevelWidth > 0)
 	k += Scr->InfoBevelWidth;
 #endif
       MyFont_DrawString(dpy, &Scr->InfoWindow, &Scr->InfoFont, &Scr->DefaultC,

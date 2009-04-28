@@ -799,14 +799,14 @@ main(int argc, char **argv, char **environ)
       }
     }
 
-    if (!Scr->BorderBevelWidth > 0)
+    if (!(Scr->InfoBevelWidth > 0))
       attributes.border_pixel = Scr->DefaultC.fore;
 
     attributes.background_pixel = Scr->DefaultC.back;
     attributes.event_mask = (ExposureMask | ButtonPressMask | KeyPressMask | ButtonReleaseMask);
     attributes.backing_store = NotUseful;
 
-    if (!Scr->BorderBevelWidth > 0)
+    if (!(Scr->InfoBevelWidth > 0))
       valuemask = (CWBorderPixel | CWBackPixel | CWEventMask | CWBackingStore);
     else
       valuemask = (CWBackPixel | CWEventMask | CWBackingStore);
