@@ -481,10 +481,8 @@ typedef struct _TwmKeyword
 #define kw0_RestartOnScreenSizeChangeNotify	72
 #endif
 
-
-#define kw0_AutoResizeKeepOnScreen	74
-
 #define kw0_UnzoomToScreen		73
+#define kw0_AutoResizeKeepOnScreen	74
 
 #define kws_IconFont			2
 #define kws_ResizeFont			3
