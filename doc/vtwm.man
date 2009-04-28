@@ -1697,12 +1697,12 @@ in the \fBIcons\fP list.
 This variable specifies whether or not \fBvtwm\fP should honor
 program-requested locations (given by the \fBPPosition\fP flag in the
 WM_NORMAL_HINTS property), in the absence of a user-specified position.
-The argument \fIstring\fP may have one of three values:  \fI"off"\fP
+The argument \fIstring\fP may have one of four values:  \fI"off"\fP
 (the default) indicating that \fBvtwm\fP should ignore the program-supplied
-position, \fI"on"\fP indicating that the position should be used, and
+position, \fI"on"\fP indicating that the position should be used, 
 \&\fI"non-zero"\fP indicating that the position should used if it is other
 than (0,0) (for working around a bug in older toolkits) and finally
-\&\fI"non-zero"\fP indicating that the position should only be used it it
+\&\fI"on-screen"\fP indicating that the position should only be used it it
 resolves to something visible on the physical screen.
 The optional \fIwin-list\fP is a list of window names and arguments that
 will override the global \fIstring\fP argument. For example:
