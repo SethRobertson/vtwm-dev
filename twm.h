@@ -529,6 +529,8 @@ extern Atom _XA_NET_WM_WINDOW_OPACITY;
 #ifdef TWM_USE_SLOPPYFOCUS
 extern int SloppyFocus;
 #endif
+extern int RecoverStolenFocusAttempts;
+extern int RecoverStolenFocusTimeout;
 
 #endif /* _TWM_ */
 

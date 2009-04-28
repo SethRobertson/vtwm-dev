@@ -1107,6 +1107,7 @@ SetFocus(TwmWindow * tmp_win, Time time)
 #endif
 
   XSetInputFocus(dpy, w, RevertToPointerRoot, time);
+  XSync(dpy, False);
 }
 
 

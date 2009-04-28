@@ -69,6 +69,7 @@
 #ifdef TWM_USE_XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif
+#include <X11/Xos.h>
 
 Display *dpy;			/* which display are we talking to */
 Window ResizeWindow;		/* the window we are resizing */
@@ -150,6 +151,8 @@ short FocusRoot;		/* is the input focus on the root ? */
 #ifdef TWM_USE_SLOPPYFOCUS
 int SloppyFocus;		/* TRUE if sloppy focus policy globally on all screens activated */
 #endif
+int RecoverStolenFocusAttempts;	/* Number of attempts vtwm should try to return focus if some client stole it */
+int RecoverStolenFocusTimeout;	/* Time in milliseconds vtwm should fight for returning focus if some client stole it */
 
 
 
@@ -195,6 +198,9 @@ main(int argc, char **argv, char **environ)
 #ifdef TWM_USE_SLOPPYFOCUS
   SloppyFocus = FALSE;
 #endif
+  RecoverStolenFocusAttempts = 0; /* zero value means no focus recovery attempts are made (set in .vtwmrc) */
+  RecoverStolenFocusTimeout = -1; /* negative value means no focus recovery attempts are made (estimated) */
+
 
   if ((ProgramName = strrchr(argv[0], '/')))
     ProgramName++;
@@ -881,6 +887,50 @@ main(int argc, char **argv, char **environ)
       fprintf(stderr, "%s:  unable to find any unmanaged screens\n", ProgramName);
     exit(1);
 
+  }
+
+  /* measure X11-server roundtrip and estimate 'RecoverStolenFocusTimeout': */
+  if (RecoverStolenFocusAttempts == 0) /* '0' means no recovery attempts */
+    RecoverStolenFocusTimeout = -1;
+  else if (RecoverStolenFocusAttempts == 1)
+    RecoverStolenFocusTimeout = 0; /* timeout '0' means try once */
+  if (RecoverStolenFocusAttempts > 1)
+  {
+    struct timeval start, stop;
+    long long roundtrip;
+    XImage *image;
+    XSync(dpy, False);
+    X_GETTIMEOFDAY(&start);
+    image = XGetImage(dpy, RootWindow(dpy, DefaultScreen(dpy)), 0, 0, 1, 1, ~0, ZPixmap);
+    if (image) XDestroyImage(image);
+    XSync(dpy, False);
+    image = XGetImage(dpy, RootWindow(dpy, DefaultScreen(dpy)), 0, DisplayHeight(dpy, DefaultScreen(dpy))-1, 1, 1, ~0, ZPixmap);
+    if (image) XDestroyImage(image);
+    XSync(dpy, False);
+    image = XGetImage(dpy, RootWindow(dpy, DefaultScreen(dpy)), DisplayWidth(dpy, DefaultScreen(dpy))-1, 0, 1, 1, ~0, ZPixmap);
+    if (image) XDestroyImage(image);
+    XSync(dpy, False);
+    image = XGetImage(dpy, RootWindow(dpy, DefaultScreen(dpy)), DisplayWidth(dpy, DefaultScreen(dpy))-1, DisplayHeight(dpy, DefaultScreen(dpy))-1, 1, 1, ~0, ZPixmap);
+    if (image) XDestroyImage(image);
+    XSync(dpy, False);
+    X_GETTIMEOFDAY(&stop);
+    if (stop.tv_usec < start.tv_usec)
+    {
+      stop.tv_usec += 1000000;
+      stop.tv_sec -= 1;
+    }
+    roundtrip = (long long)(stop.tv_usec - start.tv_usec) + (long long)(stop.tv_sec - start.tv_sec) * 1000000;
+    /* set focus recovery timeout (milliseconds) proportional to X11-server roundtrip (microseconds): */
+    RecoverStolenFocusTimeout = 20;    /* fast */
+    if (roundtrip > (long long)(500))
+      RecoverStolenFocusTimeout = 100; /* slower */
+    if (roundtrip > (long long)(2000))
+      RecoverStolenFocusTimeout = 500; /* slower */
+    if (roundtrip > (long long)(5000))
+      RecoverStolenFocusTimeout = 900; /* slowest */
+    if (PrintErrorMessages)
+      fprintf(stderr, "%s: X11-server roundtrip calibration %Ld microseconds, focus recovery timeout := %d milliseconds (or %d attempts).\n",
+			ProgramName, roundtrip, RecoverStolenFocusTimeout, RecoverStolenFocusAttempts);
   }
 
   RestartPreviousState = False;

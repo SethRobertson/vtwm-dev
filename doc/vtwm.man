@@ -1456,6 +1456,16 @@ size of your screen varies!
 It is easy to find out the size of this window and to create any image file
 of type \fBbitmap\fP(1) or \fBpixmap\fP(1) for it; that is the recommended
 procedure.
+.IP "\fBRecoverStolenFocus\fP \fIattempts\fP" 8
+This variable indicates that vtwm should attempt to return focus if it
+discovers some client window is grabbing focus on its own.
+After \fIattempts\fP unsuccessful trials vtwm gives up.
+By default vtwm does not attempt to steal focus back.
+The titlebar highlighting will always indicate where focus is directed,
+even after focus theft by a greedy client.
+Vtwm also measures X11-server roundtrip and esimates a timeout for focus recovery,
+and no further attempts are made if this timeout is reached.
+(Attention: high system load or mouse movement speed may lead to accidental focus lag.)
 .IP "\fBResizeFont\fP \fIstring\fP" 8
 This variable specifies the font to be used for in the dimensions window when
 resizing windows.

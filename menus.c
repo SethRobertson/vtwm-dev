@@ -4668,6 +4668,7 @@ Identify(TwmWindow * t)
   Window junk;
   int px, py, dummy;
   unsigned udummy;
+  extern Bool PrintErrorMessages;
 
 #ifdef SOUND_SUPPORT
   PlaySound(F_IDENTIFY);
@@ -4687,6 +4688,250 @@ Identify(TwmWindow * t)
     (void)sprintf(Info[n++], "Class.res_class:  \"%s\"", t->class.res_class);
     (void)sprintf(Info[n++], "Icon name:  \"%s\"", t->icon_name);
     Info[n++][0] = '\0';
+
+#if 1
+    if (PrintErrorMessages)
+    {
+      TwmWindow *tmp;
+      char *f;
+
+      if (t->wmhints != NULL && (t->wmhints->flags & WindowGroupHint))
+      {
+	for (tmp = Scr->TwmRoot.next; tmp != NULL; tmp = tmp->next)
+	  if (tmp->w == t->wmhints->window_group)
+	    break;
+	if (tmp != NULL)
+	  (void) sprintf(Info[n++], "Group member of = \"%s\"", tmp->full_name);
+	else
+	  (void) sprintf(Info[n++], "Group member of = 0x0%lx", (long)(t->wmhints->window_group));
+      }
+      if (t->transient)
+      {
+	for (tmp = Scr->TwmRoot.next; tmp != NULL; tmp = tmp->next)
+	  if (tmp->w == t->transientfor)
+	    break;
+	if (tmp != NULL)
+	  (void) sprintf(Info[n++], "Transient for = \"%s\"", tmp->full_name);
+	else
+	  (void) sprintf(Info[n++], "Transient for = 0x0%lx", (long)(t->transientfor));
+      }
+
+      if (t->wmhints != NULL && (t->wmhints->flags & StateHint))
+      {
+	  switch (t->wmhints->initial_state)
+	  {
+	    case NormalState:
+	      f = "NormalState";
+	      break;
+#if WithdrawnState == DontCareState
+	    case WithdrawnState:
+	      f = "Withdrawn/DontCareState";
+	      break;
+#else
+	    case WithdrawnState:
+	      f = "Withdrawn";
+	      break;
+	    case DontCareState:
+	      f = "DontCareState";
+	      break;
+#endif
+	    case IconicState:
+	      f = "Iconic";
+	      break;
+	    case ZoomState:
+	      f = "ZoomState";
+	      break;
+	    case InactiveState:
+	      f = "InactiveState";
+	      break;
+	    default:
+	      f = "Unknown";
+	      break;
+	  }
+	  if (t->wmhints->initial_state != NormalState)
+	    (void) sprintf(Info[n++], "Initial state = %s", f);
+      }
+      if (GetWMState(t->w, &i, &JunkChild) == True)
+      {
+	switch (i)
+	{
+	  case NormalState:
+	    f = "NormalState";
+	    break;
+#if WithdrawnState == DontCareState
+	  case WithdrawnState:
+	    f = "Withdrawn/DontCareState";
+	    break;
+#else
+	  case WithdrawnState:
+	    f = "Withdrawn";
+	    break;
+	  case DontCareState:
+	    f = "DontCareState";
+	    break;
+#endif
+	  case IconicState:
+	    f = "Iconic";
+	    break;
+	  case ZoomState:
+	    f = "ZoomState";
+	    break;
+	  case InactiveState:
+	    f = "InactiveState";
+	    break;
+	  default:
+	    f = "Unknown";
+	    break;
+	}
+	if (i != NormalState)
+	  (void) sprintf(Info[n++], "_XA_WM_STATE = %s", f);
+      }
+
+      if (t->wmhints != NULL && (t->wmhints->flags & IconWindowHint))
+	(void) sprintf(Info[n++], "Icon window = foreign");
+
+      if (t->wmhints != NULL)
+      {
+	i  = (t->wmhints->input == True) ? 2 : 0;
+	i |= (t->protocols & DoesWmTakeFocus) ? 1 : 0;
+      }
+      else
+      {
+	if (t->protocols & DoesWmTakeFocus)
+	  i = 5;
+	else
+	  i = 6;
+      }
+      switch (i)
+      {
+	case 0: f = "No Input"; break;
+	case 2: f = "Passive"; break;
+	case 3: f = "Locally Active"; break;
+	case 1: f = "Globally Active"; break;
+	case 6: f = "Unknown (Passive?)"; break;
+	case 5: f = "Unknown (Globally Active?)"; break;
+      }
+      (void) sprintf(Info[n++], "ICCCM Focusing = %s", f);
+
+      if (t->hints.width || t->hints.height || t->hints.x || t->hints.y)
+        (void) sprintf(Info[n++], "XSizeHints = %dx%d%+d%+d",
+		t->hints.width, t->hints.height, t->hints.x, t->hints.y);
+      if (t->hints.flags & USPosition)
+	(void) sprintf(Info[n++], "USPosition = true");
+      if (t->hints.flags & USSize)
+	(void) sprintf(Info[n++], "USSize = true");
+      if (t->hints.flags & PPosition)
+	(void) sprintf(Info[n++], "PPosition = true");
+      if (t->hints.flags & PSize)
+	(void) sprintf(Info[n++], "PSize = true");
+      if (t->hints.flags & PBaseSize)
+	(void) sprintf(Info[n++], "PBaseSize = %dx%d",
+		t->hints.base_width, t->hints.base_height);
+      if (t->hints.flags & PWinGravity)
+      {
+	switch (t->hints.win_gravity)
+	{
+	  case ForgetGravity:
+	    f = "ForgetGravity"; break;
+	  case NorthWestGravity:
+	    f = "NorthWestGravity"; break;
+	  case NorthGravity:
+	    f = "NorthGravity"; break;
+	  case NorthEastGravity:
+	    f = "NorthEastGravity"; break;
+	  case WestGravity:
+	    f = "WestGravity"; break;
+	  case CenterGravity:
+	    f = "CenterGravity"; break;
+	  case EastGravity:
+	    f = "EastGravity"; break;
+	  case SouthWestGravity:
+	    f = "SouthWestGravity"; break;
+	  case SouthGravity:
+	    f = "SouthGravity"; break;
+	  case SouthEastGravity:
+	    f = "SouthEastGravity"; break;
+	  case StaticGravity:
+	    f = "StaticGravity"; break;
+	  default:
+	    f = "Unknown"; break;
+	}
+	if (t->hints.win_gravity != NorthWestGravity)
+	  (void) sprintf(Info[n++], "PWinGravity = %s", f);
+      }
+#if 0
+      switch (t->attr.win_gravity)
+      {
+#if UnmapGravity == ForgetGravity
+	  case UnmapGravity:
+	    f = "ForgetGravity/UnmapGravity"; break;
+#else
+	  case UnmapGravity:
+	    f = "UnmapGravity"; break;
+	  case ForgetGravity:
+	    f = "ForgetGravity"; break;
+#endif
+	  case NorthWestGravity:
+	    f = "NorthWestGravity"; break;
+	  case NorthGravity:
+	    f = "NorthGravity"; break;
+	  case NorthEastGravity:
+	    f = "NorthEastGravity"; break;
+	  case WestGravity:
+	    f = "WestGravity"; break;
+	  case CenterGravity:
+	    f = "CenterGravity"; break;
+	  case EastGravity:
+	    f = "EastGravity"; break;
+	  case SouthWestGravity:
+	    f = "SouthWestGravity"; break;
+	  case SouthGravity:
+	    f = "SouthGravity"; break;
+	  case SouthEastGravity:
+	    f = "SouthEastGravity"; break;
+	  case StaticGravity:
+	    f = "StaticGravity"; break;
+	  default:
+	    f = "Unknown"; break;
+      }
+      (void) sprintf(Info[n++], "WinGravity = %s", f);
+
+      switch (t->attr.bit_gravity)
+      {
+	  case ForgetGravity:
+	    f = "ForgetGravity"; break;
+	  case NorthWestGravity:
+	    f = "NorthWestGravity"; break;
+	  case NorthGravity:
+	    f = "NorthGravity"; break;
+	  case NorthEastGravity:
+	    f = "NorthEastGravity"; break;
+	  case WestGravity:
+	    f = "WestGravity"; break;
+	  case CenterGravity:
+	    f = "CenterGravity"; break;
+	  case EastGravity:
+	    f = "EastGravity"; break;
+	  case SouthWestGravity:
+	    f = "SouthWestGravity"; break;
+	  case SouthGravity:
+	    f = "SouthGravity"; break;
+	  case SouthEastGravity:
+	    f = "SouthEastGravity"; break;
+	  case StaticGravity:
+	    f = "StaticGravity"; break;
+	  default:
+	    f = "Unknown"; break;
+      }
+      (void) sprintf(Info[n++], "BitGravity = %s", f);
+#endif
+      (void) sprintf(Info[n++], "Frame XID = 0x0%lx", (long)(t->frame));
+      (void) sprintf(Info[n++], "Window XID = 0x0%lx", (long)(t->w));
+
+      Info[n++][0] = '\0';
+    }
+#endif
+
     (void)sprintf(Info[n++], "Geometry/root:  %dx%d+%d+%d", wwidth, wheight, x, y);
     (void)sprintf(Info[n++], "Border width:  %d", t->old_bw);
     (void)sprintf(Info[n++], "Depth:  %d", depth);
@@ -4760,6 +5005,47 @@ Identify(TwmWindow * t)
 		       AreaWidth(Scr->tiles[i]), AreaHeight(Scr->tiles[i]));
 	Info[n++][0] = '\0';
       }
+    }
+#endif
+
+#if 1
+    if (PrintErrorMessages)
+    {
+      char *w = NULL, *r = NULL, *t = NULL;
+
+      JunkX = RevertToPointerRoot;
+      JunkChild = None;
+      XGetInputFocus (dpy, &JunkChild, &JunkX);
+      switch (JunkChild) {
+      case None:
+	w = "None";
+	break;
+      case PointerRoot:
+	w = "PointerRoot";
+	break;
+      default:
+	if (XFetchName (dpy, JunkChild, &t))
+	w = t;
+      }
+      switch (JunkX) {
+      case RevertToNone:
+	r = "RevertToNone";
+	break;
+      case RevertToPointerRoot:
+	r = "RevertToPointerRoot";
+	break;
+      case RevertToParent:
+	r = "RevertToParent";
+	break;
+      default:
+	r = "?";
+      }
+      if (w)
+	(void) sprintf(Info[n++], "Focus: window = '%s' revert to = '%s'", w, r);
+      else
+	(void) sprintf(Info[n++], "Focus: window = 0x0%lx revert to = '%s'", (long)JunkChild, r);
+      if (t != NULL)
+	XFree (t);
     }
 #endif
   }
@@ -5743,6 +6029,7 @@ send_clientmessage(Window w, Atom a, Time timestamp)
   ev.data.l[0] = a;
   ev.data.l[1] = timestamp;
   XSendEvent(dpy, w, False, 0L, (XEvent *) & ev);
+  XSync(dpy, False); /* speedup message delivery */
 }
 
 static void

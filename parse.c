@@ -550,6 +550,8 @@ typedef struct _TwmKeyword
 #define kwn_IconOpacity			37
 #endif
 
+#define kwn_RecoverStolenFocus		38
+
 #define kwcl_BorderColor		1
 #define kwcl_IconManagerHighlight	2
 #define kwcl_BorderTileForeground	3
@@ -960,6 +962,8 @@ static TwmKeyword keytable[] = {
   {"realscreenborderwidth", NKEYWORD, kwn_RealScreenBorderWidth},
   {"realscreenforeground", CKEYWORD, kwc_RealScreenForeground},
   {"realscreenpixmap", REALSCREENMAP, 0},
+
+  {"recoverstolenfocus", NKEYWORD, kwn_RecoverStolenFocus},
 
   {"resclass", MKEYWORD, kwm_ResClass},
 
@@ -1759,6 +1763,11 @@ do_number_keyword(int keyword, int num)
 	Scr->IconOpacity = (num > 255 ? 255 : (num < 0 ? 0 : num));
       return 1;
 #endif
+
+    case kwn_RecoverStolenFocus:
+      if (Scr->FirstTime)
+	RecoverStolenFocusAttempts = (num < 0 ? 0 : num);
+      return 1;
   }
 
   return 0;

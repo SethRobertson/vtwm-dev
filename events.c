@@ -40,6 +40,7 @@
 #include "twm.h"
 #include <X11/Xatom.h>
 #include <X11/Xproto.h>
+#include <X11/Xos.h>
 #include "add_window.h"
 #include "menus.h"
 #include "events.h"
@@ -2675,8 +2676,17 @@ HandleEnterNotify(void)
 	/*
 	 * If currently in PointerRoot mode (indicated by FocusRoot), then
 	 * focus on this window
+	 *
+	 * Historically we skip the following 'if' statement if a 'Leave' event exists
+	 * in the pending events pipeline. This means we don't assign focus into that
+	 * client and don't update our knowledge about it too.
+	 *
+	 * Though, if 'RecoverStolenFocus' is specified in .vtwmrc, we ignore this speedup
+	 * measure because the mouse location, focus, and most importantly our knowledge
+	 * about these isn't correct during the period of processing of the current
+	 * Enter-event and the pending Leave-event later.
 	 */
-      if (FocusRoot && (!scanArgs.leaves || scanArgs.inferior))
+      if (FocusRoot && (RecoverStolenFocusTimeout >= 0 || !scanArgs.leaves || scanArgs.inferior))
       {
 	if (Tmp_win->list)
 	  ActiveIconManager(Tmp_win->list);
@@ -2967,12 +2977,16 @@ HandleLeaveNotify(void)
 	/*
 	 * Scan for EnterNotify events to see if we can avoid some
 	 * unnecessary processing.
+	 *
+	 * Though, if 'RecoverStolenFocus' is specified in .vtwmrc,
+	 * we ignore this speedup.
 	 */
 	scanArgs.w = Event.xcrossing.window;
 	scanArgs.enters = scanArgs.matches = False;
 	(void)XCheckIfEvent(dpy, &dummy, HLNQueueScanner, (char *)&scanArgs);
 
-	if ((Event.xcrossing.window == Tmp_win->frame && !scanArgs.matches) || inicon)
+	if ((Event.xcrossing.window == Tmp_win->frame
+	      && (RecoverStolenFocusTimeout >= 0 || !scanArgs.matches)) || inicon)
 	{
 	  if (Tmp_win->list)
 	    NotActiveIconManager(Tmp_win->list);
@@ -3008,6 +3022,10 @@ HandleLeaveNotify(void)
 void
 HandleFocusChange(void)
 {
+#if defined DEBUG_STOLENFOCUS
+  extern Bool PrintErrorMessages;
+#endif
+
   if (Tmp_win == NULL)
   {
     if (Event.xfocus.detail == NotifyDetailNone && Event.xfocus.type == FocusIn)
@@ -3022,9 +3040,13 @@ HandleFocusChange(void)
     {
       if (Event.xfocus.mode == NotifyNormal && Event.xfocus.detail != NotifyPointer)
       {
-	if (Focus != Tmp_win)
+	static Window thf = None;
+
+	if (Focus != Tmp_win && Tmp_win->iconmgr != TRUE)
 	{
-	  if (Focus != NULL)
+	  int f;
+
+	  if (RecoverStolenFocusTimeout >= 0)
 	  {
 	    /*
 	     * This shouldn't happen but some clients "grab" focus unexpectedly,
@@ -3032,45 +3054,96 @@ HandleFocusChange(void)
 	     *
 	     * Accept focus transfer if it happens inside a window group
 	     * or to/from a "transient-for" window.
+	     *
+	     * Accept focus transfer too, if the mouse appears to be inside
+	     * the client grabbing the focus -- physical mouse transfer,
+	     * Enter/Leave and FocusIn/FocusOut are not always synchronised?
 	     */
-	    if (!((Focus->group == Tmp_win->group)
-		|| (Tmp_win->transient == TRUE && Tmp_win->transientfor == Focus->w)
-		|| (Focus->transient == TRUE && Focus->transientfor == Tmp_win->w)))
+	    f = (Tmp_win->frame_bw + Tmp_win->frame_bw3D) << 1;
+	    if ((Focus == NULL || !((Focus->group == Tmp_win->group)
+				    || (Tmp_win->transient == TRUE && Tmp_win->transientfor == Focus->w)
+				    || (Focus->transient == TRUE && Focus->transientfor == Tmp_win->w)))
+#if 1		/* check if mouse is over the greedy client, obscured or visible: */
+		&&
+		(False == XQueryPointer(dpy, Tmp_win->frame, &JunkRoot, &JunkChild, &JunkX, &JunkY, &HotX, &HotY, &JunkMask)
+			|| HotX < 0 || HotX >= Tmp_win->frame_width + f || HotY < 0 || HotY >= Tmp_win->frame_height + f)
+#endif
+		)
 	    {
-	      static TwmWindow * thf = NULL;
-	      static long stamp0; /* milliseconds measure */
+	      static int attempts = 0;
+	      static long stamp0 = 0; /* milliseconds measure */
+	      auto long stamp1;
 	      struct timeval clk;
-	      long stamp1;
 
-	      gettimeofday(&clk, NULL);
-	      stamp1 = (long)(clk.tv_sec * 1000) + (long)(clk.tv_usec / 1000);
+	      X_GETTIMEOFDAY(&clk);
+	      stamp1 = (long)(clk.tv_sec) * 1000 + (long)(clk.tv_usec) / 1000;
 
 	      /* attempt to return focus: */
-	      if (thf != Tmp_win) {
-		thf = Tmp_win;
+	      if (thf != Tmp_win->frame)
+	      {
+		thf = Tmp_win->frame;
 		stamp0 = stamp1;
+		attempts = 0;
 	      }
-	      if (stamp1 - stamp0 < 166) {
-		XSetInputFocus(dpy, Focus->w, RevertToPointerRoot, CurrentTime);
-		XSync(dpy, False);
+
+	      if (stamp1 - stamp0 <= RecoverStolenFocusTimeout && attempts < RecoverStolenFocusAttempts)
+	      {
+		attempts++;
+
+		if (Focus == NULL)
+		{
+		  /* PointerRoot mode */
+		  SetFocus((TwmWindow *) NULL, CurrentTime);
+		}
+		else
+		{
+		  /* prohibit triggering FocusIn event */
+		  XWindowAttributes a;
+		  XGetWindowAttributes(dpy, Focus->w, &a);
+		  XSelectInput(dpy, Focus->w, a.your_event_mask & ~FocusChangeMask);
+		  SetFocus(Focus, CurrentTime);
+		  XSelectInput(dpy, Focus->w, a.your_event_mask);
+		  if (Focus->protocols & DoesWmTakeFocus)
+		    SendTakeFocusMessage(Focus, lastTimestamp);
+		}
+#if defined DEBUG_STOLENFOCUS
+		if (PrintErrorMessages == True)
+		{
+		  if (stamp1 != stamp0)
+		    fprintf(stderr, "HandleFocusChange(1,s=%lu,F=%x,C=%lx{%d,%d}): From '%s' (w=0x0%lx,f=%x) to '%s' (w=0x0%lx,f=%x), %d. attempt to return (%ld milliseconds later).\n", Event.xfocus.serial, ((Scr->TitleFocus==TRUE?512:256)|(SloppyFocus==TRUE?32:16)|(FocusRoot==TRUE?2:1)), (long)JunkChild, HotX, HotY, (Focus?Focus->name:"NULL"), (long)(Focus?Focus->w:None), (Focus?(((Focus->protocols&DoesWmTakeFocus)?32:16)|((!Focus->wmhints||Focus->wmhints->input)?2:1)):0), Tmp_win->name, (long)(Tmp_win->w), (Tmp_win?(((Tmp_win->protocols&DoesWmTakeFocus)?32:16)|((!Tmp_win->wmhints||Tmp_win->wmhints->input)?2:1)):0), attempts, (stamp1-stamp0));
+#if 0
+		  else
+		    fprintf(stderr, "HandleFocusChange(0,s=%lu,F=%x,C=%lx{%d,%d}): From '%s' (w=0x0%lx,f=%x) to '%s' (w=0x0%lx,f=%x), attempting to return.\n", Event.xfocus.serial, ((Scr->TitleFocus==TRUE?512:256)|(SloppyFocus==TRUE?32:16)|(FocusRoot==TRUE?2:1)), (long)JunkChild, HotX, HotY, (Focus?Focus->name:"NULL"), (long)(Focus?Focus->w:None), (Focus?(((Focus->protocols&DoesWmTakeFocus)?32:16)|((!Focus->wmhints||Focus->wmhints->input)?2:1)):0), Tmp_win->name, (long)(Tmp_win->w), (Tmp_win?(((Tmp_win->protocols&DoesWmTakeFocus)?32:16)|((!Tmp_win->wmhints||Tmp_win->wmhints->input)?2:1)):0));
+#endif
+		}
+#endif
 		return;
 	      }
-	      /* 1/6 sec later; give up, let focus go: */
-	      thf = NULL;
+	      /* focus recovery interval is over; give up, let focus go: */
+#if defined DEBUG_STOLENFOCUS
+	      if (PrintErrorMessages == True)
+		fprintf(stderr, "HandleFocusChange(2,s=%lu,F=%x): From '%s' (w=0x0%lx,f=%x) to '%s' (w=0x0%lx,f=%x), giving away (%ld milliseconds later).\n", Event.xfocus.serial, ((Scr->TitleFocus==TRUE?512:256)|(SloppyFocus==TRUE?32:16)|(FocusRoot==TRUE?2:1)), (Focus?Focus->name:"NULL"), (long)(Focus?Focus->w:None), (Focus?(((Focus->protocols&DoesWmTakeFocus)?32:16)|((!Focus->wmhints||Focus->wmhints->input)?2:1)):0), Tmp_win->name, (long)(Tmp_win->w), (Tmp_win?(((Tmp_win->protocols&DoesWmTakeFocus)?32:16)|((!Tmp_win->wmhints||Tmp_win->wmhints->input)?2:1)):0), (stamp1-stamp0));
+#endif
 	    }
 	  }
-	  FocusedOnClient(Tmp_win);
+
+	  f = FocusRoot;
+	  FocusedOnClient(Tmp_win); /*only decorate etc, preserve focus state variable*/
+	  FocusRoot = f;
 	}
+
+	thf = None;
       }
     }
-#if 0 /* unused */
     else /* FocusOut */
     {
       if (Event.xfocus.detail != NotifyInferior)
       {
+	if (Event.xfocus.window == Tmp_win->frame)
+	  PaintTitleHighlight(Tmp_win, off);
       }
     }
-#endif
+
   }
 }
 
